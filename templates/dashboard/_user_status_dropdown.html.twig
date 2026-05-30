@@ -1,0 +1,29 @@
+<div class="user-status-dropdown-container">
+    <button class="user-status-trigger" onclick="toggleStatusDropdown(event)" aria-haspopup="true" aria-expanded="false">
+        <span class="status-dot {{ app.user.status }}" data-username="{{ app.user.username }}" data-status-override="{{ app.user.statusOverride|default('auto') }}" data-last-active="{{ app.user.lastActiveAt ? app.user.lastActiveAt.timestamp : '' }}" style="display: inline-block;"></span>
+        <span class="status-label">{{ app.user.statusLabel }}</span>
+        <span class="dropdown-chevron">▼</span>
+    </button>
+    <div class="user-status-dropdown-menu" style="display: none;" role="menu">
+        <button class="user-status-option {% if app.user.statusOverride is null %}active{% endif %}" data-status-value="auto" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "auto"}' hx-swap="none" role="menuitem">
+            <span class="status-dot {{ app.user.status }}" style="display: inline-block;"></span>
+            <span class="option-label">Automatique</span>
+        </button>
+        <button class="user-status-option {% if app.user.statusOverride == 'online' %}active{% endif %}" data-status-value="online" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "online"}' hx-swap="none" role="menuitem">
+            <span class="status-dot online" style="display: inline-block;"></span>
+            <span class="option-label">En ligne</span>
+        </button>
+        <button class="user-status-option {% if app.user.statusOverride == 'away' %}active{% endif %}" data-status-value="away" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "away"}' hx-swap="none" role="menuitem">
+            <span class="status-dot away" style="display: inline-block;"></span>
+            <span class="option-label">Absent</span>
+        </button>
+        <button class="user-status-option {% if app.user.statusOverride == 'busy' %}active{% endif %}" data-status-value="busy" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "busy"}' hx-swap="none" role="menuitem">
+            <span class="status-dot busy" style="display: inline-block;"></span>
+            <span class="option-label">Occupé</span>
+        </button>
+        <button class="user-status-option {% if app.user.statusOverride == 'offline' %}active{% endif %}" data-status-value="offline" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "offline"}' hx-swap="none" role="menuitem">
+            <span class="status-dot offline" style="display: inline-block;"></span>
+            <span class="option-label">Hors ligne</span>
+        </button>
+    </div>
+</div>

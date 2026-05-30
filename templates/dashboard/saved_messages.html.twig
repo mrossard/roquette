@@ -1,0 +1,165 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Roquette - Messages enregistrés{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+<div class="app-container" hx-boost="true">
+    <header class="app-header">
+        <div class="logo-area">
+            <span class="logo-rocket">🚀</span>
+            <div class="logo-text">
+                <h1>Roquette</h1>
+                <p class="subtitle">Symfony + HTMX + Mercure + AssetMapper</p>
+            </div>
+        </div>
+        
+        <div class="header-controls">
+            {% set mercureTopics = [
+                mercure_topic_prefix ~ '/users/' ~ app.user.username,
+                mercure_topic_prefix ~ '/users/status'
+            ] %}
+            {% for ch in channels %}
+                {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+            {% endfor %}
+            <div class="status-badge" id="mercure-status" 
+                 data-active-channel-slug=""
+                 data-current-username="{{ app.user.username }}"
+                 data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
+                <span class="status-dot disconnected"></span>
+                <span class="status-text">Connexion au Hub...</span>
+            </div>
+            
+            <span class="user-greeting">Salut, <strong style="color: hsl({{ app.user.hue }}, 90%, var(--user-hue-lightness-text));">{{ app.user.displayName|default(app.user.username) }}</strong> !</span>
+            
+            <div class="user-status-dropdown-container">
+                <button class="user-status-trigger" onclick="toggleStatusDropdown(event)" aria-haspopup="true" aria-expanded="false">
+                    <span class="status-dot {{ app.user.status }}" data-username="{{ app.user.username }}" data-status-override="{{ app.user.statusOverride|default('auto') }}" data-last-active="{{ app.user.lastActiveAt ? app.user.lastActiveAt.timestamp : '' }}" style="display: inline-block;"></span>
+                    <span class="status-label">{{ app.user.statusLabel }}</span>
+                    <span class="dropdown-chevron">▼</span>
+                </button>
+                <div class="user-status-dropdown-menu" style="display: none;" role="menu">
+                    <button class="user-status-option {% if app.user.statusOverride is null %}active{% endif %}" data-status-value="auto" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "auto"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot {{ app.user.status }}" style="display: inline-block;"></span>
+                        <span class="option-label">Automatique</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'online' %}active{% endif %}" data-status-value="online" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "online"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot online" style="display: inline-block;"></span>
+                        <span class="option-label">En ligne</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'away' %}active{% endif %}" data-status-value="away" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "away"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot away" style="display: inline-block;"></span>
+                        <span class="option-label">Absent</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'busy' %}active{% endif %}" data-status-value="busy" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "busy"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot busy" style="display: inline-block;"></span>
+                        <span class="option-label">Occupé</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'offline' %}active{% endif %}" data-status-value="offline" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "offline"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot offline" style="display: inline-block;"></span>
+                        <span class="option-label">Hors ligne</span>
+                    </button>
+                </div>
+            </div>
+
+            <button id="theme-toggle" class="btn-theme-toggle" aria-label="Changer de thème">🌓</button>
+            <a href="{{ path('app_account') }}" class="btn-account">⚙️ Mon Compte</a>
+            <a href="{{ path('app_logout') }}" class="btn-logout" hx-boost="false">Déconnexion</a>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- Channels Sidebar Panel -->
+        {% include 'dashboard/_sidebar.html.twig' with {
+            'channels': channels,
+            'activeChannel': null
+        } %}
+
+        <!-- Main Chat Area Panel -->
+        <section class="card glass-panel chat-panel">
+            <div class="card-header chat-header">
+                <div>
+                    <h2>⭐ Messages enregistrés</h2>
+                    <p class="card-description" style="margin-top: 0.25rem;">
+                        Retrouvez ici tous les messages que vous avez marqués comme favoris.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card-body chat-body" style="padding: 1rem 1.5rem; overflow-y: auto;">
+                <div class="messages-feed" id="live-feed">
+                    {% if savedMessages is empty %}
+                        <div class="empty-state" id="feed-empty-state" style="text-align: center; padding: 4rem 2rem;">
+                            <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">⭐</span>
+                            <h3>Aucun message enregistré</h3>
+                            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+                                Cliquez sur le bouton "Enregistrer" sur n'importe quel message dans vos canaux pour le conserver ici.
+                            </p>
+                        </div>
+                    {% else %}
+                        {% for msg in savedMessages %}
+                            <div style="margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 1.5rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; background: rgba(255,255,255,0.02); padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.03);">
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">
+                                        Provenance : 
+                                        {% if msg.channel.isDm %}
+                                            {% set partner = msg.channel.getDmPartner(app.user) %}
+                                            <strong>💬 Conversation privée avec {{ partner ? partner.displayName|default(partner.username) : 'un utilisateur' }}</strong>
+                                        {% else %}
+                                            <strong>#{{ msg.channel.name }}</strong>
+                                        {% endif %}
+                                    </span>
+                                    <a href="{{ path('app_channel', {slug: msg.channel.slug}) }}" class="btn-reply-subtle" style="font-size: 0.75rem; text-decoration: none;">
+                                        Y aller →
+                                    </a>
+                                </div>
+                                {% include 'dashboard/_feed_item.html.twig' with {
+                                    'author': msg.author,
+                                    'message': msg.content,
+                                    'timestamp': msg.createdAt,
+                                    'message_id': msg.id,
+                                    'updated_at': msg.updatedAt,
+                                    'fileName': msg.fileName,
+                                    'fileSize': msg.fileSize,
+                                    'filePath': msg.filePath,
+                                    'mimeType': msg.mimeType,
+                                    'messageObject': msg
+                                } %}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    // Toggle User Status dropdown menu
+    function toggleStatusDropdown(event) {
+        event.stopPropagation();
+        const menu = document.querySelector('.user-status-dropdown-menu');
+        const trigger = document.querySelector('.user-status-trigger');
+        if (menu) {
+            const isVisible = menu.style.display === 'block';
+            menu.style.display = isVisible ? 'none' : 'block';
+            trigger.setAttribute('aria-expanded', !isVisible);
+        }
+    }
+
+    document.addEventListener('click', () => {
+        const menu = document.querySelector('.user-status-dropdown-menu');
+        const trigger = document.querySelector('.user-status-trigger');
+        if (menu && menu.style.display === 'block') {
+            menu.style.display = 'none';
+            if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        }
+    });
+</script>
+{% endblock %}

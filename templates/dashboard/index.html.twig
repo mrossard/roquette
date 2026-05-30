@@ -1,0 +1,204 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Roquette - #{{ activeChannel.name }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+<div class="app-container" hx-boost="true">
+    {% include 'dashboard/_header.html.twig' with {
+        'channels': channels,
+        'activeChannel': activeChannel
+    } %}
+
+    <main class="dashboard-grid">
+        <!-- Channels Sidebar Panel -->
+        {% include 'dashboard/_sidebar.html.twig' with {
+            'channels': channels,
+            'unreadCounts': unreadCounts,
+            'activeChannel': activeChannel,
+            'pendingInvitations': pendingInvitations
+        } %}
+
+        <!-- Main Chat Area Panel -->
+        <section class="card glass-panel chat-panel">
+            {% include 'dashboard/_chat_skeleton.html.twig' %}
+            {% if isMember %}
+                <!-- Drag and drop overlay -->
+                <div id="drag-drop-overlay" class="drag-drop-overlay">
+                    <div class="drag-drop-container">
+                        <div class="drag-drop-icon-wrapper">
+                            <span class="drag-drop-icon">📤</span>
+                        </div>
+                        <h3 class="drag-drop-title">Déposer votre fichier</h3>
+                        <p class="drag-drop-text">
+                            {%- if activeChannel.isDm -%}
+                                {%- set partner = activeChannel.getDmPartner(app.user) -%}
+                                Relâchez le fichier pour l'envoyer à {{ partner ? (partner.displayName|default(partner.username)) : 'votre destinataire' }}
+                            {%- else -%}
+                                Relâchez le fichier pour l'ajouter à votre message dans #{{ activeChannel.name }}
+                            {%- endif -%}
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="card-header chat-header">
+                <div class="chat-header-layout" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; width: 100%;">
+                    <div>
+                        <div class="title-with-pulse">
+                            <h2>
+                                {% if activeChannel.isDm %}
+                                    {% set partner = activeChannel.getDmPartner(app.user) %}
+                                    {% if partner %}
+                                        <span class="status-dot {{ partner.status }}" style="width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 0.5rem;" title="{{ partner.statusLabel }}"></span>
+                                        <span style="color: hsl({{ partner.hue }}, 90%, var(--user-hue-lightness-hover));">{{ partner.displayName|default(partner.username) }} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); opacity: 0.8;">({{ partner.statusLabel }})</span></span>
+                                    {% else %}
+                                        <span style="color: var(--accent-purple); margin-right: 0.25rem;">👤</span> Conversation privée
+                                    {% endif %}
+                                {% else %}
+                                    {% if activeChannel.isPrivate %}
+                                        <span style="color: var(--accent-purple); margin-right: 0.25rem;">🔒</span>
+                                    {% else %}
+                                        <span style="color: var(--accent-cyan); margin-right: 0.25rem;">#</span>
+                                    {% endif %}
+                                    {{ activeChannel.name }}
+                                {% endif %}
+                                {% if isMember %}
+                                    <button class="btn-favorite-toggle"
+                                            id="btn-favorite-toggle"
+                                            hx-post="{{ path('app_channel_favorite_toggle', {slug: activeChannel.slug}) }}"
+                                            hx-swap="none"
+                                            title="{% if app.user.isChannelFavorite(activeChannel) %}Retirer des favoris{% else %}Ajouter aux favoris{% endif %}"
+                                            style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: {% if app.user.isChannelFavorite(activeChannel) %}#f59e0b{% else %}var(--text-muted){% endif %}; transition: color 0.2s, transform 0.2s; margin-left: 0.5rem; line-height: 1; vertical-align: middle; padding: 0;">
+                                        {% if app.user.isChannelFavorite(activeChannel) %}★{% else %}☆{% endif %}
+                                    </button>
+                                {% endif %}
+                            </h2>
+                            {% if isMember %}
+                                <span class="live-indicator">LIVE</span>
+                            {% endif %}
+                        </div>
+                        <p class="card-description" style="margin-top: 0.25rem;">
+                            {% if activeChannel.isDm %}
+                                {% set partner = activeChannel.getDmPartner(app.user) %}
+                                {% if partner %}
+                                    Discussion directe et sécurisée avec {{ partner.displayName|default(partner.username) }}.
+                                {% else %}
+                                    Discussion directe privée.
+                                {% endif %}
+                            {% else %}
+                                {{ activeChannel.description|default('Aucune description pour ce canal.') }}
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        {% if isMember %}
+                            <div class="search-container">
+                                <span class="search-icon">🔍</span>
+                                <input type="search"
+                                       id="channel-search-input"
+                                       name="q"
+                                       placeholder="Rechercher dans ce canal..."
+                                       class="input-search"
+                                       hx-get="{{ path('app_channel_search', {slug: activeChannel.slug}) }}"
+                                       hx-trigger="input changed delay:400ms, search"
+                                       hx-target="#live-feed"
+                                       hx-indicator="#search-indicator"
+                                       aria-label="Rechercher dans ce canal">
+                                <span id="search-indicator" class="htmx-indicator spinner-subtle" style="display: none;"></span>
+                            </div>
+
+                            {% set channelUnread = unreadCounts[activeChannel.id] is defined ? unreadCounts[activeChannel.id].count : 0 %}
+                            <button id="btn-unread-filter"
+                                    class="btn-unread-filter"
+                                    hx-get="{{ path('app_channel_unread', {slug: activeChannel.slug}) }}"
+                                    hx-target="#live-feed"
+                                    hx-swap="innerHTML"
+                                    onclick="toggleUnreadFilter(this, event)"
+                                    title="Afficher uniquement les messages non lus"
+                                    aria-label="Filtrer les messages non lus">
+                                <span class="unread-filter-icon">🔔</span>
+                                <span>Non lus</span>
+                                {% if channelUnread > 0 %}
+                                    <span class="unread-filter-badge" id="unread-filter-badge-count">{{ channelUnread }}</span>
+                                {% else %}
+                                    <span class="unread-filter-badge unread-filter-badge-zero" id="unread-filter-badge-count" style="display:none;">0</span>
+                                {% endif %}
+                            </button>
+
+                            {% include 'dashboard/_notification_toggle.html.twig' with {
+                                'activeChannel': activeChannel,
+                                'notificationsEnabled': notificationsEnabled
+                            } %}
+                        {% endif %}
+                        {% if isMember and not activeChannel.isDm %}
+                            {% if activeChannel.isPrivate and activeChannel.creator == app.user %}
+                                {% include 'dashboard/_invite_section.html.twig' with {'activeChannel': activeChannel, 'usersToInvite': usersToInvite} %}
+                            {% endif %}
+
+                            {% if is_granted('ROLE_ADMIN') or (activeChannel.creator and activeChannel.creator == app.user) %}
+                                <form action="{{ path('app_channel_delete', {slug: activeChannel.slug}) }}" method="POST" data-confirm="Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement." hx-boost="false">
+                                    <button type="submit" class="btn-delete-channel">🗑️ Supprimer le canal</button>
+                                </form>
+                            {% endif %}
+                            
+                            {% if not activeChannel.isPrivate and activeChannel.slug != 'general' %}
+                                <form action="{{ path('app_channel_leave', {slug: activeChannel.slug}) }}" method="POST" data-confirm="Êtes-vous sûr de vouloir quitter ce canal ?" hx-boost="false">
+                                    <button type="submit" class="btn-delete-channel" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text-muted);">🚪 Quitter le canal</button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            {% if isMember %}
+                <div class="card-body chat-body">
+                    {% for label, messages in app.flashes %}
+                        {% for msg in messages %}
+                            <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in" style="margin-bottom: 1rem; background: rgba({{ label == 'error' ? '239, 68, 68' : '16, 185, 129' }}, 0.1); border: 1px solid rgba({{ label == 'error' ? '239, 68, 68' : '16, 185, 129' }}, 0.2); color: var(--accent-{{ label == 'error' ? 'red' : 'green' }}); border-radius: 0.75rem; padding: 0.75rem 1rem; font-size: 0.9rem; font-weight: 500;">
+                                {{ msg }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                    <div id="pinned-banner-container" class="pinned-banner-container">
+                        {% if activeChannel.pinnedMessage %}
+                            {% include 'dashboard/_pinned_banner.html.twig' with {'pinnedMessage': activeChannel.pinnedMessage, 'activeChannel': activeChannel} %}
+                        {% endif %}
+                    </div>
+                    <div id="live-feed" class="feed-container" role="log" aria-live="polite">
+                        {% include 'dashboard/_messages_feed.html.twig' with {
+                            'messages': messages,
+                            'activeChannel': activeChannel,
+                            'firstUnreadMessageId': firstUnreadMessageId
+                        } %}
+                    </div>
+
+                    <div class="chat-input-area">
+                        <div id="typing-indicator" class="typing-indicator" style="display: none;"></div>
+                        {% include 'dashboard/_input_form.html.twig' with {'activeChannel': activeChannel} %}
+                    </div>
+                </div>
+            {% else %}
+                {% include 'dashboard/_join_channel_prompt.html.twig' with {'activeChannel': activeChannel} %}
+            {% endif %}
+        </section>
+
+        <!-- Thread Panel -->
+        <section id="thread-panel" class="card glass-panel thread-panel" style="display: none;">
+            {# This will be filled dynamically via HTMX #}
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>&copy; {{ 'now'|date('Y') }} Roquette. Propulsé par Symfony 8 et de l'amour.</p>
+    </footer>
+</div>
+{% endblock %}

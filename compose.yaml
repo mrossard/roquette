@@ -1,0 +1,41 @@
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      SERVER_NAME: ':80'
+      MERCURE_JWT_SECRET: '!ChangeThisMercureHubJWTSecretKey!'
+      DATABASE_URL: 'postgresql://app:!ChangeMePostgresPassword!@database:5432/roquette?serverVersion=16&charset=utf8'
+      MERCURE_URL: 'http://127.0.0.1/.well-known/mercure'
+      MERCURE_PUBLIC_URL: 'https://localhost/.well-known/mercure'
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: roquette
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: '!ChangeMePostgresPassword!'
+    ports:
+      - "5435:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    volumes:
+      - clamav_data:/var/lib/clamav
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:
+  clamav_data:
+

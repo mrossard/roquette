@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="htmx-config" content='{"historyCacheSize": 0, "globalViewTransitions": true}'>
+        <script>
+            (function() {
+                const theme = {% if app.user %}'{{ app.user.theme }}'{% else %}localStorage.getItem('theme') || 'dark'{% endif %};
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+
+                const hljsLink = document.createElement('link');
+                hljsLink.id = 'hljs-theme';
+                hljsLink.rel = 'stylesheet';
+                hljsLink.href = theme === 'dark' 
+                    ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css' 
+                    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css';
+                document.head.appendChild(hljsLink);
+            })();
+        </script>
+        <title>{% block title %}Welcome!{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        
+        {% if app.user %}
+        <style>
+            :root {
+                --user-hue-primary: {{ app.user.hue }};
+                /* Override default accents with user custom hue settings */
+                --accent-cyan: hsl(var(--user-hue-primary), 100%, 45%);
+                --accent-cyan-glow: hsla(var(--user-hue-primary), 100%, 50%, 0.15);
+                --accent-purple: hsl(calc((var(--user-hue-primary) + 84) % 360), 91%, 65%);
+                --accent-purple-glow: hsla(calc((var(--user-hue-primary) + 84) % 360), 91%, 65%, 0.15);
+            }
+            [data-theme="light"] {
+                --accent-cyan: hsl(var(--user-hue-primary), 100%, 30%);
+                --accent-cyan-glow: hsla(var(--user-hue-primary), 100%, 30%, 0.15);
+                --accent-purple: hsl(calc((var(--user-hue-primary) + 84) % 360), 75%, 45%);
+                --accent-purple-glow: hsla(calc((var(--user-hue-primary) + 84) % 360), 75%, 45%, 0.15);
+            }
+        </style>
+        {% endif %}
+
+        {% block stylesheets %}
+        {% endblock %}
+
+        {% block javascripts %}
+            {% block importmap %}{{ importmap('app') }}{% endblock %}
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+        {% endblock %}
+
+        {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
+        {% if frankenphpHotReload %}
+        <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
+        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
+        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
+        {% endif %}
+    </head>
+    <body>
+        {% block body %}{% endblock %}
+
+        {% if app.user %}
+            {% include '_create_channel_modal.html.twig' %}
+            {% include '_lightbox_modal.html.twig' %}
+            {% include '_global_search_modal.html.twig' %}
+
+            <script>
+                (function() {
+                    if (!window.themeToggleInitialized) {
+                        window.themeToggleInitialized = true;
+                        document.addEventListener('click', function(e) {
+                            const toggle = e.target.closest('#theme-toggle');
+                            if (toggle) {
+                                const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+                                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                                document.documentElement.setAttribute('data-theme', newTheme);
+                                localStorage.setItem('theme', newTheme);
+
+                                const hljsLink = document.getElementById('hljs-theme');
+                                if (hljsLink) {
+                                    hljsLink.href = newTheme === 'dark' 
+                                        ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css' 
+                                        : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css';
+                                }
+
+                                // Update database state asynchronously
+                                fetch('{{ path('app_user_update_theme') }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/x-www-form-urlencoded',
+                                    },
+                                    body: 'theme=' + encodeURIComponent(newTheme)
+                                }).catch(err => console.error('Failed to sync theme preference:', err));
+                            }
+                        });
+                    }
+                })();
+            </script>
+        {% endif %}
+    </body>
+</html>

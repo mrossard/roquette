@@ -1,0 +1,33 @@
+{% if pinnedMessage %}
+    <div class="pinned-banner-content fade-in">
+        <div class="pinned-banner-left">
+            <span class="pinned-icon">📌</span>
+            <div class="pinned-text">
+                <span class="pinned-label">Message épinglé</span>
+                <span class="pinned-message-preview">
+                    {% set author_name = pinnedMessage.author ? (pinnedMessage.author.displayName|default(pinnedMessage.author.username)) : 'Utilisateur' %}
+                    <strong>{{ author_name }}</strong> : 
+                    {% if pinnedMessage.content %}
+                        {{ pinnedMessage.content|slice(0, 120) }}{{ pinnedMessage.content|length > 120 ? '...' : '' }}
+                    {% else %}
+                        📎 {{ pinnedMessage.fileName }}
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        <div class="pinned-banner-actions">
+            <button class="btn-pinned-action btn-jump" onclick="scrollToMessage({{ pinnedMessage.id }})" title="Aller au message">
+                Voir
+            </button>
+            {% if activeChannel.creator == app.user %}
+                <button class="btn-pinned-action btn-unpin"
+                        hx-post="{{ path('app_message_unpin', {id: pinnedMessage.id}) }}"
+                        hx-target="#pinned-banner-container"
+                        hx-swap="innerHTML"
+                        title="Désépingler">
+                    ✕
+                </button>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}

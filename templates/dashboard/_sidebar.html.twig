@@ -1,0 +1,152 @@
+{% set unreadCounts = unreadCounts|default({}) %}
+{% set activeChannel = activeChannel|default(null) %}
+{% set pendingInvitations = pendingInvitations|default([]) %}
+{% set showReorder = showReorder|default(true) %}
+
+<section class="card glass-panel sidebar-panel" id="sidebar-panel">
+    <div class="card-header" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div class="sidebar-actions" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+            <button id="btn-filter-unread" class="btn-directory-trigger" title="Filtrer par nouveaux messages" aria-label="Filtrer par nouveaux messages">✉️</button>
+            {% if showReorder %}
+                <button id="btn-edit-order-trigger" class="btn-directory-trigger" title="Ordonner les canaux" aria-label="Ordonner les canaux">⇅</button>
+            {% endif %}
+            <a href="{{ path('app_channels_directory') }}" class="btn-directory-trigger" style="text-decoration: none;" title="Parcourir les canaux" aria-label="Parcourir les canaux">🔍</a>
+            <button onclick="openChannelModal(this)" class="btn-add-channel-trigger" title="Créer un canal" aria-label="Créer un canal">＋</button>
+        </div>
+    </div>
+
+    <div class="card-body" style="display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto;">
+        <div>
+            <div class="sidebar-saved-messages-link-wrapper" style="margin-bottom: 1.5rem;">
+                <a href="{{ path('app_saved_messages') }}" class="btn-sidebar-item {% if app.request.attributes.get('_route') == 'app_saved_messages' %}active{% endif %}" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 0.5rem; text-decoration: none; color: var(--text-primary); transition: var(--transition-smooth); font-size: 0.9rem; font-weight: 500; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass);">
+                    <span style="font-size: 1.1rem; line-height: 1;">⭐</span>
+                    <span>Messages enregistrés</span>
+                </a>
+            </div>
+            {% set hasFavorites = false %}
+            {% for channel in channels %}
+                {% if app.user.isChannelFavorite(channel) %}
+                    {% set hasFavorites = true %}
+                {% endif %}
+            {% endfor %}
+
+            {% if hasFavorites %}
+            <div style="margin-bottom: 1.5rem;">
+                <h3 class="sidebar-section-header" data-section="favorites" onclick="toggleSidebarSection('favorites')">
+                    <span>
+                        <span class="sidebar-section-toggle-icon">▼</span>
+                        Favoris
+                    </span>
+                </h3>
+                <div class="channel-list" id="section-favorites" data-list-type="favorites">
+                    {% for channel in channels %}
+                        {% if app.user.isChannelFavorite(channel) %}
+                            {% include 'dashboard/_channel_sidebar_item.html.twig' with {
+                                'channel': channel,
+                                'unreadCounts': unreadCounts,
+                                'activeChannel': activeChannel
+                            } %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="margin-bottom: 1.5rem;">
+                <h3 class="sidebar-section-header" data-section="channels" onclick="toggleSidebarSection('channels')">
+                    <span>
+                        <span class="sidebar-section-toggle-icon">▼</span>
+                        Canaux
+                    </span>
+                </h3>
+                <div class="channel-list" id="section-channels" data-list-type="channels">
+                    {% set hasChannels = false %}
+                    {% for channel in channels %}
+                        {% if not channel.isDm and not app.user.isChannelFavorite(channel) %}
+                            {% set hasChannels = true %}
+                            {% include 'dashboard/_channel_sidebar_item.html.twig' with {
+                                'channel': channel,
+                                'unreadCounts': unreadCounts,
+                                'activeChannel': activeChannel
+                            } %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if not hasChannels %}
+                        <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 0.25rem 0.5rem;">Aucun canal</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="sidebar-section-header" data-section="dms" onclick="toggleSidebarSection('dms')">
+                <span>
+                    <span class="sidebar-section-toggle-icon">▼</span>
+                    Messages Directs
+                </span>
+            </h3>
+            <div class="channel-list" id="section-dms" data-list-type="dms">
+                {% set hasDms = false %}
+                {% for channel in channels %}
+                    {% if channel.isDm and not app.user.isChannelFavorite(channel) %}
+                        {% set hasDms = true %}
+                        {% include 'dashboard/_channel_sidebar_item.html.twig' with {
+                            'channel': channel,
+                            'unreadCounts': unreadCounts,
+                            'activeChannel': activeChannel
+                        } %}
+                    {% endif %}
+                {% endfor %}
+                {% if not hasDms %}
+                    <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 0.25rem 0.5rem;">Aucun message direct</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="invitations-section" id="invitations-section" {% if pendingInvitations is empty %}style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1.25rem;"{% else %}style="margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1.25rem;"{% endif %}>
+            <h3 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem;">Invitations</h3>
+            <div class="invitations-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for invite in pendingInvitations %}
+                    {% include 'dashboard/_invite_sidebar_item.html.twig' with {'invite': invite} %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    (function() {
+        // Toggle function
+        window.toggleSidebarSection = function(sectionName) {
+            const header = document.querySelector(`.sidebar-section-header[data-section="${sectionName}"]`);
+            const list = document.getElementById(`section-${sectionName}`);
+            if (!header || !list) return;
+
+            const isCollapsed = list.classList.toggle('collapsed');
+            header.classList.toggle('collapsed', isCollapsed);
+            
+            localStorage.setItem(`roquette-section-${sectionName}-collapsed`, isCollapsed ? 'true' : 'false');
+        };
+
+        // Initialize state from localStorage
+        const sections = ['favorites', 'channels', 'dms'];
+        sections.forEach(function(sectionName) {
+            const isCollapsed = localStorage.getItem(`roquette-section-${sectionName}-collapsed`) === 'true';
+            if (isCollapsed) {
+                const applyState = () => {
+                    const header = document.querySelector(`.sidebar-section-header[data-section="${sectionName}"]`);
+                    const list = document.getElementById(`section-${sectionName}`);
+                    if (header && list) {
+                        header.classList.add('collapsed');
+                        list.classList.add('collapsed');
+                    }
+                };
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', applyState);
+                } else {
+                    applyState();
+                }
+            }
+        });
+    })();
+</script>

@@ -1,0 +1,88 @@
+<form hx-post="{{ path('app_message_thread_reply', {id: parentMessage.id}) }}"
+      hx-swap="outerHTML"
+      enctype="multipart/form-data"
+      class="input-form chat-message-form thread-message-form">
+    {% for label, messages in app.flashes %}
+        {% for msg in messages %}
+            <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in" style="margin-bottom: 0.75rem; background: rgba({{ label == 'error' ? '239, 68, 68' : '16, 185, 129' }}, 0.1); border: 1px solid rgba({{ label == 'error' ? '239, 68, 68' : '16, 185, 129' }}, 0.2); color: var(--accent-{{ label == 'error' ? 'red' : 'green' }}); border-radius: 0.75rem; padding: 0.75rem 1rem; font-size: 0.9rem; font-weight: 500;">
+                {{ msg }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+    
+    <div class="formatting-toolbar">
+        <button type="button" class="btn-format" onclick="insertThreadMarkdown('bold')" title="Gras (**)">
+            <span class="icon">B</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertThreadMarkdown('italic')" title="Italique (*)">
+            <span class="icon">I</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertThreadMarkdown('strikethrough')" title="Barré (~~)">
+            <span class="icon">S</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertThreadMarkdown('quote')" title="Citation (&gt;)">
+            <span class="icon">”</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertThreadMarkdown('code')" title="Code en ligne (`)">
+            <span class="icon">&lt;/&gt;</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertThreadMarkdown('codeblock')" title="Bloc de code (```)">
+            <span class="icon">``` Code</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertThreadMarkdown('link')" title="Lien [texte](url)">
+            <span class="icon">🔗</span>
+        </button>
+        
+        <div class="toolbar-tabs" style="margin-left: auto; display: flex; gap: 4px;">
+            <button type="button" class="btn-format active" id="thread-message-btn-edit-tab" onclick="switchInputTab('thread-message', 'edit')" title="Écrire">Écrire</button>
+            <button type="button" class="btn-format" id="thread-message-btn-preview-tab" onclick="switchInputTab('thread-message', 'preview')" title="Aperçu">Aperçu</button>
+        </div>
+    </div>
+
+    <div class="chat-input-container">
+        <div id="thread-file-preview-container" class="file-preview-container" style="display: none; flex-direction: column; align-items: stretch; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div class="file-preview-info">
+                    <span class="file-preview-icon">📎</span>
+                    <span id="thread-file-preview-name" class="file-preview-name"></span>
+                </div>
+                <button type="button" id="thread-btn-clear-file" class="btn-clear-file" title="Supprimer le fichier">✕</button>
+            </div>
+            <div id="thread-file-upload-progress" class="upload-progress-wrapper" style="display: none; width: 100%;">
+                <div class="upload-progress-bar-bg" style="background: rgba(255, 255, 255, 0.1); border-radius: 4px; height: 6px; overflow: hidden; width: 100%;">
+                    <div id="thread-file-upload-progress-bar" class="upload-progress-bar" style="background: var(--accent-cyan); height: 100%; width: 0%; transition: width 0.15s ease;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    <span>Envoi en cours...</span>
+                    <span id="thread-file-upload-progress-percent" class="upload-progress-percent">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <label for="thread-message" class="sr-only">Répondre...</label>
+        <div class="message-input-wrapper">
+            <input type="file" id="thread-file-upload" name="file" style="display: none;" />
+            <textarea id="thread-message" name="message" required placeholder="Répondre au fil..." rows="1"></textarea>
+            <div id="thread-message-preview" class="message-preview-box" style="display: none;"></div>
+
+            
+            <div class="input-actions-wrapper">
+                <button type="button" class="btn-file-toggle" onclick="document.getElementById('thread-file-upload').click()" title="Joindre un fichier" aria-label="Joindre un fichier">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="btn-icon" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                </button>
+                <button type="button" class="btn-emoji-toggle" data-emoji-target="#thread-message" title="Ajouter un émoji" aria-label="Ajouter un émoji">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <button type="submit" class="btn-publish-compact" title="Répondre" aria-label="Répondre au message">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="btn-icon" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+            </svg>
+        </button>
+    </div>
+</form>

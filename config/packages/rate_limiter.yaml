@@ -1,0 +1,13 @@
+framework:
+    rate_limiter:
+        # Rate limiter for login, registration and oauth
+        login_api:
+            policy: 'token_bucket'
+            limit: 5
+            rate: { interval: '1 minute', amount: 1 }
+
+        # Rate limiter for message posting/editing to prevent spam
+        message_api:
+            policy: 'token_bucket'
+            limit: 20
+            rate: { interval: '1 minute', amount: 10 }

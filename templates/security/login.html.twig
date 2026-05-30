@@ -1,0 +1,172 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion - Roquette{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .auth-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            padding: 2rem 1.5rem;
+        }
+        .auth-card {
+            max-width: 420px;
+            width: 100%;
+        }
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .auth-logo {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+            animation: float 4s ease-in-out infinite;
+        }
+        .auth-header h1 {
+            font-size: 1.85rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .auth-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .error-alert {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+            border-radius: 0.75rem;
+            padding: 0.85rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            animation: shake 0.5s ease;
+        }
+        .flash-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+            border-radius: 0.75rem;
+            padding: 0.85rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .auth-footer {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .auth-footer a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+        }
+        .auth-footer a:hover {
+            color: var(--accent-purple);
+            text-shadow: 0 0 8px var(--accent-purple-glow);
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        .btn-oauth {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-glass);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+        .btn-oauth:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 12px var(--accent-cyan-glow);
+            transform: translateY(-1px);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="auth-wrapper">
+    <div class="card glass-panel auth-card fade-in">
+        <div class="auth-header">
+            <span class="auth-logo">🚀</span>
+            <h1>Connexion</h1>
+            <p>Accédez à votre espace Roquette en temps réel</p>
+        </div>
+
+        {# Show flash success messages e.g. after successful registration #}
+        {% for message in app.flashes('success') %}
+            <div class="flash-success">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        {# Show security/login errors #}
+        {% if error %}
+            <div class="error-alert">
+                {{ error.messageKey|trans(error.messageData, 'security') }}
+            </div>
+        {% endif %}
+
+        <form action="{{ path('app_login') }}" method="post" class="input-form">
+            <div class="input-group">
+                <label for="username">Nom d'utilisateur</label>
+                <input type="text" id="username" name="_username" value="{{ last_username }}" required autocomplete="username" autofocus placeholder="Entrez votre nom">
+            </div>
+
+            <div class="input-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="_password" required autocomplete="current-password" placeholder="••••••••">
+            </div>
+
+            {# CSRF Token #}
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <div class="form-actions" style="margin-top: 0.5rem;">
+                <button type="submit" class="btn-publish">
+                    <span>Se connecter</span>
+                </button>
+            </div>
+        </form>
+
+        <div class="auth-divider" style="margin: 1.5rem 0; display: flex; align-items: center; text-align: center; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+            <span style="flex-grow: 1; height: 1px; background: var(--border-glass);"></span>
+            <span style="padding: 0 0.75rem;">Ou</span>
+            <span style="flex-grow: 1; height: 1px; background: var(--border-glass);"></span>
+        </div>
+
+        <div class="oauth-actions" style="margin-bottom: 1rem;">
+            <a href="{{ path('app_oauth_connect') }}" class="btn-oauth">
+                <span style="font-size: 1.15rem;">🚀</span>
+                <span>Se connecter avec OAuth2</span>
+            </a>
+        </div>
+
+        <div class="auth-footer">
+            Pas encore de compte ? <a href="{{ path('app_register') }}">S'inscrire</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

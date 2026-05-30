@@ -1,0 +1,80 @@
+<div id="create-channel-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="display: none;" onclick="if(event.target === this) closeChannelModal()">
+    <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="modal-title">Créer un nouveau canal</h3>
+            <button type="button" onclick="closeChannelModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
+        </div>
+        <form action="{{ path('app_channel_create') }}" method="POST" class="add-channel-form" hx-boost="false">
+            <div class="input-group">
+                <label for="modal-name">Nom du canal</label>
+                <input type="text" id="modal-name" name="name" required placeholder="Nom du canal..." maxlength="20" class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;">
+            </div>
+            <div class="input-group" style="margin-top: 0.5rem;">
+                <label for="modal-description">Description</label>
+                <input type="text" id="modal-description" name="description" placeholder="Description (optionnelle)..." maxlength="50" class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;">
+            </div>
+            <div class="input-group-checkbox" style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="isPrivate" id="modal-isPrivate" class="input-checkbox" style="width: auto; cursor: pointer;">
+                <label for="modal-isPrivate" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">Canal privé</label>
+            </div>
+            <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Créer le canal</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let lastFocusedElement = null;
+
+        window.openChannelModal = function(trigger) {
+            lastFocusedElement = trigger;
+            const modal = document.getElementById('create-channel-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                const firstInput = document.getElementById('modal-name');
+                if (firstInput) {
+                    setTimeout(() => firstInput.focus(), 50);
+                }
+                document.addEventListener('keydown', handleModalKeyDown);
+            }
+        };
+
+        window.closeChannelModal = function() {
+            const modal = document.getElementById('create-channel-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.removeEventListener('keydown', handleModalKeyDown);
+                if (lastFocusedElement) {
+                    lastFocusedElement.focus();
+                }
+            }
+        };
+
+        function handleModalKeyDown(e) {
+            if (e.key === 'Escape') {
+                closeChannelModal();
+                return;
+            }
+            if (e.key === 'Tab') {
+                const modal = document.getElementById('create-channel-modal');
+                if (!modal) return;
+                const focusableElements = modal.querySelectorAll('button, input, textarea, select, a, [tabindex="0"]');
+                if (focusableElements.length === 0) return;
+                const firstFocusable = focusableElements[0];
+                const lastFocusable = focusableElements[focusableElements.length - 1];
+
+                if (e.shiftKey) {
+                    if (document.activeElement === firstFocusable) {
+                        lastFocusable.focus();
+                        e.preventDefault();
+                    }
+                } else {
+                    if (document.activeElement === lastFocusable) {
+                        firstFocusable.focus();
+                        e.preventDefault();
+                    }
+                }
+            }
+        }
+    })();
+</script>

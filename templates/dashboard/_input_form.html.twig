@@ -1,0 +1,131 @@
+<form hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
+      hx-swap="outerHTML"
+      enctype="multipart/form-data"
+      class="input-form chat-message-form">
+    {% for label, messages in app.flashes %}
+        {% for msg in messages %}
+            <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in" style="margin-bottom: 0.75rem; background: rgba({{ label == 'error' ? '239, 68, 68' : '16, 185, 129' }}, 0.1); border: 1px solid rgba({{ label == 'error' ? '239, 68, 68' : '16, 185, 129' }}, 0.2); color: var(--accent-{{ label == 'error' ? 'red' : 'green' }}); border-radius: 0.75rem; padding: 0.75rem 1rem; font-size: 0.9rem; font-weight: 500;">
+                {{ msg }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+    {% if giphyPreviews is defined and giphyPreviews is not empty %}
+        <div class="giphy-preview-panel glass-panel">
+            <div class="giphy-preview-header">
+                <span class="giphy-preview-title">👾 Choisir un GIF pour "{{ giphyQuery }}" :</span>
+                <button type="button" class="btn-giphy-cancel" 
+                        hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
+                        hx-vals='{"message": ""}'
+                        hx-target="closest form"
+                        hx-swap="outerHTML"
+                        title="Annuler">
+                    Annuler
+                </button>
+            </div>
+            <div class="giphy-preview-grid">
+                {% for gif in giphyPreviews %}
+                    <div class="giphy-preview-item"
+                         hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
+                         hx-vals='{"message": "![giphy {{ giphyQuery|escape('js') }}]({{ gif.url }})"}'
+                         hx-target="closest form"
+                         hx-swap="outerHTML">
+                        <img src="{{ gif.preview }}" alt="GIF Preview" class="giphy-preview-img">
+                        <div class="giphy-preview-overlay">
+                            <span class="giphy-send-icon">📤</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% elseif giphyPreviews is defined %}
+        <div class="giphy-preview-panel glass-panel" style="padding: 0.5rem; text-align: center; font-size: 0.85rem; color: var(--accent-red, #ff5b5b); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+            <span>❌ Aucun GIF trouvé pour "{{ giphyQuery }}".</span>
+            <button type="button" class="btn-giphy-cancel"
+                    hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
+                    hx-vals='{"message": ""}'
+                    hx-target="closest form"
+                    hx-swap="outerHTML"
+                    title="Fermer">
+                Fermer
+            </button>
+        </div>
+    {% endif %}
+
+    <!-- Formatting Toolbar -->
+    <div class="formatting-toolbar">
+        <button type="button" class="btn-format" onclick="insertMarkdown('bold')" title="Gras (**)">
+            <span class="icon">B</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertMarkdown('italic')" title="Italique (*)">
+            <span class="icon">I</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertMarkdown('strikethrough')" title="Barré (~~)">
+            <span class="icon">S</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertMarkdown('quote')" title="Citation (&gt;)">
+            <span class="icon">”</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertMarkdown('code')" title="Code en ligne (`)">
+            <span class="icon">&lt;/&gt;</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertMarkdown('codeblock')" title="Bloc de code (```)">
+            <span class="icon">``` Code</span>
+        </button>
+        <button type="button" class="btn-format" onclick="insertMarkdown('link')" title="Lien [texte](url)">
+            <span class="icon">🔗</span>
+        </button>
+        
+        <div class="toolbar-tabs" style="margin-left: auto; display: flex; gap: 4px;">
+            <button type="button" class="btn-format active" id="message-btn-edit-tab" onclick="switchInputTab('message', 'edit')" title="Écrire">Écrire</button>
+            <button type="button" class="btn-format" id="message-btn-preview-tab" onclick="switchInputTab('message', 'preview')" title="Aperçu">Aperçu</button>
+        </div>
+    </div>
+
+    <div class="chat-input-container">
+        <!-- File upload preview -->
+        <div id="file-preview-container" class="file-preview-container" style="display: none; flex-direction: column; align-items: stretch; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div class="file-preview-info">
+                    <span class="file-preview-icon">📎</span>
+                    <span id="file-preview-name" class="file-preview-name"></span>
+                </div>
+                <button type="button" id="btn-clear-file" class="btn-clear-file" title="Supprimer le fichier">✕</button>
+            </div>
+            <div id="file-upload-progress" class="upload-progress-wrapper" style="display: none; width: 100%;">
+                <div class="upload-progress-bar-bg" style="background: rgba(255, 255, 255, 0.1); border-radius: 4px; height: 6px; overflow: hidden; width: 100%;">
+                    <div id="file-upload-progress-bar" class="upload-progress-bar" style="background: var(--accent-cyan); height: 100%; width: 0%; transition: width 0.15s ease;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    <span>Envoi en cours...</span>
+                    <span id="file-upload-progress-percent" class="upload-progress-percent">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <label for="message" class="sr-only">Message</label>
+        <div class="message-input-wrapper">
+            <input type="file" id="file-upload" name="file" style="display: none;" />
+            <textarea id="message" name="message" required placeholder="Saisissez votre message dans #{{ activeChannel.name }}..." rows="1"></textarea>
+            <div id="message-preview" class="message-preview-box" style="display: none;"></div>
+
+            
+            <div class="input-actions-wrapper">
+                <button type="button" class="btn-file-toggle" onclick="document.getElementById('file-upload').click()" title="Joindre un fichier" aria-label="Joindre un fichier">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="btn-icon" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                </button>
+                <button type="button" class="btn-emoji-toggle" data-emoji-target="#message" title="Ajouter un émoji" aria-label="Ajouter un émoji">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <button type="submit" class="btn-publish-compact" title="Diffuser" aria-label="Diffuser le message">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="btn-icon" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+            </svg>
+        </button>
+    </div>
+</form>

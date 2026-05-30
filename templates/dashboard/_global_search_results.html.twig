@@ -1,0 +1,99 @@
+<div class="global-search-results-wrapper">
+    {% if query is empty %}
+        <div class="global-search-tips">
+            <h4 class="tips-title">💡 Astuces pour affiner votre recherche :</h4>
+            <ul class="tips-list">
+                <li><code>from:@pseudo</code> ou <code>from:pseudo</code> — Filtrer par auteur</li>
+                <li><code>in:#canal</code> ou <code>in:canal</code> — Filtrer par canal</li>
+                <li><code>has:file</code> — Messages contenant une pièce jointe</li>
+                <li><code>has:image</code> ou <code>has:pdf</code> — Filtrer par type de fichier</li>
+            </ul>
+        </div>
+    {% elseif channels is empty and users is empty and messages is empty %}
+        <div class="global-search-empty">
+            <span class="empty-icon">🔍</span>
+            <h3>Aucun résultat trouvé</h3>
+            <p>Essayez d'autres termes de recherche ou vérifiez l'orthographe.</p>
+        </div>
+    {% else %}
+        
+        {# Channels section #}
+        {% if channels is not empty %}
+            <div class="search-results-section">
+                <h4 class="section-title">💬 Canaux</h4>
+                <div class="search-channels-list">
+                    {% for channel in channels %}
+                        <a href="{{ path('app_channel', {slug: channel.slug}) }}" class="search-channel-item" hx-boost="true">
+                            <span class="channel-hashtag">#</span>
+                            <div class="channel-info">
+                                <span class="channel-name">{{ channel.name }}</span>
+                                {% if channel.description %}
+                                    <span class="channel-desc">{{ channel.description }}</span>
+                                {% endif %}
+                            </div>
+                            <span class="btn-go-icon">➔</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {# Users section #}
+        {% if users is not empty %}
+            <div class="search-results-section">
+                <h4 class="section-title">👤 Utilisateurs</h4>
+                <div class="search-users-list">
+                    {% for user in users %}
+                        {% if user.id != app.user.id %}
+                            <a href="{{ path('app_dm_open', {username: user.username}) }}" class="search-user-item" hx-boost="true">
+                                <div class="avatar-container small">
+                                    <span class="feed-item-avatar" style="--user-hue: {{ user.hue|default(200) }}">{{ user.displayName|default(user.username)|slice(0, 1)|upper }}</span>
+                                    <span class="status-dot-overlay {{ user.status }}"></span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-display-name">{{ user.displayName|default(user.username) }}</span>
+                                    <span class="user-username">@{{ user.username }}</span>
+                                </div>
+                                <span class="btn-go-icon">➔</span>
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {# Messages section #}
+        {% if messages is not empty %}
+            <div class="search-results-section">
+                <h4 class="section-title">✉️ Messages</h4>
+                <div class="search-messages-list">
+                    {% for message in messages %}
+                        <div class="search-message-card">
+                            <div class="search-message-header">
+                                <div class="search-message-author">
+                                    <span class="feed-item-avatar small" style="--user-hue: {{ message.author.hue|default(200) }}">{{ message.author.displayName|default(message.author.username)|slice(0, 1)|upper }}</span>
+                                    <span class="author-name">{{ message.author.displayName|default(message.author.username) }}</span>
+                                    <span class="message-meta-info">
+                                        dans <a href="{{ path('app_channel', {slug: message.channel.slug}) }}" hx-boost="true" class="channel-link">#{{ message.channel.name }}</a>
+                                        • {{ message.createdAt|date('d/m H:i') }}
+                                    </span>
+                                </div>
+                                <a href="{{ path('app_channel', {slug: message.channel.slug}) }}?jumpTo={{ message.id }}" hx-boost="true" class="btn-jump-to">Aller au message ➔</a>
+                            </div>
+                            <div class="search-message-body">
+                                <p>{{ message.content|default('(Fichier joint uniquement)') }}</p>
+                                {% if message.fileName %}
+                                    <div class="search-message-file">
+                                        <span class="file-icon">📎</span>
+                                        <span class="file-name">{{ message.fileName }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+    {% endif %}
+</div>

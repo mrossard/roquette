@@ -1,0 +1,128 @@
+<?php
+
+namespace App\Tests\Functional\Controller;
+
+use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use PHPUnit\Framework\Attributes\Test;
+
+class SecurityControllerTest extends WebTestCase
+{
+    private EntityManagerInterface $entityManager;
+    private $client;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        self::ensureKernelShutdown();
+        $this->client = self::createClient();
+        $container = $this->client->getContainer();
+        $this->entityManager = $container->get('doctrine')->getManager();
+
+        // Nettoyer les utilisateurs de test avant chaque test
+        $this->cleanupUsers();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->cleanupUsers();
+        parent::tearDown();
+    }
+
+    private function cleanupUsers(): void
+    {
+        $userRepository = $this->entityManager->getRepository(User::class);
+        $testUsers = $userRepository->findBy(['username' => ['test_user_functional', 'test_user_login']]);
+
+        foreach ($testUsers as $user) {
+            $this->entityManager->remove($user);
+        }
+        $this->entityManager->flush();
+    }
+
+    #[Test]
+    public function testLoginPageIsRendered(): void
+    {
+        $this->client->request('GET', '/login');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('h1', 'Connexion');
+    }
+
+    #[Test]
+    public function testRegistrationPageIsRendered(): void
+    {
+        $this->client->request('GET', '/register');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('h1', 'Inscription');
+    }
+
+    #[Test]
+    public function testSuccessfulRegistration(): void
+    {
+        $crawler = $this->client->request('GET', '/register');
+
+        $form = $crawler->selectButton('Créer le compte')->form([
+            'registration_form[username]' => 'test_user_functional',
+            'registration_form[plainPassword]' => 'password123',
+        ]);
+
+        $this->client->submit($form);
+
+        // Une fois inscrit, on doit être redirigé vers l'écran de connexion
+        $this->assertResponseRedirects('/login');
+        
+        $this->client->followRedirect();
+        $this->assertSelectorTextContains('div.flash-success', 'Votre compte a été créé avec succès');
+    }
+
+    #[Test]
+    public function testLoginFailure(): void
+    {
+        $crawler = $this->client->request('GET', '/login');
+
+        $form = $crawler->selectButton('Se connecter')->form([
+            '_username' => 'non_existent_user',
+            '_password' => 'wrong_password',
+        ]);
+
+        $this->client->submit($form);
+
+        // Redirection vers /login après échec
+        $this->assertResponseRedirects('/login');
+        
+        $this->client->followRedirect();
+        $this->assertSelectorTextContains('div.error-alert', 'Invalid credentials.');
+    }
+
+    #[Test]
+    public function testSuccessfulLogin(): void
+    {
+        // Créer d'abord un utilisateur dans la base de données
+        $user = new User();
+        $user->setUsername('test_user_login');
+        $user->setRoles(['ROLE_USER']);
+        
+        // Hacher le mot de passe
+        $container = $this->client->getContainer();
+        $passwordHasher = $container->get('security.user_password_hasher');
+        $user->setPassword($passwordHasher->hashPassword($user, 'password123'));
+
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+
+        $crawler = $this->client->request('GET', '/login');
+
+        $form = $crawler->selectButton('Se connecter')->form([
+            '_username' => 'test_user_login',
+            '_password' => 'password123',
+        ]);
+
+        $this->client->submit($form);
+
+        // Redirection vers le tableau de bord (ou la directory si aucun canal)
+        $this->assertResponseRedirects();
+    }
+}

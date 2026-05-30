@@ -1,0 +1,315 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Roquette - Répertoire des canaux{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+<div class="app-container" hx-boost="true">
+    <header class="app-header">
+        <div class="logo-area">
+            <span class="logo-rocket">🚀</span>
+            <div class="logo-text">
+                <h1>Roquette</h1>
+                <p class="subtitle">Symfony + HTMX + Mercure + AssetMapper</p>
+            </div>
+        </div>
+        
+        <div class="header-controls">
+            {% set mercureTopics = [
+                mercure_topic_prefix ~ '/users/' ~ app.user.username,
+                mercure_topic_prefix ~ '/users/status'
+            ] %}
+            {% for ch in channels %}
+                {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+            {% endfor %}
+            <div class="status-badge" id="mercure-status" 
+                 data-active-channel-slug=""
+                 data-current-username="{{ app.user.username }}"
+                 data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
+                <span class="status-dot disconnected"></span>
+                <span class="status-text">Connexion au Hub...</span>
+            </div>
+            
+            <span class="user-greeting">Salut, <strong style="color: hsl({{ app.user.hue }}, 90%, var(--user-hue-lightness-text));">{{ app.user.displayName|default(app.user.username) }}</strong> !</span>
+            
+            <div class="user-status-dropdown-container">
+                <button class="user-status-trigger" onclick="toggleStatusDropdown(event)" aria-haspopup="true" aria-expanded="false">
+                    <span class="status-dot {{ app.user.status }}" data-username="{{ app.user.username }}" data-status-override="{{ app.user.statusOverride|default('auto') }}" data-last-active="{{ app.user.lastActiveAt ? app.user.lastActiveAt.timestamp : '' }}" style="display: inline-block;"></span>
+                    <span class="status-label">{{ app.user.statusLabel }}</span>
+                    <span class="dropdown-chevron">▼</span>
+                </button>
+                <div class="user-status-dropdown-menu" style="display: none;" role="menu">
+                    <button class="user-status-option {% if app.user.statusOverride is null %}active{% endif %}" data-status-value="auto" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "auto"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot {{ app.user.status }}" style="display: inline-block;"></span>
+                        <span class="option-label">Automatique</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'online' %}active{% endif %}" data-status-value="online" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "online"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot online" style="display: inline-block;"></span>
+                        <span class="option-label">En ligne</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'away' %}active{% endif %}" data-status-value="away" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "away"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot away" style="display: inline-block;"></span>
+                        <span class="option-label">Absent</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'busy' %}active{% endif %}" data-status-value="busy" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "busy"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot busy" style="display: inline-block;"></span>
+                        <span class="option-label">Occupé</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'offline' %}active{% endif %}" data-status-value="offline" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "offline"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot offline" style="display: inline-block;"></span>
+                        <span class="option-label">Hors ligne</span>
+                    </button>
+                </div>
+            </div>
+
+            <button id="theme-toggle" class="btn-theme-toggle" aria-label="Changer de thème">🌓</button>
+            <a href="{{ path('app_account') }}" class="btn-account">⚙️ Mon Compte</a>
+            <a href="{{ path('app_logout') }}" class="btn-logout" hx-boost="false">Déconnexion</a>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- Channels Sidebar Panel -->
+        {% include 'dashboard/_sidebar.html.twig' with {
+            'channels': channels,
+            'unreadCounts': unreadCounts,
+            'activeChannel': null,
+            'pendingInvitations': pendingInvitations
+        } %}
+
+        <!-- Directory Panel -->
+        <section class="card glass-panel chat-panel">
+            {% include 'dashboard/_chat_skeleton.html.twig' %}
+            <div class="card-header chat-header" style="border-bottom: 1px solid var(--border-glass); padding-bottom: 1.25rem; margin-bottom: 0;">
+                <div class="chat-header-layout" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; width: 100%;">
+                    <div>
+                        <div class="title-with-pulse">
+                            <h2>
+                                <span style="color: var(--accent-cyan); margin-right: 0.25rem;">📁</span> Répertoire & Annuaire
+                            </h2>
+                        </div>
+                        <p class="card-description" style="margin-top: 0.25rem;">Parcourez les canaux ou trouvez des membres pour leur écrire en privé.</p>
+                    </div>
+                    <div>
+                        <input type="text" id="directory-search" placeholder="Rechercher un canal..." class="input-sidebar" style="max-width: 250px; background: rgba(0,0,0,0.3) !important;">
+                    </div>
+                    
+                    <div role="tablist" aria-label="Sections du répertoire" style="display: flex; gap: 1rem; margin-top: 1rem; width: 100%; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+                        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-channels" onclick="switchTab('channels')" id="tab-btn-channels" style="background: none; border: none; border-bottom: 2px solid var(--accent-cyan); color: var(--text-primary); font-size: 0.95rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; transition: var(--transition-smooth);">📁 Canaux Publics</button>
+                        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-members" onclick="switchTab('members')" id="tab-btn-members" style="background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-size: 0.95rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; transition: var(--transition-smooth);">👥 Membres de l'application</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body chat-body" style="overflow-y: auto; padding-top: 1.5rem;">
+                {% for label, messages in app.flashes %}
+                    {% for msg in messages %}
+                        <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in" style="margin-bottom: 1.5rem; background: rgba({{ label == 'error' ? '239, 68, 68' : '16, 185, 129' }}, 0.1); border: 1px solid rgba({{ label == 'error' ? '239, 68, 68' : '16, 185, 129' }}, 0.2); color: var(--accent-{{ label == 'error' ? 'red' : 'green' }}); border-radius: 0.75rem; padding: 0.75rem 1rem; font-size: 0.9rem; font-weight: 500;">
+                            {{ msg }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                
+                <!-- Panel Canaux -->
+                <div id="panel-channels" role="tabpanel" aria-labelledby="tab-btn-channels">
+                    <div class="directory-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+                        {% for channel in allPublicChannels %}
+                            {% set isMember = channel.members.contains(app.user) %}
+                            <div class="directory-card glass-panel fade-in" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); border-radius: 0.75rem; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: var(--transition-smooth); cursor: default;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin: 0;">
+                                            <span style="color: var(--accent-cyan);">#</span> {{ channel.name }}
+                                        </h3>
+                                        {% if isMember %}
+                                            <span class="status-pill member-pill" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.2); font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 9999px;">Membre</span>
+                                        {% endif %}
+                                    </div>
+                                    <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.8rem;">
+                                        {{ channel.description|default('Aucune description fournie.') }}
+                                    </p>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
+                                        👥 {{ channel.members|length }} membre{{ channel.members|length > 1 ? 's' : '' }}
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; width: 100%;">
+                                    {% if isMember %}
+                                        <a href="{{ path('app_channel', {slug: channel.slug}) }}" class="btn-account" style="flex: 1; text-align: center; justify-content: center; padding: 0.6rem;">Ouvrir</a>
+                                        {% if channel.slug != 'general' %}
+                                            <form action="{{ path('app_channel_leave', {slug: channel.slug}) }}" method="POST" style="flex: 1;" hx-boost="false" data-confirm="Quitter le canal #{{ channel.name }} ?">
+                                                <button type="submit" class="btn-logout" style="width: 100%; text-align: center; cursor: pointer; padding: 0.6rem;">Quitter</button>
+                                            </form>
+                                        {% endif %}
+                                    {% else %}
+                                        <form action="{{ path('app_channel_join', {slug: channel.slug}) }}" method="POST" style="width: 100%;" hx-boost="false">
+                                            <button type="submit" class="btn-publish" style="width: 100%; cursor: pointer; padding: 0.6rem; font-size: 0.9rem;">Rejoindre</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="empty-state" style="grid-column: 1 / -1; padding: 4rem 1rem;">
+                                <div class="empty-icon">📡</div>
+                                <h3>Aucun canal public</h3>
+                                <p>Il n'y a pas encore de canaux publics disponibles.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Panel Membres -->
+                <div id="panel-members" style="display: none;" role="tabpanel" aria-labelledby="tab-btn-members">
+                    <div class="directory-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+                        {% for user in allUsers %}
+                            <div class="member-card glass-panel fade-in" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); border-radius: 0.75rem; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: var(--transition-smooth); cursor: default;">
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <div class="avatar-container large">
+                                        <div class="user-avatar-circle" style="background-color: hsl({{ user.hue }}, 90%, var(--user-hue-lightness-border)); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1.2rem; box-shadow: 0 0 10px hsla({{ user.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
+                                            {{ user.username|slice(0,1)|upper }}
+                                        </div>
+                                        <span class="status-dot-overlay {{ user.status }}" title="{{ user.statusLabel }}"></span>
+                                    </div>
+                                    <div>
+                                        <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin: 0;">
+                                            {{ user.displayName|default(user.username) }}
+                                        </h3>
+                                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.1rem;">
+                                            <span class="member-username" style="font-size: 0.8rem; color: var(--text-muted);">@{{ user.username }}</span>
+                                            <span style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.05); padding: 0.15rem 0.4rem; border-radius: 0.5rem; color: var(--text-muted); font-weight: 500;">{{ user.statusLabel }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; width: 100%;">
+                                    <a href="{{ path('app_dm_open', {username: user.username}) }}" class="btn-publish" style="width: 100%; text-align: center; text-decoration: none; font-size: 0.9rem; padding: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                        💬 Message Direct
+                                    </a>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="empty-state" style="grid-column: 1 / -1; padding: 4rem 1rem;">
+                                <div class="empty-icon">👥</div>
+                                <h3>Aucun autre membre</h3>
+                                <p>Il n'y a pas d'autres utilisateurs enregistrés pour le moment.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>&copy; {{ 'now'|date('Y') }} Roquette. Propulsé par Symfony 8 et de l'amour.</p>
+    </footer>
+</div>
+
+<script>
+    (function() {
+        function initSearch() {
+            const searchInput = document.getElementById('directory-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase().trim();
+                    document.querySelectorAll('.directory-card').forEach(card => {
+                        const name = card.querySelector('h3').textContent.toLowerCase();
+                        const desc = card.querySelector('p') ? card.querySelector('p').textContent.toLowerCase() : '';
+                        if (name.includes(query) || desc.includes(query)) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                    document.querySelectorAll('.member-card').forEach(card => {
+                        const name = card.querySelector('h3').textContent.toLowerCase();
+                        const username = card.querySelector('.member-username') ? card.querySelector('.member-username').textContent.toLowerCase() : '';
+                        if (name.includes(query) || username.includes(query)) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initSearch);
+        document.body.addEventListener('htmx:afterSettle', initSearch);
+    })();
+
+    function switchTab(tab) {
+        const channelsBtn = document.getElementById('tab-btn-channels');
+        const membersBtn = document.getElementById('tab-btn-members');
+        const channelsPanel = document.getElementById('panel-channels');
+        const membersPanel = document.getElementById('panel-members');
+        const searchInput = document.getElementById('directory-search');
+        
+        if (tab === 'channels') {
+            channelsBtn.classList.add('active');
+            channelsBtn.style.borderBottomColor = 'var(--accent-cyan)';
+            channelsBtn.style.color = 'var(--text-primary)';
+            channelsBtn.setAttribute('aria-selected', 'true');
+            
+            membersBtn.classList.remove('active');
+            membersBtn.style.borderBottomColor = 'transparent';
+            membersBtn.style.color = 'var(--text-muted)';
+            membersBtn.setAttribute('aria-selected', 'false');
+            
+            channelsPanel.style.display = 'block';
+            membersPanel.style.display = 'none';
+            if (searchInput) {
+                searchInput.placeholder = 'Rechercher un canal...';
+            }
+        } else {
+            membersBtn.classList.add('active');
+            membersBtn.style.borderBottomColor = 'var(--accent-cyan)';
+            membersBtn.style.color = 'var(--text-primary)';
+            membersBtn.setAttribute('aria-selected', 'true');
+            
+            channelsBtn.classList.remove('active');
+            channelsBtn.style.borderBottomColor = 'transparent';
+            channelsBtn.style.color = 'var(--text-muted)';
+            channelsBtn.setAttribute('aria-selected', 'false');
+            
+            membersPanel.style.display = 'block';
+            channelsPanel.style.display = 'none';
+            if (searchInput) {
+                searchInput.placeholder = 'Rechercher un membre...';
+            }
+        }
+        
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const tabList = document.querySelector('[role="tablist"]');
+        if (tabList) {
+            tabList.addEventListener('keydown', (e) => {
+                const tabs = Array.from(tabList.querySelectorAll('[role="tab"]'));
+                const activeIndex = tabs.indexOf(document.activeElement);
+                if (activeIndex === -1) return;
+                
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                    const nextIndex = (activeIndex + 1) % tabs.length;
+                    tabs[nextIndex].focus();
+                    tabs[nextIndex].click();
+                    e.preventDefault();
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                    const prevIndex = (activeIndex - 1 + tabs.length) % tabs.length;
+                    tabs[prevIndex].focus();
+                    tabs[prevIndex].click();
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

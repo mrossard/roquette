@@ -1,0 +1,55 @@
+<div class="thread-header">
+    <div class="thread-header-title">
+        <h3>Fil de discussion</h3>
+        <span class="thread-header-subtitle">dans #{{ parentMessage.channel.name }}</span>
+    </div>
+    <button type="button" class="btn-close-thread" onclick="closeThread()" title="Fermer le fil">✕</button>
+</div>
+
+<div class="thread-content" data-parent-id="{{ parentMessage.id }}">
+    <!-- Parent Message -->
+    <div class="thread-parent-container">
+        {% include 'dashboard/_feed_item.html.twig' with {
+            'author': parentMessage.author,
+            'message': parentMessage.content,
+            'timestamp': parentMessage.createdAt,
+            'message_id': parentMessage.id,
+            'fileName': parentMessage.fileName,
+            'fileSize': parentMessage.fileSize,
+            'filePath': parentMessage.filePath,
+            'mimeType': parentMessage.mimeType,
+            'messageObject': parentMessage
+        } %}
+    </div>
+
+    <div class="thread-divider">
+        <span class="thread-divider-text">Réponses</span>
+    </div>
+
+    <!-- Replies -->
+    <div class="thread-replies-container" id="thread-replies-feed">
+        <div class="thread-replies-list" id="thread-replies-list">
+            {% for reply in replies %}
+                {% include 'dashboard/_feed_item.html.twig' with {
+                    'author': reply.author,
+                    'message': reply.content,
+                    'timestamp': reply.createdAt,
+                    'message_id': reply.id,
+                    'fileName': reply.fileName,
+                    'fileSize': reply.fileSize,
+                    'filePath': reply.filePath,
+                    'mimeType': reply.mimeType,
+                    'messageObject': reply
+                } %}
+            {% else %}
+                <div class="thread-empty-state">
+                    Aucune réponse pour le moment. Soyez le premier à répondre !
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="thread-input-area">
+    {% include 'dashboard/_thread_input_form.html.twig' with {'parentMessage': parentMessage} %}
+</div>

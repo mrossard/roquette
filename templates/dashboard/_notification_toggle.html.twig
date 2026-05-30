@@ -1,0 +1,11 @@
+<button type="button" 
+        class="btn-notifications {% if not notificationsEnabled %}muted{% endif %}"
+        hx-post="{{ path('app_channel_toggle_notifications', {slug: activeChannel.slug}) }}"
+        hx-swap="outerHTML"
+        title="{% if notificationsEnabled %}Notifications de bureau activées pour ce canal (cliquez pour désactiver){% else %}Notifications de bureau désactivées pour ce canal (cliquez pour activer){% endif %}">
+    {% if notificationsEnabled %}
+        🔔 Notifications actives
+    {% else %}
+        🔕 Sourdine
+    {% endif %}
+</button>

@@ -1,0 +1,19 @@
+<div id="invite-section" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); padding: 0.75rem 1rem; border-radius: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; min-width: 250px;">
+    <label for="invite-select-user" style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; display: block;">Inviter un membre</label>
+    {% if successMessage|default(null) %}
+        <span style="font-size: 0.8rem; color: var(--accent-green); font-weight: 500;">✓ {{ successMessage }}</span>
+    {% endif %}
+    {% if usersToInvite is not empty %}
+        <form action="{{ path('app_channel_invite', {slug: activeChannel.slug}) }}" method="POST" style="display: flex; gap: 0.5rem;" hx-post="{{ path('app_channel_invite', {slug: activeChannel.slug}) }}" hx-target="#invite-section" hx-swap="outerHTML">
+            <select id="invite-select-user" name="userId" required style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); border-radius: 0.5rem; padding: 0.35rem 0.5rem; color: var(--text-primary); font-size: 0.85rem; flex-grow: 1; outline: none; cursor: pointer;">
+                <option value="">Sélectionner...</option>
+                {% for u in usersToInvite %}
+                    <option value="{{ u.id }}">{{ u.displayName ? u.displayName ~ ' (@' ~ u.username ~ ')' : u.username }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); color: #0f172a; border: none; border-radius: 0.5rem; padding: 0.35rem 0.75rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: var(--transition-smooth);">Inviter</button>
+        </form>
+    {% else %}
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Tous les membres sont déjà invités.</span>
+    {% endif %}
+</div>

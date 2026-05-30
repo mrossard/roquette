@@ -1,0 +1,42 @@
+<header class="app-header">
+    <div class="logo-area">
+        <span class="logo-rocket">🚀</span>
+        <div class="logo-text">
+            <h1>Roquette</h1>
+            <p class="subtitle">Symfony + HTMX + Mercure + AssetMapper</p>
+        </div>
+    </div>
+    
+    <div class="global-search-trigger-container">
+        <button id="global-search-trigger-btn" class="global-search-trigger" onclick="openGlobalSearch()" title="Recherche globale (Ctrl+K)">
+            <span class="search-trigger-icon">🔍</span>
+            <span class="search-trigger-placeholder">Rechercher...</span>
+            <kbd class="search-trigger-shortcut">Ctrl+K</kbd>
+        </button>
+    </div>
+    
+    <div class="header-controls">
+        {% set mercureTopics = [
+            mercure_topic_prefix ~ '/users/' ~ app.user.username,
+            mercure_topic_prefix ~ '/users/status'
+        ] %}
+        {% for ch in channels %}
+            {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+        {% endfor %}
+        <div class="status-badge" id="mercure-status" 
+             data-active-channel-slug="{{ activeChannel.slug }}"
+             data-current-username="{{ app.user.username }}"
+             data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
+            <span class="status-dot disconnected"></span>
+            <span class="status-text">Connexion au Hub...</span>
+        </div>
+        
+        <span class="user-greeting">Salut, <strong style="color: hsl({{ app.user.hue }}, 90%, var(--user-hue-lightness-text));">{{ app.user.displayName|default(app.user.username) }}</strong> !</span>
+        
+        {% include 'dashboard/_user_status_dropdown.html.twig' %}
+
+        <button id="theme-toggle" class="btn-theme-toggle" aria-label="Changer de thème">🌓</button>
+        <a href="{{ path('app_account') }}" class="btn-account">⚙️ Mon Compte</a>
+        <a href="{{ path('app_logout') }}" class="btn-logout" hx-boost="false">Déconnexion</a>
+    </div>
+</header>

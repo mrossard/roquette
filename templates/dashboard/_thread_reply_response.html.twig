@@ -1,0 +1,19 @@
+{# Remplacement OOB de la liste complète des réponses (gère l'état vide automatiquement) #}
+<div hx-swap-oob="innerHTML:#thread-replies-list">
+    {% for existingReply in replies %}
+        {% include 'dashboard/_feed_item.html.twig' with {
+            'author': existingReply.author,
+            'message': existingReply.content,
+            'timestamp': existingReply.createdAt,
+            'message_id': existingReply.id,
+            'fileName': existingReply.fileName,
+            'fileSize': existingReply.fileSize,
+            'filePath': existingReply.filePath,
+            'mimeType': existingReply.mimeType,
+            'messageObject': existingReply
+        } %}
+    {% endfor %}
+</div>
+
+{# Formulaire réinitialisé (swap principal outerHTML du form) #}
+{% include 'dashboard/_thread_input_form.html.twig' with {'parentMessage': parentMessage} %}

@@ -1,0 +1,208 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Roquette - Mon Compte{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+<div class="app-container" hx-boost="true">
+    <header class="app-header">
+        <div class="logo-area">
+            <span class="logo-rocket">🚀</span>
+            <div class="logo-text">
+                <h1>Roquette</h1>
+                <p class="subtitle">Symfony + HTMX + Mercure + AssetMapper</p>
+            </div>
+        </div>
+        
+        <div class="header-controls">
+            {% set mercureTopics = [
+                mercure_topic_prefix ~ '/users/' ~ app.user.username,
+                mercure_topic_prefix ~ '/users/status'
+            ] %}
+            {% for ch in channels %}
+                {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+            {% endfor %}
+            <div class="status-badge" id="mercure-status" 
+                 data-active-channel-slug=""
+                 data-current-username="{{ app.user.username }}"
+                 data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
+                <span class="status-dot disconnected"></span>
+                <span class="status-text">Connexion au Hub...</span>
+            </div>
+
+            <span class="user-greeting">Salut, <strong style="color: hsl({{ app.user.hue }}, 90%, var(--user-hue-lightness-text));">{{ app.user.displayName|default(app.user.username) }}</strong> !</span>
+            
+            <div class="user-status-dropdown-container">
+                <button class="user-status-trigger" onclick="toggleStatusDropdown(event)" aria-haspopup="true" aria-expanded="false">
+                    <span class="status-dot {{ app.user.status }}" data-username="{{ app.user.username }}" data-status-override="{{ app.user.statusOverride|default('auto') }}" data-last-active="{{ app.user.lastActiveAt ? app.user.lastActiveAt.timestamp : '' }}" style="display: inline-block;"></span>
+                    <span class="status-label">{{ app.user.statusLabel }}</span>
+                    <span class="dropdown-chevron">▼</span>
+                </button>
+                <div class="user-status-dropdown-menu" style="display: none;" role="menu">
+                    <button class="user-status-option {% if app.user.statusOverride is null %}active{% endif %}" data-status-value="auto" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "auto"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot {{ app.user.status }}" style="display: inline-block;"></span>
+                        <span class="option-label">Automatique</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'online' %}active{% endif %}" data-status-value="online" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "online"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot online" style="display: inline-block;"></span>
+                        <span class="option-label">En ligne</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'away' %}active{% endif %}" data-status-value="away" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "away"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot away" style="display: inline-block;"></span>
+                        <span class="option-label">Absent</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'busy' %}active{% endif %}" data-status-value="busy" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "busy"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot busy" style="display: inline-block;"></span>
+                        <span class="option-label">Occupé</span>
+                    </button>
+                    <button class="user-status-option {% if app.user.statusOverride == 'offline' %}active{% endif %}" data-status-value="offline" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "offline"}' hx-swap="none" role="menuitem">
+                        <span class="status-dot offline" style="display: inline-block;"></span>
+                        <span class="option-label">Hors ligne</span>
+                    </button>
+                </div>
+            </div>
+            <button id="theme-toggle" class="btn-theme-toggle" aria-label="Changer de thème">🌓</button>
+            {% if channels is not empty %}
+                <a href="{{ path('app_channel', {slug: channels[0].slug}) }}" class="btn-back">💬 Retour au Chat</a>
+            {% else %}
+                <a href="{{ path('app_dashboard') }}" class="btn-back">💬 Retour au Chat</a>
+            {% endif %}
+            <a href="{{ path('app_logout') }}" class="btn-logout" hx-boost="false">Déconnexion</a>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- Channels Sidebar Panel -->
+        {% include 'dashboard/_sidebar.html.twig' with {
+            'channels': channels,
+            'unreadCounts': {},
+            'activeChannel': null,
+            'pendingInvitations': []
+        } %}
+
+        <!-- Account Settings Panel -->
+        <section class="card glass-panel settings-panel" style="flex-grow: 1;">
+            {% include 'dashboard/_settings_skeleton.html.twig' %}
+            <div class="card-header">
+                <h2>Gestion du Compte</h2>
+                <p class="card-description">Personnalisez votre profil et gérez vos informations de connexion.</p>
+            </div>
+            
+            <div class="card-body" style="gap: 1rem;">
+                {# Display Flash Messages #}
+                {% for label, messages in app.flashes %}
+                    {% for msg in messages %}
+                        <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in">
+                            {{ msg }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+
+                <div class="settings-grid">
+                    <!-- Profile Settings Form -->
+                    <form action="{{ path('app_account') }}" method="POST" class="form-section">
+                        <input type="hidden" name="action" value="profile">
+                        <h3>Informations de profil</h3>
+                        
+                        <div class="input-group">
+                            <label for="username-static">Nom d'utilisateur (non modifiable)</label>
+                            <input type="text" id="username-static" value="{{ user.username }}" disabled style="opacity: 0.6; cursor: not-allowed; background: rgba(0, 0, 0, 0.3);">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="displayName">Nom d'affichage</label>
+                            <input type="text" name="displayName" id="displayName" value="{{ user.displayName }}" placeholder="Ex: Jean Dupont" maxlength="30">
+                        </div>
+
+                        <div class="input-group">
+                            <label>Couleur du profil</label>
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; background: rgba(0, 0, 0, 0.2); padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-glass);">
+                                <span class="feed-item-avatar" style="--user-hue: {{ user.hue }}; margin-bottom: 0; width: 36px; height: 36px; font-size: 1.1rem;">
+                                    {{ user.username|slice(0, 1)|upper }}
+                                </span>
+                                <span class="feed-item-user" style="--user-hue: {{ user.hue }}; font-weight: 600; font-size: 1.05rem;">
+                                    {{ user.displayName|default(user.username) }}
+                                </span>
+                            </div>
+                            <input type="range" name="hue" min="0" max="360" value="{{ user.hue }}" class="hue-slider" style="width: 100%; cursor: pointer;"
+                                   oninput="
+                                       const avatar = this.previousElementSibling.firstElementChild;
+                                       const name = this.previousElementSibling.lastElementChild;
+                                       avatar.style.setProperty('--user-hue', this.value);
+                                       name.style.setProperty('--user-hue', this.value);
+                                       document.documentElement.style.setProperty('--user-hue-primary', this.value);
+                                   ">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="statusOverride">Statut de présence</label>
+                            <select name="statusOverride" id="statusOverride" class="form-control" style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: var(--font-sans); cursor: pointer; outline: none; margin-bottom: 0.5rem;">
+                                <option value="auto" {% if user.statusOverride == 'auto' or user.statusOverride is null %}selected{% endif %}>Automatique (Basé sur l'activité)</option>
+                                <option value="online" {% if user.statusOverride == 'online' %}selected{% endif %}>En ligne</option>
+                                <option value="away" {% if user.statusOverride == 'away' %}selected{% endif %}>Absent</option>
+                                <option value="busy" {% if user.statusOverride == 'busy' %}selected{% endif %}>Occupé</option>
+                                <option value="offline" {% if user.statusOverride == 'offline' %}selected{% endif %}>Hors ligne (Invisible)</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; margin-bottom: 1.25rem; background: rgba(0, 0, 0, 0.2); padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-glass);">
+                            <label for="mentionNotificationsEnabled" style="margin-bottom: 0; cursor: pointer; font-weight: 500;">Notifications de bureau pour les mentions</label>
+                            <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; margin-bottom: 0;">
+                                <input type="checkbox" name="mentionNotificationsEnabled" id="mentionNotificationsEnabled" value="1" {% if user.mentionNotificationsEnabled %}checked{% endif %} style="opacity: 0; width: 0; height: 0;"
+                                       onchange="this.nextElementSibling.style.backgroundColor = this.checked ? 'var(--accent-cyan)' : 'rgba(255, 255, 255, 0.1)';">
+                                <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: {% if user.mentionNotificationsEnabled %}var(--accent-cyan){% else %}rgba(255, 255, 255, 0.1){% endif %}; transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn-submit">Sauvegarder le profil</button>
+                    </form>
+
+                    <!-- Password Settings Form -->
+                    <form action="{{ path('app_account') }}" method="POST" class="form-section">
+                        <input type="hidden" name="action" value="password">
+                        <h3>Changer le mot de passe</h3>
+
+                        <div class="input-group">
+                            <label for="currentPassword">Mot de passe actuel</label>
+                            <input type="password" name="currentPassword" id="currentPassword" required placeholder="••••••••">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="newPassword">Nouveau mot de passe</label>
+                            <input type="password" name="newPassword" id="newPassword" required placeholder="Min. 6 caractères">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="confirmPassword">Confirmer le nouveau mot de passe</label>
+                            <input type="password" name="confirmPassword" id="confirmPassword" required placeholder="Confirmez">
+                        </div>
+
+                        <button type="submit" class="btn-submit">Mettre à jour le mot de passe</button>
+                    </form>
+
+                    <!-- Desktop Notifications Settings -->
+                    <div class="form-section" id="desktop-notifications-section">
+                        <h3>Notifications de bureau</h3>
+                        <p class="card-description" style="margin-bottom: 1.25rem;">
+                            Recevez des notifications en direct pour les nouveaux messages et invitations lorsque l'application est en arrière-plan.
+                        </p>
+                        <div id="notification-settings-content">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>&copy; {{ 'now'|date('Y') }} Roquette. Propulsé par Symfony 8 et de l'amour.</p>
+    </footer>
+</div>
+{% endblock %}

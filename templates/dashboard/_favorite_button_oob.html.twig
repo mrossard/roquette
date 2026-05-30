@@ -1,0 +1,9 @@
+<button class="btn-favorite-toggle"
+        id="btn-favorite-toggle"
+        hx-post="{{ path('app_channel_favorite_toggle', {slug: activeChannel.slug}) }}"
+        hx-swap="none"
+        title="{% if app.user.isChannelFavorite(activeChannel) %}Retirer des favoris{% else %}Ajouter aux favoris{% endif %}"
+        style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: {% if app.user.isChannelFavorite(activeChannel) %}#f59e0b{% else %}var(--text-muted){% endif %}; transition: color 0.2s, transform 0.2s; margin-left: 0.5rem; line-height: 1; vertical-align: middle; padding: 0;"
+        hx-swap-oob="true">
+    {% if app.user.isChannelFavorite(activeChannel) %}★{% else %}☆{% endif %}
+</button>

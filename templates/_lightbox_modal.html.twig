@@ -1,0 +1,86 @@
+{# Lightbox Modal for Images #}
+<div id="image-lightbox" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Aperçu de l'image" style="display: none;" onclick="if(event.target === this) closeLightbox()">
+    <div class="lightbox-content" onclick="event.stopPropagation()">
+        <button type="button" onclick="closeLightbox()" class="btn-close-lightbox" aria-label="Fermer l'aperçu">&times;</button>
+        <img id="lightbox-img" src="" alt="Aperçu">
+        <div class="lightbox-caption">
+            <span id="lightbox-filename"></span>
+            <a id="lightbox-download" href="" class="btn-lightbox-download" download>Télécharger</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        window.openLightbox = function(src, filename) {
+            const lightbox = document.getElementById('image-lightbox');
+            const img = document.getElementById('lightbox-img');
+            const caption = document.getElementById('lightbox-filename');
+            const download = document.getElementById('lightbox-download');
+            if (lightbox && img) {
+                img.src = src;
+                if (caption) caption.textContent = filename;
+                if (download) {
+                    download.href = src;
+                    download.download = filename;
+                }
+                lightbox.style.display = 'flex';
+                document.addEventListener('keydown', handleLightboxKeyDown);
+            }
+        };
+
+        window.closeLightbox = function() {
+            const lightbox = document.getElementById('image-lightbox');
+            if (lightbox) {
+                lightbox.style.display = 'none';
+                document.removeEventListener('keydown', handleLightboxKeyDown);
+            }
+        };
+
+        function handleLightboxKeyDown(e) {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        }
+
+        window.toggleTextPreview = function(button, previewUrl, messageId) {
+            const container = document.getElementById(`text-preview-${messageId}`);
+            if (!container) return;
+
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                button.innerHTML = '<span class="btn-preview-icon">❌</span> Masquer l\'aperçu';
+                
+                const codeElement = container.querySelector('.text-preview-code');
+                if (codeElement && codeElement.getAttribute('data-loaded') !== 'true') {
+                    codeElement.textContent = 'Chargement...';
+                    fetch(previewUrl)
+                        .then(response => {
+                            if (!response.ok) throw new Error('Impossible de charger le fichier.');
+                            return response.text();
+                        })
+                        .then(text => {
+                            const maxLength = 10000;
+                            if (text.length > maxLength) {
+                                codeElement.textContent = text.substring(0, maxLength) + '\n\n... [Contenu tronqué, téléchargez le fichier pour le lire en entier]';
+                            } else {
+                                codeElement.textContent = text;
+                            }
+                            codeElement.setAttribute('data-loaded', 'true');
+                            
+                            // Highlight code block
+                            if (window.highlightAllCodeBlocks) {
+                                window.highlightAllCodeBlocks(container);
+                            }
+                        })
+                        .catch(err => {
+                            codeElement.textContent = 'Erreur : ' + err.message;
+                        });
+                }
+            } else {
+                container.style.display = 'none';
+                button.innerHTML = '<span class="btn-preview-icon">👁️</span> Prévisualiser le texte';
+            }
+        };
+    })();
+</script>

@@ -1,0 +1,19 @@
+# Development overrides
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    ports:
+      - "80:80"
+    environment:
+      SERVER_NAME: ':80'
+      MERCURE_JWT_SECRET: '!ChangeThisMercureHubJWTSecretKey!'
+      DATABASE_URL: 'postgresql://app:!ChangeMePostgresPassword!@database:5432/roquette?serverVersion=16&charset=utf8'
+      MERCURE_URL: 'http://127.0.0.1/.well-known/mercure'
+      MERCURE_PUBLIC_URL: 'https://lutins-devoauth.u-bordeaux.fr/.well-known/mercure'
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+    volumes:
+      - ./:/app
+

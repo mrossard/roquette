@@ -1,0 +1,56 @@
+# Version Control
+.git/
+.gitignore
+.gitattributes
+mercure.db
+
+# IDE & Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.editorconfig
+
+# Composer
+/vendor/
+composer.phar
+
+# Symfony
+/var/
+/var/cache/*
+/var/log/*
+/.env.local
+/.env.local.php
+/.env.*.local
+/phpunit.xml
+.phpunit.result.cache
+
+# Development files
+.env.dev
+dev.log
+
+# Docker
+Dockerfile
+Dockerfile-dev
+compose.yaml
+compose.override.yaml
+.dockerignore
+
+# Documentation & AI tools
+README.md
+AGENTS.md
+.ai/
+.antigravitycli/
+mate/
+mcp.json
+.mcp.json
+
+# Logs & temp files
+*.log
+supervisord.log
+supervisord.pid
+
+# OS
+.DS_Store
+Thumbs.db
