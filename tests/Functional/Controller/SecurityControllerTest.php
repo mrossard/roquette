@@ -125,4 +125,59 @@ class SecurityControllerTest extends WebTestCase
         // Redirection vers le tableau de bord (ou la directory si aucun canal)
         $this->assertResponseRedirects();
     }
+
+    #[Test]
+    public function testFormAuthenticationDisabled(): void
+    {
+        self::ensureKernelShutdown();
+        $_ENV['AUTH_FORM_ENABLED'] = 'false';
+        $_ENV['AUTH_OAUTH_ENABLED'] = 'true';
+        putenv('AUTH_FORM_ENABLED=false');
+        putenv('AUTH_OAUTH_ENABLED=true');
+        
+        $client = self::createClient();
+        $client->request('GET', '/login');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorNotExists('form.input-form');
+        $this->assertSelectorNotExists('a[href="/register"]');
+        $this->assertSelectorExists('a[href="/oauth/connect"]');
+        
+        // Try accessing register
+        $client->request('GET', '/register');
+        $this->assertResponseRedirects('/login');
+        
+        // Clean up
+        unset($_ENV['AUTH_FORM_ENABLED']);
+        unset($_ENV['AUTH_OAUTH_ENABLED']);
+        putenv('AUTH_FORM_ENABLED');
+        putenv('AUTH_OAUTH_ENABLED');
+    }
+
+    #[Test]
+    public function testOauthAuthenticationDisabled(): void
+    {
+        self::ensureKernelShutdown();
+        $_ENV['AUTH_FORM_ENABLED'] = 'true';
+        $_ENV['AUTH_OAUTH_ENABLED'] = 'false';
+        putenv('AUTH_FORM_ENABLED=true');
+        putenv('AUTH_OAUTH_ENABLED=false');
+        
+        $client = self::createClient();
+        $client->request('GET', '/login');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('form.input-form');
+        $this->assertSelectorNotExists('a[href="/oauth/connect"]');
+        
+        // Try accessing oauth connect
+        $client->request('GET', '/oauth/connect');
+        $this->assertResponseRedirects('/login');
+        
+        // Clean up
+        unset($_ENV['AUTH_FORM_ENABLED']);
+        unset($_ENV['AUTH_OAUTH_ENABLED']);
+        putenv('AUTH_FORM_ENABLED');
+        putenv('AUTH_OAUTH_ENABLED');
+    }
 }

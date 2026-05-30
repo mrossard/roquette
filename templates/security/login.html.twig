@@ -130,6 +130,7 @@
             </div>
         {% endif %}
 
+        {% if auth_form_enabled %}
         <form action="{{ path('app_login') }}" method="post" class="input-form">
             <div class="input-group">
                 <label for="username">Nom d'utilisateur</label>
@@ -150,23 +151,36 @@
                 </button>
             </div>
         </form>
+        {% endif %}
 
+        {% if auth_form_enabled and auth_oauth_enabled %}
         <div class="auth-divider" style="margin: 1.5rem 0; display: flex; align-items: center; text-align: center; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
             <span style="flex-grow: 1; height: 1px; background: var(--border-glass);"></span>
             <span style="padding: 0 0.75rem;">Ou</span>
             <span style="flex-grow: 1; height: 1px; background: var(--border-glass);"></span>
         </div>
+        {% endif %}
 
+        {% if auth_oauth_enabled %}
         <div class="oauth-actions" style="margin-bottom: 1rem;">
             <a href="{{ path('app_oauth_connect') }}" class="btn-oauth">
                 <span style="font-size: 1.15rem;">🚀</span>
                 <span>Se connecter avec OAuth2</span>
             </a>
         </div>
+        {% endif %}
 
+        {% if not auth_form_enabled and not auth_oauth_enabled %}
+            <div class="error-alert">
+                Aucun mode d'authentification n'est activé. Veuillez contacter un administrateur.
+            </div>
+        {% endif %}
+
+        {% if auth_form_enabled %}
         <div class="auth-footer">
             Pas encore de compte ? <a href="{{ path('app_register') }}">S'inscrire</a>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

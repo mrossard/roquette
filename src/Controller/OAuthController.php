@@ -21,6 +21,7 @@ class OAuthController extends AbstractController
         #[Autowire(env: 'OAUTH_REDIRECT_URI')] private string $redirectUri,
         #[Autowire(env: 'OAUTH_SCOPE')] private string $scope,
         #[Autowire('%kernel.project_dir%/var/oauth_mock_store.json')] string $mockStorePath,
+        #[Autowire(env: 'bool:AUTH_OAUTH_ENABLED')] private bool $authOauthEnabled,
     ) {
         $this->mockStorePath = $mockStorePath;
     }
@@ -28,6 +29,10 @@ class OAuthController extends AbstractController
     #[Route('/oauth/connect', name: 'app_oauth_connect')]
     public function connect(Request $request): Response
     {
+        if (!$this->authOauthEnabled) {
+            throw $this->createAccessDeniedException('L\'authentification OAuth2 est désactivée.');
+        }
+
         $state = bin2hex(random_bytes(16));
         $request->getSession()->set('oauth2state', $state);
 

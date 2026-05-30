@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -14,6 +15,12 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController
 {
+    public function __construct(
+        #[Autowire(env: 'bool:AUTH_FORM_ENABLED')] private bool $authFormEnabled,
+        #[Autowire(env: 'bool:AUTH_OAUTH_ENABLED')] private bool $authOauthEnabled,
+    ) {
+    }
+
     #[Route('/login', name: 'app_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
@@ -29,6 +36,8 @@ class SecurityController extends AbstractController
         return $this->render('security/login.html.twig', [
             'last_username' => $lastUsername,
             'error' => $error,
+            'auth_form_enabled' => $this->authFormEnabled,
+            'auth_oauth_enabled' => $this->authOauthEnabled,
         ]);
     }
 
@@ -47,6 +56,10 @@ class SecurityController extends AbstractController
         RateLimiterFactoryInterface $loginApiLimiter,
         \Psr\Log\LoggerInterface $logger
     ): Response {
+        if (!$this->authFormEnabled) {
+            throw $this->createAccessDeniedException('L\'inscription est désactivée.');
+        }
+
         if ($this->getUser()) {
             return $this->redirectToRoute('app_dashboard');
         }

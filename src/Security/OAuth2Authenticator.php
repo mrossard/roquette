@@ -38,11 +38,16 @@ class OAuth2Authenticator extends AbstractAuthenticator
         #[Autowire(env: 'OAUTH_USER_INFO_URL')] private string $userInfoUrl,
         #[Autowire(env: 'OAUTH_USERNAME_FIELD')] private string $usernameField,
         #[Autowire(env: 'OAUTH_REDIRECT_URI')] private string $redirectUri,
+        #[Autowire(env: 'bool:AUTH_OAUTH_ENABLED')] private bool $authOauthEnabled,
     ) {
     }
 
     public function supports(Request $request): ?bool
     {
+        if (!$this->authOauthEnabled) {
+            return false;
+        }
+
         return $request->getPathInfo() === '/oauth/check' && $request->query->has('code');
     }
 

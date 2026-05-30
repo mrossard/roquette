@@ -31,12 +31,8 @@
             <span class="status-text">Connexion au Hub...</span>
         </div>
         
-        <span class="user-greeting">Salut, <strong style="color: hsl({{ app.user.hue }}, 90%, var(--user-hue-lightness-text));">{{ app.user.displayName|default(app.user.username) }}</strong> !</span>
-        
-        {% include 'dashboard/_user_status_dropdown.html.twig' %}
-
         <button id="theme-toggle" class="btn-theme-toggle" aria-label="Changer de thème">🌓</button>
-        <a href="{{ path('app_account') }}" class="btn-account">⚙️ Mon Compte</a>
-        <a href="{{ path('app_logout') }}" class="btn-logout" hx-boost="false">Déconnexion</a>
+
+        {% include 'dashboard/_user_menu_dropdown.html.twig' %}
     </div>
 </header>

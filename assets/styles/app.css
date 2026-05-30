@@ -2440,6 +2440,62 @@ body {
     flex-shrink: 0;
 }
 
+/* Unified User Menu Dropdown Styles */
+.user-menu-trigger {
+    padding: 0.45rem 1rem !important;
+}
+
+.user-greeting-trigger {
+    margin: 0 0.25rem;
+    font-weight: 500;
+}
+
+.user-menu-header {
+    padding: 0.75rem 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.user-menu-header .user-menu-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.user-menu-header .user-menu-username {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.user-menu-section-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 0.4rem 0.8rem 0.2rem 0.8rem;
+    font-weight: 600;
+}
+
+.user-menu-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0.5rem 0;
+}
+
+.user-status-option.logout-option {
+    color: var(--accent-red);
+}
+
+.user-status-option.logout-option:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.user-status-option.logout-option:focus-visible {
+    outline: 2px solid var(--accent-red);
+}
+
 /* Desktop Notifications Styles */
 @keyframes bell-ring {
     0%, 100% { transform: rotate(0); }
