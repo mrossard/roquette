@@ -59,10 +59,16 @@ class ChannelControllerTest extends WebTestCase
     private function cleanup(): void
     {
         $userRepository = $this->entityManager->getRepository(User::class);
-        $users = $userRepository->findBy(['username' => 'test_channel_user']);
+        $users = array_merge(
+            $userRepository->findBy(['username' => 'test_channel_user']),
+            $userRepository->findBy(['username' => 'test_channel_user_2'])
+        );
 
         $channelRepository = $this->entityManager->getRepository(Channel::class);
-        $channels = $channelRepository->findBy(['slug' => 'test-channel-fav']);
+        $channels = array_merge(
+            $channelRepository->findBy(['slug' => 'test-channel-fav']),
+            $channelRepository->findBy(['slug' => 'unique-edit-channel-name'])
+        );
 
         foreach ($channels as $channel) {
             $this->entityManager->remove($channel);
@@ -103,5 +109,99 @@ class ChannelControllerTest extends WebTestCase
         $this->entityManager->clear();
         $user = $this->entityManager->getRepository(User::class)->find($this->testUser->getId());
         $this->assertFalse($user->isChannelFavorite($channel));
+    }
+
+    #[Test]
+    public function testUpdateRetention(): void
+    {
+        // Creator updates retention to 3 months
+        $this->client->request('POST', sprintf('/channels/%s/retention', $this->channel->getSlug()), [
+            'messageRetentionMonths' => '3'
+        ]);
+
+        $this->assertResponseStatusCodeSame(204);
+        $this->assertResponseHasHeader('HX-Refresh');
+
+        $this->entityManager->clear();
+        $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
+        $this->assertSame(3, $channel->getMessageRetentionMonths());
+
+        // Update to "sans limite" (0)
+        $this->client->request('POST', sprintf('/channels/%s/retention', $this->channel->getSlug()), [
+            'messageRetentionMonths' => '0'
+        ]);
+
+        $this->assertResponseStatusCodeSame(204);
+        $this->assertResponseHasHeader('HX-Refresh');
+
+        $this->entityManager->clear();
+        $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
+        $this->assertNull($channel->getMessageRetentionMonths());
+    }
+
+    #[Test]
+    public function testUpdateRetentionAccessDeniedForNonCreator(): void
+    {
+        // Create another user
+        $container = $this->client->getContainer();
+        $user2 = new User();
+        $user2->setUsername('test_channel_user_2');
+        $user2->setRoles(['ROLE_USER']);
+        $passwordHasher = $container->get('security.user_password_hasher');
+        $user2->setPassword($passwordHasher->hashPassword($user2, 'password123'));
+        $this->entityManager->persist($user2);
+        $this->entityManager->flush();
+
+        // Login as the other user
+        $this->client->loginUser($user2);
+
+        // Attempt to update retention of channel created by user 1
+        $this->client->request('POST', sprintf('/channels/%s/retention', $this->channel->getSlug()), [
+            'messageRetentionMonths' => '3'
+        ]);
+
+        $this->assertResponseStatusCodeSame(403);
+    }
+
+    #[Test]
+    public function testEditChannel(): void
+    {
+        $this->client->request('POST', sprintf('/channels/%s/edit', $this->channel->getSlug()), [
+            'name' => 'Unique Edit Channel Name',
+            'description' => 'Nouvelle Description',
+            'messageRetentionMonths' => '12'
+        ]);
+
+        $this->assertResponseRedirects('/channels/unique-edit-channel-name');
+
+        $this->entityManager->clear();
+        $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
+        $this->assertSame('Unique Edit Channel Name', $channel->getName());
+        $this->assertSame('unique-edit-channel-name', $channel->getSlug());
+        $this->assertSame('Nouvelle Description', $channel->getDescription());
+        $this->assertSame(12, $channel->getMessageRetentionMonths());
+    }
+
+    #[Test]
+    public function testEditChannelAccessDeniedForNonCreator(): void
+    {
+        $container = $this->client->getContainer();
+        $user2 = new User();
+        $user2->setUsername('test_channel_user_2');
+        $user2->setRoles(['ROLE_USER']);
+        $passwordHasher = $container->get('security.user_password_hasher');
+        $user2->setPassword($passwordHasher->hashPassword($user2, 'password123'));
+        $this->entityManager->persist($user2);
+        $this->entityManager->flush();
+
+        $this->client->loginUser($user2);
+
+        $this->client->request('POST', sprintf('/channels/%s/edit', $this->channel->getSlug()), [
+            'name' => 'Nouveau Nom Test',
+            'description' => 'Description Test',
+            'messageRetentionMonths' => '12'
+        ]);
+
+        $this->assertResponseStatusCodeSame(403);
     }
 }

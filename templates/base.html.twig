@@ -62,6 +62,9 @@
             {% include '_create_channel_modal.html.twig' %}
             {% include '_lightbox_modal.html.twig' %}
             {% include '_global_search_modal.html.twig' %}
+            {% if activeChannel is defined and activeChannel and not activeChannel.isDm and activeChannel.creator == app.user %}
+                {% include '_edit_channel_modal.html.twig' %}
+            {% endif %}
 
             <script>
                 (function() {

@@ -1,0 +1,89 @@
+<div id="edit-channel-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title" style="display: none;" onclick="if(event.target === this) closeEditChannelModal()">
+    <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="edit-modal-title">Modifier le canal</h3>
+            <button type="button" onclick="closeEditChannelModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
+        </div>
+        <form action="{{ path('app_channel_edit', {slug: activeChannel.slug}) }}" method="POST" class="add-channel-form" hx-boost="false">
+            <div class="input-group">
+                <label for="edit-modal-name">Nom du canal</label>
+                <input type="text" id="edit-modal-name" name="name" value="{{ activeChannel.name }}" required placeholder="Nom du canal..." maxlength="20" class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;">
+            </div>
+            <div class="input-group" style="margin-top: 0.5rem;">
+                <label for="edit-modal-description">Description</label>
+                <input type="text" id="edit-modal-description" name="description" value="{{ activeChannel.description }}" placeholder="Description (optionnelle)..." maxlength="50" class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;">
+            </div>
+            <div class="input-group" style="margin-top: 0.5rem;">
+                <label for="edit-modal-retention">Rétention des messages</label>
+                <select id="edit-modal-retention" name="messageRetentionMonths" class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important; color: var(--text-primary); border: 1px solid var(--border-glass); border-radius: 0.5rem; padding: 0.5rem; width: 100%; cursor: pointer;">
+                    <option value="1" {% if activeChannel.messageRetentionMonths == 1 %}selected{% endif %}>1 mois</option>
+                    <option value="3" {% if activeChannel.messageRetentionMonths == 3 %}selected{% endif %}>3 mois</option>
+                    <option value="6" {% if activeChannel.messageRetentionMonths == 6 %}selected{% endif %}>6 mois</option>
+                    <option value="12" {% if activeChannel.messageRetentionMonths == 12 %}selected{% endif %}>12 mois</option>
+                    <option value="0" {% if activeChannel.messageRetentionMonths is null %}selected{% endif %}>Sans limite</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Enregistrer les modifications</button>
+        </form>
+        <form action="{{ path('app_channel_delete', {slug: activeChannel.slug}) }}" method="POST" data-confirm="Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement." hx-boost="false" style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+            <button type="submit" class="btn-delete-channel" style="width: 100%; justify-content: center; cursor: pointer;">🗑️ Supprimer le canal</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let lastFocusedElement = null;
+
+        window.openEditChannelModal = function(trigger) {
+            lastFocusedElement = trigger;
+            const modal = document.getElementById('edit-channel-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                const firstInput = document.getElementById('edit-modal-name');
+                if (firstInput) {
+                    setTimeout(() => firstInput.focus(), 50);
+                }
+                document.addEventListener('keydown', handleEditModalKeyDown);
+            }
+        };
+
+        window.closeEditChannelModal = function() {
+            const modal = document.getElementById('edit-channel-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.removeEventListener('keydown', handleEditModalKeyDown);
+                if (lastFocusedElement) {
+                    lastFocusedElement.focus();
+                }
+            }
+        };
+
+        function handleEditModalKeyDown(e) {
+            if (e.key === 'Escape') {
+                closeEditChannelModal();
+                return;
+            }
+            if (e.key === 'Tab') {
+                const modal = document.getElementById('edit-channel-modal');
+                if (!modal) return;
+                const focusableElements = modal.querySelectorAll('button, input, textarea, select, a, [tabindex="0"]');
+                if (focusableElements.length === 0) return;
+                const firstFocusable = focusableElements[0];
+                const lastFocusable = focusableElements[focusableElements.length - 1];
+
+                if (e.shiftKey) {
+                    if (document.activeElement === firstFocusable) {
+                        lastFocusable.focus();
+                        e.preventDefault();
+                    }
+                } else {
+                    if (document.activeElement === lastFocusable) {
+                        firstFocusable.focus();
+                        e.preventDefault();
+                    }
+                }
+            }
+        }
+    })();
+</script>

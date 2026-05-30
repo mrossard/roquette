@@ -73,6 +73,14 @@ class ChannelController extends AbstractController
             $channel->setIsPrivate(true);
         }
 
+        $retention = $request->request->get('messageRetentionMonths');
+        if ($retention !== null && $retention !== '') {
+            $retentionVal = (int) $retention;
+            $channel->setMessageRetentionMonths($retentionVal === 0 ? null : $retentionVal);
+        } else {
+            $channel->setMessageRetentionMonths(6);
+        }
+
         $entityManager->persist($channel);
         $entityManager->flush();
 
@@ -498,6 +506,105 @@ $isMember = true;
         }
 
         return new Response(null, 204, ['HX-Refresh' => 'true']);
+    }
+
+    #[Route('/channels/{slug}/retention', name: 'app_channel_update_retention', methods: ['POST'])]
+    public function updateRetention(
+        string $slug,
+        Request $request,
+        ChannelRepository $channelRepository,
+        EntityManagerInterface $entityManager
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        $channel = $channelRepository->findOneBy(['slug' => $slug]);
+        if (!$channel) {
+            return $this->redirectToRoute('app_dashboard');
+        }
+
+        $isAdmin   = $this->isGranted('ROLE_ADMIN');
+        $isCreator = $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
+
+        if (!$isAdmin && !$isCreator) {
+            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à modifier la rétention de ce canal.');
+        }
+
+        $retention = $request->request->get('messageRetentionMonths');
+        if ($retention !== null && $retention !== '') {
+            $retentionVal = (int) $retention;
+            $channel->setMessageRetentionMonths($retentionVal === 0 ? null : $retentionVal);
+        } else {
+            $channel->setMessageRetentionMonths(6);
+        }
+
+        $entityManager->flush();
+
+        $this->addFlash('success', sprintf('La durée de rétention du canal "%s" a été mise à jour.', $channel->getName()));
+
+        return new Response(null, 204, ['HX-Refresh' => 'true']);
+    }
+
+    #[Route('/channels/{slug}/edit', name: 'app_channel_edit', methods: ['POST'])]
+    public function editChannel(
+        string $slug,
+        Request $request,
+        ChannelRepository $channelRepository,
+        EntityManagerInterface $entityManager
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        $channel = $channelRepository->findOneBy(['slug' => $slug]);
+        if (!$channel) {
+            return $this->redirectToRoute('app_dashboard');
+        }
+
+        $isCreator = $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
+        if (!$isCreator) {
+            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.');
+        }
+
+        $name = trim($request->request->get('name', ''));
+        $description = trim($request->request->get('description', ''));
+
+        if (empty($name)) {
+            $this->addFlash('error', 'Le nom du canal ne peut pas être vide.');
+            return $this->redirectToRoute('app_channel', ['slug' => $slug]);
+        }
+
+        if ($channel->getName() !== $name) {
+            $newSlug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($name));
+            $newSlug = trim($newSlug, '-');
+            if (empty($newSlug)) {
+                $newSlug = 'channel-' . uniqid();
+            }
+
+            if ($newSlug !== $channel->getSlug()) {
+                $existing = $channelRepository->findOneBy(['slug' => $newSlug]);
+                if ($existing && $existing->getId() !== $channel->getId()) {
+                    $newSlug = $newSlug . '-' . rand(100, 999);
+                }
+                $channel->setSlug($newSlug);
+            }
+            $channel->setName($name);
+        }
+
+        $channel->setDescription($description);
+
+        $retention = $request->request->get('messageRetentionMonths');
+        if ($retention !== null && $retention !== '') {
+            $retentionVal = (int) $retention;
+            $channel->setMessageRetentionMonths($retentionVal === 0 ? null : $retentionVal);
+        } else {
+            $channel->setMessageRetentionMonths(6);
+        }
+
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Les paramètres du canal ont été modifiés.');
+
+        return $this->redirectToRoute('app_channel', ['slug' => $channel->getSlug()]);
     }
 
     // -------------------------------------------------------------------------

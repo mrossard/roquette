@@ -84,18 +84,34 @@
                                 <span class="live-indicator">LIVE</span>
                             {% endif %}
                         </div>
-                        <p class="card-description" style="margin-top: 0.25rem;">
-                            {% if activeChannel.isDm %}
-                                {% set partner = activeChannel.getDmPartner(app.user) %}
-                                {% if partner %}
-                                    Discussion directe et sécurisée avec {{ partner.displayName|default(partner.username) }}.
+                        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem;">
+                            <p class="card-description" style="margin: 0;">
+                                {% if activeChannel.isDm %}
+                                    {% set partner = activeChannel.getDmPartner(app.user) %}
+                                    {% if partner %}
+                                        Discussion directe et sécurisée avec {{ partner.displayName|default(partner.username) }}.
+                                    {% else %}
+                                        Discussion directe privée.
+                                    {% endif %}
                                 {% else %}
-                                    Discussion directe privée.
+                                    {{ activeChannel.description|default('Aucune description pour ce canal.') }}
                                 {% endif %}
-                            {% else %}
-                                {{ activeChannel.description|default('Aucune description pour ce canal.') }}
+                            </p>
+                            {% if not activeChannel.isDm %}
+                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                    <span class="status-pill" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass); font-size: 0.75rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: default;">
+                                        ⏱️ Rétention : 
+                                        <span style="color: var(--text-primary);">
+                                            {% if activeChannel.messageRetentionMonths is null %}
+                                                Sans limite
+                                            {% else %}
+                                                {{ activeChannel.messageRetentionMonths }} mois
+                                            {% endif %}
+                                        </span>
+                                    </span>
+                                </div>
                             {% endif %}
-                        </p>
+                        </div>
                     </div>
 
                     <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
@@ -143,7 +159,11 @@
                                 {% include 'dashboard/_invite_section.html.twig' with {'activeChannel': activeChannel, 'usersToInvite': usersToInvite} %}
                             {% endif %}
 
-                            {% if is_granted('ROLE_ADMIN') or (activeChannel.creator and activeChannel.creator == app.user) %}
+                            {% if activeChannel.creator and activeChannel.creator == app.user %}
+                                <button type="button" class="btn-delete-channel" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;" onclick="openEditChannelModal(this)">⚙️ Paramètres</button>
+                            {% endif %}
+
+                            {% if is_granted('ROLE_ADMIN') and not (activeChannel.creator and activeChannel.creator == app.user) %}
                                 <form action="{{ path('app_channel_delete', {slug: activeChannel.slug}) }}" method="POST" data-confirm="Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement." hx-boost="false">
                                     <button type="submit" class="btn-delete-channel">🗑️ Supprimer le canal</button>
                                 </form>

@@ -35,6 +35,9 @@ class Channel
     #[ORM\Column(options: ['default' => false])]
     private bool $isDm = false;
 
+    #[ORM\Column(type: 'integer', nullable: true, options: ['default' => 6])]
+    private ?int $messageRetentionMonths = 6;
+
     #[ORM\ManyToOne(targetEntity: Message::class)]
     #[ORM\JoinColumn(name: "pinned_message_id", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
     private ?Message $pinnedMessage = null;
@@ -227,5 +230,16 @@ class Channel
         $result = $this->messages->matching($criteria)->first();
 
         return $result ?: null;
+     }
+
+    public function getMessageRetentionMonths(): ?int
+    {
+        return $this->messageRetentionMonths;
+    }
+
+    public function setMessageRetentionMonths(?int $messageRetentionMonths): static
+    {
+        $this->messageRetentionMonths = $messageRetentionMonths;
+        return $this;
     }
 }
