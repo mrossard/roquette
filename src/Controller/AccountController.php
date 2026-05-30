@@ -45,7 +45,7 @@ final class AccountController extends AbstractController
                 $hue = $request->request->get('hue');
                 $statusOverride = $request->request->get('statusOverride');
 
-                $currentUser->setDisplayName(empty($displayName) ? null : $displayName);
+                $currentUser->setDisplayName($displayName === '' ? null : $displayName);
 
                 if ($hue !== null) {
                     $hueVal = (int) $hue;
@@ -77,16 +77,16 @@ final class AccountController extends AbstractController
                 $bus->dispatch($update);
 
                 $this->addFlash('success', 'Votre profil a été mis à jour avec succès !');
-            } elseif ($action === 'password') {
-                $currentPassword = $request->request->get('currentPassword', '');
-                $newPassword = $request->request->get('newPassword', '');
-                $confirmPassword = $request->request->get('confirmPassword', '');
+            } elseif (hash_equals('password', $action ?? '')) {
+                $currentPassword = (string) $request->request->get('currentPassword', '');
+                $newPassword = (string) $request->request->get('newPassword', '');
+                $confirmPassword = (string) $request->request->get('confirmPassword', '');
 
-                if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
+                if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
                     $this->addFlash('error', 'Tous les champs de mot de passe sont obligatoires.');
                 } elseif (!$passwordHasher->isPasswordValid($currentUser, $currentPassword)) {
                     $this->addFlash('error', 'Le mot de passe actuel est incorrect.');
-                } elseif ($newPassword !== $confirmPassword) {
+                } elseif (!hash_equals($newPassword, $confirmPassword)) {
                     $this->addFlash('error', 'Le nouveau mot de passe et sa confirmation ne correspondent pas.');
                 } elseif (strlen($newPassword) < 6) {
                     $this->addFlash('error', 'Le nouveau mot de passe doit faire au moins 6 caractères.');

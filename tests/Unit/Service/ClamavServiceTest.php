@@ -4,48 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-class ClamavServiceTestState
-{
-    public static bool $shouldFailFsockopen = false;
-    public static string $response = '';
-    public static bool $shouldFailFopen = false;
-    public static bool $streamWrapperRegistered = false;
-}
-
-class ClamavMockStream
-{
-    public $context;
-    private int $position = 0;
-
-    public function stream_open(string $path, string $mode, int $options, ?string &$opened_path): bool
-    {
-        return true;
-    }
-
-    public function stream_read(int $count): string
-    {
-        $data = ClamavServiceTestState::$response;
-        $ret = substr($data, $this->position, $count);
-        $this->position += strlen($ret);
-        return $ret;
-    }
-
-    public function stream_write(string $data): int
-    {
-        // Accept and discard write data
-        return strlen($data);
-    }
-
-    public function stream_eof(): bool
-    {
-        return $this->position >= strlen(ClamavServiceTestState::$response);
-    }
-
-    public function stream_stat(): array
-    {
-        return [];
-    }
-}
+use App\Tests\Unit\Service\ClamavServiceTestState;
+use App\Tests\Unit\Service\ClamavMockStream;
 
 function fsockopen(string $hostname, int $port, &$errno, &$errstr, float $timeout)
 {
@@ -83,7 +43,6 @@ function fopen(string $filename, string $mode)
 namespace App\Tests\Unit\Service;
 
 use App\Service\ClamavService;
-use App\Service\ClamavServiceTestState;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

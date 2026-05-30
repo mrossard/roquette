@@ -149,6 +149,7 @@ class Channel
         return $this->isPrivate;
     }
 
+    // @mago-expect no-boolean-flag-parameter
     public function setIsPrivate(bool $isPrivate): static
     {
         $this->isPrivate = $isPrivate;
@@ -160,6 +161,7 @@ class Channel
         return $this->isDm;
     }
 
+    // @mago-expect no-boolean-flag-parameter
     public function setIsDm(bool $isDm): static
     {
         $this->isDm = $isDm;
@@ -231,7 +233,7 @@ class Channel
 
         $result = $this->messages->matching($criteria)->first();
 
-        return $result ?: null;
+        return $result !== false ? $result : null;
     }
 
     public function getMessageRetentionMonths(): ?int

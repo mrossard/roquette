@@ -70,7 +70,7 @@ class PurgeExpiredMessagesCommand extends Command
             /** @var Message[] $messages */
             $messages = $qb->getQuery()->getResult();
 
-            if (empty($messages)) {
+            if ($messages === []) {
                 continue;
             }
 

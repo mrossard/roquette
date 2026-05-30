@@ -6,11 +6,13 @@ namespace App\Service;
 
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class LinkPreviewService
 {
     public function __construct(
         private readonly CacheInterface $cache,
+        private readonly HttpClientInterface $httpClient,
     ) {}
 
     /**
@@ -38,7 +40,8 @@ class LinkPreviewService
                 }
 
                 $metadata = $this->parseMetadata($url, $html);
-                if (empty($metadata['title'])) {
+                $titleVal = $metadata['title'] ?? null;
+                if ($titleVal === null || trim((string) $titleVal) === '') {
                     $item->expiresAfter(0);
                     return null;
                 }
@@ -63,7 +66,7 @@ class LinkPreviewService
         }
 
         $parsed = parse_url($url);
-        if (!$parsed || !isset($parsed['scheme']) || !isset($parsed['host'])) {
+        if (!$parsed || ($parsed['scheme'] ?? null) === null || ($parsed['host'] ?? null) === null) {
             return false;
         }
 
@@ -94,23 +97,30 @@ class LinkPreviewService
      */
     private function fetchHtml(string $url): ?string
     {
-        $context = stream_context_create([
-            'http' => [
+        try {
+            $response = $this->httpClient->request('GET', $url, [
                 'timeout' => 1.5,
-                'user_agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)',
-                'follow_location' => 1,
+                'headers' => [
+                    'User-Agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)',
+                ],
                 'max_redirects' => 3,
-            ],
-            'ssl' => [
                 'verify_peer' => false,
-                'verify_peer_name' => false,
-            ],
-        ]);
+                'verify_host' => false,
+            ]);
 
-        // Lire un maximum de 1 Mo pour éviter de télécharger des fichiers volumineux tout en capturant les OG tags (YouTube/Spotify nécessitent parfois plus de 100 Ko)
-        $html = @file_get_contents($url, false, $context, 0, 1_048_576);
+            $content = '';
+            foreach ($this->httpClient->stream($response, 1.5) as $chunk) {
+                $content .= $chunk->getContent();
+                if (strlen($content) >= 1_048_576) {
+                    $response->cancel();
+                    break;
+                }
+            }
 
-        return $html ?: null;
+            return $content !== '' ? $content : null;
+        } catch (\Exception) {
+            return null;
+        }
     }
 
     /**
@@ -173,7 +183,7 @@ class LinkPreviewService
         if ($image && !preg_match('/^https?:\/\//i', $image)) {
             $parsedUrl = parse_url($url);
             $base = ($parsedUrl['scheme'] ?? 'http') . '://' . ($parsedUrl['host'] ?? '');
-            if (isset($parsedUrl['port'])) {
+            if (($parsedUrl['port'] ?? null) !== null) {
                 $base .= ':' . $parsedUrl['port'];
             }
             if (str_starts_with($image, '/')) {
@@ -198,7 +208,7 @@ class LinkPreviewService
 
         return [
             'url' => $url,
-            'title' => $title ?: $url,
+            'title' => ($title !== null && $title !== '') ? $title : $url,
             'description' => mb_strimwidth($description, 0, 200, '...'),
             'image' => $image,
             'siteName' => $siteName,

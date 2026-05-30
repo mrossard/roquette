@@ -29,7 +29,7 @@ class ChannelRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
-        if (empty($joinedChannels)) {
+        if ($joinedChannels === []) {
             $general = $this->findOneBy(['slug' => 'general']);
             if ($general) {
                 $general->addMember($user);
@@ -40,7 +40,7 @@ class ChannelRepository extends ServiceEntityRepository
 
         // Apply custom channel ordering if it exists
         $order = $user->getChannelOrder();
-        if (!empty($order)) {
+        if ($order !== []) {
             $positionMap = array_flip($order);
             usort($joinedChannels, static function (Channel $a, Channel $b) use ($positionMap) {
                 $posA = $positionMap[$a->getId()] ?? null;
@@ -56,7 +56,8 @@ class ChannelRepository extends ServiceEntityRepository
                     return 1;
                 }
 
-                return $a->getCreatedAt() <=> $b->getCreatedAt() ?: $a->getId() <=> $b->getId();
+                $cmp = $a->getCreatedAt() <=> $b->getCreatedAt();
+                return $cmp !== 0 ? $cmp : $a->getId() <=> $b->getId();
             });
         }
 

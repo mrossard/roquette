@@ -91,7 +91,7 @@ class MercurePublisher
             'html' => $renderedHtml,
             'user' => $author->getUsername(),
             'author' => $author->getUsername(),
-            'authorDisplayName' => $author->getDisplayName() ?: $author->getUsername(),
+            'authorDisplayName' => ($author->getDisplayName() !== null && $author->getDisplayName() !== '') ? $author->getDisplayName() : $author->getUsername(),
             'channelSlug' => $channel->getSlug(),
             'channelName' => $channel->isDm() ? 'Message direct' : '#' . $channel->getName(),
             'content' => $this->buildContentSummary($message),
@@ -144,7 +144,7 @@ class MercurePublisher
                 'channelId' => $channel->getId(),
                 'messageId' => $message->getId(),
                 'author' => $author->getUsername(),
-                'authorDisplayName' => $author->getDisplayName() ?: $author->getUsername(),
+                'authorDisplayName' => ($author->getDisplayName() !== null && $author->getDisplayName() !== '') ? $author->getDisplayName() : $author->getUsername(),
                 'channelName' => $channel->isDm() ? 'Message direct' : '#' . $channel->getName(),
                 'content' => $content,
                 'notificationsEnabled' => $isMentioned

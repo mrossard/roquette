@@ -206,7 +206,7 @@ final class NotificationController extends AbstractController
         $mercurePublisher->publishToChannel($activeChannel, [
             'type' => 'user_typing',
             'username' => $currentUser->getUsername(),
-            'displayName' => $currentUser->getDisplayName() ?: $currentUser->getUsername(),
+            'displayName' => ($currentUser->getDisplayName() !== null && $currentUser->getDisplayName() !== '') ? $currentUser->getDisplayName() : $currentUser->getUsername(),
             'isTyping' => $isTyping,
             'channelSlug' => $activeChannel->getSlug(),
         ]);

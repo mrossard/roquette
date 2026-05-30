@@ -78,7 +78,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
 
         $session->remove('oauth2state');
 
-        $redirectUri = $this->redirectUri ?: $this->urlGenerator->generate(
+        $redirectUri = ($this->redirectUri !== null && $this->redirectUri !== '') ? $this->redirectUri : $this->urlGenerator->generate(
             'app_oauth_check',
             [],
             UrlGeneratorInterface::ABSOLUTE_URL,

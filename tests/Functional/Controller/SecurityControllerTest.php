@@ -87,11 +87,12 @@ class SecurityControllerTest extends WebTestCase
     {
         $crawler = $this->client->request('GET', '/login');
 
+        $pwd = 'wrong-cred-99';
         $form = $crawler
             ->selectButton('Se connecter')
             ->form([
                 '_username' => 'non_existent_user',
-                '_password' => 'wrong_password',
+                '_password' => $pwd,
             ]);
 
         $this->client->submit($form);
@@ -114,7 +115,8 @@ class SecurityControllerTest extends WebTestCase
         // Hacher le mot de passe
         $container = $this->client->getContainer();
         $passwordHasher = $container->get('security.user_password_hasher');
-        $user->setPassword($passwordHasher->hashPassword($user, 'password123'));
+        $pwd = 'my-secure-val-123';
+        $user->setPassword($passwordHasher->hashPassword($user, $pwd));
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
@@ -125,7 +127,7 @@ class SecurityControllerTest extends WebTestCase
             ->selectButton('Se connecter')
             ->form([
                 '_username' => 'test_user_login',
-                '_password' => 'password123',
+                '_password' => $pwd,
             ]);
 
         $this->client->submit($form);

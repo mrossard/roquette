@@ -73,7 +73,7 @@ final class ThreadController extends AbstractController
         }
 
         $replies = $parentMessage->getReplies()->toArray();
-        if (!empty($replies)) {
+        if ($replies !== []) {
             usort($replies, static fn($a, $b) => $a->getId() <=> $b->getId());
             $latestThreadMessage = end($replies);
         } else {
@@ -150,12 +150,12 @@ final class ThreadController extends AbstractController
         $messageText = $request->request->get('message', '');
         $uploadedFile = $request->files->get('file');
 
-        if (empty(trim($messageText)) && !$uploadedFile) {
+        if (trim($messageText) === '' && !$uploadedFile) {
             return new Response('Le message ne peut pas être vide.', 400);
         }
 
         $message = new Message();
-        $message->setContent(empty(trim($messageText)) ? null : $messageText);
+        $message->setContent(trim($messageText) === '' ? null : $messageText);
         $message->setAuthor($currentUser);
         $message->setChannel($activeChannel);
         $message->setParent($parentMessage);

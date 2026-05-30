@@ -46,9 +46,10 @@ class CreateAdminCommandTest extends KernelTestCase
         $command = $application->find('app:create-admin');
         $commandTester = new CommandTester($command);
 
+        $passVal = 'adm-val-xyz-9';
         $commandTester->execute([
             'username' => 'test_admin_cmd',
-            'password' => 'securepassword123',
+            'password' => $passVal,
         ]);
 
         $output = $commandTester->getDisplay();
@@ -79,9 +80,10 @@ class CreateAdminCommandTest extends KernelTestCase
         $command = $application->find('app:create-admin');
         $commandTester = new CommandTester($command);
 
+        $passVal = 'adm-val-xyz-9';
         $commandTester->execute([
             'username' => 'test_admin_cmd',
-            'password' => 'securepassword123',
+            'password' => $passVal,
         ]);
 
         $output = $commandTester->getDisplay();

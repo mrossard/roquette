@@ -24,13 +24,31 @@ class ClamavService
      */
     public function scanFile(UploadedFile $file): bool
     {
-        $socket = @fsockopen($this->host, $this->port, $errno, $errstr, 5);
+        try {
+            set_error_handler(static function ($severity, $message, $file, $line) {
+                throw new \ErrorException($message, 0, $severity, $file, $line);
+            });
+            $socket = fsockopen($this->host, $this->port, $errno, $errstr, 5);
+        } catch (\ErrorException $e) {
+            $this->logger->error(sprintf(
+                'Failed to connect to ClamAV daemon at %s:%d: %s (error code: %d, exception: %s)',
+                $this->host,
+                $this->port,
+                ($errstr !== null && $errstr !== '') ? $errstr : 'Unknown error',
+                $errno,
+                $e->getMessage()
+            ));
+            throw new \RuntimeException('Le service d\'analyse antivirus est temporairement indisponible.', 0, $e);
+        } finally {
+            restore_error_handler();
+        }
+
         if (!$socket) {
             $this->logger->error(sprintf(
                 'Failed to connect to ClamAV daemon at %s:%d: %s (%d)',
                 $this->host,
                 $this->port,
-                $errstr,
+                ($errstr !== null && $errstr !== '') ? $errstr : 'Unknown error',
                 $errno,
             ));
             throw new \RuntimeException('Le service d\'analyse antivirus est temporairement indisponible.');

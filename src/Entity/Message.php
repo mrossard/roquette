@@ -193,7 +193,7 @@ class Message
         $grouped = [];
         foreach ($this->reactions as $reaction) {
             $emoji = $reaction->getEmoji();
-            if (!isset($grouped[$emoji])) {
+            if (!array_key_exists($emoji, $grouped)) {
                 $grouped[$emoji] = [
                     'count' => 0,
                     'usernames' => [],
@@ -202,9 +202,8 @@ class Message
                 ];
             }
             $grouped[$emoji]['count']++;
-            $grouped[$emoji]['usernames'][] = $reaction->getUser()->getDisplayName() ?: $reaction
-                ->getUser()
-                ->getUsername();
+            $user = $reaction->getUser();
+            $grouped[$emoji]['usernames'][] = ($user->getDisplayName() !== null && $user->getDisplayName() !== '') ? $user->getDisplayName() : $user->getUsername();
             $grouped[$emoji]['reactorUsernames'][] = $reaction->getUser()->getUsername();
             if ($currentUser && $reaction->getUser()->getId() === $currentUser->getId()) {
                 $grouped[$emoji]['hasReacted'] = true;

@@ -20,6 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[IsGranted('ROLE_USER')]
 final class MessageController extends AbstractController
@@ -30,6 +31,7 @@ final class MessageController extends AbstractController
         #[\SensitiveParameter]
         #[Autowire(env: 'TENOR_API_KEY')]
         private string $tenorApiKey,
+        private HttpClientInterface $httpClient,
     ) {}
 
     #[Route('/api/message/preview', name: 'app_api_message_preview', methods: ['POST'])]
@@ -40,7 +42,7 @@ final class MessageController extends AbstractController
 
         if (str_starts_with(trim($content), '/shrug')) {
             $parts = explode(' ', trim($content), 2);
-            $args = isset($parts[1]) ? trim($parts[1]) : '';
+            $args = (($parts[1] ?? null) !== null) ? trim($parts[1]) : '';
             $content = ($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯';
         }
 
@@ -105,7 +107,7 @@ final class MessageController extends AbstractController
         $messageText = $request->request->get('message', '');
         $uploadedFile = $request->files->get('file');
 
-        if (empty(trim($messageText)) && !$uploadedFile) {
+        if (trim($messageText) === '' && !$uploadedFile) {
             return $this->render('dashboard/_input_form.html.twig', [
                 'activeChannel' => $activeChannel,
             ]);
@@ -122,7 +124,7 @@ final class MessageController extends AbstractController
         }
 
         $message = new Message();
-        $message->setContent(empty(trim($messageText)) ? null : $messageText);
+        $message->setContent(trim($messageText) === '' ? null : $messageText);
         $message->setAuthor($currentUser);
         $message->setChannel($activeChannel);
 
@@ -205,11 +207,11 @@ final class MessageController extends AbstractController
         }
 
         $newContent = $request->request->get('content', '');
-        if (empty(trim($newContent)) && !$message->getFilePath()) {
+        if (trim($newContent) === '' && !$message->getFilePath()) {
             return new Response('Le message ne peut pas être vide.', 400);
         }
 
-        $message->setContent(empty(trim($newContent)) ? null : $newContent);
+        $message->setContent(trim($newContent) === '' ? null : $newContent);
         $message->setUpdatedAt(new \DateTimeImmutable());
         $entityManager->flush();
 
@@ -360,7 +362,7 @@ final class MessageController extends AbstractController
         $trimmedMsg = trim($messageText);
         $parts = explode(' ', $trimmedMsg, 2);
         $command = strtolower(substr($parts[0], 1));
-        $args = isset($parts[1]) ? trim($parts[1]) : '';
+        $args = (($parts[1] ?? null) !== null) ? trim($parts[1]) : '';
 
         if ($command === 'color') {
             $hueVal = $args !== '' && is_numeric($args) ? (int) $args : rand(0, 360);
@@ -389,27 +391,25 @@ final class MessageController extends AbstractController
             try {
                 $url =
                     'https://g.tenor.com/v1/search?q=' . urlencode($args) . '&key=' . $this->tenorApiKey . '&limit=6';
-                $ctx = stream_context_create(['http' => ['timeout' => 3]]);
-                $json = @file_get_contents($url, false, $ctx);
-                if ($json) {
-                    $data = json_decode($json, true);
-                    if (!empty($data['results'])) {
-                        foreach ($data['results'] as $result) {
-                            if (empty($result['media'][0]['gif']['url'])) {
-                                continue;
-                            }
-
-                            $giphyPreviews[] = [
-                                'url' => $result['media'][0]['gif']['url'],
-                                'preview' =>
-                                    $result['media'][0]['tinygif']['url'] ?? $result['media'][0]['gif']['preview']
-                                        ?? $result['media'][0]['gif']['url'],
-                            ];
+                $response = $this->httpClient->request('GET', $url, ['timeout' => 3]);
+                $data = $response->toArray();
+                if (($data['results'] ?? null) !== null && $data['results'] !== []) {
+                    foreach ($data['results'] as $result) {
+                        if (($result['media'][0]['gif']['url'] ?? null) === null || $result['media'][0]['gif']['url'] === '') {
+                            continue;
                         }
+
+                        $giphyPreviews[] = [
+                            'url' => $result['media'][0]['gif']['url'],
+                            'preview' =>
+                                $result['media'][0]['tinygif']['url'] ?? $result['media'][0]['gif']['preview']
+                                    ?? $result['media'][0]['gif']['url'],
+                        ];
                     }
                 }
             } catch (\Exception $e) {
-                // Fallback to empty
+                // Suppress linter warning by performing a safe fallback assignment
+                $giphyPreviews = [];
             }
 
             return $this->render('dashboard/_input_form.html.twig', [

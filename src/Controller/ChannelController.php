@@ -45,7 +45,7 @@ final class ChannelController extends AbstractController
         $name = trim($request->request->get('name', ''));
         $description = trim($request->request->get('description', ''));
 
-        if (empty($name)) {
+        if ($name === '') {
             $this->addFlash('error', 'Le nom du canal ne peut pas être vide.');
             return $this->redirectToRoute('app_dashboard');
         }
@@ -53,7 +53,7 @@ final class ChannelController extends AbstractController
         $slug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($name));
         $slug = trim($slug, '-');
 
-        if (empty($slug)) {
+        if ($slug === '') {
             $slug = 'channel-' . uniqid();
         }
 
@@ -595,7 +595,7 @@ final class ChannelController extends AbstractController
         $name = trim($request->request->get('name', ''));
         $description = trim($request->request->get('description', ''));
 
-        if (empty($name)) {
+        if ($name === '') {
             $this->addFlash('error', 'Le nom du canal ne peut pas être vide.');
             return $this->redirectToRoute('app_channel', ['slug' => $slug]);
         }
@@ -603,7 +603,7 @@ final class ChannelController extends AbstractController
         if ($channel->getName() !== $name) {
             $newSlug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($name));
             $newSlug = trim($newSlug, '-');
-            if (empty($newSlug)) {
+            if ($newSlug === '') {
                 $newSlug = 'channel-' . uniqid();
             }
 

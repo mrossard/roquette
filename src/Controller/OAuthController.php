@@ -44,7 +44,7 @@ final class OAuthController extends AbstractController
         $state = bin2hex(random_bytes(16));
         $request->getSession()->set('oauth2state', $state);
 
-        $redirectUri = $this->redirectUri ?: $this->generateUrl(
+        $redirectUri = ($this->redirectUri !== null && $this->redirectUri !== '') ? $this->redirectUri : $this->generateUrl(
             'app_oauth_check',
             [],
             UrlGeneratorInterface::ABSOLUTE_URL,
@@ -94,7 +94,7 @@ final class OAuthController extends AbstractController
             $redirectUri = $request->request->get('redirect_uri');
             $state = $request->request->get('state');
 
-            if (empty($username)) {
+            if ($username === '') {
                 $username = 'oauth_user';
             }
 
@@ -146,7 +146,8 @@ final class OAuthController extends AbstractController
 
         $store = $this->readMockStore();
 
-        if (!$code || !isset($store['codes'][$code])) {
+        $codeData = $store['codes'][$code] ?? null;
+        if (!$code || $codeData === null) {
             return new JsonResponse([
                 'error' => 'invalid_grant',
                 'error_description' => 'Code d\'autorisation invalide.',
@@ -183,7 +184,8 @@ final class OAuthController extends AbstractController
 
         $store = $this->readMockStore();
 
-        if (!$accessToken || !isset($store['tokens'][$accessToken])) {
+        $tokenData = $store['tokens'][$accessToken] ?? null;
+        if (!$accessToken || $tokenData === null) {
             return new JsonResponse([
                 'error' => 'invalid_token',
                 'error_description' => 'Jeton d\'accès invalide ou expiré.',

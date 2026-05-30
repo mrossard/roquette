@@ -38,7 +38,7 @@ class SeedDefaultChannelsCommand extends Command
         $repo = $this->em->getRepository(Channel::class);
         $existing = $repo->findAll();
 
-        if (!empty($existing)) {
+        if ($existing !== []) {
             $io->note(sprintf('%d canal(aux) déjà présent(s) en base. Aucune action effectuée.', count($existing)));
             return Command::SUCCESS;
         }

@@ -50,7 +50,7 @@ final class FileController extends AbstractController
             },
             200,
             [
-                'Content-Type' => $message->getMimeType() ?: 'application/octet-stream',
+                'Content-Type' => ($message->getMimeType() !== null && $message->getMimeType() !== '') ? $message->getMimeType() : 'application/octet-stream',
                 'Content-Disposition' => HeaderUtils::makeDisposition(
                     HeaderUtils::DISPOSITION_ATTACHMENT,
                     $message->getFileName(),
@@ -93,7 +93,7 @@ final class FileController extends AbstractController
             },
             200,
             [
-                'Content-Type' => $message->getMimeType() ?: 'application/octet-stream',
+                'Content-Type' => ($message->getMimeType() !== null && $message->getMimeType() !== '') ? $message->getMimeType() : 'application/octet-stream',
                 'Content-Disposition' => HeaderUtils::makeDisposition(
                     HeaderUtils::DISPOSITION_INLINE,
                     $message->getFileName(),

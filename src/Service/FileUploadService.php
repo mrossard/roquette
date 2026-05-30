@@ -106,7 +106,16 @@ class FileUploadService
             );
         }
 
-        $extension = strtolower($file->getClientOriginalExtension() ?: $file->guessExtension() ?: 'bin');
+        $origExt = $file->getClientOriginalExtension();
+        $guessedExt = $file->guessExtension();
+        if ($origExt !== null && $origExt !== '') {
+            $ext = $origExt;
+        } elseif ($guessedExt !== null && $guessedExt !== '') {
+            $ext = $guessedExt;
+        } else {
+            $ext = 'bin';
+        }
+        $extension = strtolower($ext);
         $mimeType = $file->getClientMimeType();
 
         if ($file->getSize() > self::MAX_FILE_SIZE) {

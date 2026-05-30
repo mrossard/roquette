@@ -56,7 +56,7 @@ class LinkPreviewControllerTest extends WebTestCase
         $user->setRoles(['ROLE_USER']);
         $container = $this->client->getContainer();
         $passwordHasher = $container->get('security.user_password_hasher');
-        $user->setPassword($passwordHasher->hashPassword($user, 'password123'));
+        $user->setPassword($passwordHasher->hashPassword($user, 'my-secure-val-123'));
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();

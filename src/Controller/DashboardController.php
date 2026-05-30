@@ -44,7 +44,7 @@ final class DashboardController extends AbstractController
         $currentUser = $this->getUser();
 
         $channels = $channelRepository->findAllForUser($currentUser);
-        if (empty($channels)) {
+        if ($channels === []) {
             return $this->redirectToRoute('app_channels_directory');
         }
 

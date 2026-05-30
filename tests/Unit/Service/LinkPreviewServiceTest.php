@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class LinkPreviewServiceTest extends TestCase
 {
@@ -23,7 +24,8 @@ class LinkPreviewServiceTest extends TestCase
                 return $callback($item);
             });
 
-        $service = new LinkPreviewService($cache);
+        $httpClient = $this->createMock(HttpClientInterface::class);
+        $service = new LinkPreviewService($cache, $httpClient);
         $result = $service->getPreview('not-a-url');
         static::assertNull($result);
     }
@@ -39,7 +41,8 @@ class LinkPreviewServiceTest extends TestCase
                 return $callback($item);
             });
 
-        $service = new LinkPreviewService($cache);
+        $httpClient = $this->createMock(HttpClientInterface::class);
+        $service = new LinkPreviewService($cache, $httpClient);
         $result = $service->getPreview('http://127.0.0.1/status');
         static::assertNull($result);
     }

@@ -42,7 +42,7 @@ class CreateAdminCommand extends Command
 
         if (!$username) {
             $username = $io->ask('Nom d\'utilisateur', null, static function ($value) {
-                if (empty($value)) {
+                if ($value === null || trim((string) $value) === '') {
                     throw new \RuntimeException('Le nom d\'utilisateur ne peut pas être vide.');
                 }
                 return $value;
@@ -74,7 +74,7 @@ class CreateAdminCommand extends Command
 
         if (!$password) {
             $password = $io->askHidden('Mot de passe', static function ($value) {
-                if (empty($value)) {
+                if ($value === null || trim((string) $value) === '') {
                     throw new \RuntimeException('Le mot de passe ne peut pas être vide.');
                 }
                 return $value;

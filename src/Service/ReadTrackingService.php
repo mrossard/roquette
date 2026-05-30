@@ -38,7 +38,7 @@ class ReadTrackingService
 
         $changed = false;
         foreach ($channels as $channel) {
-            if (isset($existingChannelIds[$channel->getId()])) {
+            if (array_key_exists($channel->getId(), $existingChannelIds)) {
                 continue;
             }
 
