@@ -44,7 +44,8 @@ class SecurityController extends AbstractController
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $entityManager,
-        RateLimiterFactoryInterface $loginApiLimiter
+        RateLimiterFactoryInterface $loginApiLimiter,
+        \Psr\Log\LoggerInterface $logger
     ): Response {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_dashboard');
@@ -57,6 +58,7 @@ class SecurityController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $limiter = $loginApiLimiter->create($request->getClientIp());
             if (false === $limiter->consume(1)->isAccepted()) {
+                $logger->warning(sprintf('Registration rate limit exceeded for IP %s', $request->getClientIp()));
                 $this->addFlash('error', 'Trop de tentatives d\'inscription. Veuillez réessayer plus tard.');
                 return $this->render('security/register.html.twig', [
                     'registrationForm' => $form->createView(),
@@ -65,8 +67,8 @@ class SecurityController extends AbstractController
 
             $user->setPassword(
                 $passwordHasher->hashPassword(
-                    $user,
-                    $form->get('plainPassword')->getData()
+                     $user,
+                     $form->get('plainPassword')->getData()
                 )
             );
             if (strtolower($user->getUsername()) === 'admin') {
@@ -78,6 +80,8 @@ class SecurityController extends AbstractController
             $entityManager->persist($user);
             $entityManager->flush();
 
+            $logger->info(sprintf('New user account registered: "%s" (Roles: %s)', $user->getUsername(), implode(', ', $user->getRoles())));
+
             $this->addFlash('success', 'Votre compte a été créé avec succès ! Connectez-vous maintenant.');
             return $this->redirectToRoute('app_login');
         }
@@ -85,6 +89,7 @@ class SecurityController extends AbstractController
         if ($request->isMethod('POST')) {
             $limiter = $loginApiLimiter->create($request->getClientIp());
             if (false === $limiter->consume(1)->isAccepted()) {
+                $logger->warning(sprintf('Registration rate limit exceeded for IP %s during POST verification', $request->getClientIp()));
                 $this->addFlash('error', 'Trop de tentatives d\'inscription. Veuillez réessayer plus tard.');
                 return $this->render('security/register.html.twig', [
                     'registrationForm' => $form->createView(),

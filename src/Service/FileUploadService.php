@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use League\Flysystem\FilesystemOperator;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
@@ -40,7 +41,8 @@ class FileUploadService
 
     public function __construct(
         private FilesystemOperator $defaultStorage,
-        private ClamavService $clamavService
+        private ClamavService $clamavService,
+        private LoggerInterface $logger
     ) {}
 
     /**
@@ -52,6 +54,7 @@ class FileUploadService
     public function upload(UploadedFile $file): array
     {
         if (!$file->isValid()) {
+            $this->logger->warning(sprintf('File upload failed validation: file "%s" is invalid or exceeds PHP post size limit.', $file->getClientOriginalName()));
             throw new \InvalidArgumentException('Le fichier est invalide ou dépasse la taille autorisée par le serveur.');
         }
 
@@ -59,18 +62,22 @@ class FileUploadService
         $mimeType   = $file->getClientMimeType();
 
         if ($file->getSize() > self::MAX_FILE_SIZE) {
+            $this->logger->warning(sprintf('File upload failed validation: file "%s" size %d exceeds limit %d.', $file->getClientOriginalName(), $file->getSize(), self::MAX_FILE_SIZE));
             throw new \InvalidArgumentException(sprintf('Le fichier dépasse la taille maximale autorisée de %d Mo.', self::MAX_FILE_SIZE / 1024 / 1024));
         }
 
         if (!in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
+            $this->logger->warning(sprintf('File upload failed validation: extension ".%s" for file "%s" is not allowed.', $extension, $file->getClientOriginalName()));
             throw new \InvalidArgumentException(sprintf('L\'extension de fichier ".%s" n\'est pas autorisée.', $extension));
         }
 
         if (!in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
+            $this->logger->warning(sprintf('File upload failed validation: MIME type "%s" for file "%s" is not allowed.', $mimeType, $file->getClientOriginalName()));
             throw new \InvalidArgumentException(sprintf('Le type MIME "%s" n\'est pas autorisé.', $mimeType));
         }
 
         if (!$this->clamavService->scanFile($file)) {
+            $this->logger->warning(sprintf('File upload blocked: ClamAV detected a threat in "%s".', $file->getClientOriginalName()));
             throw new \InvalidArgumentException('Le fichier contient un virus ou un logiciel malveillant.');
         }
 
@@ -88,6 +95,8 @@ class FileUploadService
             fclose($stream);
         }
 
+        $this->logger->info(sprintf('File upload successful: "%s" saved as "%s" (%d bytes, MIME: %s).', $fileName, $newFilename, $fileSize, $mimeType));
+
         return [
             'fileName' => $fileName,
             'filePath' => $newFilename,
@@ -103,6 +112,7 @@ class FileUploadService
     {
         if ($this->defaultStorage->has($filePath)) {
             $this->defaultStorage->delete($filePath);
+            $this->logger->info(sprintf('Stored file deleted: "%s".', $filePath));
         }
     }
 

@@ -5,6 +5,7 @@ namespace App\Security;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,6 +30,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
         private UserRepository $userRepository,
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
+        private LoggerInterface $logger,
         #[Autowire(env: 'OAUTH_CLIENT_ID')] private string $clientId,
         #[\SensitiveParameter] #[Autowire(env: 'OAUTH_CLIENT_SECRET')] private string $clientSecret,
         #[Autowire(env: 'OAUTH_AUTH_URL')] private string $authUrl,
@@ -53,6 +55,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
         $storedState = $session->get('oauth2state');
 
         if (!$state || $state !== $storedState) {
+            $this->logger->warning('OAuth2 state validation failed. Possible CSRF attack.');
             throw new CustomUserMessageAuthenticationException('La validation de l\'état de sécurité (CSRF) a échoué. Veuillez réessayer.');
         }
 
@@ -75,11 +78,13 @@ class OAuth2Authenticator extends AbstractAuthenticator
             ]);
             $data = $response->toArray();
         } catch (\Exception $e) {
+            $this->logger->error('Failed to retrieve access token from OAuth2 server: ' . $e->getMessage(), ['exception' => $e]);
             throw new CustomUserMessageAuthenticationException('Impossible de récupérer le jeton d\'accès depuis le serveur OAuth2.');
         }
 
         $accessToken = $data['access_token'] ?? null;
         if (!$accessToken) {
+            $this->logger->error('OAuth2 server response did not contain an access token.');
             throw new CustomUserMessageAuthenticationException('Le serveur OAuth2 n\'a pas retourné de jeton d\'accès.');
         }
 
@@ -92,6 +97,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
             ]);
             $userData = $response->toArray();
         } catch (\Exception $e) {
+            $this->logger->error('Failed to retrieve user info from OAuth2 server: ' . $e->getMessage(), ['exception' => $e]);
             throw new CustomUserMessageAuthenticationException('Impossible de récupérer les informations de l\'utilisateur.');
         }
 
@@ -99,6 +105,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
         $username = (string) ($userData[$this->usernameField] ?? $userData['username'] ?? $userData['email'] ?? $userData['login'] ?? null);
 
         if (!$oauthId || !$username) {
+            $this->logger->error('Incomplete user info returned by OAuth2 server.', ['userData' => $userData]);
             throw new CustomUserMessageAuthenticationException('Les informations utilisateur retournées par le serveur OAuth2 sont incomplètes.');
         }
 
@@ -116,6 +123,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
                 $user->setOauthId($oauthId);
                 $user->setOauthProvider('generic');
                 $this->entityManager->flush();
+                $this->logger->info(sprintf('Linked existing user "%s" (ID: %d) with OAuth2 ID "%s".', $username, $user->getId(), $oauthId));
             } else {
                 // 3. Create a brand new user
                 $user = new User();
@@ -132,7 +140,10 @@ class OAuth2Authenticator extends AbstractAuthenticator
 
                 $this->entityManager->persist($user);
                 $this->entityManager->flush();
+                $this->logger->info(sprintf('Created new user "%s" (ID: %d) via OAuth2 registration with OAuth2 ID "%s".', $username, $user->getId(), $oauthId));
             }
+        } else {
+            $this->logger->debug(sprintf('User "%s" authenticated via OAuth2 with provider ID "%s".', $user->getUsername(), $oauthId));
         }
 
         return new SelfValidatingPassport(
@@ -144,11 +155,13 @@ class OAuth2Authenticator extends AbstractAuthenticator
 
     public function onAuthenticationSuccess(Request $request, #[\SensitiveParameter] TokenInterface $token, string $firewallName): ?Response
     {
+        $this->logger->info(sprintf('User "%s" successfully authenticated.', $token->getUserIdentifier()));
         return new RedirectResponse($this->urlGenerator->generate('app_dashboard'));
     }
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
     {
+        $this->logger->warning(sprintf('Authentication failure: %s', $exception->getMessageKey()), ['exception' => $exception]);
         $request->getSession()->set(SecurityRequestAttributes::AUTHENTICATION_ERROR, $exception);
         return new RedirectResponse($this->urlGenerator->generate('app_login'));
     }

@@ -13,6 +13,7 @@ use App\Repository\UserRepository;
 use App\Service\MercurePublisher;
 use App\Service\ReadTrackingService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +27,8 @@ class ChannelController extends AbstractController
 
     public function __construct(
         private MercurePublisher $mercurePublisher,
-        private ReadTrackingService $readTrackingService
+        private ReadTrackingService $readTrackingService,
+        private LoggerInterface $logger
     ) {}
 
     // -------------------------------------------------------------------------
@@ -73,6 +75,8 @@ class ChannelController extends AbstractController
 
         $entityManager->persist($channel);
         $entityManager->flush();
+
+        $this->logger->info(sprintf('Channel created: "%s" (slug: "%s", private: %s) by user "%s"', $channel->getName(), $channel->getSlug(), $channel->isPrivate() ? 'yes' : 'no', $currentUser->getUsername()));
 
         return $this->redirectToRoute('app_channel', ['slug' => $slug]);
     }
@@ -385,6 +389,8 @@ $isMember = true;
             'type'        => 'channel_deleted',
             'channelSlug' => $slug,
         ]);
+
+        $this->logger->info(sprintf('Channel deleted: "%s" (slug: "%s") by user "%s"', $channel->getName(), $channel->getSlug(), $currentUser->getUsername()));
 
         $entityManager->remove($channel);
         $entityManager->flush();

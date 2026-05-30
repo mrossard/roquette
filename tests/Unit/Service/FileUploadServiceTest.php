@@ -8,12 +8,14 @@ use League\Flysystem\FilesystemOperator;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class FileUploadServiceTest extends TestCase
 {
     private FilesystemOperator&MockObject $storage;
     private ClamavService&MockObject $clamavService;
+    private LoggerInterface&MockObject $logger;
     private FileUploadService $service;
 
     protected function setUp(): void
@@ -21,7 +23,8 @@ class FileUploadServiceTest extends TestCase
         $this->storage = $this->createMock(FilesystemOperator::class);
         $this->clamavService = $this->createMock(ClamavService::class);
         $this->clamavService->method('scanFile')->willReturn(true);
-        $this->service = new FileUploadService($this->storage, $this->clamavService);
+        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->service = new FileUploadService($this->storage, $this->clamavService, $this->logger);
     }
 
     #[Test]
@@ -110,7 +113,7 @@ class FileUploadServiceTest extends TestCase
         // Make ClamAV find a virus
         $this->clamavService = $this->createMock(ClamavService::class);
         $this->clamavService->method('scanFile')->willReturn(false);
-        $this->service = new FileUploadService($this->storage, $this->clamavService);
+        $this->service = new FileUploadService($this->storage, $this->clamavService, $this->logger);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Le fichier contient un virus ou un logiciel malveillant.');
