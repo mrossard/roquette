@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Service;
 
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
-use App\Repository\UserChannelReadRepository;
 use App\Repository\MessageRepository;
+use App\Repository\UserChannelReadRepository;
 use App\Service\ReadTrackingService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Test;
@@ -36,17 +38,15 @@ class ReadTrackingServiceTest extends TestCase
         $read->method('getChannel')->willReturn($channel);
 
         $ucrRepo = $this->createMock(UserChannelReadRepository::class);
-        $ucrRepo->expects($this->once())
-            ->method('findBy')
-            ->with(['user' => $user])
-            ->willReturn([$read]);
+        $ucrRepo->expects($this->once())->method('findBy')->with(['user' => $user])->willReturn([$read]);
 
         $messageRepo = $this->createMock(MessageRepository::class);
 
-        $this->entityManager->method('getRepository')
+        $this->entityManager
+            ->method('getRepository')
             ->willReturnMap([
                 [UserChannelRead::class, $ucrRepo],
-                [Message::class, $messageRepo],
+                [Message::class,         $messageRepo],
             ]);
 
         // We expect persist and flush not to be called since the read already exists
@@ -68,24 +68,29 @@ class ReadTrackingServiceTest extends TestCase
 
         $messageRepo = $this->createMock(MessageRepository::class);
         $latestMessage = $this->createMock(Message::class);
-        $messageRepo->expects($this->once())
+        $messageRepo
+            ->expects($this->once())
             ->method('findOneBy')
             ->with(['channel' => $channel], ['id' => 'DESC'])
             ->willReturn($latestMessage);
 
-        $this->entityManager->method('getRepository')
+        $this->entityManager
+            ->method('getRepository')
             ->willReturnMap([
                 [UserChannelRead::class, $ucrRepo],
-                [Message::class, $messageRepo]
+                [Message::class,         $messageRepo],
             ]);
 
-        $this->entityManager->expects($this->once())
+        $this->entityManager
+            ->expects($this->once())
             ->method('persist')
-            ->with($this->callback(static function (UserChannelRead $read) use ($user, $channel, $latestMessage) {
-                return $read->getUser() === $user &&
-                       $read->getChannel() === $channel &&
-                       $read->getLastReadMessage() === $latestMessage;
-            }));
+            ->with($this->callback(
+                static fn(UserChannelRead $read) => (
+                    $read->getUser() === $user
+                    && $read->getChannel() === $channel
+                    && $read->getLastReadMessage() === $latestMessage
+                ),
+            ));
 
         $this->entityManager->expects($this->once())->method('flush');
 
@@ -95,30 +100,31 @@ class ReadTrackingServiceTest extends TestCase
     #[Test]
     public function markChannelAsReadUpdatesExistingRecord(): void
     {
-        $user = $this->createMock(User::class);
-        $channel = $this->createMock(Channel::class);
+        $user = $this->createStub(User::class);
+        $channel = $this->createStub(Channel::class);
 
         $read = $this->createMock(UserChannelRead::class);
 
         $ucrRepo = $this->createMock(UserChannelReadRepository::class);
-        $ucrRepo->method('findOneBy')
+        $ucrRepo
+            ->expects($this->once())
+            ->method('findOneBy')
             ->with(['user' => $user, 'channel' => $channel])
             ->willReturn($read);
 
-        $messageRepo = $this->createMock(MessageRepository::class);
-        $latestMessage = $this->createMock(Message::class);
-        $messageRepo->method('findOneBy')
-            ->willReturn($latestMessage);
+        $messageRepo = $this->createStub(MessageRepository::class);
+        $latestMessage = $this->createStub(Message::class);
+        $messageRepo->method('findOneBy')->willReturn($latestMessage);
 
-        $this->entityManager->method('getRepository')
+        $this->entityManager
+            ->expects($this->exactly(2))
+            ->method('getRepository')
             ->willReturnMap([
                 [UserChannelRead::class, $ucrRepo],
-                [Message::class, $messageRepo]
+                [Message::class,         $messageRepo],
             ]);
 
-        $read->expects($this->once())
-            ->method('setLastReadMessage')
-            ->with($latestMessage);
+        $read->expects($this->once())->method('setLastReadMessage')->with($latestMessage);
 
         $this->entityManager->expects($this->never())->method('persist');
         $this->entityManager->expects($this->once())->method('flush');

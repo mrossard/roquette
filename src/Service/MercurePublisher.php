@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\Channel;
@@ -7,8 +9,8 @@ use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Mercure\Update;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * Centralises all Mercure SSE publish operations.
@@ -20,7 +22,7 @@ class MercurePublisher
 {
     public function __construct(
         private MessageBusInterface $bus,
-        private string $mercureTopicPrefix
+        private string $mercureTopicPrefix,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -48,20 +50,14 @@ class MercurePublisher
 
     public function publishToChannel(Channel $channel, array $payload): void
     {
-        $this->bus->dispatch(new Update(
-            $this->getChannelTopic($channel),
-            json_encode($payload),
-            $channel->isPrivate()
-        ));
+        $this->bus->dispatch(
+            new Update($this->getChannelTopic($channel), json_encode($payload), $channel->isPrivate()),
+        );
     }
 
     public function publishToUser(User $user, array $payload): void
     {
-        $this->bus->dispatch(new Update(
-            $this->getUserTopic($user),
-            json_encode($payload),
-            true // user topics are always private
-        ));
+        $this->bus->dispatch(new Update($this->getUserTopic($user), json_encode($payload), true)); // user topics are always private
     }
 
     public function publishToTopic(string $topicUrl, array $payload, bool $private = false): void
@@ -89,21 +85,21 @@ class MercurePublisher
         EntityManagerInterface $em,
         ?int $parentId = null,
         ?int $replyCount = null,
-        string $memberNotificationPrefix = ''
+        string $memberNotificationPrefix = '',
     ): void {
         $payload = [
-            'html'              => $renderedHtml,
-            'user'              => $author->getUsername(),
-            'author'            => $author->getUsername(),
+            'html' => $renderedHtml,
+            'user' => $author->getUsername(),
+            'author' => $author->getUsername(),
             'authorDisplayName' => $author->getDisplayName() ?: $author->getUsername(),
-            'channelSlug'       => $channel->getSlug(),
-            'channelName'       => $channel->isDm() ? 'Message direct' : '#' . $channel->getName(),
-            'content'           => $this->buildContentSummary($message),
+            'channelSlug' => $channel->getSlug(),
+            'channelName' => $channel->isDm() ? 'Message direct' : '#' . $channel->getName(),
+            'content' => $this->buildContentSummary($message),
         ];
 
         if ($parentId !== null) {
-            $payload['parentId']    = $parentId;
-            $payload['replyCount']  = $replyCount ?? 0;
+            $payload['parentId'] = $parentId;
+            $payload['replyCount'] = $replyCount ?? 0;
         }
 
         $this->publishToChannel($channel, $payload);
@@ -120,7 +116,7 @@ class MercurePublisher
         User $author,
         string $messageText,
         EntityManagerInterface $em,
-        string $contentPrefix = ''
+        string $contentPrefix = '',
     ): void {
         $ucrRepo = $em->getRepository(UserChannelRead::class);
 
@@ -144,15 +140,17 @@ class MercurePublisher
             $content = $contentPrefix . $this->buildContentSummary($message);
 
             $this->publishToUser($member, [
-                'channelSlug'                => $channel->getSlug(),
-                'channelId'                  => $channel->getId(),
-                'messageId'                  => $message->getId(),
-                'author'                     => $author->getUsername(),
-                'authorDisplayName'          => $author->getDisplayName() ?: $author->getUsername(),
-                'channelName'                => $channel->isDm() ? 'Message direct' : '#' . $channel->getName(),
-                'content'                    => $content,
-                'notificationsEnabled'       => $isMentioned ? $member->isMentionNotificationsEnabled() : $notificationsEnabled,
-                'isMention'                  => $isMentioned,
+                'channelSlug' => $channel->getSlug(),
+                'channelId' => $channel->getId(),
+                'messageId' => $message->getId(),
+                'author' => $author->getUsername(),
+                'authorDisplayName' => $author->getDisplayName() ?: $author->getUsername(),
+                'channelName' => $channel->isDm() ? 'Message direct' : '#' . $channel->getName(),
+                'content' => $content,
+                'notificationsEnabled' => $isMentioned
+                    ? $member->isMentionNotificationsEnabled()
+                    : $notificationsEnabled,
+                'isMention' => $isMentioned,
                 'isMentionNotificationAllowed' => $member->isMentionNotificationsEnabled(),
             ]);
         }

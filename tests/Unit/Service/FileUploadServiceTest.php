@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Service;
 
 use App\Service\ClamavService;
@@ -69,11 +71,15 @@ class FileUploadServiceTest extends TestCase
         $file->method('getSize')->willReturn(1024);
         $file->method('getPathname')->willReturn(__FILE__); // use dummy local file
 
-        $this->storage->expects($this->once())
+        $this->storage
+            ->expects($this->once())
             ->method('writeStream')
-            ->with($this->callback(static function ($filename) {
-                return str_starts_with($filename, 'photo-') && str_ends_with($filename, '.jpg');
-            }), $this->anything());
+            ->with(
+                $this->callback(
+                    static fn($filename) => str_starts_with($filename, 'photo-') && str_ends_with($filename, '.jpg'),
+                ),
+                $this->anything(),
+            );
 
         $result = $this->service->upload($file);
 

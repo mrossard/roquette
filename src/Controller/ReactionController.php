@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
@@ -13,7 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class ReactionController extends AbstractController
+final class ReactionController extends AbstractController
 {
     use MessageRendererTrait;
 
@@ -23,7 +25,7 @@ class ReactionController extends AbstractController
         string $emoji,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
-        MercurePublisher $mercurePublisher
+        MercurePublisher $mercurePublisher,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -43,11 +45,11 @@ class ReactionController extends AbstractController
             return new Response('Emoji non supporté.', 400);
         }
 
-        $reactionRepo    = $entityManager->getRepository(Reaction::class);
+        $reactionRepo = $entityManager->getRepository(Reaction::class);
         $existingReaction = $reactionRepo->findOneBy([
             'message' => $message,
-            'user'    => $currentUser,
-            'emoji'   => $emoji,
+            'user' => $currentUser,
+            'emoji' => $emoji,
         ]);
 
         if ($existingReaction) {
@@ -65,8 +67,8 @@ class ReactionController extends AbstractController
         $renderedHtml = $this->renderFeedItem($message);
 
         $mercurePublisher->publishToChannel($channel, [
-            'html'        => $renderedHtml,
-            'user'        => $currentUser->getUsername(),
+            'html' => $renderedHtml,
+            'user' => $currentUser->getUsername(),
             'channelSlug' => $channel->getSlug(),
         ]);
 

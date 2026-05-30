@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Functional\Controller;
 
 use App\Entity\Channel;
 use App\Entity\Invitation;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class InvitationControllerTest extends WebTestCase
 {
@@ -62,7 +64,11 @@ class InvitationControllerTest extends WebTestCase
     private function cleanup(): void
     {
         $userRepository = $this->entityManager->getRepository(User::class);
-        $users = $userRepository->findBy(['username' => ['test_invite_creator', 'test_invite_invitee', 'test_invite_other']]);
+        $users = $userRepository->findBy(['username' => [
+            'test_invite_creator',
+            'test_invite_invitee',
+            'test_invite_other',
+        ]]);
 
         $channelRepository = $this->entityManager->getRepository(Channel::class);
         $channels = $channelRepository->findBy(['slug' => ['test-invite-channel', 'test-invite-dm']]);
@@ -94,20 +100,25 @@ class InvitationControllerTest extends WebTestCase
         $this->client->loginUser($this->creator);
 
         $this->client->request('POST', '/channels/test-invite-channel/invite', [
-            'userId' => $this->invitee->getId()
+            'userId' => $this->invitee->getId(),
         ]);
 
         $this->assertResponseIsSuccessful();
-        $this->assertStringContainsString('test_invite_invitee a été invité !', $this->client->getResponse()->getContent());
+        static::assertStringContainsString(
+            'test_invite_invitee a été invité !',
+            $this->client->getResponse()->getContent(),
+        );
 
         // Check if invitation was created in DB
         $this->entityManager->clear();
-        $invitation = $this->entityManager->getRepository(Invitation::class)->findOneBy([
-            'channel' => $this->channel,
-            'invitee' => $this->invitee
-        ]);
+        $invitation = $this->entityManager
+            ->getRepository(Invitation::class)
+            ->findOneBy([
+                'channel' => $this->channel,
+                'invitee' => $this->invitee,
+            ]);
 
-        $this->assertNotNull($invitation);
+        static::assertNotNull($invitation);
     }
 
     #[Test]
@@ -116,7 +127,7 @@ class InvitationControllerTest extends WebTestCase
         $this->client->loginUser($this->invitee);
 
         $this->client->request('POST', '/channels/test-invite-channel/invite', [
-            'userId' => $this->creator->getId()
+            'userId' => $this->creator->getId(),
         ]);
 
         $this->assertResponseStatusCodeSame(403);
@@ -136,7 +147,7 @@ class InvitationControllerTest extends WebTestCase
 
         $this->client->loginUser($this->creator);
         $this->client->request('POST', '/channels/test-invite-dm/invite', [
-            'userId' => $this->invitee->getId()
+            'userId' => $this->invitee->getId(),
         ]);
 
         $this->assertResponseStatusCodeSame(403);
@@ -160,17 +171,17 @@ class InvitationControllerTest extends WebTestCase
         $this->assertResponseHasHeader('HX-Redirect');
 
         $this->entityManager->clear();
-        
+
         $dbChannel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
         $members = $dbChannel->getMembers();
         $memberUsernames = [];
         foreach ($members as $member) {
             $memberUsernames[] = $member->getUsername();
         }
-        $this->assertContains('test_invite_invitee', $memberUsernames);
+        static::assertContains('test_invite_invitee', $memberUsernames);
 
         $dbInvitation = $this->entityManager->getRepository(Invitation::class)->find($invitationId);
-        $this->assertNull($dbInvitation);
+        static::assertNull($dbInvitation);
     }
 
     #[Test]
@@ -192,7 +203,7 @@ class InvitationControllerTest extends WebTestCase
         $this->entityManager->clear();
 
         $dbInvitation = $this->entityManager->getRepository(Invitation::class)->find($invitationId);
-        $this->assertNull($dbInvitation);
+        static::assertNull($dbInvitation);
 
         $dbChannel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
         $members = $dbChannel->getMembers();
@@ -200,7 +211,7 @@ class InvitationControllerTest extends WebTestCase
         foreach ($members as $member) {
             $memberUsernames[] = $member->getUsername();
         }
-        $this->assertNotContains('test_invite_invitee', $memberUsernames);
+        static::assertNotContains('test_invite_invitee', $memberUsernames);
     }
 
     #[Test]

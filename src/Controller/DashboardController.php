@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\UserChannelRead;
@@ -29,7 +31,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *   - UserSettingsController — color, status, pin, API
  */
 #[IsGranted('ROLE_USER')]
-class DashboardController extends AbstractController
+final class DashboardController extends AbstractController
 {
     // -------------------------------------------------------------------------
     // Root redirect
@@ -59,7 +61,7 @@ class DashboardController extends AbstractController
         UserRepository $userRepository,
         InvitationRepository $invitationRepository,
         EntityManagerInterface $entityManager,
-        ReadTrackingService $readTrackingService
+        ReadTrackingService $readTrackingService,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -68,21 +70,20 @@ class DashboardController extends AbstractController
 
         $readTrackingService->ensureUserChannelReads($currentUser, $channels);
 
-        $ucrRepo     = $entityManager->getRepository(UserChannelRead::class);
+        $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
 
         $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
-        $allPublicChannels  = $channelRepository->findAllPublic();
-        $allUsers           = $userRepository->findAllExcept($currentUser);
+        $allPublicChannels = $channelRepository->findAllPublic();
+        $allUsers = $userRepository->findAllExcept($currentUser);
 
         return $this->render('dashboard/directory.html.twig', [
-            'channels'          => $channels,
+            'channels' => $channels,
             'allPublicChannels' => $allPublicChannels,
-            'unreadCounts'      => $unreadCounts,
+            'unreadCounts' => $unreadCounts,
             'pendingInvitations' => $pendingInvitations,
-            'activeChannel'     => null,
-            'allUsers'          => $allUsers,
+            'activeChannel' => null,
+            'allUsers' => $allUsers,
         ]);
     }
 }
-

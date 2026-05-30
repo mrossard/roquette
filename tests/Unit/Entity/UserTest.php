@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\User;
@@ -178,8 +180,8 @@ class UserTest extends TestCase
     public static function statusLabelProvider(): array
     {
         return [
-            'busy'    => ['busy', 'Occupé'],
-            'away'    => ['away', 'Absent'],
+            'busy' => ['busy', 'Occupé'],
+            'away' => ['away', 'Absent'],
             'offline' => ['offline', 'Hors ligne'],
         ];
     }
@@ -204,7 +206,7 @@ class UserTest extends TestCase
     #[Test]
     public function addSavedMessageAddsMessageToCollection(): void
     {
-        $user    = new User();
+        $user = new User();
         $message = new \App\Entity\Message();
 
         $user->addSavedMessage($message);
@@ -215,7 +217,7 @@ class UserTest extends TestCase
     #[Test]
     public function addSavedMessageDoesNotDuplicate(): void
     {
-        $user    = new User();
+        $user = new User();
         $message = new \App\Entity\Message();
 
         $user->addSavedMessage($message);
@@ -227,7 +229,7 @@ class UserTest extends TestCase
     #[Test]
     public function removeSavedMessageRemovesItFromCollection(): void
     {
-        $user    = new User();
+        $user = new User();
         $message = new \App\Entity\Message();
 
         $user->addSavedMessage($message);

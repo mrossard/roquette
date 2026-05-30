@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\User;
@@ -8,17 +10,17 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mercure\Update;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\Mercure\Update;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class AccountController extends AbstractController
+final class AccountController extends AbstractController
 {
     public function __construct(
-        private string $mercureTopicPrefix
+        private string $mercureTopicPrefix,
     ) {}
 
     #[Route('/account', name: 'app_account', methods: ['GET', 'POST'])]
@@ -27,7 +29,7 @@ class AccountController extends AbstractController
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $entityManager,
         ChannelRepository $channelRepository,
-        MessageBusInterface $bus
+        MessageBusInterface $bus,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -62,17 +64,16 @@ class AccountController extends AbstractController
                 $entityManager->flush();
 
                 // Publish status change via Mercure
-                $update = new Update(
-                    $this->mercureTopicPrefix . '/users/status',
-                    json_encode([
-                        'type' => 'user_status_changed',
-                        'username' => $currentUser->getUsername(),
-                        'status' => $currentUser->getStatus(),
-                        'statusLabel' => $currentUser->getStatusLabel(),
-                        'statusOverride' => $currentUser->getStatusOverride() ?? 'auto',
-                        'lastActive' => $currentUser->getLastActiveAt() ? $currentUser->getLastActiveAt()->getTimestamp() : null
-                    ])
-                );
+                $update = new Update($this->mercureTopicPrefix . '/users/status', json_encode([
+                    'type' => 'user_status_changed',
+                    'username' => $currentUser->getUsername(),
+                    'status' => $currentUser->getStatus(),
+                    'statusLabel' => $currentUser->getStatusLabel(),
+                    'statusOverride' => $currentUser->getStatusOverride() ?? 'auto',
+                    'lastActive' => $currentUser->getLastActiveAt()
+                        ? $currentUser->getLastActiveAt()->getTimestamp()
+                        : null,
+                ]));
                 $bus->dispatch($update);
 
                 $this->addFlash('success', 'Votre profil a été mis à jour avec succès !');

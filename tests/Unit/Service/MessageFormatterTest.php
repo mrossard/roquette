@@ -1,22 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Service;
 
 use App\Service\MessageFormatter;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 
 class MessageFormatterTest extends TestCase
 {
     private MessageFormatter $formatter;
-    private Security&MockObject $security;
+    private Security $security;
 
     protected function setUp(): void
     {
-        $this->security = $this->createMock(Security::class);
+        $this->security = $this->createStub(Security::class);
         $this->security->method('getUser')->willReturn(null);
 
         $this->formatter = new MessageFormatter($this->security);
@@ -193,10 +194,10 @@ class MessageFormatterTest extends TestCase
     #[Test]
     public function formatRendersSelfMentionWithMeMentionClass(): void
     {
-        $user = $this->createMock(\Symfony\Component\Security\Core\User\UserInterface::class);
+        $user = $this->createStub(\Symfony\Component\Security\Core\User\UserInterface::class);
         $user->method('getUserIdentifier')->willReturn('alice');
 
-        $security = $this->createMock(Security::class);
+        $security = $this->createStub(Security::class);
         $security->method('getUser')->willReturn($user);
 
         $formatter = new MessageFormatter($security);
@@ -220,12 +221,12 @@ class MessageFormatterTest extends TestCase
     public static function emoticonProvider(): array
     {
         return [
-            'smile ascii'   => [':)', '🙂'],
-            'grin ascii'    => [':D', '😀'],
-            'wink ascii'    => [';)', '😉'],
-            'sad ascii'     => [':(', '🙁'],
-            'tongue ascii'  => [':P', '😛'],
-            'cool ascii'    => ['8)', '😎'],
+            'smile ascii' => [':)', '🙂'],
+            'grin ascii' => [':D', '😀'],
+            'wink ascii' => [';)', '😉'],
+            'sad ascii' => [':(', '🙁'],
+            'tongue ascii' => [':P', '😛'],
+            'cool ascii' => ['8)', '😎'],
         ];
     }
 

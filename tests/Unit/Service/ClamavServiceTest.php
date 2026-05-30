@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 class ClamavServiceTestState
@@ -111,7 +113,8 @@ class ClamavServiceTest extends TestCase
         $file = $this->createMock(UploadedFile::class);
         $file->method('getPathname')->willReturn('/tmp/test-file');
 
-        $this->logger->expects($this->once())
+        $this->logger
+            ->expects($this->once())
             ->method('error')
             ->with($this->stringContains('Failed to connect to ClamAV daemon'));
 
@@ -156,7 +159,8 @@ class ClamavServiceTest extends TestCase
         $file->method('getPathname')->willReturn('/tmp/test-file');
         $file->method('getClientOriginalName')->willReturn('eicar.com');
 
-        $this->logger->expects($this->once())
+        $this->logger
+            ->expects($this->once())
             ->method('warning')
             ->with($this->stringContains('Virus detected in uploaded file "eicar.com"'));
 
@@ -173,7 +177,8 @@ class ClamavServiceTest extends TestCase
         $file->method('getPathname')->willReturn('/tmp/test-file');
         $file->method('getClientOriginalName')->willReturn('test.txt');
 
-        $this->logger->expects($this->once())
+        $this->logger
+            ->expects($this->once())
             ->method('error')
             ->with($this->stringContains('ClamAV returned an unexpected response'));
 

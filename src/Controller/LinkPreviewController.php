@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Service\LinkPreviewService;
@@ -10,10 +12,10 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class LinkPreviewController extends AbstractController
+final class LinkPreviewController extends AbstractController
 {
     public function __construct(
-        private readonly LinkPreviewService $linkPreviewService
+        private readonly LinkPreviewService $linkPreviewService,
     ) {}
 
     #[Route('/api/link-preview', name: 'app_api_link_preview', methods: ['GET'])]

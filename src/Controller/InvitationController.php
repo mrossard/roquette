@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\Invitation;
-
 use App\Repository\ChannelRepository;
 use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
@@ -14,7 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class InvitationController extends AbstractController
+final class InvitationController extends AbstractController
 {
     // -------------------------------------------------------------------------
     // Send invitation
@@ -27,7 +28,7 @@ class InvitationController extends AbstractController
         ChannelRepository $channelRepository,
         EntityManagerInterface $entityManager,
         MercurePublisher $mercurePublisher,
-        \Psr\Log\LoggerInterface $logger
+        \Psr\Log\LoggerInterface $logger,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -61,22 +62,30 @@ class InvitationController extends AbstractController
         $entityManager->persist($invitation);
         $entityManager->flush();
 
-        $logger->info(sprintf('User "%s" invited user "%s" to channel "%s" (slug: "%s")', $currentUser->getUsername(), $invitedUser->getUsername(), $activeChannel->getName(), $activeChannel->getSlug()));
+        $logger->info(sprintf(
+            'User "%s" invited user "%s" to channel "%s" (slug: "%s")',
+            $currentUser->getUsername(),
+            $invitedUser->getUsername(),
+            $activeChannel->getName(),
+            $activeChannel->getSlug(),
+        ));
 
         $sidebarHtml = $this->renderView('dashboard/_invite_sidebar_item.html.twig', [
             'invite' => $invitation,
         ]);
 
         $mercurePublisher->publishToUser($invitedUser, [
-            'type'           => 'invitation_received',
+            'type' => 'invitation_received',
             'invitedUsername' => $invitedUser->getUsername(),
-            'invitationId'   => $invitation->getId(),
-            'channelSlug'    => $activeChannel->getSlug(),
-            'channelName'    => $activeChannel->getName(),
-            'html'           => $sidebarHtml,
+            'invitationId' => $invitation->getId(),
+            'channelSlug' => $activeChannel->getSlug(),
+            'channelName' => $activeChannel->getName(),
+            'html' => $sidebarHtml,
         ]);
 
-        $usersToInvite = $entityManager->getRepository(\App\Entity\User::class)->createQueryBuilder('u')
+        $usersToInvite = $entityManager
+            ->getRepository(\App\Entity\User::class)
+            ->createQueryBuilder('u')
             ->where('u.id != :currentUserId')
             ->andWhere('u.id NOT IN (
                 SELECT mu.id FROM App\Entity\Channel c2 JOIN c2.members mu WHERE c2.id = :channelId
@@ -90,8 +99,8 @@ class InvitationController extends AbstractController
             ->getResult();
 
         return $this->render('dashboard/_invite_section.html.twig', [
-            'activeChannel'  => $activeChannel,
-            'usersToInvite'  => $usersToInvite,
+            'activeChannel' => $activeChannel,
+            'usersToInvite' => $usersToInvite,
             'successMessage' => sprintf('%s a été invité !', $invitedUser->getUsername()),
         ]);
     }
@@ -101,8 +110,11 @@ class InvitationController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/invitations/{id}/accept', name: 'app_invite_accept', methods: ['POST'])]
-    public function acceptInvitation(int $id, EntityManagerInterface $entityManager, \Psr\Log\LoggerInterface $logger): Response
-    {
+    public function acceptInvitation(
+        int $id,
+        EntityManagerInterface $entityManager,
+        \Psr\Log\LoggerInterface $logger,
+    ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
@@ -120,10 +132,15 @@ class InvitationController extends AbstractController
         $entityManager->remove($invitation);
         $entityManager->flush();
 
-        $logger->info(sprintf('User "%s" accepted invitation to channel "%s" (slug: "%s")', $currentUser->getUsername(), $channel->getName(), $channel->getSlug()));
+        $logger->info(sprintf(
+            'User "%s" accepted invitation to channel "%s" (slug: "%s")',
+            $currentUser->getUsername(),
+            $channel->getName(),
+            $channel->getSlug(),
+        ));
 
         return new Response(null, 204, [
-            'HX-Redirect' => $this->generateUrl('app_channel', ['slug' => $channel->getSlug()])
+            'HX-Redirect' => $this->generateUrl('app_channel', ['slug' => $channel->getSlug()]),
         ]);
     }
 
@@ -132,8 +149,11 @@ class InvitationController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/invitations/{id}/reject', name: 'app_invite_reject', methods: ['POST'])]
-    public function rejectInvitation(int $id, EntityManagerInterface $entityManager, \Psr\Log\LoggerInterface $logger): Response
-    {
+    public function rejectInvitation(
+        int $id,
+        EntityManagerInterface $entityManager,
+        \Psr\Log\LoggerInterface $logger,
+    ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
@@ -147,7 +167,13 @@ class InvitationController extends AbstractController
         }
 
         $channel = $invitation->getChannel();
-        $logger->info(sprintf('User "%s" rejected invitation (ID: %d) to channel "%s" (slug: "%s")', $currentUser->getUsername(), $id, $channel->getName(), $channel->getSlug()));
+        $logger->info(sprintf(
+            'User "%s" rejected invitation (ID: %d) to channel "%s" (slug: "%s")',
+            $currentUser->getUsername(),
+            $id,
+            $channel->getName(),
+            $channel->getSlug(),
+        ));
 
         $entityManager->remove($invitation);
         $entityManager->flush();

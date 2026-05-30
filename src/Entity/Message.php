@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\MessageRepository;
@@ -40,7 +42,6 @@ class Message
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $mimeType = null;
-
 
     #[ORM\ManyToOne(inversedBy: 'messages')]
     #[ORM\JoinColumn(nullable: false)]
@@ -201,7 +202,9 @@ class Message
                 ];
             }
             $grouped[$emoji]['count']++;
-            $grouped[$emoji]['usernames'][] = $reaction->getUser()->getDisplayName() ?: $reaction->getUser()->getUsername();
+            $grouped[$emoji]['usernames'][] = $reaction->getUser()->getDisplayName() ?: $reaction
+                ->getUser()
+                ->getUsername();
             $grouped[$emoji]['reactorUsernames'][] = $reaction->getUser()->getUsername();
             if ($currentUser && $reaction->getUser()->getId() === $currentUser->getId()) {
                 $grouped[$emoji]['hasReacted'] = true;

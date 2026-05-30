@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\Invitation;
@@ -20,9 +22,6 @@ class InvitationRepository extends ServiceEntityRepository
     /** @return Invitation[] */
     public function findPendingForUser(User $user): array
     {
-        return $this->findBy(
-            ['invitee' => $user],
-            ['createdAt' => 'DESC']
-        );
+        return $this->findBy(['invitee' => $user], ['createdAt' => 'DESC']);
     }
 }

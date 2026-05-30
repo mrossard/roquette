@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\Message;
@@ -22,11 +24,15 @@ class MessageRepository extends ServiceEntityRepository
      *
      * @return Message[]
      */
-    public function findUnreadInChannel(\App\Entity\Channel $channel, \App\Entity\User $user, ?int $lastReadMessageId): array
-    {
+    public function findUnreadInChannel(
+        \App\Entity\Channel $channel,
+        \App\Entity\User $user,
+        ?int $lastReadMessageId,
+    ): array {
         if ($lastReadMessageId === null) {
             // No read record at all: all messages from others are "unread"
-            return $this->createQueryBuilder('m')
+            return $this
+                ->createQueryBuilder('m')
                 ->where('m.channel = :channel')
                 ->andWhere('m.parent IS NULL')
                 ->andWhere('m.author != :user')
@@ -56,7 +62,8 @@ class MessageRepository extends ServiceEntityRepository
             ORDER BY m.createdAt ASC
         ';
 
-        return $em->createQuery($dql)
+        return $em
+            ->createQuery($dql)
             ->setParameter('channel', $channel)
             ->setParameter('user', $user)
             ->setParameter('lastRead', $lastReadMessageId)
@@ -68,7 +75,8 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function searchInChannel(\App\Entity\Channel $channel, string $query): array
     {
-        return $this->createQueryBuilder('m')
+        return $this
+            ->createQueryBuilder('m')
             ->where('m.channel = :channel')
             ->andWhere('LOWER(m.content) LIKE :query')
             ->setParameter('channel', $channel)
@@ -85,7 +93,8 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findLatestInChannel(\App\Entity\Channel $channel, int $limit = 50, ?int $beforeId = null): array
     {
-        $qb = $this->createQueryBuilder('m')
+        $qb = $this
+            ->createQueryBuilder('m')
             ->select('m', 'author', 'reactions', 'reaction_user', 'replies')
             ->leftJoin('m.author', 'author')
             ->leftJoin('m.reactions', 'reactions')
@@ -95,11 +104,11 @@ class MessageRepository extends ServiceEntityRepository
             ->andWhere('m.parent IS NULL');
 
         if ($beforeId !== null) {
-            $qb->andWhere('m.id < :beforeId')
-                ->setParameter('beforeId', $beforeId);
+            $qb->andWhere('m.id < :beforeId')->setParameter('beforeId', $beforeId);
         }
 
-        return $qb->orderBy('m.id', 'DESC')
+        return $qb
+            ->orderBy('m.id', 'DESC')
             ->setParameter('channel', $channel)
             ->setMaxResults($limit)
             ->getQuery()
@@ -117,9 +126,10 @@ class MessageRepository extends ServiceEntityRepository
         ?string $channelName = null,
         ?bool $hasFile = null,
         ?string $fileType = null,
-        ?string $textQuery = null
+        ?string $textQuery = null,
     ): array {
-        $qb = $this->createQueryBuilder('m')
+        $qb = $this
+            ->createQueryBuilder('m')
             ->select('m', 'author', 'channel')
             ->join('m.author', 'author')
             ->join('m.channel', 'channel')
@@ -128,13 +138,16 @@ class MessageRepository extends ServiceEntityRepository
             ->setParameter('currentUser', $currentUser);
 
         if ($authorUsername) {
-            $qb->andWhere('LOWER(author.username) = :authorUsername OR LOWER(author.displayName) = :authorUsername')
-               ->setParameter('authorUsername', strtolower($authorUsername));
+            $qb->andWhere(
+                'LOWER(author.username) = :authorUsername OR LOWER(author.displayName) = :authorUsername',
+            )->setParameter('authorUsername', strtolower($authorUsername));
         }
 
         if ($channelName) {
-            $qb->andWhere('LOWER(channel.name) = :channelName OR LOWER(channel.slug) = :channelName')
-               ->setParameter('channelName', strtolower($channelName));
+            $qb->andWhere('LOWER(channel.name) = :channelName OR LOWER(channel.slug) = :channelName')->setParameter(
+                'channelName',
+                strtolower($channelName),
+            );
         }
 
         if ($hasFile) {
@@ -143,23 +156,20 @@ class MessageRepository extends ServiceEntityRepository
 
         if ($fileType) {
             if ($fileType === 'pdf') {
-                $qb->andWhere('m.mimeType = :fileType')
-                   ->setParameter('fileType', 'application/pdf');
+                $qb->andWhere('m.mimeType = :fileType')->setParameter('fileType', 'application/pdf');
             } else {
-                $qb->andWhere('m.mimeType LIKE :fileType')
-                   ->setParameter('fileType', $fileType . '/%');
+                $qb->andWhere('m.mimeType LIKE :fileType')->setParameter('fileType', $fileType . '/%');
             }
         }
 
         if ($textQuery && trim($textQuery) !== '') {
-            $qb->andWhere('LOWER(m.content) LIKE :textQuery')
-               ->setParameter('textQuery', '%' . mb_strtolower($textQuery, 'UTF-8') . '%');
+            $qb->andWhere('LOWER(m.content) LIKE :textQuery')->setParameter(
+                'textQuery',
+                '%' . mb_strtolower($textQuery, 'UTF-8') . '%',
+            );
         }
 
-        return $qb->orderBy('m.createdAt', 'DESC')
-            ->setMaxResults(30)
-            ->getQuery()
-            ->getResult();
+        return $qb->orderBy('m.createdAt', 'DESC')->setMaxResults(30)->getQuery()->getResult();
     }
 
     /**
@@ -167,7 +177,8 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findMessagesAround(\App\Entity\Channel $channel, int $messageId, int $limit = 50): array
     {
-        return $this->createQueryBuilder('m')
+        return $this
+            ->createQueryBuilder('m')
             ->select('m', 'author', 'reactions', 'reaction_user', 'replies')
             ->leftJoin('m.author', 'author')
             ->leftJoin('m.reactions', 'reactions')
@@ -184,4 +195,3 @@ class MessageRepository extends ServiceEntityRepository
             ->getResult();
     }
 }
-

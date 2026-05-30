@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use Symfony\Contracts\Cache\CacheInterface;
@@ -8,7 +10,7 @@ use Symfony\Contracts\Cache\ItemInterface;
 class LinkPreviewService
 {
     public function __construct(
-        private readonly CacheInterface $cache
+        private readonly CacheInterface $cache,
     ) {}
 
     /**
@@ -102,7 +104,7 @@ class LinkPreviewService
             'ssl' => [
                 'verify_peer' => false,
                 'verify_peer_name' => false,
-            ]
+            ],
         ]);
 
         // Lire un maximum de 1 Mo pour éviter de télécharger des fichiers volumineux tout en capturant les OG tags (YouTube/Spotify nécessitent parfois plus de 100 Ko)
@@ -118,7 +120,8 @@ class LinkPreviewService
     {
         // 1. Titre
         $title = '';
-        if (preg_match('/<meta[^>]*property=["\']og:title["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
+        if (
+            preg_match('/<meta[^>]*property=["\']og:title["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
             || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:title["\']/is', $html, $matches)
             || preg_match('/<meta[^>]*name=["\']twitter:title["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
             || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']twitter:title["\']/is', $html, $matches)
@@ -131,12 +134,25 @@ class LinkPreviewService
 
         // 2. Description
         $description = '';
-        if (preg_match('/<meta[^>]*property=["\']og:description["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:description["\']/is', $html, $matches)
+        if (
+            preg_match('/<meta[^>]*property=["\']og:description["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
+            || preg_match(
+                '/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:description["\']/is',
+                $html,
+                $matches,
+            )
             || preg_match('/<meta[^>]*name=["\']description["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
             || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']description["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*name=["\']twitter:description["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']twitter:description["\']/is', $html, $matches)
+            || preg_match(
+                '/<meta[^>]*name=["\']twitter:description["\'][^>]*content=["\'](.*?)["\']/is',
+                $html,
+                $matches,
+            )
+            || preg_match(
+                '/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']twitter:description["\']/is',
+                $html,
+                $matches,
+            )
         ) {
             $description = $matches[1];
         }
@@ -144,7 +160,8 @@ class LinkPreviewService
 
         // 3. Image
         $image = '';
-        if (preg_match('/<meta[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
+        if (
+            preg_match('/<meta[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
             || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\']/is', $html, $matches)
             || preg_match('/<meta[^>]*name=["\']twitter:image["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
             || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']twitter:image["\']/is', $html, $matches)
@@ -170,7 +187,8 @@ class LinkPreviewService
 
         // 4. Nom du site
         $siteName = '';
-        if (preg_match('/<meta[^>]*property=["\']og:site_name["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
+        if (
+            preg_match('/<meta[^>]*property=["\']og:site_name["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
             || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:site_name["\']/is', $html, $matches)
         ) {
             $siteName = html_entity_decode(trim(strip_tags($matches[1])), ENT_QUOTES | ENT_HTML5, 'UTF-8');

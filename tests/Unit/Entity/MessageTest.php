@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\Message;
-
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -16,9 +17,9 @@ class MessageTest extends TestCase
     #[Test]
     public function constructorSetsCreatedAt(): void
     {
-        $before  = new \DateTimeImmutable();
+        $before = new \DateTimeImmutable();
         $message = new Message();
-        $after   = new \DateTimeImmutable();
+        $after = new \DateTimeImmutable();
 
         $this->assertGreaterThanOrEqual($before, $message->getCreatedAt());
         $this->assertLessThanOrEqual($after, $message->getCreatedAt());
@@ -96,7 +97,7 @@ class MessageTest extends TestCase
     public function addReplyLinksBothSides(): void
     {
         $parent = new Message();
-        $reply  = new Message();
+        $reply = new Message();
 
         $parent->addReply($reply);
 
@@ -108,7 +109,7 @@ class MessageTest extends TestCase
     public function addReplyDoesNotDuplicate(): void
     {
         $parent = new Message();
-        $reply  = new Message();
+        $reply = new Message();
 
         $parent->addReply($reply);
         $parent->addReply($reply);
@@ -120,7 +121,7 @@ class MessageTest extends TestCase
     public function removeReplyUnlinksBothSides(): void
     {
         $parent = new Message();
-        $reply  = new Message();
+        $reply = new Message();
 
         $parent->addReply($reply);
         $parent->removeReply($reply);

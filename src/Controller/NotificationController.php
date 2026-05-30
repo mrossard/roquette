@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\UserChannelRead;
@@ -10,14 +12,13 @@ use App\Service\MercurePublisher;
 use App\Service\ReadTrackingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class NotificationController extends AbstractController
+final class NotificationController extends AbstractController
 {
     // -------------------------------------------------------------------------
     // Mark channel as read
@@ -27,7 +28,7 @@ class NotificationController extends AbstractController
     public function markAsRead(
         string $slug,
         ChannelRepository $channelRepository,
-        ReadTrackingService $readTrackingService
+        ReadTrackingService $readTrackingService,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -55,7 +56,7 @@ class NotificationController extends AbstractController
         string $slug,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -69,16 +70,16 @@ class NotificationController extends AbstractController
             return new Response('Non autorisé.', 403);
         }
 
-        $ucrRepo    = $entityManager->getRepository(UserChannelRead::class);
+        $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         /** @var \App\Entity\UserChannelRead|null $activeRead */
-        $activeRead        = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $activeChannel]);
+        $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $activeChannel]);
         $lastReadMessageId = $activeRead?->getLastReadMessage()?->getId();
 
         $messages = $messageRepository->findUnreadInChannel($activeChannel, $currentUser, $lastReadMessageId);
 
         return $this->render('dashboard/_messages_feed.html.twig', [
-            'messages'           => $messages,
-            'activeChannel'      => $activeChannel,
+            'messages' => $messages,
+            'activeChannel' => $activeChannel,
             'firstUnreadMessageId' => null,
             'unreadFilterActive' => true,
         ]);
@@ -93,7 +94,7 @@ class NotificationController extends AbstractController
         string $slug,
         Request $request,
         ChannelRepository $channelRepository,
-        MessageRepository $messageRepository
+        MessageRepository $messageRepository,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -113,13 +114,13 @@ class NotificationController extends AbstractController
             $messages = $messageRepository->findBy(
                 ['channel' => $activeChannel, 'parent' => null],
                 ['createdAt' => 'DESC'],
-                50
+                50,
             );
             $messages = array_reverse($messages);
 
             return $this->render('dashboard/_messages_feed.html.twig', [
-                'messages'            => $messages,
-                'activeChannel'       => $activeChannel,
+                'messages' => $messages,
+                'activeChannel' => $activeChannel,
                 'firstUnreadMessageId' => null,
             ]);
         }
@@ -127,9 +128,9 @@ class NotificationController extends AbstractController
         $messages = $messageRepository->searchInChannel($activeChannel, $query);
 
         return $this->render('dashboard/_messages_feed.html.twig', [
-            'messages'            => $messages,
-            'activeChannel'       => $activeChannel,
-            'searchQuery'         => $query,
+            'messages' => $messages,
+            'activeChannel' => $activeChannel,
+            'searchQuery' => $query,
             'firstUnreadMessageId' => null,
         ]);
     }
@@ -142,7 +143,7 @@ class NotificationController extends AbstractController
     public function toggleNotifications(
         string $slug,
         ChannelRepository $channelRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -153,7 +154,7 @@ class NotificationController extends AbstractController
         }
 
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
-        $ucr     = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $channel]);
+        $ucr = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $channel]);
         if (!$ucr) {
             $ucr = new UserChannelRead();
             $ucr->setUser($currentUser);
@@ -171,7 +172,7 @@ class NotificationController extends AbstractController
         $entityManager->flush();
 
         return $this->render('dashboard/_notification_toggle.html.twig', [
-            'activeChannel'        => $channel,
+            'activeChannel' => $channel,
             'notificationsEnabled' => $newStatus,
         ]);
     }
@@ -185,7 +186,7 @@ class NotificationController extends AbstractController
         string $slug,
         Request $request,
         ChannelRepository $channelRepository,
-        MercurePublisher $mercurePublisher
+        MercurePublisher $mercurePublisher,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -199,14 +200,14 @@ class NotificationController extends AbstractController
             return new Response('Non autorisé.', 403);
         }
 
-        $data      = json_decode($request->getContent(), true);
-        $isTyping  = filter_var($data['isTyping'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $data = json_decode($request->getContent(), true);
+        $isTyping = filter_var($data['isTyping'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $mercurePublisher->publishToChannel($activeChannel, [
-            'type'        => 'user_typing',
-            'username'    => $currentUser->getUsername(),
+            'type' => 'user_typing',
+            'username' => $currentUser->getUsername(),
             'displayName' => $currentUser->getDisplayName() ?: $currentUser->getUsername(),
-            'isTyping'    => $isTyping,
+            'isTyping' => $isTyping,
             'channelSlug' => $activeChannel->getSlug(),
         ]);
 
@@ -218,7 +219,7 @@ class NotificationController extends AbstractController
         Request $request,
         UserRepository $userRepository,
         ChannelRepository $channelRepository,
-        MessageRepository $messageRepository
+        MessageRepository $messageRepository,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -255,7 +256,7 @@ class NotificationController extends AbstractController
         if (preg_match('/has:([^\s]+)/', $textQuery, $matches)) {
             $hasValue = strtolower($matches[1]);
             $hasFile = true;
-            if (in_array($hasValue, ['image', 'video', 'audio', 'pdf'])) {
+            if (in_array($hasValue, ['image', 'video', 'audio', 'pdf'], strict: true)) {
                 $fileType = $hasValue;
             }
             $textQuery = str_replace($matches[0], '', $textQuery);
@@ -278,7 +279,7 @@ class NotificationController extends AbstractController
             $channelName,
             $hasFile,
             $fileType,
-            $textQuery
+            $textQuery,
         );
 
         return $this->render('dashboard/_global_search_results.html.twig', [

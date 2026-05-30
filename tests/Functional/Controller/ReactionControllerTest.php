@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Functional\Controller;
 
 use App\Entity\Channel;
@@ -7,8 +9,8 @@ use App\Entity\Message;
 use App\Entity\Reaction;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class ReactionControllerTest extends WebTestCase
 {
@@ -32,7 +34,7 @@ class ReactionControllerTest extends WebTestCase
         $user = new User();
         $user->setUsername('test_reaction_user');
         $user->setRoles(['ROLE_USER']);
-        
+
         $passwordHasher = $container->get('security.user_password_hasher');
         $user->setPassword($passwordHasher->hashPassword($user, 'password123'));
 
@@ -71,10 +73,18 @@ class ReactionControllerTest extends WebTestCase
     private function cleanup(): void
     {
         $conn = $this->entityManager->getConnection();
-        $conn->executeStatement('DELETE FROM reaction WHERE user_id IN (SELECT id FROM "user" WHERE username = ?)', ['test_reaction_user']);
-        $conn->executeStatement('DELETE FROM message WHERE author_id IN (SELECT id FROM "user" WHERE username = ?)', ['test_reaction_user']);
-        $conn->executeStatement('DELETE FROM user_channel_read WHERE user_id IN (SELECT id FROM "user" WHERE username = ?)', ['test_reaction_user']);
-        $conn->executeStatement('DELETE FROM channel WHERE creator_id IN (SELECT id FROM "user" WHERE username = ?)', ['test_reaction_user']);
+        $conn->executeStatement('DELETE FROM reaction WHERE user_id IN (SELECT id FROM "user" WHERE username = ?)', [
+            'test_reaction_user',
+        ]);
+        $conn->executeStatement('DELETE FROM message WHERE author_id IN (SELECT id FROM "user" WHERE username = ?)', [
+            'test_reaction_user',
+        ]);
+        $conn->executeStatement('DELETE FROM user_channel_read WHERE user_id IN (SELECT id FROM "user" WHERE username = ?)', [
+            'test_reaction_user',
+        ]);
+        $conn->executeStatement('DELETE FROM channel WHERE creator_id IN (SELECT id FROM "user" WHERE username = ?)', [
+            'test_reaction_user',
+        ]);
         $conn->executeStatement('DELETE FROM "user" WHERE username = ?', ['test_reaction_user']);
     }
 
@@ -92,9 +102,9 @@ class ReactionControllerTest extends WebTestCase
         $reactions = $reactionRepo->findBy([
             'message' => $this->message,
             'user' => $this->testUser,
-            'emoji' => '👍'
+            'emoji' => '👍',
         ]);
-        $this->assertCount(1, $reactions);
+        static::assertCount(1, $reactions);
 
         // 2. Post same emoji reaction again (should toggle it off)
         $this->client->request('POST', sprintf('/messages/%d/react/👍', $messageId));
@@ -104,16 +114,16 @@ class ReactionControllerTest extends WebTestCase
         $reactions = $reactionRepo->findBy([
             'message' => $this->message,
             'user' => $this->testUser,
-            'emoji' => '👍'
+            'emoji' => '👍',
         ]);
-        $this->assertCount(0, $reactions);
+        static::assertCount(0, $reactions);
     }
 
     #[Test]
     public function testReactWithUnsupportedEmoji(): void
     {
         $messageId = $this->message->getId();
-        
+
         $this->client->request('POST', sprintf('/messages/%d/react/💩', $messageId));
         $this->assertResponseStatusCodeSame(400);
     }

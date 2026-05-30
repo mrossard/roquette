@@ -1,19 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\EventSubscriber;
 
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\Security\Http\Event\CheckPassportEvent;
-use Symfony\Component\Security\Http\Authenticator\FormLoginAuthenticator;
-use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
+use Symfony\Component\Security\Http\Authenticator\FormLoginAuthenticator;
+use Symfony\Component\Security\Http\Event\CheckPassportEvent;
 
 class SecuritySubscriber implements EventSubscriberInterface
 {
     public function __construct(
-        #[Autowire(env: 'bool:AUTH_FORM_ENABLED')] private bool $authFormEnabled
-    ) {
-    }
+        #[Autowire(env: 'bool:AUTH_FORM_ENABLED')]
+        private bool $authFormEnabled,
+    ) {}
 
     public static function getSubscribedEvents(): array
     {

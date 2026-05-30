@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use Psr\Log\LoggerInterface;
@@ -13,7 +15,7 @@ class ClamavService
         private string $host,
         #[Autowire(env: 'int:CLAMAV_PORT')]
         private int $port,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -24,7 +26,13 @@ class ClamavService
     {
         $socket = @fsockopen($this->host, $this->port, $errno, $errstr, 5);
         if (!$socket) {
-            $this->logger->error(sprintf('Failed to connect to ClamAV daemon at %s:%d: %s (%d)', $this->host, $this->port, $errstr, $errno));
+            $this->logger->error(sprintf(
+                'Failed to connect to ClamAV daemon at %s:%d: %s (%d)',
+                $this->host,
+                $this->port,
+                $errstr,
+                $errno,
+            ));
             throw new \RuntimeException('Le service d\'analyse antivirus est temporairement indisponible.');
         }
 
@@ -69,11 +77,19 @@ class ClamavService
         }
 
         if (str_contains($response, 'FOUND')) {
-            $this->logger->warning(sprintf('Virus detected in uploaded file "%s": %s', $file->getClientOriginalName(), $response));
+            $this->logger->warning(sprintf(
+                'Virus detected in uploaded file "%s": %s',
+                $file->getClientOriginalName(),
+                $response,
+            ));
             return false;
         }
 
-        $this->logger->error(sprintf('ClamAV returned an unexpected response for "%s": %s', $file->getClientOriginalName(), $response));
+        $this->logger->error(sprintf(
+            'ClamAV returned an unexpected response for "%s": %s',
+            $file->getClientOriginalName(),
+            $response,
+        ));
         throw new \RuntimeException('Une erreur est survenue lors de l\'analyse antivirus du fichier.');
     }
 }

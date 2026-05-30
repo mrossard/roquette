@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\ChannelRepository;
-
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -39,9 +40,8 @@ class Channel
     private ?int $messageRetentionMonths = 6;
 
     #[ORM\ManyToOne(targetEntity: Message::class)]
-    #[ORM\JoinColumn(name: "pinned_message_id", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
+    #[ORM\JoinColumn(name: 'pinned_message_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Message $pinnedMessage = null;
-
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
@@ -176,7 +176,6 @@ class Channel
         return null;
     }
 
-
     public function getCreator(): ?User
     {
         return $this->creator;
@@ -224,13 +223,16 @@ class Channel
     public function getLastMessage(): ?Message
     {
         $criteria = \Doctrine\Common\Collections\Criteria::create()
-            ->orderBy(['createdAt' => \Doctrine\Common\Collections\Criteria::DESC, 'id' => \Doctrine\Common\Collections\Criteria::DESC])
+            ->orderBy([
+                'createdAt' => \Doctrine\Common\Collections\Criteria::DESC,
+                'id' => \Doctrine\Common\Collections\Criteria::DESC,
+            ])
             ->setMaxResults(1);
 
         $result = $this->messages->matching($criteria)->first();
 
         return $result ?: null;
-     }
+    }
 
     public function getMessageRetentionMonths(): ?int
     {

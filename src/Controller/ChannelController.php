@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Channel;
-
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
@@ -21,14 +22,14 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class ChannelController extends AbstractController
+final class ChannelController extends AbstractController
 {
     use MessageRendererTrait;
 
     public function __construct(
         private MercurePublisher $mercurePublisher,
         private ReadTrackingService $readTrackingService,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -84,7 +85,13 @@ class ChannelController extends AbstractController
         $entityManager->persist($channel);
         $entityManager->flush();
 
-        $this->logger->info(sprintf('Channel created: "%s" (slug: "%s", private: %s) by user "%s"', $channel->getName(), $channel->getSlug(), $channel->isPrivate() ? 'yes' : 'no', $currentUser->getUsername()));
+        $this->logger->info(sprintf(
+            'Channel created: "%s" (slug: "%s", private: %s) by user "%s"',
+            $channel->getName(),
+            $channel->getSlug(),
+            $channel->isPrivate() ? 'yes' : 'no',
+            $currentUser->getUsername(),
+        ));
 
         return $this->redirectToRoute('app_channel', ['slug' => $slug]);
     }
@@ -101,7 +108,7 @@ class ChannelController extends AbstractController
         MessageRepository $messageRepository,
         UserRepository $userRepository,
         InvitationRepository $invitationRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -110,10 +117,12 @@ class ChannelController extends AbstractController
 
         $activeChannel = null;
         foreach ($channels as $channel) {
-            if ($channel->getSlug() !== $slug) { continue; }
+            if ($channel->getSlug() !== $slug) {
+                continue;
+            }
 
-$activeChannel = $channel;
-                break;
+            $activeChannel = $channel;
+            break;
         }
 
         $isMember = true;
@@ -159,10 +168,12 @@ $activeChannel = $channel;
 
             if ($lastReadMessageId !== null) {
                 foreach ($messages as $msg) {
-                    if (!($msg->getId() > $lastReadMessageId && $msg->getAuthor()->getId() !== $currentUser->getId())) { continue; }
+                    if (!($msg->getId() > $lastReadMessageId && $msg->getAuthor()->getId() !== $currentUser->getId())) {
+                        continue;
+                    }
 
-$firstUnreadMessageId = $msg->getId();
-                        break;
+                    $firstUnreadMessageId = $msg->getId();
+                    break;
                 }
             }
 
@@ -189,15 +200,15 @@ $firstUnreadMessageId = $msg->getId();
         }
 
         return $this->render('dashboard/index.html.twig', [
-            'channels'            => $channels,
-            'activeChannel'       => $activeChannel,
-            'messages'            => $messages,
-            'topic_url'           => $this->getChannelTopicUrl($activeChannel),
-            'unreadCounts'        => $unreadCounts,
+            'channels' => $channels,
+            'activeChannel' => $activeChannel,
+            'messages' => $messages,
+            'topic_url' => $this->getChannelTopicUrl($activeChannel),
+            'unreadCounts' => $unreadCounts,
             'firstUnreadMessageId' => $firstUnreadMessageId,
-            'usersToInvite'       => $usersToInvite,
-            'pendingInvitations'  => $pendingInvitations,
-            'isMember'            => $isMember,
+            'usersToInvite' => $usersToInvite,
+            'pendingInvitations' => $pendingInvitations,
+            'isMember' => $isMember,
             'notificationsEnabled' => $notificationsEnabled,
         ]);
     }
@@ -212,7 +223,7 @@ $firstUnreadMessageId = $msg->getId();
         Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -225,10 +236,12 @@ $firstUnreadMessageId = $msg->getId();
         $channels = $channelRepository->findAllForUser($currentUser);
         $isMember = false;
         foreach ($channels as $channel) {
-            if ($channel->getId() !== $activeChannel->getId()) { continue; }
+            if ($channel->getId() !== $activeChannel->getId()) {
+                continue;
+            }
 
-$isMember = true;
-                break;
+            $isMember = true;
+            break;
         }
 
         if (!$isMember) {
@@ -247,9 +260,9 @@ $isMember = true;
         $nextBeforeId = count($moreMessages) > 0 ? $moreMessages[0]->getId() : null;
 
         return $this->render('dashboard/_more_messages.html.twig', [
-            'messages'     => $moreMessages,
-            'channel'      => $activeChannel,
-            'hasMore'      => $hasMore,
+            'messages' => $moreMessages,
+            'channel' => $activeChannel,
+            'hasMore' => $hasMore,
             'nextBeforeId' => $nextBeforeId,
         ]);
     }
@@ -262,7 +275,7 @@ $isMember = true;
     public function openDm(
         string $username,
         EntityManagerInterface $entityManager,
-        ChannelRepository $channelRepository
+        ChannelRepository $channelRepository,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -291,7 +304,11 @@ $isMember = true;
 
             $dmChannel->setSlug($slug);
             $dmChannel->setName(sprintf('%s & %s', $currentUser->getUsername(), $partner->getUsername()));
-            $dmChannel->setDescription(sprintf('Conversation privée entre %s et %s', $currentUser->getUsername(), $partner->getUsername()));
+            $dmChannel->setDescription(sprintf(
+                'Conversation privée entre %s et %s',
+                $currentUser->getUsername(),
+                $partner->getUsername(),
+            ));
 
             $dmChannel->setCreator($currentUser);
             $dmChannel->addMember($currentUser);
@@ -317,7 +334,7 @@ $isMember = true;
     public function joinChannel(
         string $slug,
         ChannelRepository $channelRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -343,7 +360,7 @@ $isMember = true;
     public function leaveChannel(
         string $slug,
         ChannelRepository $channelRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -376,7 +393,7 @@ $isMember = true;
     public function deleteChannel(
         string $slug,
         ChannelRepository $channelRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -386,7 +403,7 @@ $isMember = true;
             return $this->redirectToRoute('app_dashboard');
         }
 
-        $isAdmin   = $this->isGranted('ROLE_ADMIN');
+        $isAdmin = $this->isGranted('ROLE_ADMIN');
         $isCreator = $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
 
         if (!$isAdmin && !$isCreator) {
@@ -394,11 +411,16 @@ $isMember = true;
         }
 
         $this->mercurePublisher->publishToChannel($channel, [
-            'type'        => 'channel_deleted',
+            'type' => 'channel_deleted',
             'channelSlug' => $slug,
         ]);
 
-        $this->logger->info(sprintf('Channel deleted: "%s" (slug: "%s") by user "%s"', $channel->getName(), $channel->getSlug(), $currentUser->getUsername()));
+        $this->logger->info(sprintf(
+            'Channel deleted: "%s" (slug: "%s") by user "%s"',
+            $channel->getName(),
+            $channel->getSlug(),
+            $currentUser->getUsername(),
+        ));
 
         $entityManager->remove($channel);
         $entityManager->flush();
@@ -418,7 +440,7 @@ $isMember = true;
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $data  = json_decode($request->getContent(), true);
+        $data = json_decode($request->getContent(), true);
         $order = $data['order'] ?? null;
 
         if (is_array($order)) {
@@ -438,7 +460,7 @@ $isMember = true;
         Request $request,
         ChannelRepository $channelRepository,
         InvitationRepository $invitationRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -488,7 +510,7 @@ $isMember = true;
                 '/<section class="card glass-panel sidebar-panel" id="sidebar-panel">/',
                 '<section class="card glass-panel sidebar-panel" id="sidebar-panel" hx-swap-oob="true">',
                 $sidebarHtml,
-                1
+                1,
             );
 
             $html = $sidebarHtml;
@@ -513,7 +535,7 @@ $isMember = true;
         string $slug,
         Request $request,
         ChannelRepository $channelRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -523,7 +545,7 @@ $isMember = true;
             return $this->redirectToRoute('app_dashboard');
         }
 
-        $isAdmin   = $this->isGranted('ROLE_ADMIN');
+        $isAdmin = $this->isGranted('ROLE_ADMIN');
         $isCreator = $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
 
         if (!$isAdmin && !$isCreator) {
@@ -540,7 +562,10 @@ $isMember = true;
 
         $entityManager->flush();
 
-        $this->addFlash('success', sprintf('La durée de rétention du canal "%s" a été mise à jour.', $channel->getName()));
+        $this->addFlash('success', sprintf(
+            'La durée de rétention du canal "%s" a été mise à jour.',
+            $channel->getName(),
+        ));
 
         return new Response(null, 204, ['HX-Refresh' => 'true']);
     }
@@ -550,7 +575,7 @@ $isMember = true;
         string $slug,
         Request $request,
         ChannelRepository $channelRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -562,7 +587,9 @@ $isMember = true;
 
         $isCreator = $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
         if (!$isCreator) {
-            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.');
+            throw $this->createAccessDeniedException(
+                'Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.',
+            );
         }
 
         $name = trim($request->request->get('name', ''));

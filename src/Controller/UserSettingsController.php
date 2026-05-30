@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Controller;
+declare(strict_types=1);
 
+namespace App\Controller;
 
 use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
@@ -13,7 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class UserSettingsController extends AbstractController
+final class UserSettingsController extends AbstractController
 {
     // -------------------------------------------------------------------------
     // Update avatar color
@@ -70,7 +71,7 @@ class UserSettingsController extends AbstractController
     public function updateStatus(
         Request $request,
         EntityManagerInterface $entityManager,
-        MercurePublisher $mercurePublisher
+        MercurePublisher $mercurePublisher,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -81,12 +82,12 @@ class UserSettingsController extends AbstractController
             $entityManager->flush();
 
             $mercurePublisher->publishToTopic($mercurePublisher->getStatusTopic(), [
-                'type'           => 'user_status_changed',
-                'username'       => $currentUser->getUsername(),
-                'status'         => $currentUser->getStatus(),
-                'statusLabel'    => $currentUser->getStatusLabel(),
+                'type' => 'user_status_changed',
+                'username' => $currentUser->getUsername(),
+                'status' => $currentUser->getStatus(),
+                'statusLabel' => $currentUser->getStatusLabel(),
                 'statusOverride' => $currentUser->getStatusOverride() ?? 'auto',
-                'lastActive'     => $currentUser->getLastActiveAt()
+                'lastActive' => $currentUser->getLastActiveAt()
                     ? $currentUser->getLastActiveAt()->getTimestamp()
                     : null,
             ]);
@@ -118,13 +119,13 @@ class UserSettingsController extends AbstractController
         $currentUser = $this->getUser();
 
         $users = $entityManager->getRepository(\App\Entity\User::class)->findAll();
-        $data  = [];
+        $data = [];
         foreach ($users as $user) {
             $data[] = [
-                'id'          => $user->getId(),
-                'username'    => $user->getUsername(),
+                'id' => $user->getId(),
+                'username' => $user->getUsername(),
                 'displayName' => $user->getDisplayName(),
-                'hue'         => $user->getHue(),
+                'hue' => $user->getHue(),
             ];
         }
 
@@ -140,7 +141,7 @@ class UserSettingsController extends AbstractController
         int $id,
         \App\Repository\MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
-        MercurePublisher $mercurePublisher
+        MercurePublisher $mercurePublisher,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -159,7 +160,7 @@ class UserSettingsController extends AbstractController
         $channel->setPinnedMessage($message);
         $entityManager->flush();
 
-        $bannerHtml  = $this->renderView('dashboard/_pinned_banner.html.twig', [
+        $bannerHtml = $this->renderView('dashboard/_pinned_banner.html.twig', [
             'pinnedMessage' => $message,
             'activeChannel' => $channel,
         ]);
@@ -171,12 +172,12 @@ class UserSettingsController extends AbstractController
         }
 
         $mercurePublisher->publishToChannel($channel, [
-            'type'                => 'pin_change',
-            'channelSlug'         => $channel->getSlug(),
-            'bannerHtml'          => $bannerHtml,
-            'messageId'           => $message->getId(),
-            'messageHtml'         => $messageHtml,
-            'previousMessageId'   => $previousPinnedMessage ? $previousPinnedMessage->getId() : null,
+            'type' => 'pin_change',
+            'channelSlug' => $channel->getSlug(),
+            'bannerHtml' => $bannerHtml,
+            'messageId' => $message->getId(),
+            'messageHtml' => $messageHtml,
+            'previousMessageId' => $previousPinnedMessage ? $previousPinnedMessage->getId() : null,
             'previousMessageHtml' => $previousMessageHtml,
         ]);
 
@@ -188,7 +189,7 @@ class UserSettingsController extends AbstractController
         int $id,
         \App\Repository\MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
-        MercurePublisher $mercurePublisher
+        MercurePublisher $mercurePublisher,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -210,10 +211,10 @@ class UserSettingsController extends AbstractController
             $messageHtml = $this->renderMessageItem($message);
 
             $mercurePublisher->publishToChannel($channel, [
-                'type'        => 'pin_change',
+                'type' => 'pin_change',
                 'channelSlug' => $channel->getSlug(),
-                'bannerHtml'  => '',
-                'messageId'   => $message->getId(),
+                'bannerHtml' => '',
+                'messageId' => $message->getId(),
                 'messageHtml' => $messageHtml,
             ]);
         }
@@ -228,15 +229,15 @@ class UserSettingsController extends AbstractController
     private function renderMessageItem(\App\Entity\Message $message): string
     {
         return $this->renderView('dashboard/_feed_item.html.twig', [
-            'author'        => $message->getAuthor(),
-            'message'       => $message->getContent(),
-            'timestamp'     => $message->getCreatedAt(),
-            'message_id'    => $message->getId(),
-            'updated_at'    => $message->getUpdatedAt(),
-            'fileName'      => $message->getFileName(),
-            'fileSize'      => $message->getFileSize(),
-            'filePath'      => $message->getFilePath(),
-            'mimeType'      => $message->getMimeType(),
+            'author' => $message->getAuthor(),
+            'message' => $message->getContent(),
+            'timestamp' => $message->getCreatedAt(),
+            'message_id' => $message->getId(),
+            'updated_at' => $message->getUpdatedAt(),
+            'fileName' => $message->getFileName(),
+            'fileSize' => $message->getFileSize(),
+            'filePath' => $message->getFilePath(),
+            'mimeType' => $message->getMimeType(),
             'messageObject' => $message,
         ]);
     }

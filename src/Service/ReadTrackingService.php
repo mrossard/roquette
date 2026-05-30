@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\Channel;
@@ -14,7 +16,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class ReadTrackingService
 {
     public function __construct(
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
     ) {}
 
     /**
@@ -25,10 +27,10 @@ class ReadTrackingService
      */
     public function ensureUserChannelReads(User $user, array $channels): void
     {
-        $ucrRepo     = $this->entityManager->getRepository(UserChannelRead::class);
+        $ucrRepo = $this->entityManager->getRepository(UserChannelRead::class);
         $messageRepo = $this->entityManager->getRepository(Message::class);
 
-        $existingReads      = $ucrRepo->findBy(['user' => $user]);
+        $existingReads = $ucrRepo->findBy(['user' => $user]);
         $existingChannelIds = [];
         foreach ($existingReads as $read) {
             $existingChannelIds[$read->getChannel()->getId()] = true;
@@ -36,20 +38,19 @@ class ReadTrackingService
 
         $changed = false;
         foreach ($channels as $channel) {
-            if (isset($existingChannelIds[$channel->getId()])) { continue; }
+            if (isset($existingChannelIds[$channel->getId()])) {
+                continue;
+            }
 
-$latestMessage = $messageRepo->findOneBy(
-                    ['channel' => $channel],
-                    ['id' => 'DESC']
-                );
+            $latestMessage = $messageRepo->findOneBy(['channel' => $channel], ['id' => 'DESC']);
 
-                $read = new UserChannelRead();
-                $read->setUser($user);
-                $read->setChannel($channel);
-                $read->setLastReadMessage($latestMessage);
+            $read = new UserChannelRead();
+            $read->setUser($user);
+            $read->setChannel($channel);
+            $read->setLastReadMessage($latestMessage);
 
-                $this->entityManager->persist($read);
-                $changed = true;
+            $this->entityManager->persist($read);
+            $changed = true;
         }
 
         if ($changed) {
@@ -62,13 +63,12 @@ $latestMessage = $messageRepo->findOneBy(
      */
     public function markChannelAsRead(User $user, Channel $channel): void
     {
-        $ucrRepo    = $this->entityManager->getRepository(UserChannelRead::class);
+        $ucrRepo = $this->entityManager->getRepository(UserChannelRead::class);
         $activeRead = $ucrRepo->findOneBy(['user' => $user, 'channel' => $channel]);
 
-        $latestMessage = $this->entityManager->getRepository(Message::class)->findOneBy(
-            ['channel' => $channel],
-            ['id' => 'DESC']
-        );
+        $latestMessage = $this->entityManager->getRepository(Message::class)->findOneBy(['channel' => $channel], [
+            'id' => 'DESC',
+        ]);
 
         if ($activeRead) {
             $activeRead->setLastReadMessage($latestMessage);

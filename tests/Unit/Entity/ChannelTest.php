@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\Channel;
@@ -17,9 +19,9 @@ class ChannelTest extends TestCase
     #[Test]
     public function constructorSetsCreatedAt(): void
     {
-        $before  = new \DateTimeImmutable();
+        $before = new \DateTimeImmutable();
         $channel = new Channel();
-        $after   = new \DateTimeImmutable();
+        $after = new \DateTimeImmutable();
 
         $this->assertGreaterThanOrEqual($before, $channel->getCreatedAt());
         $this->assertLessThanOrEqual($after, $channel->getCreatedAt());
@@ -61,7 +63,7 @@ class ChannelTest extends TestCase
     public function addMemberAddsUserToCollection(): void
     {
         $channel = new Channel();
-        $user    = new User();
+        $user = new User();
 
         $channel->addMember($user);
 
@@ -72,7 +74,7 @@ class ChannelTest extends TestCase
     public function addMemberDoesNotDuplicate(): void
     {
         $channel = new Channel();
-        $user    = new User();
+        $user = new User();
 
         $channel->addMember($user);
         $channel->addMember($user);
@@ -84,7 +86,7 @@ class ChannelTest extends TestCase
     public function removeMemberRemovesUserFromCollection(): void
     {
         $channel = new Channel();
-        $user    = new User();
+        $user = new User();
 
         $channel->addMember($user);
         $channel->removeMember($user);
@@ -140,9 +142,9 @@ class ChannelTest extends TestCase
     #[Test]
     public function getDmPartnerReturnsOtherMember(): void
     {
-        $channel  = new Channel();
-        $userA    = $this->createUserWithId(1, 'alice');
-        $userB    = $this->createUserWithId(2, 'bob');
+        $channel = new Channel();
+        $userA = $this->createUserWithId(1, 'alice');
+        $userB = $this->createUserWithId(2, 'bob');
 
         $channel->addMember($userA);
         $channel->addMember($userB);
@@ -156,7 +158,7 @@ class ChannelTest extends TestCase
     public function getDmPartnerReturnsNullWhenAlone(): void
     {
         $channel = new Channel();
-        $userA   = $this->createUserWithId(1, 'alice');
+        $userA = $this->createUserWithId(1, 'alice');
 
         $channel->addMember($userA);
 

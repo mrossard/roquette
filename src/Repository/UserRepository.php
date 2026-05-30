@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\Channel;
@@ -23,8 +25,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     /**
      * Used to upgrade (rehash) the user's password automatically over time.
      */
-    public function upgradePassword(PasswordAuthenticatedUserInterface $user, #[\SensitiveParameter] string $newHashedPassword): void
-    {
+    public function upgradePassword(
+        PasswordAuthenticatedUserInterface $user,
+        #[\SensitiveParameter]
+        string $newHashedPassword,
+    ): void {
         if (!$user instanceof User) {
             throw new UnsupportedUserException(sprintf('Instances of "%s" are not supported.', $user::class));
         }
@@ -37,7 +42,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     /** @return User[] */
     public function findAllExcept(User $user): array
     {
-        return $this->createQueryBuilder('u')
+        return $this
+            ->createQueryBuilder('u')
             ->where('u.id != :userId')
             ->setParameter('userId', $user->getId())
             ->orderBy('u.username', 'ASC')
@@ -48,7 +54,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     /** @return User[] Users not already members of $channel and without a pending invitation */
     public function findInvitableForChannel(Channel $channel, User $currentUser): array
     {
-        return $this->createQueryBuilder('u')
+        return $this
+            ->createQueryBuilder('u')
             ->where('u.id != :currentUserId')
             ->andWhere('u.id NOT IN (
                 SELECT mu.id FROM App\Entity\Channel c2 JOIN c2.members mu WHERE c2.id = :channelId
@@ -64,7 +71,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function searchByName(string $query): array
     {
-        return $this->createQueryBuilder('u')
+        return $this
+            ->createQueryBuilder('u')
             ->where('LOWER(u.username) LIKE :query OR LOWER(u.displayName) LIKE :query')
             ->setParameter('query', '%' . strtolower($query) . '%')
             ->setMaxResults(5)
@@ -72,4 +80,3 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getResult();
     }
 }
-

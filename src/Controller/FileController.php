@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Repository\MessageRepository;
@@ -12,13 +14,13 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class FileController extends AbstractController
+final class FileController extends AbstractController
 {
     #[Route('/messages/{id}/download', name: 'app_file_download', methods: ['GET'])]
     public function downloadFile(
         int $id,
         MessageRepository $messageRepository,
-        FileUploadService $fileUploadService
+        FileUploadService $fileUploadService,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -39,25 +41,29 @@ class FileController extends AbstractController
 
         $stream = $fileUploadService->readStream($message->getFilePath());
 
-        return new StreamedResponse(static function () use ($stream) {
-            fpassthru($stream);
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-        }, 200, [
-            'Content-Type'        => $message->getMimeType() ?: 'application/octet-stream',
-            'Content-Disposition' => HeaderUtils::makeDisposition(
-                HeaderUtils::DISPOSITION_ATTACHMENT,
-                $message->getFileName()
-            ),
-        ]);
+        return new StreamedResponse(
+            static function () use ($stream) {
+                fpassthru($stream);
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            },
+            200,
+            [
+                'Content-Type' => $message->getMimeType() ?: 'application/octet-stream',
+                'Content-Disposition' => HeaderUtils::makeDisposition(
+                    HeaderUtils::DISPOSITION_ATTACHMENT,
+                    $message->getFileName(),
+                ),
+            ],
+        );
     }
 
     #[Route('/messages/{id}/preview', name: 'app_file_preview', methods: ['GET'])]
     public function previewFile(
         int $id,
         MessageRepository $messageRepository,
-        FileUploadService $fileUploadService
+        FileUploadService $fileUploadService,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -78,17 +84,21 @@ class FileController extends AbstractController
 
         $stream = $fileUploadService->readStream($message->getFilePath());
 
-        return new StreamedResponse(static function () use ($stream) {
-            fpassthru($stream);
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-        }, 200, [
-            'Content-Type'        => $message->getMimeType() ?: 'application/octet-stream',
-            'Content-Disposition' => HeaderUtils::makeDisposition(
-                HeaderUtils::DISPOSITION_INLINE,
-                $message->getFileName()
-            ),
-        ]);
+        return new StreamedResponse(
+            static function () use ($stream) {
+                fpassthru($stream);
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            },
+            200,
+            [
+                'Content-Type' => $message->getMimeType() ?: 'application/octet-stream',
+                'Content-Disposition' => HeaderUtils::makeDisposition(
+                    HeaderUtils::DISPOSITION_INLINE,
+                    $message->getFileName(),
+                ),
+            ],
+        );
     }
 }

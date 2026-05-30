@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\User;
@@ -12,24 +14,23 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-#[AsCommand(
-    name: 'app:create-admin',
-    description: 'Crée un nouvel utilisateur administrateur.',
-)]
+#[AsCommand(name: 'app:create-admin', description: 'Crée un nouvel utilisateur administrateur.')]
 class CreateAdminCommand extends Command
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly UserPasswordHasherInterface $passwordHasher
+        private readonly UserPasswordHasherInterface $passwordHasher,
     ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this
-            ->addArgument('username', InputArgument::OPTIONAL, 'Le nom d\'utilisateur de l\'administrateur')
-            ->addArgument('password', InputArgument::OPTIONAL, 'Le mot de passe de l\'administrateur');
+        $this->addArgument(
+            'username',
+            InputArgument::OPTIONAL,
+            'Le nom d\'utilisateur de l\'administrateur',
+        )->addArgument('password', InputArgument::OPTIONAL, 'Le mot de passe de l\'administrateur');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -40,7 +41,7 @@ class CreateAdminCommand extends Command
         $password = $input->getArgument('password');
 
         if (!$username) {
-            $username = $io->ask('Nom d\'utilisateur', null, function ($value) {
+            $username = $io->ask('Nom d\'utilisateur', null, static function ($value) {
                 if (empty($value)) {
                     throw new \RuntimeException('Le nom d\'utilisateur ne peut pas être vide.');
                 }
@@ -72,7 +73,7 @@ class CreateAdminCommand extends Command
         }
 
         if (!$password) {
-            $password = $io->askHidden('Mot de passe', function ($value) {
+            $password = $io->askHidden('Mot de passe', static function ($value) {
                 if (empty($value)) {
                     throw new \RuntimeException('Le mot de passe ne peut pas être vide.');
                 }

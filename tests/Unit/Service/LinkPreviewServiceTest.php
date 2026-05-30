@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Service;
 
 use App\Service\LinkPreviewService;
@@ -14,27 +16,31 @@ class LinkPreviewServiceTest extends TestCase
     public function testGetPreviewInvalidUrl(): void
     {
         $cache = $this->createMock(CacheInterface::class);
-        $cache->method('get')->willReturnCallback(function ($key, $callback) {
-            $item = $this->createMock(ItemInterface::class);
-            return $callback($item);
-        });
+        $cache
+            ->method('get')
+            ->willReturnCallback(function ($key, $callback) {
+                $item = $this->createMock(ItemInterface::class);
+                return $callback($item);
+            });
 
         $service = new LinkPreviewService($cache);
         $result = $service->getPreview('not-a-url');
-        $this->assertNull($result);
+        static::assertNull($result);
     }
 
     #[Test]
     public function testGetPreviewPrivateIp(): void
     {
         $cache = $this->createMock(CacheInterface::class);
-        $cache->method('get')->willReturnCallback(function ($key, $callback) {
-            $item = $this->createMock(ItemInterface::class);
-            return $callback($item);
-        });
+        $cache
+            ->method('get')
+            ->willReturnCallback(function ($key, $callback) {
+                $item = $this->createMock(ItemInterface::class);
+                return $callback($item);
+            });
 
         $service = new LinkPreviewService($cache);
         $result = $service->getPreview('http://127.0.0.1/status');
-        $this->assertNull($result);
+        static::assertNull($result);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Functional\Command;
 
 use App\Entity\Channel;
@@ -82,7 +84,7 @@ class PurgeExpiredMessagesCommandTest extends KernelTestCase
 
     public function testPurgeCommandExcludesSavedMessages(): void
     {
-        $twoMonthsAgo = (new \DateTimeImmutable())->modify('-2 months');
+        $twoMonthsAgo = new \DateTimeImmutable()->modify('-2 months');
 
         // Message A: Old, not saved (should be purged)
         $msgA = new Message();
@@ -125,16 +127,16 @@ class PurgeExpiredMessagesCommandTest extends KernelTestCase
         $commandTester->execute([]);
 
         $output = $commandTester->getDisplay();
-        $this->assertStringContainsString('Message A', $output);
-        $this->assertStringNotContainsString('Message B', $output);
-        $this->assertStringNotContainsString('Message C', $output);
+        static::assertStringContainsString('Message A', $output);
+        static::assertStringNotContainsString('Message B', $output);
+        static::assertStringNotContainsString('Message C', $output);
 
         // Assert Message A is deleted, but B and C remain in database
         $this->entityManager->clear();
         $messageRepo = $this->entityManager->getRepository(Message::class);
 
-        $this->assertNull($messageRepo->find($idA));
-        $this->assertNotNull($messageRepo->find($idB));
-        $this->assertNotNull($messageRepo->find($idC));
+        static::assertNull($messageRepo->find($idA));
+        static::assertNotNull($messageRepo->find($idB));
+        static::assertNotNull($messageRepo->find($idC));
     }
 }

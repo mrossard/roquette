@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -11,17 +13,23 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
-class OAuthController extends AbstractController
+final class OAuthController extends AbstractController
 {
     private string $mockStorePath;
 
     public function __construct(
-        #[Autowire(env: 'OAUTH_CLIENT_ID')] private string $clientId,
-        #[Autowire(env: 'OAUTH_AUTH_URL')] private string $authUrl,
-        #[Autowire(env: 'OAUTH_REDIRECT_URI')] private string $redirectUri,
-        #[Autowire(env: 'OAUTH_SCOPE')] private string $scope,
-        #[Autowire('%kernel.project_dir%/var/oauth_mock_store.json')] string $mockStorePath,
-        #[Autowire(env: 'bool:AUTH_OAUTH_ENABLED')] private bool $authOauthEnabled,
+        #[Autowire(env: 'OAUTH_CLIENT_ID')]
+        private string $clientId,
+        #[Autowire(env: 'OAUTH_AUTH_URL')]
+        private string $authUrl,
+        #[Autowire(env: 'OAUTH_REDIRECT_URI')]
+        private string $redirectUri,
+        #[Autowire(env: 'OAUTH_SCOPE')]
+        private string $scope,
+        #[Autowire('%kernel.project_dir%/var/oauth_mock_store.json')]
+        string $mockStorePath,
+        #[Autowire(env: 'bool:AUTH_OAUTH_ENABLED')]
+        private bool $authOauthEnabled,
     ) {
         $this->mockStorePath = $mockStorePath;
     }
@@ -36,7 +44,11 @@ class OAuthController extends AbstractController
         $state = bin2hex(random_bytes(16));
         $request->getSession()->set('oauth2state', $state);
 
-        $redirectUri = $this->redirectUri ?: $this->generateUrl('app_oauth_check', [], UrlGeneratorInterface::ABSOLUTE_URL);
+        $redirectUri = $this->redirectUri ?: $this->generateUrl(
+            'app_oauth_check',
+            [],
+            UrlGeneratorInterface::ABSOLUTE_URL,
+        );
 
         // Build redirect URL
         $queryParams = http_build_query([
@@ -117,7 +129,7 @@ class OAuthController extends AbstractController
 
         return $this->render('oauth/mock_authorize.html.twig', [
             'redirect_uri' => $redirectUri,
-            'state'        => $state,
+            'state' => $state,
         ]);
     }
 

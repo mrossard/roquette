@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Message;
-
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Service\FileUploadService;
@@ -21,12 +22,14 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class MessageController extends AbstractController
+final class MessageController extends AbstractController
 {
     use MessageRendererTrait;
 
     public function __construct(
-        #[\SensitiveParameter] #[Autowire(env: 'TENOR_API_KEY')] private string $tenorApiKey
+        #[\SensitiveParameter]
+        #[Autowire(env: 'TENOR_API_KEY')]
+        private string $tenorApiKey,
     ) {}
 
     #[Route('/api/message/preview', name: 'app_api_message_preview', methods: ['POST'])]
@@ -46,8 +49,6 @@ class MessageController extends AbstractController
         return new JsonResponse(['html' => $html]);
     }
 
-
-
     // -------------------------------------------------------------------------
     // Publish (send message)
     // -------------------------------------------------------------------------
@@ -60,7 +61,7 @@ class MessageController extends AbstractController
         EntityManagerInterface $entityManager,
         MercurePublisher $mercurePublisher,
         FileUploadService $fileUploadService,
-        RateLimiterFactoryInterface $messageApiLimiter
+        RateLimiterFactoryInterface $messageApiLimiter,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -73,23 +74,35 @@ class MessageController extends AbstractController
         $limiter = $messageApiLimiter->create('user_' . $currentUser->getId());
         if (false === $limiter->consume(1)->isAccepted()) {
             $this->addFlash('error', 'Trop de messages envoyés. Veuillez patienter.');
-            return $this->render('dashboard/_input_form.html.twig', [
-                'activeChannel' => $activeChannel,
-            ], new Response('', Response::HTTP_TOO_MANY_REQUESTS));
+            return $this->render(
+                'dashboard/_input_form.html.twig',
+                [
+                    'activeChannel' => $activeChannel,
+                ],
+                new Response('', Response::HTTP_TOO_MANY_REQUESTS),
+            );
         }
 
         if ($activeChannel->isPrivate() && !$activeChannel->getMembers()->contains($currentUser)) {
             return new Response('Non autorisé.', 403);
         }
 
-        if ($request->isMethod('POST') && count($request->request) === 0 && count($request->files) === 0 && (int)$request->headers->get('CONTENT_LENGTH', 0) > 0) {
-            $this->addFlash('error', 'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).');
+        if (
+            $request->isMethod('POST')
+            && count($request->request) === 0
+            && count($request->files) === 0
+            && (int) $request->headers->get('CONTENT_LENGTH', 0) > 0
+        ) {
+            $this->addFlash(
+                'error',
+                'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).',
+            );
             return $this->render('dashboard/_input_form.html.twig', [
                 'activeChannel' => $activeChannel,
             ]);
         }
 
-        $messageText  = $request->request->get('message', '');
+        $messageText = $request->request->get('message', '');
         $uploadedFile = $request->files->get('file');
 
         if (empty(trim($messageText)) && !$uploadedFile) {
@@ -104,6 +117,7 @@ class MessageController extends AbstractController
             if ($response !== null) {
                 return $response;
             }
+
             // $messageText may have been mutated by the slash command (e.g. /shrug)
         }
 
@@ -138,7 +152,7 @@ class MessageController extends AbstractController
             $currentUser,
             $messageText,
             $renderedHtml,
-            $entityManager
+            $entityManager,
         );
 
         return $this->render('dashboard/_input_form.html.twig', [
@@ -176,7 +190,7 @@ class MessageController extends AbstractController
         Request $request,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
-        MercurePublisher $mercurePublisher
+        MercurePublisher $mercurePublisher,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -203,8 +217,8 @@ class MessageController extends AbstractController
 
         $channel = $message->getChannel();
         $mercurePublisher->publishToChannel($channel, [
-            'html'        => $renderedHtml,
-            'user'        => $currentUser->getUsername(),
+            'html' => $renderedHtml,
+            'user' => $currentUser->getUsername(),
             'channelSlug' => $channel->getSlug(),
         ]);
 
@@ -221,7 +235,7 @@ class MessageController extends AbstractController
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
         MercurePublisher $mercurePublisher,
-        FileUploadService $fileUploadService
+        FileUploadService $fileUploadService,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -240,9 +254,9 @@ class MessageController extends AbstractController
         if ($channel->getPinnedMessage() === $message) {
             $channel->setPinnedMessage(null);
             $mercurePublisher->publishToChannel($channel, [
-                'type'        => 'pin_change',
+                'type' => 'pin_change',
                 'channelSlug' => $channel->getSlug(),
-                'bannerHtml'  => '',
+                'bannerHtml' => '',
             ]);
         }
 
@@ -254,8 +268,8 @@ class MessageController extends AbstractController
         $entityManager->flush();
 
         $mercurePublisher->publishToChannel($channel, [
-            'type'        => 'message_deleted',
-            'messageId'   => $id,
+            'type' => 'message_deleted',
+            'messageId' => $id,
             'channelSlug' => $channel->getSlug(),
         ]);
 
@@ -293,7 +307,7 @@ class MessageController extends AbstractController
     public function toggleSaveMessage(
         int $id,
         MessageRepository $messageRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -323,11 +337,11 @@ class MessageController extends AbstractController
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $channels      = $channelRepository->findAllForUser($currentUser);
+        $channels = $channelRepository->findAllForUser($currentUser);
         $savedMessages = $currentUser->getSavedMessages();
 
         return $this->render('dashboard/saved_messages.html.twig', [
-            'channels'      => $channels,
+            'channels' => $channels,
             'savedMessages' => $savedMessages,
             'activeChannel' => null,
         ]);
@@ -341,12 +355,12 @@ class MessageController extends AbstractController
         string &$messageText,
         \App\Entity\Channel $activeChannel,
         \App\Entity\User $currentUser,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): ?Response {
         $trimmedMsg = trim($messageText);
-        $parts   = explode(' ', $trimmedMsg, 2);
+        $parts = explode(' ', $trimmedMsg, 2);
         $command = strtolower(substr($parts[0], 1));
-        $args    = isset($parts[1]) ? trim($parts[1]) : '';
+        $args = isset($parts[1]) ? trim($parts[1]) : '';
 
         if ($command === 'color') {
             $hueVal = $args !== '' && is_numeric($args) ? (int) $args : rand(0, 360);
@@ -354,9 +368,13 @@ class MessageController extends AbstractController
                 $currentUser->setCustomHue($hueVal);
                 $entityManager->flush();
 
-                return $this->render('dashboard/_input_form.html.twig', [
-                    'activeChannel' => $activeChannel,
-                ], new Response('', 200, ['HX-Refresh' => 'true']));
+                return $this->render(
+                    'dashboard/_input_form.html.twig',
+                    [
+                        'activeChannel' => $activeChannel,
+                    ],
+                    new Response('', 200, ['HX-Refresh' => 'true']),
+                );
             }
         } elseif ($command === 'shrug') {
             // Mutate messageText so the caller sends the formatted shrug text
@@ -369,19 +387,24 @@ class MessageController extends AbstractController
 
             $giphyPreviews = [];
             try {
-                $url = 'https://g.tenor.com/v1/search?q=' . urlencode($args) . '&key=' . $this->tenorApiKey . '&limit=6';
+                $url =
+                    'https://g.tenor.com/v1/search?q=' . urlencode($args) . '&key=' . $this->tenorApiKey . '&limit=6';
                 $ctx = stream_context_create(['http' => ['timeout' => 3]]);
                 $json = @file_get_contents($url, false, $ctx);
                 if ($json) {
                     $data = json_decode($json, true);
                     if (!empty($data['results'])) {
                         foreach ($data['results'] as $result) {
-                            if (empty($result['media'][0]['gif']['url'])) { continue; }
+                            if (empty($result['media'][0]['gif']['url'])) {
+                                continue;
+                            }
 
-$giphyPreviews[] = [
-                                    'url'     => $result['media'][0]['gif']['url'],
-                                    'preview' => $result['media'][0]['tinygif']['url'] ?? $result['media'][0]['gif']['preview'] ?? $result['media'][0]['gif']['url'],
-                                ];
+                            $giphyPreviews[] = [
+                                'url' => $result['media'][0]['gif']['url'],
+                                'preview' =>
+                                    $result['media'][0]['tinygif']['url'] ?? $result['media'][0]['gif']['preview']
+                                        ?? $result['media'][0]['gif']['url'],
+                            ];
                         }
                     }
                 }
@@ -392,7 +415,7 @@ $giphyPreviews[] = [
             return $this->render('dashboard/_input_form.html.twig', [
                 'activeChannel' => $activeChannel,
                 'giphyPreviews' => $giphyPreviews,
-                'giphyQuery'    => $args,
+                'giphyQuery' => $args,
             ]);
         }
 

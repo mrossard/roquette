@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Trait;
 
 use App\Entity\Message;
@@ -29,15 +31,15 @@ trait MessageRendererTrait
     private function feedItemParams(Message $message): array
     {
         return [
-            'author'        => $message->getAuthor(),
-            'message'       => $message->getContent(),
-            'timestamp'     => $message->getCreatedAt(),
-            'message_id'    => $message->getId(),
-            'updated_at'    => $message->getUpdatedAt(),
-            'fileName'      => $message->getFileName(),
-            'fileSize'      => $message->getFileSize(),
-            'filePath'      => $message->getFilePath(),
-            'mimeType'      => $message->getMimeType(),
+            'author' => $message->getAuthor(),
+            'message' => $message->getContent(),
+            'timestamp' => $message->getCreatedAt(),
+            'message_id' => $message->getId(),
+            'updated_at' => $message->getUpdatedAt(),
+            'fileName' => $message->getFileName(),
+            'fileSize' => $message->getFileSize(),
+            'filePath' => $message->getFilePath(),
+            'mimeType' => $message->getMimeType(),
             'messageObject' => $message,
         ];
     }

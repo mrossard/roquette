@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
-use App\Entity\UserChannelRead;
-use App\Entity\User;
 use App\Entity\Channel;
-
+use App\Entity\User;
+use App\Entity\UserChannelRead;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -31,13 +32,21 @@ class UserChannelReadRepository extends ServiceEntityRepository
         $mentionPattern = '%@' . strtolower($user->getUsername()) . '%';
 
         $qb = $this->getEntityManager()->createQueryBuilder();
-        $qb->select('c.id as channelId, COUNT(m.id) as unreadCount, SUM(CASE WHEN LOWER(m.content) LIKE :mentionPattern THEN 1 ELSE 0 END) as mentionCount')
-           ->from(Channel::class, 'c')
-           ->leftJoin(UserChannelRead::class, 'ucr', 'WITH', 'ucr.channel = c AND ucr.user = :user')
-           ->leftJoin('c.messages', 'm', 'WITH', 'm.author != :user AND (ucr.lastReadMessage IS NULL OR m.id > IDENTITY(ucr.lastReadMessage))')
-           ->groupBy('c.id')
-           ->setParameter('user', $user)
-           ->setParameter('mentionPattern', $mentionPattern);
+        $qb
+            ->select(
+                'c.id as channelId, COUNT(m.id) as unreadCount, SUM(CASE WHEN LOWER(m.content) LIKE :mentionPattern THEN 1 ELSE 0 END) as mentionCount',
+            )
+            ->from(Channel::class, 'c')
+            ->leftJoin(UserChannelRead::class, 'ucr', 'WITH', 'ucr.channel = c AND ucr.user = :user')
+            ->leftJoin(
+                'c.messages',
+                'm',
+                'WITH',
+                'm.author != :user AND (ucr.lastReadMessage IS NULL OR m.id > IDENTITY(ucr.lastReadMessage))',
+            )
+            ->groupBy('c.id')
+            ->setParameter('user', $user)
+            ->setParameter('mentionPattern', $mentionPattern);
 
         $results = $qb->getQuery()->getResult();
 

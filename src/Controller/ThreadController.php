@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
@@ -17,7 +19,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class ThreadController extends AbstractController
+final class ThreadController extends AbstractController
 {
     use MessageRendererTrait;
 
@@ -43,7 +45,7 @@ class ThreadController extends AbstractController
 
         return $this->render('dashboard/_thread_pane.html.twig', [
             'parentMessage' => $message,
-            'replies'       => $message->getReplies(),
+            'replies' => $message->getReplies(),
         ]);
     }
 
@@ -55,7 +57,7 @@ class ThreadController extends AbstractController
     public function markThreadAsRead(
         int $id,
         MessageRepository $messageRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -78,7 +80,7 @@ class ThreadController extends AbstractController
             $latestThreadMessage = $parentMessage;
         }
 
-        $ucrRepo    = $entityManager->getRepository(UserChannelRead::class);
+        $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $channel]);
 
         $currentLastReadId = $activeRead?->getLastReadMessage()?->getId() ?? 0;
@@ -110,7 +112,7 @@ class ThreadController extends AbstractController
         EntityManagerInterface $entityManager,
         MercurePublisher $mercurePublisher,
         FileUploadService $fileUploadService,
-        RateLimiterFactoryInterface $messageApiLimiter
+        RateLimiterFactoryInterface $messageApiLimiter,
     ): Response {
         $parentMessage = $messageRepository->find($id);
         if (!$parentMessage) {
@@ -130,14 +132,22 @@ class ThreadController extends AbstractController
             return new Response('Non autorisé.', 403);
         }
 
-        if ($request->isMethod('POST') && count($request->request) === 0 && count($request->files) === 0 && (int)$request->headers->get('CONTENT_LENGTH', 0) > 0) {
-            $this->addFlash('error', 'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).');
+        if (
+            $request->isMethod('POST')
+            && count($request->request) === 0
+            && count($request->files) === 0
+            && (int) $request->headers->get('CONTENT_LENGTH', 0) > 0
+        ) {
+            $this->addFlash(
+                'error',
+                'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).',
+            );
             return $this->render('dashboard/_thread_input_form.html.twig', [
                 'parentMessage' => $parentMessage,
             ]);
         }
 
-        $messageText  = $request->request->get('message', '');
+        $messageText = $request->request->get('message', '');
         $uploadedFile = $request->files->get('file');
 
         if (empty(trim($messageText)) && !$uploadedFile) {
@@ -179,14 +189,12 @@ class ThreadController extends AbstractController
             $entityManager,
             $parentMessage->getId(),
             $parentMessage->getReplies()->count(),
-            '(Fil) '
+            '(Fil) ',
         );
-
-
 
         return $this->render('dashboard/_thread_reply_response.html.twig', [
             'parentMessage' => $parentMessage,
-            'replies'       => $parentMessage->getReplies(),
+            'replies' => $parentMessage->getReplies(),
         ]);
     }
 }

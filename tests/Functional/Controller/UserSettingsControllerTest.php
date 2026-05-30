@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Functional\Controller;
 
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class UserSettingsControllerTest extends WebTestCase
 {
@@ -29,7 +31,7 @@ class UserSettingsControllerTest extends WebTestCase
         $user = new User();
         $user->setUsername('test_settings_user');
         $user->setRoles(['ROLE_USER']);
-        
+
         $passwordHasher = $container->get('security.user_password_hasher');
         $user->setPassword($passwordHasher->hashPassword($user, 'password123'));
 
@@ -82,7 +84,7 @@ class UserSettingsControllerTest extends WebTestCase
         // Reload user from database
         $this->entityManager->clear();
         $user = $this->entityManager->getRepository(User::class)->find($this->testUser->getId());
-        $this->assertSame(120, $user->getCustomHue());
+        static::assertSame(120, $user->getCustomHue());
     }
 
     #[Test]
@@ -91,7 +93,7 @@ class UserSettingsControllerTest extends WebTestCase
         $this->client->request('POST', '/user/update-color');
 
         $this->assertResponseStatusCodeSame(400);
-        $this->assertStringContainsString('Teinte manquante', $this->client->getResponse()->getContent());
+        static::assertStringContainsString('Teinte manquante', $this->client->getResponse()->getContent());
     }
 
     #[Test]
@@ -100,7 +102,7 @@ class UserSettingsControllerTest extends WebTestCase
         $this->client->request('POST', '/user/update-color', ['hue' => 450]);
 
         $this->assertResponseStatusCodeSame(400);
-        $this->assertStringContainsString('Teinte invalide', $this->client->getResponse()->getContent());
+        static::assertStringContainsString('Teinte invalide', $this->client->getResponse()->getContent());
     }
 
     #[Test]
@@ -112,7 +114,7 @@ class UserSettingsControllerTest extends WebTestCase
 
         $this->entityManager->clear();
         $user = $this->entityManager->getRepository(User::class)->find($this->testUser->getId());
-        $this->assertSame('busy', $user->getStatusOverride());
+        static::assertSame('busy', $user->getStatusOverride());
     }
 
     #[Test]
@@ -139,10 +141,10 @@ class UserSettingsControllerTest extends WebTestCase
         $this->assertResponseHeaderSame('Content-Type', 'application/json');
 
         $data = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertIsArray($data);
-        
+        static::assertIsArray($data);
+
         $usernames = array_column($data, 'username');
-        $this->assertContains('test_settings_user', $usernames);
+        static::assertContains('test_settings_user', $usernames);
     }
 
     #[Test]
@@ -152,7 +154,7 @@ class UserSettingsControllerTest extends WebTestCase
         $otherUser = new User();
         $otherUser->setUsername('other_settings_user');
         $otherUser->setRoles(['ROLE_USER']);
-        
+
         $container = $this->client->getContainer();
         $passwordHasher = $container->get('security.user_password_hasher');
         $otherUser->setPassword($passwordHasher->hashPassword($otherUser, 'password123'));

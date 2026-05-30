@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Functional\Controller;
 
 use App\Entity\Channel;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class ChannelControllerTest extends WebTestCase
 {
@@ -29,7 +31,7 @@ class ChannelControllerTest extends WebTestCase
         $user = new User();
         $user->setUsername('test_channel_user');
         $user->setRoles(['ROLE_USER']);
-        
+
         $passwordHasher = $container->get('security.user_password_hasher');
         $user->setPassword($passwordHasher->hashPassword($user, 'password123'));
 
@@ -61,13 +63,13 @@ class ChannelControllerTest extends WebTestCase
         $userRepository = $this->entityManager->getRepository(User::class);
         $users = array_merge(
             $userRepository->findBy(['username' => 'test_channel_user']),
-            $userRepository->findBy(['username' => 'test_channel_user_2'])
+            $userRepository->findBy(['username' => 'test_channel_user_2']),
         );
 
         $channelRepository = $this->entityManager->getRepository(Channel::class);
         $channels = array_merge(
             $channelRepository->findBy(['slug' => 'test-channel-fav']),
-            $channelRepository->findBy(['slug' => 'unique-edit-channel-name'])
+            $channelRepository->findBy(['slug' => 'unique-edit-channel-name']),
         );
 
         foreach ($channels as $channel) {
@@ -85,7 +87,7 @@ class ChannelControllerTest extends WebTestCase
     public function testToggleFavoriteChannel(): void
     {
         // 1. Initially it should not be favorite
-        $this->assertFalse($this->testUser->isChannelFavorite($this->channel));
+        static::assertFalse($this->testUser->isChannelFavorite($this->channel));
 
         // 2. Send request to favorite
         $this->client->request('POST', sprintf('/channels/%s/favorite', $this->channel->getSlug()));
@@ -97,7 +99,7 @@ class ChannelControllerTest extends WebTestCase
         $this->entityManager->clear();
         $user = $this->entityManager->getRepository(User::class)->find($this->testUser->getId());
         $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
-        $this->assertTrue($user->isChannelFavorite($channel));
+        static::assertTrue($user->isChannelFavorite($channel));
 
         // 3. Send request to unfavorite
         $this->client->request('POST', sprintf('/channels/%s/favorite', $this->channel->getSlug()));
@@ -108,7 +110,7 @@ class ChannelControllerTest extends WebTestCase
         // Reload user again
         $this->entityManager->clear();
         $user = $this->entityManager->getRepository(User::class)->find($this->testUser->getId());
-        $this->assertFalse($user->isChannelFavorite($channel));
+        static::assertFalse($user->isChannelFavorite($channel));
     }
 
     #[Test]
@@ -116,7 +118,7 @@ class ChannelControllerTest extends WebTestCase
     {
         // Creator updates retention to 3 months
         $this->client->request('POST', sprintf('/channels/%s/retention', $this->channel->getSlug()), [
-            'messageRetentionMonths' => '3'
+            'messageRetentionMonths' => '3',
         ]);
 
         $this->assertResponseStatusCodeSame(204);
@@ -124,11 +126,11 @@ class ChannelControllerTest extends WebTestCase
 
         $this->entityManager->clear();
         $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
-        $this->assertSame(3, $channel->getMessageRetentionMonths());
+        static::assertSame(3, $channel->getMessageRetentionMonths());
 
         // Update to "sans limite" (0)
         $this->client->request('POST', sprintf('/channels/%s/retention', $this->channel->getSlug()), [
-            'messageRetentionMonths' => '0'
+            'messageRetentionMonths' => '0',
         ]);
 
         $this->assertResponseStatusCodeSame(204);
@@ -136,7 +138,7 @@ class ChannelControllerTest extends WebTestCase
 
         $this->entityManager->clear();
         $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
-        $this->assertNull($channel->getMessageRetentionMonths());
+        static::assertNull($channel->getMessageRetentionMonths());
     }
 
     #[Test]
@@ -157,7 +159,7 @@ class ChannelControllerTest extends WebTestCase
 
         // Attempt to update retention of channel created by user 1
         $this->client->request('POST', sprintf('/channels/%s/retention', $this->channel->getSlug()), [
-            'messageRetentionMonths' => '3'
+            'messageRetentionMonths' => '3',
         ]);
 
         $this->assertResponseStatusCodeSame(403);
@@ -169,17 +171,17 @@ class ChannelControllerTest extends WebTestCase
         $this->client->request('POST', sprintf('/channels/%s/edit', $this->channel->getSlug()), [
             'name' => 'Unique Edit Channel Name',
             'description' => 'Nouvelle Description',
-            'messageRetentionMonths' => '12'
+            'messageRetentionMonths' => '12',
         ]);
 
         $this->assertResponseRedirects('/channels/unique-edit-channel-name');
 
         $this->entityManager->clear();
         $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
-        $this->assertSame('Unique Edit Channel Name', $channel->getName());
-        $this->assertSame('unique-edit-channel-name', $channel->getSlug());
-        $this->assertSame('Nouvelle Description', $channel->getDescription());
-        $this->assertSame(12, $channel->getMessageRetentionMonths());
+        static::assertSame('Unique Edit Channel Name', $channel->getName());
+        static::assertSame('unique-edit-channel-name', $channel->getSlug());
+        static::assertSame('Nouvelle Description', $channel->getDescription());
+        static::assertSame(12, $channel->getMessageRetentionMonths());
     }
 
     #[Test]
@@ -199,7 +201,7 @@ class ChannelControllerTest extends WebTestCase
         $this->client->request('POST', sprintf('/channels/%s/edit', $this->channel->getSlug()), [
             'name' => 'Nouveau Nom Test',
             'description' => 'Description Test',
-            'messageRetentionMonths' => '12'
+            'messageRetentionMonths' => '12',
         ]);
 
         $this->assertResponseStatusCodeSame(403);

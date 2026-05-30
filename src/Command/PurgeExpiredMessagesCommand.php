@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\Channel;
@@ -21,14 +23,19 @@ class PurgeExpiredMessagesCommand extends Command
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly FileUploadService $fileUploadService
+        private readonly FileUploadService $fileUploadService,
     ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Affiche les messages qui seraient supprimés sans les supprimer réellement.');
+        $this->addOption(
+            'dry-run',
+            null,
+            InputOption::VALUE_NONE,
+            'Affiche les messages qui seraient supprimés sans les supprimer réellement.',
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -46,16 +53,19 @@ class PurgeExpiredMessagesCommand extends Command
             }
 
             // Calculate threshold date: now minus X months
-            $threshold = (new \DateTimeImmutable())->modify(sprintf('-%d months', $retentionMonths));
+            $threshold = new \DateTimeImmutable()->modify(sprintf('-%d months', $retentionMonths));
 
             $qb = $this->em->createQueryBuilder();
-            $qb->select('m')
-               ->from(Message::class, 'm')
-               ->where('m.channel = :channel')
-               ->andWhere('m.createdAt < :threshold')
-               ->andWhere('NOT EXISTS (SELECT 1 FROM App\Entity\User u JOIN u.savedMessages sm WHERE sm.id = m.id OR sm.parent = m)')
-               ->setParameter('channel', $channel)
-               ->setParameter('threshold', $threshold);
+            $qb
+                ->select('m')
+                ->from(Message::class, 'm')
+                ->where('m.channel = :channel')
+                ->andWhere('m.createdAt < :threshold')
+                ->andWhere(
+                    'NOT EXISTS (SELECT 1 FROM App\Entity\User u JOIN u.savedMessages sm WHERE sm.id = m.id OR sm.parent = m)',
+                )
+                ->setParameter('channel', $channel)
+                ->setParameter('threshold', $threshold);
 
             /** @var Message[] $messages */
             $messages = $qb->getQuery()->getResult();
@@ -64,18 +74,24 @@ class PurgeExpiredMessagesCommand extends Command
                 continue;
             }
 
-            $io->section(sprintf('Canal: #%s (Rétention: %d mois, Seuil: %s)', $channel->getName(), $retentionMonths, $threshold->format('Y-m-d H:i:s')));
+            $io->section(sprintf(
+                'Canal: #%s (Rétention: %d mois, Seuil: %s)',
+                $channel->getName(),
+                $retentionMonths,
+                $threshold->format('Y-m-d H:i:s'),
+            ));
 
             foreach ($messages as $message) {
                 if (!$this->em->contains($message)) {
                     continue;
                 }
 
-                $io->text(sprintf('  ❌ [%s] Message ID %d de %s : "%s"', 
+                $io->text(sprintf(
+                    '  ❌ [%s] Message ID %d de %s : "%s"',
                     $message->getCreatedAt()->format('Y-m-d H:i:s'),
                     $message->getId(),
                     $message->getAuthor() ? $message->getAuthor()->getUsername() : 'Inconnu',
-                    substr($message->getContent() ?? '', 0, 50)
+                    substr($message->getContent() ?? '', 0, 50),
                 ));
 
                 if ($message->getFilePath()) {
@@ -86,11 +102,17 @@ class PurgeExpiredMessagesCommand extends Command
                 }
 
                 foreach ($message->getReplies() as $reply) {
-                    if ($reply->getFilePath()) {
-                        $io->text(sprintf('     Fichier lié à la réponse ID %d : %s', $reply->getId(), $reply->getFilePath()));
-                        if (!$dryRun) {
-                            $this->fileUploadService->delete($reply->getFilePath());
-                        }
+                    if (!$reply->getFilePath()) {
+                        continue;
+                    }
+
+                    $io->text(sprintf(
+                        '     Fichier lié à la réponse ID %d : %s',
+                        $reply->getId(),
+                        $reply->getFilePath(),
+                    ));
+                    if (!$dryRun) {
+                        $this->fileUploadService->delete($reply->getFilePath());
                     }
                 }
 

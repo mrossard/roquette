@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\Channel;
@@ -17,14 +19,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class SeedDefaultChannelsCommand extends Command
 {
     private const DEFAULT_CHANNELS = [
-        ['Général',  'general', 'Le canal de discussion principal pour tout le monde.'],
-        ['Symfony',  'symfony', 'Discussion sur le framework Symfony, ses bundles et son écosystème.'],
-        ['HTMX',     'htmx',   'Astuces, conseils et questions autour de l\'utilisation de HTMX.'],
-        ['Mercure',  'mercure', 'Tout sur le protocole Server-Sent Events et le hub Mercure.'],
+        ['Général', 'general', 'Le canal de discussion principal pour tout le monde.'],
+        ['Symfony', 'symfony', 'Discussion sur le framework Symfony, ses bundles et son écosystème.'],
+        ['HTMX',    'htmx',    'Astuces, conseils et questions autour de l\'utilisation de HTMX.'],
+        ['Mercure', 'mercure', 'Tout sur le protocole Server-Sent Events et le hub Mercure.'],
     ];
 
-    public function __construct(private readonly EntityManagerInterface $em)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+    ) {
         parent::__construct();
     }
 
@@ -32,7 +35,7 @@ class SeedDefaultChannelsCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $repo     = $this->em->getRepository(Channel::class);
+        $repo = $this->em->getRepository(Channel::class);
         $existing = $repo->findAll();
 
         if (!empty($existing)) {

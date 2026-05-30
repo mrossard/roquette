@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Twig;
 
 use App\Service\MessageFormatter;
@@ -14,7 +16,9 @@ use Twig\TwigFilter;
  */
 class AppExtension extends AbstractExtension
 {
-    public function __construct(private readonly MessageFormatter $formatter) {}
+    public function __construct(
+        private readonly MessageFormatter $formatter,
+    ) {}
 
     public function getFilters(): array
     {
@@ -29,10 +33,10 @@ class AppExtension extends AbstractExtension
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
 
         $bytes = max($bytes, 0);
-        $pow   = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow   = min($pow, count($units) - 1);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
 
-        $bytes /= (1 << (10 * $pow));
+        $bytes /= 1 << (10 * $pow);
 
         return round($bytes, $precision) . ' ' . $units[$pow];
     }

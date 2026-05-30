@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\Channel;
@@ -18,7 +20,8 @@ class ChannelRepository extends ServiceEntityRepository
 
     public function findAllForUser(\App\Entity\User $user): array
     {
-        $joinedChannels = $this->createQueryBuilder('c')
+        $joinedChannels = $this
+            ->createQueryBuilder('c')
             ->join('c.members', 'm')
             ->where('m.id = :userId')
             ->setParameter('userId', $user->getId())
@@ -39,7 +42,7 @@ class ChannelRepository extends ServiceEntityRepository
         $order = $user->getChannelOrder();
         if (!empty($order)) {
             $positionMap = array_flip($order);
-            usort($joinedChannels, static function(Channel $a, Channel $b) use ($positionMap) {
+            usort($joinedChannels, static function (Channel $a, Channel $b) use ($positionMap) {
                 $posA = $positionMap[$a->getId()] ?? null;
                 $posB = $positionMap[$b->getId()] ?? null;
 
@@ -68,7 +71,8 @@ class ChannelRepository extends ServiceEntityRepository
 
     public function findDmBetween(\App\Entity\User $user1, \App\Entity\User $user2): ?Channel
     {
-        $qb = $this->createQueryBuilder('c')
+        $qb = $this
+            ->createQueryBuilder('c')
             ->join('c.members', 'm1')
             ->join('c.members', 'm2')
             ->where('c.isDm = true')
@@ -76,7 +80,7 @@ class ChannelRepository extends ServiceEntityRepository
             ->andWhere('m2.id = :u2')
             ->setParameter('u1', $user1->getId())
             ->setParameter('u2', $user2->getId());
-            
+
         // If DM with self
         if ($user1->getId() === $user2->getId()) {
             // We need to make sure there is only 1 member, or handle differently.
@@ -105,7 +109,8 @@ class ChannelRepository extends ServiceEntityRepository
 
     public function searchByName(string $query, \App\Entity\User $user): array
     {
-        return $this->createQueryBuilder('c')
+        return $this
+            ->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
             ->where('c.isDm = false')
             ->andWhere('LOWER(c.name) LIKE :query OR LOWER(c.description) LIKE :query')
@@ -117,4 +122,3 @@ class ChannelRepository extends ServiceEntityRepository
             ->getResult();
     }
 }
-

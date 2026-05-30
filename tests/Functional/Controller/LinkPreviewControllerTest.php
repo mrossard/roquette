@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Functional\Controller;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class LinkPreviewControllerTest extends WebTestCase
 {
@@ -63,6 +65,6 @@ class LinkPreviewControllerTest extends WebTestCase
 
         $this->client->request('GET', '/api/link-preview');
         $this->assertResponseStatusCodeSame(400);
-        $this->assertJson($this->client->getResponse()->getContent());
+        static::assertJson($this->client->getResponse()->getContent());
     }
 }

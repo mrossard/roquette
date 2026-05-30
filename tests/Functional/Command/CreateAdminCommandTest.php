@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Functional\Command;
 
 use App\Entity\User;
@@ -50,15 +52,15 @@ class CreateAdminCommandTest extends KernelTestCase
         ]);
 
         $output = $commandTester->getDisplay();
-        $this->assertStringContainsString('L\'administrateur "test_admin_cmd" a été créé avec succès.', $output);
+        static::assertStringContainsString('L\'administrateur "test_admin_cmd" a été créé avec succès.', $output);
 
         $this->entityManager->clear();
         $userRepo = $this->entityManager->getRepository(User::class);
         $user = $userRepo->findOneBy(['username' => 'test_admin_cmd']);
 
-        $this->assertNotNull($user);
-        $this->assertTrue($user->isAdmin());
-        $this->assertContains('ROLE_ADMIN', $user->getRoles());
+        static::assertNotNull($user);
+        static::assertTrue($user->isAdmin());
+        static::assertContains('ROLE_ADMIN', $user->getRoles());
     }
 
     public function testCreateAdminAlreadyExistsPromotesUser(): void
@@ -83,14 +85,17 @@ class CreateAdminCommandTest extends KernelTestCase
         ]);
 
         $output = $commandTester->getDisplay();
-        $this->assertStringContainsString('L\'utilisateur existant "test_admin_cmd" a été promu administrateur', $output);
+        static::assertStringContainsString(
+            'L\'utilisateur existant "test_admin_cmd" a été promu administrateur',
+            $output,
+        );
 
         $this->entityManager->clear();
         $userRepo = $this->entityManager->getRepository(User::class);
         $promotedUser = $userRepo->findOneBy(['username' => 'test_admin_cmd']);
 
-        $this->assertNotNull($promotedUser);
-        $this->assertTrue($promotedUser->isAdmin());
-        $this->assertContains('ROLE_ADMIN', $promotedUser->getRoles());
+        static::assertNotNull($promotedUser);
+        static::assertTrue($promotedUser->isAdmin());
+        static::assertContains('ROLE_ADMIN', $promotedUser->getRoles());
     }
 }

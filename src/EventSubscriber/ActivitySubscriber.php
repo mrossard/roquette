@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\EventSubscriber;
 
 use App\Entity\User;
@@ -8,8 +10,8 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Mercure\Update;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 class ActivitySubscriber implements EventSubscriberInterface
 {
@@ -17,7 +19,7 @@ class ActivitySubscriber implements EventSubscriberInterface
         private Security $security,
         private EntityManagerInterface $entityManager,
         private MessageBusInterface $bus,
-        private string $mercureTopicPrefix
+        private string $mercureTopicPrefix,
     ) {}
 
     public function onKernelRequest(RequestEvent $event): void
@@ -43,17 +45,14 @@ class ActivitySubscriber implements EventSubscriberInterface
             $this->entityManager->flush();
 
             $newStatus = $user->getStatus();
-            $update = new Update(
-                $this->mercureTopicPrefix . '/users/status',
-                json_encode([
-                    'type' => 'user_status_changed',
-                    'username' => $user->getUsername(),
-                    'status' => $newStatus,
-                    'statusLabel' => $user->getStatusLabel(),
-                    'statusOverride' => $user->getStatusOverride() ?? 'auto',
-                    'lastActive' => $now->getTimestamp()
-                ])
-            );
+            $update = new Update($this->mercureTopicPrefix . '/users/status', json_encode([
+                'type' => 'user_status_changed',
+                'username' => $user->getUsername(),
+                'status' => $newStatus,
+                'statusLabel' => $user->getStatusLabel(),
+                'statusOverride' => $user->getStatusOverride() ?? 'auto',
+                'lastActive' => $now->getTimestamp(),
+            ]));
             $this->bus->dispatch($update);
         }
     }
