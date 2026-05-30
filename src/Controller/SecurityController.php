@@ -84,11 +84,8 @@ class SecurityController extends AbstractController
                      $form->get('plainPassword')->getData()
                 )
             );
-            if (strtolower($user->getUsername()) === 'admin') {
-                $user->setRoles(['ROLE_ADMIN']);
-            } else {
-                $user->setRoles(['ROLE_USER']);
-            }
+            $user->setRoles(['ROLE_USER']);
+            $user->setAdmin(false);
 
             $entityManager->persist($user);
             $entityManager->flush();

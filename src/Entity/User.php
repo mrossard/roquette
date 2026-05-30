@@ -60,6 +60,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 10, options: ['default' => 'dark'])]
     private string $theme = 'dark';
 
+    #[ORM\Column(options: ['default' => false])]
+    private bool $admin = false;
+
     /**
      * @var Collection<int, Channel>
      */
@@ -176,6 +179,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->admin;
+    }
+
+    public function setAdmin(bool $admin): static
+    {
+        $this->admin = $admin;
+
+        return $this;
+    }
+
     public function getDisplayName(): ?string
     {
         return $this->displayName;
@@ -216,7 +231,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
 
-        if ($this->username !== null && strtolower($this->username) === 'admin') {
+        if ($this->admin) {
             $roles[] = 'ROLE_ADMIN';
         }
 

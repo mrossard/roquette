@@ -24,10 +24,10 @@ class UserTest extends TestCase
     }
 
     #[Test]
-    public function getRolesGrantsRoleAdminForAdminUsername(): void
+    public function getRolesGrantsRoleAdminForAdminProperty(): void
     {
         $user = new User();
-        $user->setUsername('admin');
+        $user->setAdmin(true);
         $user->setRoles([]);
 
         $this->assertContains('ROLE_ADMIN', $user->getRoles());
@@ -35,20 +35,10 @@ class UserTest extends TestCase
     }
 
     #[Test]
-    public function getRolesGrantsRoleAdminForUpperCaseAdmin(): void
-    {
-        $user = new User();
-        $user->setUsername('ADMIN');
-        $user->setRoles([]);
-
-        $this->assertContains('ROLE_ADMIN', $user->getRoles());
-    }
-
-    #[Test]
     public function getRolesDoesNotGrantAdminForRegularUser(): void
     {
         $user = new User();
-        $user->setUsername('jean');
+        $user->setAdmin(false);
         $user->setRoles([]);
 
         $this->assertNotContains('ROLE_ADMIN', $user->getRoles());
