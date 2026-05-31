@@ -152,6 +152,7 @@ class MercurePublisher
                     : $notificationsEnabled,
                 'isMention' => $isMentioned,
                 'isMentionNotificationAllowed' => $member->isMentionNotificationsEnabled(),
+                'isDm' => $channel->isDm(),
             ]);
         }
     }

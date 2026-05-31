@@ -326,6 +326,37 @@ export function handleGlobalNotification(data) {
             const currentCount = parseInt(badge.textContent, 10) || 0;
             badge.textContent = (currentCount + 1).toString();
             badge.style.display = 'inline-flex';
+        } else if (data.isDm) {
+            const dmsList = document.getElementById('section-dms');
+            if (dmsList) {
+                fetch(`/channels/${data.channelSlug}/sidebar-item`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    }
+                    throw new Error('Failed to fetch sidebar item');
+                })
+                .then(html => {
+                    if (!document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`)) {
+                        const emptyState = dmsList.querySelector('p');
+                        if (emptyState && emptyState.textContent.includes('Aucun message direct')) {
+                            emptyState.remove();
+                        }
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html.trim();
+                        const newSidebarItem = tempDiv.firstChild;
+                        dmsList.appendChild(newSidebarItem);
+                        if (window.htmx) {
+                            window.htmx.process(newSidebarItem);
+                        }
+                    }
+                })
+                .catch(err => console.error('Error adding DM to sidebar:', err));
+            }
         }
     }
 }

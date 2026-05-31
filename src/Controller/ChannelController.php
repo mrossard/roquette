@@ -267,6 +267,34 @@ final class ChannelController extends AbstractController
         ]);
     }
 
+    #[Route('/channels/{slug}/sidebar-item', name: 'app_channel_sidebar_item', methods: ['GET'])]
+    public function sidebarItem(
+        string $slug,
+        ChannelRepository $channelRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        $channel = $channelRepository->findOneBy(['slug' => $slug]);
+        if (!$channel) {
+            return new Response('Canal non trouvé.', 404);
+        }
+
+        if ($channel->isPrivate() && !$channel->getMembers()->contains($currentUser)) {
+            return new Response('Non autorisé.', 403);
+        }
+
+        $ucrRepo = $entityManager->getRepository(\App\Entity\UserChannelRead::class);
+        $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
+
+        return $this->render('dashboard/_channel_sidebar_item.html.twig', [
+            'channel' => $channel,
+            'unreadCounts' => $unreadCounts,
+            'activeChannel' => null,
+        ]);
+    }
+
     // -------------------------------------------------------------------------
     // Open DM
     // -------------------------------------------------------------------------
