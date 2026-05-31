@@ -29,9 +29,9 @@ export function openThread(messageId) {
                 window.scrollToBottom(false, 'thread-replies-feed');
             }
 
-            // Focus thread input
+            // Focus thread input (unless on mobile)
             const threadTextarea = document.getElementById('thread-message');
-            if (threadTextarea) {
+            if (threadTextarea && !window.matchMedia('(max-width: 767px)').matches) {
                 threadTextarea.focus();
             }
         });
@@ -167,7 +167,7 @@ document.body.addEventListener('htmx:afterSwap', (evt) => {
         initThreadFileUpload();
         initThreadTextareaResize();
         const threadTextarea = document.getElementById('thread-message');
-        if (threadTextarea) threadTextarea.focus();
+        if (threadTextarea && !window.matchMedia('(max-width: 767px)').matches) threadTextarea.focus();
     }
 });
 

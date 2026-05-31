@@ -54,12 +54,21 @@ document.addEventListener('click', (e) => {
             p.classList.remove('show');
         });
     }
+    // Close message actions list when clicking outside
+    if (!e.target.closest('.feed-item-actions')) {
+        document.querySelectorAll('.feed-item-actions-list.show').forEach(list => {
+            list.classList.remove('show');
+        });
+    }
 });
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         document.querySelectorAll('.reaction-picker.show').forEach(p => {
             p.classList.remove('show');
+        });
+        document.querySelectorAll('.feed-item-actions-list.show').forEach(list => {
+            list.classList.remove('show');
         });
     }
 });
@@ -239,9 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(sendHeartbeat, 60000);
     }
 
-    // Focus message input on load
+    // Focus message input on load (unless on mobile)
     const messageInput = document.getElementById('message');
-    if (messageInput) {
+    if (messageInput && !window.matchMedia('(max-width: 767px)').matches) {
         messageInput.focus();
     }
     checkJumpToMessage();
@@ -287,12 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
             window.scrollToBottom(true, 'thread-replies-feed');
         }
 
-        // Refocus appropriate input after content swap/settle (unless search input is active)
+        // Refocus appropriate input after content swap/settle (unless search input is active or on mobile)
         const searchInput = document.getElementById('channel-search-input');
         const globalSearchInput = document.getElementById('global-search-input');
         const isSearching = (searchInput && document.activeElement === searchInput) || 
                             (globalSearchInput && document.activeElement === globalSearchInput);
-        if (!isSearching) {
+        if (!isSearching && !window.matchMedia('(max-width: 767px)').matches) {
             // If the thread panel is open, keep focus on the thread input
             const threadPanel = document.getElementById('thread-panel');
             const threadTextarea = document.getElementById('thread-message');

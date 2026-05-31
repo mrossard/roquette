@@ -807,7 +807,7 @@ export function closeGlobalSearch() {
         modal.style.display = 'none';
     }
     const messageInput = document.getElementById('message');
-    if (messageInput) messageInput.focus();
+    if (messageInput && !window.matchMedia('(max-width: 767px)').matches) messageInput.focus();
 }
 
 export function handleGlobalSearchBackdropClick(event) {
@@ -916,3 +916,33 @@ window.closeGlobalSearch = closeGlobalSearch;
 window.handleGlobalSearchBackdropClick = handleGlobalSearchBackdropClick;
 window.initGlobalSearch = initGlobalSearch;
 window.initMobileSidebar = initMobileSidebar;
+
+export function toggleMobileChannelDetails() {
+    const details = document.getElementById('chat-header-details');
+    const btn = document.getElementById('btn-channel-details-toggle');
+    if (details) {
+        details.classList.toggle('show');
+        if (btn) {
+            btn.classList.toggle('active');
+        }
+    }
+}
+window.toggleMobileChannelDetails = toggleMobileChannelDetails;
+
+export function toggleMessageActions(button, event) {
+    event.stopPropagation();
+    const actionsList = button.nextElementSibling;
+    if (!actionsList) return;
+    
+    // Close other open message action lists first
+    document.querySelectorAll('.feed-item-actions-list.show').forEach(list => {
+        if (list !== actionsList) {
+            list.classList.remove('show');
+        }
+    });
+    
+    actionsList.classList.toggle('show');
+}
+window.toggleMessageActions = toggleMessageActions;
+
+

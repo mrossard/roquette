@@ -279,7 +279,12 @@ export function connectMercure(isReconnect = false) {
     currentHubUrl = hubUrl;
     
     let connectionUrl = hubUrl;
-    const lastEventId = localStorage.getItem('mercureLastEventId');
+    let lastEventId = localStorage.getItem('mercureLastEventId');
+    if (lastEventId && reconnectAttempts >= 2) {
+        console.warn(`Clearing Mercure Last-Event-ID due to repeated connection failures (attempt ${reconnectAttempts}): ${lastEventId}`);
+        localStorage.removeItem('mercureLastEventId');
+        lastEventId = null;
+    }
     if (lastEventId) {
         try {
             const urlObj = new URL(hubUrl, window.location.origin);
