@@ -5,13 +5,13 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "8000:80"
     environment:
       SERVER_NAME: ':80'
-      MERCURE_JWT_SECRET: '!ChangeThisMercureHubJWTSecretKey!'
-      DATABASE_URL: 'postgresql://app:!ChangeMePostgresPassword!@database:5432/roquette?serverVersion=16&charset=utf8'
-      MERCURE_URL: 'http://127.0.0.1/.well-known/mercure'
-      MERCURE_PUBLIC_URL: 'https://localhost/.well-known/mercure'
+      MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-roquette}?serverVersion=16&charset=utf8}
+      MERCURE_URL: ${MERCURE_URL:-http://127.0.0.1/.well-known/mercure}
+      MERCURE_PUBLIC_URL: ${MERCURE_PUBLIC_URL:-https://localhost/.well-known/mercure}
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
 
@@ -19,9 +19,9 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: roquette
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: '!ChangeMePostgresPassword!'
+      POSTGRES_DB:  ${POSTGRES_DB:-roquette}
+      POSTGRES_USER:  ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD:  ${POSTGRES_PASSWORD:-'ChangeMe!}
     ports:
       - "5435:5432"
     volumes:
@@ -38,4 +38,3 @@ volumes:
   caddy_config:
   db_data:
   clamav_data:
-
