@@ -40,7 +40,7 @@ class ChannelRepository extends ServiceEntityRepository
 
         // Apply custom channel ordering if it exists
         $order = $user->getChannelOrder();
-        if ($order !== []) {
+        if ($order !== null && $order !== []) {
             $positionMap = array_flip($order);
             usort($joinedChannels, static function (Channel $a, Channel $b) use ($positionMap) {
                 $posA = $positionMap[$a->getId()] ?? null;

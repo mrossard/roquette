@@ -854,6 +854,46 @@ export function initGlobalSearch() {
     });
 }
 
+export function initMobileSidebar() {
+    document.addEventListener('click', (e) => {
+        const toggleBtn = e.target.closest('#mobile-sidebar-toggle');
+        if (toggleBtn) {
+            const dashboardGrid = document.querySelector('.dashboard-grid');
+            if (dashboardGrid) {
+                const isOpen = dashboardGrid.classList.toggle('sidebar-open');
+                toggleBtn.classList.toggle('active', isOpen);
+            }
+            return;
+        }
+
+        const backdrop = e.target.closest('#mobile-sidebar-backdrop');
+        if (backdrop) {
+            const dashboardGrid = document.querySelector('.dashboard-grid');
+            const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+            if (dashboardGrid) {
+                dashboardGrid.classList.remove('sidebar-open');
+            }
+            if (toggleBtn) {
+                toggleBtn.classList.remove('active');
+            }
+            return;
+        }
+
+        // Also close sidebar when clicking a channel link inside the sidebar list on mobile
+        const channelLink = e.target.closest('.sidebar-panel .channel-link, .sidebar-panel .btn-sidebar-item');
+        if (channelLink && window.innerWidth < 768) {
+            const dashboardGrid = document.querySelector('.dashboard-grid');
+            const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+            if (dashboardGrid) {
+                dashboardGrid.classList.remove('sidebar-open');
+            }
+            if (toggleBtn) {
+                toggleBtn.classList.remove('active');
+            }
+        }
+    });
+}
+
 // Global window binds
 window.scrollToBottom = scrollToBottom;
 window.highlightAllCodeBlocks = highlightAllCodeBlocks;
@@ -875,3 +915,4 @@ window.openGlobalSearch = openGlobalSearch;
 window.closeGlobalSearch = closeGlobalSearch;
 window.handleGlobalSearchBackdropClick = handleGlobalSearchBackdropClick;
 window.initGlobalSearch = initGlobalSearch;
+window.initMobileSidebar = initMobileSidebar;

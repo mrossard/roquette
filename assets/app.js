@@ -223,6 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
     if (window.initOfflineQueue) window.initOfflineQueue();
     if (window.initGlobalSearch) window.initGlobalSearch();
+    if (window.initMobileSidebar) window.initMobileSidebar();
 
     // Heartbeat to keep user status online
     if (document.getElementById('mercure-status')) {
