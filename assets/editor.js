@@ -104,7 +104,7 @@ export function replyToMessage(author, content) {
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-// Send message on Enter (without Shift or Alt) in the message textarea — with history & inline edit support
+// Send message on Enter (without Shift or Alt) in the message textarea — with history & inline edit support via HTMX
 document.addEventListener('keydown', (event) => {
     if (!event.target || event.target.id !== 'message') return;
     const textarea = event.target;
@@ -113,7 +113,7 @@ document.addEventListener('keydown', (event) => {
         if (!event.shiftKey && !event.altKey) {
             event.preventDefault();
 
-            // In inline edit mode: submit the edit, not a new message
+            // In inline edit mode: submit the edit via HTMX, not a new message
             if (editModeMessageId !== null) {
                 event.preventDefault();
                 submitInlineEdit(textarea);
@@ -148,7 +148,7 @@ document.addEventListener('keydown', (event) => {
             const ownItems = getOwnFeedItems();
             const nextIndex = editModeItemIndex - 1;
             if (nextIndex >= 0) {
-                editMessageInline(ownItems[nextIndex], nextIndex);
+                editMessageInline(ownItems[nextIndex], nextIndex, 'start');
             }
             return;
         }
@@ -158,7 +158,7 @@ document.addEventListener('keydown', (event) => {
             event.preventDefault();
             const ownItems = getOwnFeedItems();
             if (ownItems.length > 0) {
-                editMessageInline(ownItems[ownItems.length - 1], ownItems.length - 1);
+                editMessageInline(ownItems[ownItems.length - 1], ownItems.length - 1, 'start');
             }
             return;
         }
@@ -186,7 +186,7 @@ document.addEventListener('keydown', (event) => {
             const ownItems = getOwnFeedItems();
             const nextIndex = editModeItemIndex + 1;
             if (nextIndex < ownItems.length) {
-                editMessageInline(ownItems[nextIndex], nextIndex);
+                editMessageInline(ownItems[nextIndex], nextIndex, 'end');
             } else {
                 cancelInlineEdit();
             }
@@ -249,13 +249,12 @@ export function saveMessageToHistory(text) {
     historyDraft = '';
 }
 
-export function editMessageInline(feedItem, itemIndex) {
+export function editMessageInline(feedItem, itemIndex, cursorPosition = 'end') {
     const messageId = feedItem.getAttribute('data-message-id');
     if (!messageId) return;
 
-    // Extract the text content of the message (strip HTML)
-    const bodyEl = feedItem.querySelector('.feed-item-body p');
-    const rawText = bodyEl ? bodyEl.innerText : '';
+    // Extract the raw Markdown text content of the message
+    const rawText = feedItem.getAttribute('data-raw-content') || (feedItem.querySelector('.feed-item-body p')?.innerText || '');
 
     const textarea = document.getElementById('message');
     if (!textarea) return;
@@ -267,13 +266,36 @@ export function editMessageInline(feedItem, itemIndex) {
     textarea.value = rawText;
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
     textarea.focus();
-    textarea.selectionStart = textarea.selectionEnd = rawText.length;
+    
+    if (cursorPosition === 'start') {
+        textarea.selectionStart = textarea.selectionEnd = 0;
+    } else {
+        textarea.selectionStart = textarea.selectionEnd = rawText.length;
+    }
+
+    // Load file attachments details visually
+    const fileName = feedItem.getAttribute('data-file-name') || '';
+    const fileSize = feedItem.getAttribute('data-file-size') || '';
+    const previewContainer = document.getElementById('file-preview-container');
+    const previewName = document.getElementById('file-preview-name');
+    if (previewContainer && previewName) {
+        if (fileName) {
+            previewName.textContent = `${fileName} (${window.formatBytes ? window.formatBytes(parseInt(fileSize)) : fileSize})`;
+            previewContainer.style.display = 'flex';
+            textarea.removeAttribute('required');
+        } else {
+            previewContainer.style.display = 'none';
+        }
+    }
 
     // Highlight the feed item being edited
     document.querySelectorAll('.feed-item.editing-inline').forEach(el =>
         el.classList.remove('editing-inline')
     );
     feedItem.classList.add('editing-inline');
+
+    // Scroll the item into view
+    feedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     // Show edit mode banner
     showEditModeBanner();
@@ -290,6 +312,14 @@ export function cancelInlineEdit() {
         textarea.focus();
     }
 
+    // Clear file preview container
+    const previewContainer = document.getElementById('file-preview-container');
+    if (previewContainer) {
+        previewContainer.style.display = 'none';
+        const fileInput = document.getElementById('file-upload');
+        if (fileInput) fileInput.value = '';
+    }
+
     document.querySelectorAll('.feed-item.editing-inline').forEach(el =>
         el.classList.remove('editing-inline')
     );
@@ -303,33 +333,13 @@ export function submitInlineEdit(textarea) {
 
     cancelInlineEdit();
 
-    fetch(`/messages/${messageId}/edit`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: new URLSearchParams({ content: newContent }),
-    })
-    .then(res => {
-        if (!res.ok) throw new Error(`Edit failed: ${res.status}`);
-        return res.text();
-    })
-    .then(html => {
-        // Replace the feed item with the updated HTML
-        const feedItem = document.querySelector(`[data-message-id="${messageId}"]`);
-        if (feedItem) {
-            const tmp = document.createElement('div');
-            tmp.innerHTML = html;
-            const newItem = tmp.firstElementChild;
-            if (newItem) {
-                feedItem.replaceWith(newItem);
-                if (window.htmx) window.htmx.process(newItem);
-                updateEditButtonsVisibility();
-            }
-        }
-    })
-    .catch(err => console.error('Inline edit error:', err));
+    if (window.htmx) {
+        window.htmx.ajax('POST', `/messages/${messageId}/edit`, {
+            target: `[data-message-id="${messageId}"]`,
+            swap: 'outerHTML',
+            values: { content: newContent }
+        });
+    }
 }
 
 export function showEditModeBanner() {
@@ -434,38 +444,17 @@ export function switchInputTab(textareaId, mode) {
         editBtn.classList.remove('active');
         previewBtn.classList.add('active');
 
-        // Hide textarea and actions (emojis/files upload), show preview container
+        // Hide textarea and actions, show preview container
         textarea.style.display = 'none';
         if (actionsWrapper) actionsWrapper.style.display = 'none';
         previewContainer.style.display = 'block';
 
-        // Load preview content from API
-        previewContainer.innerHTML = '<span class="preview-loading">Chargement de l\'aperçu...</span>';
-
         const content = textarea.value;
         if (!content.trim()) {
             previewContainer.innerHTML = '<span class="preview-empty">Rien à prévisualiser</span>';
-            return;
+        } else {
+            previewContainer.innerHTML = '<span class="preview-loading">Chargement de l\'aperçu...</span>';
         }
-
-        fetch('/api/message/preview', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ content: content })
-        })
-        .then(res => res.json())
-        .then(data => {
-            previewContainer.innerHTML = data.html || '';
-            if (window.highlightAllCodeBlocks) {
-                window.highlightAllCodeBlocks(previewContainer);
-            }
-        })
-        .catch(err => {
-            console.error('Failed to load message preview:', err);
-            previewContainer.innerHTML = '<span class="preview-error">Erreur lors du chargement de l\'aperçu.</span>';
-        });
     } else {
         // Edit mode
         editBtn.classList.add('active');

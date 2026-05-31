@@ -729,6 +729,14 @@ body {
     user-select: none;
 }
 
+.channel-link .channel-name {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .channel-link:hover {
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.04);
@@ -894,16 +902,10 @@ body {
     color: var(--text-muted);
     opacity: 0.55;
     font-weight: normal;
-    margin-left: auto;
     flex-shrink: 0;
 }
 
-.channel-last-message-date + .unread-badge {
-    margin-left: 0.4rem;
-}
-
 .unread-badge {
-    margin-left: auto;
     background: linear-gradient(135deg, var(--accent-red), hsl(340, 85%, 55%));
     color: #ffffff;
     font-size: 0.7rem;
@@ -4550,7 +4552,6 @@ del {
 }
 
 .sidebar-favorite-toggle {
-    margin-left: auto;
     font-size: 1rem;
     border: none;
     background: none;
@@ -4558,14 +4559,16 @@ del {
     line-height: 1;
     padding: 0 4px;
     transition: transform 0.2s, opacity 0.2s;
+    flex-shrink: 0;
 }
 
 .channel-link .sidebar-favorite-toggle {
-    opacity: 0;
+    opacity: 0.35;
+    color: var(--text-muted);
 }
 
 .channel-link:hover .sidebar-favorite-toggle {
-    opacity: 0.5;
+    opacity: 0.7;
 }
 
 .channel-link .sidebar-favorite-toggle:hover {

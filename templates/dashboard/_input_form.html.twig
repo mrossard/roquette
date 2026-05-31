@@ -77,7 +77,13 @@
         
         <div class="toolbar-tabs" style="margin-left: auto; display: flex; gap: 4px;">
             <button type="button" class="btn-format active" id="message-btn-edit-tab" onclick="switchInputTab('message', 'edit')" title="Écrire">Écrire</button>
-            <button type="button" class="btn-format" id="message-btn-preview-tab" onclick="switchInputTab('message', 'preview')" title="Aperçu">Aperçu</button>
+            <button type="button" class="btn-format" id="message-btn-preview-tab"
+                    hx-post="{{ path('app_api_message_preview') }}"
+                    hx-include="#message"
+                    hx-target="#message-preview"
+                    hx-swap="innerHTML"
+                    onclick="switchInputTab('message', 'preview')"
+                    title="Aperçu">Aperçu</button>
         </div>
     </div>
 

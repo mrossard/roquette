@@ -37,8 +37,14 @@ final class MessageController extends AbstractController
     #[Route('/api/message/preview', name: 'app_api_message_preview', methods: ['POST'])]
     public function preview(Request $request, MessageFormatter $messageFormatter): Response
     {
-        $data = json_decode($request->getContent(), true);
-        $content = $data['content'] ?? $request->request->get('content', '');
+        $content = '';
+        if ($request->getContent()) {
+            $data = json_decode($request->getContent(), true);
+            $content = $data['content'] ?? '';
+        }
+        if (!$content) {
+            $content = $request->request->get('content') ?: $request->request->get('message', '');
+        }
 
         if (str_starts_with(trim($content), '/shrug')) {
             $parts = explode(' ', trim($content), 2);
@@ -48,7 +54,7 @@ final class MessageController extends AbstractController
 
         $html = $messageFormatter->format($content);
 
-        return new JsonResponse(['html' => $html]);
+        return new Response($html ?: '<span class="preview-empty">Rien à prévisualiser</span>');
     }
 
     // -------------------------------------------------------------------------
