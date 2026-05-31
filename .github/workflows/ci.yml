@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: roquette_test
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: '!ChangeMePostgresPassword!'
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
+        extensions: mbstring, xml, ctype, iconv, pdo_pgsql, pdo_sqlite
+        coverage: none
+
+    - name: Get Composer Cache Directory
+      id: composer-cache
+      run: |
+        echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache Composer dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-composer-
+
+    - name: Install Composer dependencies
+      run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+    - name: Setup Database
+      env:
+        DATABASE_URL: postgresql://app:!ChangeMePostgresPassword!@127.0.0.1:5432/roquette?serverVersion=16&charset=utf8
+      run: |
+        bin/console doctrine:database:create --env=test --if-not-exists
+        bin/console doctrine:migrations:migrate --env=test --no-interaction
+
+    - name: Run Tests
+      env:
+        DATABASE_URL: postgresql://app:!ChangeMePostgresPassword!@127.0.0.1:5432/roquette?serverVersion=16&charset=utf8
+      run: vendor/bin/phpunit
