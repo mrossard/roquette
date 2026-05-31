@@ -807,7 +807,8 @@ export function closeGlobalSearch() {
         modal.style.display = 'none';
     }
     const messageInput = document.getElementById('message');
-    if (messageInput && !window.matchMedia('(max-width: 767px)').matches) messageInput.focus();
+    const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (messageInput && !isMobile) messageInput.focus();
 }
 
 export function handleGlobalSearchBackdropClick(event) {

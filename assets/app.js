@@ -250,7 +250,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Focus message input on load (unless on mobile)
     const messageInput = document.getElementById('message');
-    if (messageInput && !window.matchMedia('(max-width: 767px)').matches) {
+    const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (messageInput && !isMobile) {
         messageInput.focus();
     }
     checkJumpToMessage();
@@ -301,7 +302,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const globalSearchInput = document.getElementById('global-search-input');
         const isSearching = (searchInput && document.activeElement === searchInput) || 
                             (globalSearchInput && document.activeElement === globalSearchInput);
-        if (!isSearching && !window.matchMedia('(max-width: 767px)').matches) {
+        const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (!isSearching && !isMobileDevice) {
             // If the thread panel is open, keep focus on the thread input
             const threadPanel = document.getElementById('thread-panel');
             const threadTextarea = document.getElementById('thread-message');
