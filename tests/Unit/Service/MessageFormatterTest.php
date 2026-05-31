@@ -9,18 +9,53 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class MessageFormatterTest extends TestCase
 {
     private MessageFormatter $formatter;
     private Security $security;
+    private HttpClientInterface $httpClient;
+    private string $testEmojisDir;
 
     protected function setUp(): void
     {
         $this->security = $this->createStub(Security::class);
         $this->security->method('getUser')->willReturn(null);
+        $this->httpClient = $this->createMock(HttpClientInterface::class);
 
-        $this->formatter = new MessageFormatter($this->security);
+        $this->testEmojisDir = __DIR__ . '/../../../var/test_emojis';
+
+        $this->formatter = new MessageFormatter(
+            $this->security,
+            $this->httpClient,
+            $this->testEmojisDir,
+            'http://example.com/emojis'
+        );
+    }
+
+    protected function tearDown(): void
+    {
+        $dir = $this->testEmojisDir . '/public/uploads/emojis';
+        if (is_dir($dir)) {
+            foreach (glob($dir . '/*') as $file) {
+                if (is_file($file)) {
+                    unlink($file);
+                }
+            }
+            rmdir($dir);
+        }
+        $publicDir = $this->testEmojisDir . '/public/uploads';
+        if (is_dir($publicDir)) {
+            rmdir($publicDir);
+        }
+        $publicBase = $this->testEmojisDir . '/public';
+        if (is_dir($publicBase)) {
+            rmdir($publicBase);
+        }
+        if (is_dir($this->testEmojisDir)) {
+            rmdir($this->testEmojisDir);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -200,7 +235,12 @@ class MessageFormatterTest extends TestCase
         $security = $this->createStub(Security::class);
         $security->method('getUser')->willReturn($user);
 
-        $formatter = new MessageFormatter($security);
+        $formatter = new MessageFormatter(
+            $security,
+            $this->httpClient,
+            $this->testEmojisDir,
+            'http://example.com/emojis'
+        );
         $result = $formatter->format('Bonjour @alice !');
 
         $this->assertStringContainsString('class="mention mention-me"', $result);
@@ -262,5 +302,68 @@ class MessageFormatterTest extends TestCase
         $result = $this->formatter->format('![photo](https://example.com/img.png)');
         $this->assertStringContainsString('<img src="https://example.com/img.png"', $result);
         $this->assertStringContainsString('class="message-inline-image"', $result);
+    }
+
+    // -------------------------------------------------------------------------
+    // Custom Mesdiscussions Emojis
+    // -------------------------------------------------------------------------
+
+    #[Test]
+    public function formatRendersCustomEmojiSuccessfullyDownloaded(): void
+    {
+        $response = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
+        $response->method('getStatusCode')->willReturn(200);
+        $response->method('getContent')->willReturn('fake_gif_content');
+
+        $this->httpClient->expects($this->once())
+            ->method('request')
+            ->with('GET', 'http://example.com/emojis/smile.gif')
+            ->willReturn($response);
+
+        $result = $this->formatter->format('Hello [:smile] !');
+        $this->assertStringContainsString('<img src="/uploads/emojis/smile.gif" alt="[:smile]" class="message-emoji"', $result);
+    }
+
+    #[Test]
+    public function formatRendersCustomEmojiWithSpacesSuccessfullyDownloaded(): void
+    {
+        $response = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
+        $response->method('getStatusCode')->willReturn(200);
+        $response->method('getContent')->willReturn('fake_gif_content');
+
+        $this->httpClient->expects($this->once())
+            ->method('request')
+            ->with('GET', 'http://example.com/emojis/doc%20petrus.gif')
+            ->willReturn($response);
+
+        $result = $this->formatter->format('Hello [:doc petrus] !');
+        $this->assertStringContainsString('<img src="/uploads/emojis/doc%20petrus.gif" alt="[:doc petrus]" class="message-emoji"', $result);
+    }
+
+    #[Test]
+    public function formatDoesNotRenderCustomEmojiWhenDownloadFails(): void
+    {
+        $response = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
+        $response->method('getStatusCode')->willReturn(404);
+
+        $this->httpClient->expects($this->once())
+            ->method('request')
+            ->with('GET', 'http://example.com/emojis/notfound.gif')
+            ->willReturn($response);
+
+        $result = $this->formatter->format('Hello [:notfound] !');
+        $this->assertStringContainsString('Hello [:notfound] !', $result);
+        $this->assertStringNotContainsString('<img', $result);
+    }
+
+    #[Test]
+    public function formatDoesNotReplaceEmojiInCodeOrPreBlocks(): void
+    {
+        $this->httpClient->expects($this->never())->method('request');
+
+        $result = $this->formatter->format("Voici du code `[:smile]` et un bloc :\n```\n[:smile]\n```");
+        $this->assertStringContainsString('<code class="message-inline-code">[:smile]</code>', $result);
+        $this->assertStringContainsString('[:smile]', $result);
+        $this->assertStringNotContainsString('<img', $result);
     }
 }

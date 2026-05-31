@@ -9,6 +9,8 @@ use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
 use League\CommonMark\MarkdownConverter;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Formate le contenu brut d'un message en HTML sécurisé.
@@ -51,6 +53,11 @@ class MessageFormatter
 
     public function __construct(
         private readonly Security $security,
+        private readonly HttpClientInterface $httpClient,
+        #[Autowire('%kernel.project_dir%')]
+        private readonly string $projectDir,
+        #[Autowire('%env(EMOJI_BASE_URL)%')]
+        private readonly string $emojiBaseUrl,
     ) {
         $config = [
             'html_input' => 'escape', // Échappe tout HTML brut fourni par l'utilisateur
@@ -165,7 +172,86 @@ class MessageFormatter
         $html = str_replace('<ol>', '<ol class="message-list">', $html);
 
         // Remplacer les blockquotes pour ajouter la classe 'message-quote'
-        return str_replace('<blockquote>', '<blockquote class="message-quote">', $html);
+        $html = str_replace('<blockquote>', '<blockquote class="message-quote">', $html);
+
+        // Remplacer les emojis personnalisés de mesdiscussions dans les nœuds de texte
+        return $this->replaceCustomEmojisInHtml($html);
+    }
+
+    private function replaceCustomEmojisInHtml(string $html): string
+    {
+        $parts = preg_split('/(<[^>]+>)/', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
+        if ($parts === false) {
+            return $html;
+        }
+
+        $inCodeOrPre = 0;
+        foreach ($parts as &$part) {
+            if ($part === '') {
+                continue;
+            }
+            if ($part[0] === '<') {
+                $tagName = strtolower(preg_replace('/^<\/?([a-z0-9]+).*/is', '$1', $part));
+                if ($tagName === 'code' || $tagName === 'pre') {
+                    if (str_starts_with($part, '</')) {
+                        $inCodeOrPre = max(0, $inCodeOrPre - 1);
+                    } else {
+                        $inCodeOrPre++;
+                    }
+                }
+            } else {
+                if ($inCodeOrPre === 0) {
+                    $part = $this->replaceCustomEmojis($part);
+                }
+            }
+        }
+        unset($part);
+
+        return implode('', $parts);
+    }
+
+    private function replaceCustomEmojis(string $text): string
+    {
+        if (empty($this->emojiBaseUrl)) {
+            return $text;
+        }
+
+        return preg_replace_callback('/\[:([a-zA-Z0-9_\-\+: ]+)\]/', function ($matches) {
+            $code = $matches[1];
+            $filename = $code . '.gif';
+            $filename = basename($filename);
+            
+            $emojisDir = $this->projectDir . '/public/uploads/emojis';
+            if (!is_dir($emojisDir)) {
+                mkdir($emojisDir, 0777, true);
+            }
+            
+            $localPath = $emojisDir . '/' . $filename;
+            $webPath = '/uploads/emojis/' . rawurlencode($filename);
+            
+            if (!file_exists($localPath)) {
+                $url = rtrim($this->emojiBaseUrl, '/') . '/' . rawurlencode($filename);
+                try {
+                    $response = $this->httpClient->request('GET', $url, [
+                        'timeout' => 2.0,
+                    ]);
+                    if ($response->getStatusCode() === 200) {
+                        $content = $response->getContent();
+                        file_put_contents($localPath, $content);
+                    } else {
+                        file_put_contents($localPath, '');
+                    }
+                } catch (\Exception $e) {
+                    file_put_contents($localPath, '');
+                }
+            }
+            
+            if (file_exists($localPath) && filesize($localPath) > 0) {
+                return '<img src="' . htmlspecialchars($webPath, ENT_QUOTES, 'UTF-8') . '" alt="[:' . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . ']" class="message-emoji" style="vertical-align: middle; max-height: 24px;" />';
+            }
+            
+            return $matches[0];
+        }, $text);
     }
 
     private function replaceEmoticons(string $content): string
