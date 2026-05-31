@@ -321,7 +321,7 @@ class MessageFormatterTest extends TestCase
             ->willReturn($response);
 
         $result = $this->formatter->format('Hello [:smile] !');
-        $this->assertStringContainsString('<img src="/uploads/emojis/smile.gif" alt="[:smile]" class="message-emoji"', $result);
+        $this->assertStringContainsString('<img src="/uploads/emojis/smile.gif" alt="[:smile]" title="[:smile]" class="message-emoji"', $result);
     }
 
     #[Test]
@@ -337,7 +337,7 @@ class MessageFormatterTest extends TestCase
             ->willReturn($response);
 
         $result = $this->formatter->format('Hello [:doc petrus] !');
-        $this->assertStringContainsString('<img src="/uploads/emojis/doc%20petrus.gif" alt="[:doc petrus]" class="message-emoji"', $result);
+        $this->assertStringContainsString('<img src="/uploads/emojis/doc%20petrus.gif" alt="[:doc petrus]" title="[:doc petrus]" class="message-emoji"', $result);
     }
 
     #[Test]

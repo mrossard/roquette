@@ -249,7 +249,7 @@ class MessageFormatter
             if (file_exists($localPath) && filesize($localPath) > 0) {
                 $title = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
 
-                return '<img src="' . htmlspecialchars($webPath, ENT_QUOTES, 'UTF-8') . '" alt="[:' .$title. ']" title="[:' .$title. ']" class="message-emoji" style="vertical-align: middle; max-height: 24px;" />';
+                return '<img src="' . htmlspecialchars($webPath, ENT_QUOTES, 'UTF-8') . '" alt="[:' .$title. ']" title="[:' .$title. ']" class="message-emoji" style="vertical-align: middle;" />';
             }
 
             return $matches[0];
