@@ -50,6 +50,12 @@ final class MessageController extends AbstractController
             $parts = explode(' ', trim($content), 2);
             $args = (($parts[1] ?? null) !== null) ? trim($parts[1]) : '';
             $content = ($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯';
+        } elseif (str_starts_with(trim($content), '/me ')) {
+            $parts = explode(' ', trim($content), 2);
+            $args = (($parts[1] ?? null) !== null) ? trim($parts[1]) : '';
+            $content = '*' . $args . '*';
+        } elseif (trim($content) === '/me') {
+            $content = '';
         }
 
         $html = $messageFormatter->format($content);
@@ -387,6 +393,9 @@ final class MessageController extends AbstractController
         } elseif ($command === 'shrug') {
             // Mutate messageText so the caller sends the formatted shrug text
             $messageText = ($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯';
+            return null; // let the message be sent normally
+        } elseif ($command === 'me') {
+            $messageText = '*' . $args . '*';
             return null; // let the message be sent normally
         } elseif ($command === 'giphy') {
             if ($args === '') {
