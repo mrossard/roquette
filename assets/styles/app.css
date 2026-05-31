@@ -4531,15 +4531,31 @@ del {
 /* Responsiveness for global search bar */
 @media (max-width: 768px) {
     .global-search-trigger-container {
-        margin: 0.5rem 0;
-        max-width: 100%;
-        order: 3;
-        width: 100%;
+        margin: 0 0.25rem;
+        max-width: none;
+        order: unset;
+        width: auto;
+        flex-grow: 1;
+    }
+    
+    .global-search-trigger {
+        padding: 0.35rem 0.6rem;
+    }
+    
+    .search-trigger-placeholder,
+    .search-trigger-shortcut {
+        display: none !important;
     }
     
     .app-header {
-        flex-wrap: wrap;
-        gap: 1rem;
+        flex-wrap: nowrap;
+        gap: 0.35rem;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    #header-notification-btn {
+        display: none !important;
     }
 }
 
@@ -4848,7 +4864,8 @@ del {
     }
 
     .app-header {
-        padding-bottom: 0.5rem !important;
+        padding-top: 0.25rem !important;
+        padding-bottom: 0.25rem !important;
         margin-bottom: 0.25rem !important;
     }
 

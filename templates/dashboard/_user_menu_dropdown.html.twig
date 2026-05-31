@@ -1,7 +1,7 @@
 <div class="user-status-dropdown-container user-menu-dropdown-container">
     <button class="user-status-trigger user-menu-trigger" onclick="toggleStatusDropdown(event)" aria-haspopup="true" aria-expanded="false">
         <span class="status-dot {{ app.user.status }}" data-username="{{ app.user.username }}" data-status-override="{{ app.user.statusOverride|default('auto') }}" data-last-active="{{ app.user.lastActiveAt ? app.user.lastActiveAt.timestamp : '' }}" style="display: inline-block;"></span>
-        <span class="user-greeting-trigger">Salut, <strong style="color: hsl({{ app.user.hue }}, 90%, var(--user-hue-lightness-text));">{{ app.user.displayName|default(app.user.username) }}</strong> !</span>
+        <span class="user-greeting-trigger"><strong style="color: hsl({{ app.user.hue }}, 90%, var(--user-hue-lightness-text));">{{ app.user.displayName|default(app.user.username) }}</strong></span>
         <span class="dropdown-chevron">▼</span>
     </button>
     <div class="user-status-dropdown-menu user-menu-dropdown-menu" style="display: none;" role="menu">
