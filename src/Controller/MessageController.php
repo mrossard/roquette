@@ -395,7 +395,7 @@ final class MessageController extends AbstractController
             $messageText = ($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯';
             return null; // let the message be sent normally
         } elseif ($command === 'me') {
-            $messageText = '*' . $args . '*';
+            $messageText = '/me' . ($args !== '' ? ' ' . $args : '');
             return null; // let the message be sent normally
         } elseif ($command === 'giphy') {
             if ($args === '') {

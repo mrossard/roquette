@@ -5174,6 +5174,56 @@ del {
     animation: none;
 }
 
+/* /me messages styling */
+.feed-item.is-me-message {
+    background: transparent !important;
+    border: none !important;
+    border-left: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0.15rem 0.75rem !important;
+    min-height: unset !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    transform: none !important;
+}
+
+.feed-item.is-me-message:hover {
+    background: rgba(255, 255, 255, 0.02) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.feed-item-me-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--text-normal);
+}
+
+.feed-item.is-me-message .feed-item-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: normal;
+}
+
+.feed-item.is-me-message .feed-item-user {
+    font-weight: 600;
+    color: hsl(var(--user-hue), 85%, 65%);
+}
+
+.feed-item-me-text {
+    color: var(--text-normal);
+}
+
+.feed-item-me-text p {
+    display: inline !important;
+    margin: 0 !important;
+}
 
 
 

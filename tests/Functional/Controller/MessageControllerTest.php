@@ -115,6 +115,6 @@ class MessageControllerTest extends WebTestCase
         $messages = $messageRepository->findBy(['author' => $this->testUser]);
         
         $this->assertCount(1, $messages);
-        $this->assertSame('*is typing a long message*', $messages[0]->getContent());
+        $this->assertSame('/me is typing a long message', $messages[0]->getContent());
     }
 }

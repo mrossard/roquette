@@ -2,198 +2,323 @@
 {% set username = author ? (author.displayName|default(author.username)) : (user|default('Utilisateur')) %}
 {% set messageChannel = messageObject is defined and messageObject ? messageObject.getChannel() : null %}
 {% set isThisMessagePinned = messageChannel and messageChannel.pinnedMessage == (messageObject|default(null)) %}
-<div class="feed-item fade-in {{ isThisMessagePinned ? 'is-pinned' : '' }}" style="--user-hue: {{ user_hue }};" data-message-id="{{ message_id|default('') }}" data-author-username="{{ author ? author.username : '' }}" data-raw-content="{{ message|default('') }}" data-file-name="{{ fileName|default('') }}" data-file-size="{{ fileSize|default('') }}">
-    <div class="feed-item-header">
-        <div class="feed-item-user-container">
-            {% if author %}
-                <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link" title="Discuter en privé avec {{ username }} ({{ author.statusLabel }})">
-                    <div class="avatar-container">
-                        <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
-                        <span class="status-dot-overlay {{ author.status }}" data-username="{{ author.username }}" data-status-override="{{ author.statusOverride|default('auto') }}" data-last-active="{{ author.lastActiveAt ? author.lastActiveAt.timestamp : '' }}" title="{{ author.statusLabel }}"></span>
-                    </div>
+{% set isMeMessage = message is defined and message is not null and (message starts with '/me ' or message == '/me') %}
+<div class="feed-item fade-in {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isMeMessage ? 'is-me-message' : '' }}" style="--user-hue: {{ user_hue }};" data-message-id="{{ message_id|default('') }}" data-author-username="{{ author ? author.username : '' }}" data-raw-content="{{ message|default('') }}" data-file-name="{{ fileName|default('') }}" data-file-size="{{ fileSize|default('') }}">
+    {% if isMeMessage %}
+        <div class="feed-item-header">
+            <div class="feed-item-me-content">
+                <span class="feed-item-time">{{ timestamp|date('H:i:s') }}</span>
+                {% if author %}
+                    <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link" title="Discuter en privé avec {{ username }} ({{ author.statusLabel }})">
+                        <span class="feed-item-user">{{ username }}</span>
+                    </a>
+                {% else %}
                     <span class="feed-item-user">{{ username }}</span>
-                </a>
-            {% else %}
-                <div class="avatar-container">
-                    <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
-                </div>
-                <span class="feed-item-user">{{ username }}</span>
-            {% endif %}
-        </div>
-        <span class="feed-item-time">{{ timestamp|date('H:i:s') }}</span>
-        {% if updated_at is defined and updated_at %}
-            <span class="feed-item-edited-indicator" title="Modifié le {{ updated_at|date('d/m/Y H:i:s') }}">(modifié)</span>
-        {% endif %}
-        {% if isThisMessagePinned %}
-            <span class="feed-item-pinned-indicator" title="Message épinglé dans ce canal">📌 Épinglé</span>
-        {% endif %}
-        <div class="feed-item-actions">
-            <button type="button" class="btn-actions-toggle" onclick="toggleMessageActions(this, event)" title="Actions" aria-label="Actions du message">•••</button>
-            <div class="feed-item-actions-list">
-                <button class="btn-reply-subtle" onclick="replyToMessage('{{ username|escape('js') }}', '{{ message|escape('js') }}')" title="Répondre">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-                    </svg>
-                    <span>Répondre</span>
-                </button>
-                {% if messageObject is defined and messageObject and messageObject.parent is null and message_id|default(0) > 0 %}
-                <button class="btn-reply-subtle btn-thread-subtle" onclick="openThread({{ message_id }})" title="Fil de discussion">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.598.598 0 01-.774-.689 4.14 4.14 0 001.168-2.457C3.564 16.185 2 13.06 2 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                    </svg>
-                    <span>Fil</span>
-                </button>
                 {% endif %}
-                {% if message_id|default(0) > 0 %}
-                <div class="add-reaction-trigger-container" style="position: relative; display: inline-flex; align-items: center;">
-                    <button class="btn-reply-subtle btn-add-reaction" onclick="toggleMessageReactionPicker(event, {{ message_id }})" title="Réagir">
+                <span class="feed-item-me-text">
+                    {% set me_content = message|slice(4) %}
+                    {{ me_content|format_message }}
+                </span>
+                {% if updated_at is defined and updated_at %}
+                    <span class="feed-item-edited-indicator" title="Modifié le {{ updated_at|date('d/m/Y H:i:s') }}">(modifié)</span>
+                {% endif %}
+            </div>
+            <div class="feed-item-actions">
+                <button type="button" class="btn-actions-toggle" onclick="toggleMessageActions(this, event)" title="Actions" aria-label="Actions du message">•••</button>
+                <div class="feed-item-actions-list">
+                    <button class="btn-reply-subtle" onclick="replyToMessage('{{ username|escape('js') }}', '{{ message|escape('js') }}')" title="Répondre">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
                         </svg>
-                        <span>Réagir</span>
+                        <span>Répondre</span>
                     </button>
-                    <div class="reaction-picker" id="reaction-picker-{{ message_id }}">
-                        <div class="reaction-picker-standards">
-                            {% for picker_emoji in ['👍', '❤️', '😂', '😮', '😢', '🎉'] %}
-                                <button class="reaction-picker-btn"
-                                        hx-post="{{ path('app_message_react', {id: message_id, emoji: picker_emoji}) }}"
-                                        hx-target="closest .feed-item"
-                                        hx-swap="outerHTML">
-                                    {{ picker_emoji }}
-                                </button>
-                            {% endfor %}
+                    {% if messageObject is defined and messageObject and messageObject.parent is null and message_id|default(0) > 0 %}
+                    <button class="btn-reply-subtle btn-thread-subtle" onclick="openThread({{ message_id }})" title="Fil de discussion">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.598.598 0 01-.774-.689 4.14 4.14 0 001.168-2.457C3.564 16.185 2 13.06 2 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                        </svg>
+                        <span>Fil</span>
+                    </button>
+                    {% endif %}
+                    {% if message_id|default(0) > 0 %}
+                    <div class="add-reaction-trigger-container" style="position: relative; display: inline-flex; align-items: center;">
+                        <button class="btn-reply-subtle btn-add-reaction" onclick="toggleMessageReactionPicker(event, {{ message_id }})" title="Réagir">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
+                            </svg>
+                            <span>Réagir</span>
+                        </button>
+                        <div class="reaction-picker" id="reaction-picker-{{ message_id }}">
+                            <div class="reaction-picker-standards">
+                                {% for picker_emoji in ['👍', '❤️', '😂', '😮', '😢', '🎉'] %}
+                                    <button class="reaction-picker-btn"
+                                            hx-post="{{ path('app_message_react', {id: message_id, emoji: picker_emoji}) }}"
+                                            hx-target="closest .feed-item"
+                                            hx-swap="outerHTML">
+                                        {{ picker_emoji }}
+                                    </button>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
+                    {% endif %}
+                    {% if message_id|default(0) > 0 %}
+                    <button class="btn-reply-subtle btn-edit-subtle" hx-get="{{ path('app_message_edit_form', {id: message_id}) }}" hx-target="closest .feed-item" hx-swap="outerHTML" title="Modifier" style="display: {% if app.user and author and author.id == app.user.id %}inline-flex{% else %}none{% endif %};">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.83 20.013a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                        <span>Modifier</span>
+                    </button>
+                    {% set canDelete = app.user and (author and author.id == app.user.id or messageChannel and messageChannel.creator == app.user) %}
+                    <button class="btn-reply-subtle btn-delete-subtle"
+                            hx-post="{{ path('app_message_delete', {id: message_id}) }}"
+                            hx-confirm="Voulez-vous vraiment supprimer ce message ?"
+                            hx-swap="none"
+                            title="Supprimer"
+                            style="display: {% if canDelete %}inline-flex{% else %}none{% endif %};">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px; color: var(--accent-red, #ff5b5b);">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                        <span style="color: var(--accent-red, #ff5b5b);">Supprimer</span>
+                    </button>
+                    {% endif %}
+                    {% if message_id|default(0) > 0 and messageChannel and messageChannel.creator == app.user %}
+                        <button class="btn-reply-subtle btn-pin-subtle"
+                                hx-post="{{ isThisMessagePinned ? path('app_message_unpin', {id: message_id}) : path('app_message_pin', {id: message_id}) }}"
+                                hx-target="#pinned-banner-container"
+                                hx-swap="innerHTML"
+                                title="{{ isThisMessagePinned ? 'Désépingler' : 'Épingler' }}">
+                            <span class="action-icon" style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">📌</span>
+                            <span>{{ isThisMessagePinned ? 'Désépingler' : 'Épingler' }}</span>
+                        </button>
+                    {% endif %}
+                    {% if message_id|default(0) > 0 and app.user %}
+                        {% set isSaved = messageObject is defined and messageObject and app.user.savedMessages.contains(messageObject) %}
+                        <button class="btn-reply-subtle btn-save-subtle {{ isSaved ? 'is-saved' : '' }}"
+                                hx-post="{{ path('app_message_save_toggle', {id: message_id}) }}"
+                                hx-target="closest .feed-item"
+                                hx-swap="outerHTML"
+                                title="{{ isSaved ? 'Retirer des favoris' : 'Enregistrer dans les favoris' }}">
+                            <span class="action-icon" style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">⭐</span>
+                            <span>{{ isSaved ? 'Enregistré' : 'Enregistrer' }}</span>
+                        </button>
+                    {% endif %}
                 </div>
-                {% endif %}
-                {% if message_id|default(0) > 0 %}
-                <button class="btn-reply-subtle btn-edit-subtle" hx-get="{{ path('app_message_edit_form', {id: message_id}) }}" hx-target="closest .feed-item" hx-swap="outerHTML" title="Modifier" style="display: {% if app.user and author and author.id == app.user.id %}inline-flex{% else %}none{% endif %};">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.83 20.013a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                    </svg>
-                    <span>Modifier</span>
-                </button>
-                {% set canDelete = app.user and (author and author.id == app.user.id or messageChannel and messageChannel.creator == app.user) %}
-                <button class="btn-reply-subtle btn-delete-subtle"
-                        hx-post="{{ path('app_message_delete', {id: message_id}) }}"
-                        hx-confirm="Voulez-vous vraiment supprimer ce message ?"
-                        hx-swap="none"
-                        title="Supprimer"
-                        style="display: {% if canDelete %}inline-flex{% else %}none{% endif %};">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px; color: var(--accent-red, #ff5b5b);">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                    <span style="color: var(--accent-red, #ff5b5b);">Supprimer</span>
-                </button>
-                {% endif %}
-                {% if message_id|default(0) > 0 and messageChannel and messageChannel.creator == app.user %}
-                    <button class="btn-reply-subtle btn-pin-subtle"
-                            hx-post="{{ isThisMessagePinned ? path('app_message_unpin', {id: message_id}) : path('app_message_pin', {id: message_id}) }}"
-                            hx-target="#pinned-banner-container"
-                            hx-swap="innerHTML"
-                            title="{{ isThisMessagePinned ? 'Désépingler' : 'Épingler' }}">
-                        <span class="action-icon" style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">📌</span>
-                        <span>{{ isThisMessagePinned ? 'Désépingler' : 'Épingler' }}</span>
-                    </button>
-                {% endif %}
-                {% if message_id|default(0) > 0 and app.user %}
-                    {% set isSaved = messageObject is defined and messageObject and app.user.savedMessages.contains(messageObject) %}
-                    <button class="btn-reply-subtle btn-save-subtle {{ isSaved ? 'is-saved' : '' }}"
-                            hx-post="{{ path('app_message_save_toggle', {id: message_id}) }}"
-                            hx-target="closest .feed-item"
-                            hx-swap="outerHTML"
-                            title="{{ isSaved ? 'Retirer des favoris' : 'Enregistrer dans les favoris' }}">
-                        <span class="action-icon" style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">⭐</span>
-                        <span>{{ isSaved ? 'Enregistré' : 'Enregistrer' }}</span>
-                    </button>
-                {% endif %}
             </div>
         </div>
-    </div>
-    <div class="feed-item-body">
-        {% if message is defined and message is not empty and message != '' %}
-            <p>{{ message|format_message }}</p>
-        {% endif %}
-        {% if fileName is defined and fileName %}
-            <div class="message-attachment">
-                <span class="attachment-icon">📎</span>
-                <div class="attachment-details">
-                    <a href="{{ path('app_file_download', {id: message_id}) }}" class="attachment-link" hx-boost="false" target="_blank" download>
-                        {{ fileName }}
-                    </a>
-                    <span class="attachment-size">{{ fileSize|format_bytes }}</span>
+        {% set message_reactions = messageObject is defined and messageObject ? messageObject.getGroupedReactions(app.user) : {} %}
+        {% set reply_count = messageObject is defined and messageObject and messageObject.parent is null ? messageObject.replies|length : 0 %}
+        {% if message_reactions is not empty or reply_count > 0 %}
+            <div class="feed-item-body" style="padding: 0; border: none; background: none; box-shadow: none;">
+                {% if message_reactions is not empty %}
+                    <div class="message-reactions-container" style="margin-top: 0.25rem;">
+                        {% for emoji, info in message_reactions %}
+                            <button class="reaction-badge {% if info.hasReacted %}active{% endif %}"
+                                    hx-post="{{ path('app_message_react', {id: message_id, emoji: emoji}) }}"
+                                    hx-target="closest .feed-item"
+                                    hx-swap="outerHTML"
+                                    data-reactors="{{ info.reactorUsernames|join(',') }}"
+                                    title="Réactions : {{ info.usernames|join(', ') }}">
+                                <span class="reaction-emoji">{{ emoji }}</span>
+                                <span class="reaction-count">{{ info.count }}</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="message-thread-badge-container" id="message-thread-badge-{{ message_id|default('') }}" style="display: {{ reply_count > 0 ? 'block' : 'none' }}; margin-top: 0.25rem;">
+                    <button class="btn-thread-badge" onclick="openThread({{ message_id|default(0) }})" style="font-size: 0.8rem; font-weight: 600; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.2); color: var(--accent-cyan); border-radius: 0.5rem; padding: 0.25rem 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; transition: all 0.2s ease;">
+                        <span>💬</span>
+                        <span class="thread-badge-text">{{ reply_count }} {{ reply_count > 1 ? 'réponses' : 'réponse' }}</span>
+                    </button>
                 </div>
             </div>
-
-            {# Try to preview simple types #}
-            {% set fileExt = fileName|split('.')|last|lower %}
-            {% set isImage = (mimeType is defined and mimeType and mimeType starts with 'image/') or fileExt in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] %}
-            {% set isAudio = (mimeType is defined and mimeType and mimeType starts with 'audio/') or fileExt in ['mp3', 'wav', 'ogg', 'm4a', 'aac'] %}
-            {% set isVideo = (mimeType is defined and mimeType and mimeType starts with 'video/') or fileExt in ['mp4', 'webm', 'ogg', 'mov', 'avi'] %}
-            {% set isPdf = (mimeType is defined and mimeType and mimeType == 'application/pdf') or fileExt == 'pdf' %}
-            {% set isText = (mimeType is defined and mimeType and mimeType starts with 'text/') or fileExt in ['txt', 'log', 'md', 'html', 'css', 'js', 'json', 'php', 'yml', 'yaml', 'xml'] %}
-
-            {% if isImage %}
-                <div class="attachment-preview image-preview-container">
-                    <img src="{{ path('app_file_preview', {id: message_id}) }}" alt="{{ fileName }}" class="preview-image" onclick="openLightbox(this.src, '{{ fileName|escape('js') }}')">
-                </div>
-            {% elseif isAudio %}
-                <div class="attachment-preview audio-preview-container">
-                    <audio controls preload="none" class="preview-audio">
-                        <source src="{{ path('app_file_preview', {id: message_id}) }}" {% if mimeType is defined and mimeType %}type="{{ mimeType }}"{% endif %}>
-                        Votre navigateur ne supporte pas la lecture audio.
-                    </audio>
-                </div>
-            {% elseif isVideo %}
-                <div class="attachment-preview video-preview-container">
-                    <video controls preload="metadata" class="preview-video">
-                        <source src="{{ path('app_file_preview', {id: message_id}) }}" {% if mimeType is defined and mimeType %}type="{{ mimeType }}"{% endif %}>
-                        Votre navigateur ne supporte pas la lecture vidéo.
-                    </video>
-                </div>
-            {% elseif isPdf %}
-                <div class="attachment-preview pdf-preview-container">
-                    <a href="{{ path('app_file_preview', {id: message_id}) }}" target="_blank" class="btn-preview-link">
-                        <span class="btn-preview-icon">👁️</span> Ouvrir le PDF
+        {% endif %}
+    {% else %}
+        <div class="feed-item-header">
+            <div class="feed-item-user-container">
+                {% if author %}
+                    <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link" title="Discuter en privé avec {{ username }} ({{ author.statusLabel }})">
+                        <div class="avatar-container">
+                            <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
+                            <span class="status-dot-overlay {{ author.status }}" data-username="{{ author.username }}" data-status-override="{{ author.statusOverride|default('auto') }}" data-last-active="{{ author.lastActiveAt ? author.lastActiveAt.timestamp : '' }}" title="{{ author.statusLabel }}"></span>
+                        </div>
+                        <span class="feed-item-user">{{ username }}</span>
                     </a>
-                </div>
-            {% elseif isText %}
-                <div class="attachment-preview text-preview-container">
-                    <button type="button" class="btn-preview-link text-preview-toggle" onclick="toggleTextPreview(this, '{{ path('app_file_preview', {id: message_id}) }}', '{{ message_id }}')">
-                        <span class="btn-preview-icon">👁️</span> Prévisualiser le texte
+                {% else %}
+                    <div class="avatar-container">
+                        <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
+                    </div>
+                    <span class="feed-item-user">{{ username }}</span>
+                {% endif %}
+            </div>
+            <span class="feed-item-time">{{ timestamp|date('H:i:s') }}</span>
+            {% if updated_at is defined and updated_at %}
+                <span class="feed-item-edited-indicator" title="Modifié le {{ updated_at|date('d/m/Y H:i:s') }}">(modifié)</span>
+            {% endif %}
+            {% if isThisMessagePinned %}
+                <span class="feed-item-pinned-indicator" title="Message épinglé dans ce canal">📌 Épinglé</span>
+            {% endif %}
+            <div class="feed-item-actions">
+                <button type="button" class="btn-actions-toggle" onclick="toggleMessageActions(this, event)" title="Actions" aria-label="Actions du message">•••</button>
+                <div class="feed-item-actions-list">
+                    <button class="btn-reply-subtle" onclick="replyToMessage('{{ username|escape('js') }}', '{{ message|escape('js') }}')" title="Répondre">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                        </svg>
+                        <span>Répondre</span>
                     </button>
-                    <div class="text-preview-content" style="display: none;" id="text-preview-{{ message_id }}">
-                        <pre><code class="text-preview-code language-{{ fileExt }}">Chargement...</code></pre>
+                    {% if messageObject is defined and messageObject and messageObject.parent is null and message_id|default(0) > 0 %}
+                    <button class="btn-reply-subtle btn-thread-subtle" onclick="openThread({{ message_id }})" title="Fil de discussion">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.598.598 0 01-.774-.689 4.14 4.14 0 001.168-2.457C3.564 16.185 2 13.06 2 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                        </svg>
+                        <span>Fil</span>
+                    </button>
+                    {% endif %}
+                    {% if message_id|default(0) > 0 %}
+                    <div class="add-reaction-trigger-container" style="position: relative; display: inline-flex; align-items: center;">
+                        <button class="btn-reply-subtle btn-add-reaction" onclick="toggleMessageReactionPicker(event, {{ message_id }})" title="Réagir">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
+                            </svg>
+                            <span>Réagir</span>
+                        </button>
+                        <div class="reaction-picker" id="reaction-picker-{{ message_id }}">
+                            <div class="reaction-picker-standards">
+                                {% for picker_emoji in ['👍', '❤️', '😂', '😮', '😢', '🎉'] %}
+                                    <button class="reaction-picker-btn"
+                                            hx-post="{{ path('app_message_react', {id: message_id, emoji: picker_emoji}) }}"
+                                            hx-target="closest .feed-item"
+                                            hx-swap="outerHTML">
+                                        {{ picker_emoji }}
+                                    </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if message_id|default(0) > 0 %}
+                    <button class="btn-reply-subtle btn-edit-subtle" hx-get="{{ path('app_message_edit_form', {id: message_id}) }}" hx-target="closest .feed-item" hx-swap="outerHTML" title="Modifier" style="display: {% if app.user and author and author.id == app.user.id %}inline-flex{% else %}none{% endif %};">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.83 20.013a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                        <span>Modifier</span>
+                    </button>
+                    {% set canDelete = app.user and (author and author.id == app.user.id or messageChannel and messageChannel.creator == app.user) %}
+                    <button class="btn-reply-subtle btn-delete-subtle"
+                            hx-post="{{ path('app_message_delete', {id: message_id}) }}"
+                            hx-confirm="Voulez-vous vraiment supprimer ce message ?"
+                            hx-swap="none"
+                            title="Supprimer"
+                            style="display: {% if canDelete %}inline-flex{% else %}none{% endif %};">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 11px; height: 11px; color: var(--accent-red, #ff5b5b);">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                        <span style="color: var(--accent-red, #ff5b5b);">Supprimer</span>
+                    </button>
+                    {% endif %}
+                    {% if message_id|default(0) > 0 and messageChannel and messageChannel.creator == app.user %}
+                        <button class="btn-reply-subtle btn-pin-subtle"
+                                hx-post="{{ isThisMessagePinned ? path('app_message_unpin', {id: message_id}) : path('app_message_pin', {id: message_id}) }}"
+                                hx-target="#pinned-banner-container"
+                                hx-swap="innerHTML"
+                                title="{{ isThisMessagePinned ? 'Désépingler' : 'Épingler' }}">
+                            <span class="action-icon" style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">📌</span>
+                            <span>{{ isThisMessagePinned ? 'Désépingler' : 'Épingler' }}</span>
+                        </button>
+                    {% endif %}
+                    {% if message_id|default(0) > 0 and app.user %}
+                        {% set isSaved = messageObject is defined and messageObject and app.user.savedMessages.contains(messageObject) %}
+                        <button class="btn-reply-subtle btn-save-subtle {{ isSaved ? 'is-saved' : '' }}"
+                                hx-post="{{ path('app_message_save_toggle', {id: message_id}) }}"
+                                hx-target="closest .feed-item"
+                                hx-swap="outerHTML"
+                                title="{{ isSaved ? 'Retirer des favoris' : 'Enregistrer dans les favoris' }}">
+                            <span class="action-icon" style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">⭐</span>
+                            <span>{{ isSaved ? 'Enregistré' : 'Enregistrer' }}</span>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="feed-item-body">
+            {% if message is defined and message is not empty and message != '' %}
+                <p>{{ message|format_message }}</p>
+            {% endif %}
+            {% if fileName is defined and fileName %}
+                <div class="message-attachment">
+                    <span class="attachment-icon">📎</span>
+                    <div class="attachment-details">
+                        <a href="{{ path('app_file_download', {id: message_id}) }}" class="attachment-link" hx-boost="false" target="_blank" download>
+                            {{ fileName }}
+                        </a>
+                        <span class="attachment-size">{{ fileSize|format_bytes }}</span>
                     </div>
                 </div>
+                {% set fileExt = fileName|split('.')|last|lower %}
+                {% set isImage = (mimeType is defined and mimeType and mimeType starts with 'image/') or fileExt in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] %}
+                {% set isAudio = (mimeType is defined and mimeType and mimeType starts with 'audio/') or fileExt in ['mp3', 'wav', 'ogg', 'm4a', 'aac'] %}
+                {% set isVideo = (mimeType is defined and mimeType and mimeType starts with 'video/') or fileExt in ['mp4', 'webm', 'ogg', 'mov', 'avi'] %}
+                {% set isPdf = (mimeType is defined and mimeType and mimeType == 'application/pdf') or fileExt == 'pdf' %}
+                {% set isText = (mimeType is defined and mimeType and mimeType starts with 'text/') or fileExt in ['txt', 'log', 'md', 'html', 'css', 'js', 'json', 'php', 'yml', 'yaml', 'xml'] %}
+                {% if isImage %}
+                    <div class="attachment-preview image-preview-container">
+                        <img src="{{ path('app_file_preview', {id: message_id}) }}" alt="{{ fileName }}" class="preview-image" onclick="openLightbox(this.src, '{{ fileName|escape('js') }}')">
+                    </div>
+                {% elseif isAudio %}
+                    <div class="attachment-preview audio-preview-container">
+                        <audio controls preload="none" class="preview-audio">
+                            <source src="{{ path('app_file_preview', {id: message_id}) }}" {% if mimeType is defined and mimeType %}type="{{ mimeType }}"{% endif %}>
+                            Votre navigateur ne supporte pas la lecture audio.
+                        </audio>
+                    </div>
+                {% elseif isVideo %}
+                    <div class="attachment-preview video-preview-container">
+                        <video controls preload="metadata" class="preview-video">
+                            <source src="{{ path('app_file_preview', {id: message_id}) }}" {% if mimeType is defined and mimeType %}type="{{ mimeType }}"{% endif %}>
+                            Votre navigateur ne supporte pas la lecture vidéo.
+                        </video>
+                    </div>
+                {% elseif isPdf %}
+                    <div class="attachment-preview pdf-preview-container">
+                        <a href="{{ path('app_file_preview', {id: message_id}) }}" target="_blank" class="btn-preview-link">
+                            <span class="btn-preview-icon">👁️</span> Ouvrir le PDF
+                        </a>
+                    </div>
+                {% elseif isText %}
+                    <div class="attachment-preview text-preview-container">
+                        <button type="button" class="btn-preview-link text-preview-toggle" onclick="toggleTextPreview(this, '{{ path('app_file_preview', {id: message_id}) }}', '{{ message_id }}')">
+                            <span class="btn-preview-icon">👁️</span> Prévisualiser le texte
+                        </button>
+                        <div class="text-preview-content" style="display: none; " id="text-preview-{{ message_id }}">
+                            <pre><code class="text-preview-code language-{{ fileExt }}">Chargement...</code></pre>
+                        </div>
+                    </div>
+                {% endif %}
             {% endif %}
-        {% endif %}
-        
-        {# Reactions section #}
-        {% set message_reactions = messageObject is defined and messageObject ? messageObject.getGroupedReactions(app.user) : {} %}
-        {% if message_reactions is not empty %}
-            <div class="message-reactions-container">
-                {% for emoji, info in message_reactions %}
-                    <button class="reaction-badge {% if info.hasReacted %}active{% endif %}"
-                            hx-post="{{ path('app_message_react', {id: message_id, emoji: emoji}) }}"
-                            hx-target="closest .feed-item"
-                            hx-swap="outerHTML"
-                            data-reactors="{{ info.reactorUsernames|join(',') }}"
-                            title="Réactions : {{ info.usernames|join(', ') }}">
-                        <span class="reaction-emoji">{{ emoji }}</span>
-                        <span class="reaction-count">{{ info.count }}</span>
-                    </button>
-                {% endfor %}
+            {% set message_reactions = messageObject is defined and messageObject ? messageObject.getGroupedReactions(app.user) : {} %}
+            {% if message_reactions is not empty %}
+                <div class="message-reactions-container">
+                    {% for emoji, info in message_reactions %}
+                        <button class="reaction-badge {% if info.hasReacted %}active{% endif %}"
+                                hx-post="{{ path('app_message_react', {id: message_id, emoji: emoji}) }}"
+                                hx-target="closest .feed-item"
+                                hx-swap="outerHTML"
+                                data-reactors="{{ info.reactorUsernames|join(',') }}"
+                                title="Réactions : {{ info.usernames|join(', ') }}">
+                            <span class="reaction-emoji">{{ emoji }}</span>
+                            <span class="reaction-count">{{ info.count }}</span>
+                        </button>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% set reply_count = messageObject is defined and messageObject and messageObject.parent is null ? messageObject.replies|length : 0 %}
+            <div class="message-thread-badge-container" id="message-thread-badge-{{ message_id|default('') }}" style="display: {{ reply_count > 0 ? 'block' : 'none' }}; margin-top: 0.5rem;">
+                <button class="btn-thread-badge" onclick="openThread({{ message_id|default(0) }})" style="font-size: 0.8rem; font-weight: 600; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.2); color: var(--accent-cyan); border-radius: 0.5rem; padding: 0.25rem 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; transition: all 0.2s ease;">
+                    <span>💬</span>
+                    <span class="thread-badge-text">{{ reply_count }} {{ reply_count > 1 ? 'réponses' : 'réponse' }}</span>
+                </button>
             </div>
-        {% endif %}
-        
-        {# Threads replies badge #}
-        {% set reply_count = messageObject is defined and messageObject and messageObject.parent is null ? messageObject.replies|length : 0 %}
-        <div class="message-thread-badge-container" id="message-thread-badge-{{ message_id|default('') }}" style="display: {{ reply_count > 0 ? 'block' : 'none' }}; margin-top: 0.5rem;">
-            <button class="btn-thread-badge" onclick="openThread({{ message_id|default(0) }})" style="font-size: 0.8rem; font-weight: 600; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.2); color: var(--accent-cyan); border-radius: 0.5rem; padding: 0.25rem 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; transition: all 0.2s ease;">
-                <span>💬</span>
-                <span class="thread-badge-text">{{ reply_count }} {{ reply_count > 1 ? 'réponses' : 'réponse' }}</span>
-            </button>
         </div>
-    </div>
+    {% endif %}
 </div>
