@@ -294,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initOfflineQueue) window.initOfflineQueue();
     if (window.initGlobalSearch) window.initGlobalSearch();
     if (window.initMobileSidebar) window.initMobileSidebar();
+    initInfiniteScroll();
 
     // Heartbeat to keep user status online
     if (document.getElementById('mercure-status')) {
@@ -352,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initUnreadFilter) window.initUnreadFilter();
         if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
         if (window.renderChannelOfflineMessages) window.renderChannelOfflineMessages();
+        initInfiniteScroll();
 
         // Scroll thread replies to bottom if thread panel is open (handles OOB-injected replies)
         if (window.scrollToBottom) {
@@ -407,4 +409,24 @@ function checkJumpToMessage() {
         }, 300);
     }
 }
+
+function initInfiniteScroll() {
+    const feed = document.getElementById('live-feed');
+    if (!feed || feed.dataset.infiniteScrollBound) return;
+
+    feed.addEventListener('scroll', () => {
+        // Trigger loading more messages when scrolled near the top
+        if (feed.scrollTop < 30) {
+            const trigger = document.getElementById('load-more-trigger');
+            if (trigger && !trigger.classList.contains('htmx-request')) {
+                const btn = trigger.querySelector('.btn-load-more');
+                if (btn) {
+                    btn.click();
+                }
+            }
+        }
+    });
+    feed.dataset.infiniteScrollBound = 'true';
+}
+
 

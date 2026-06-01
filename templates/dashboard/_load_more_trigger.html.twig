@@ -1,7 +1,7 @@
 <div class="load-more-container" 
      id="load-more-trigger"
      hx-get="{{ path('app_channel_load_more', {slug: channel.slug, beforeId: beforeId}) }}"
-     hx-trigger="revealed, click"
+     hx-trigger="click"
      hx-swap="outerHTML">
     <button class="btn-load-more" type="button">
         <span class="spinner-small"></span> Charger les messages précédents
