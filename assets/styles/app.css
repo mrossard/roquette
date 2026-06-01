@@ -31,6 +31,7 @@
 
     /* Dropdown specific variables */
     --bg-dropdown: hsla(223, 47%, 14%, 0.95);
+    --bg-dropdown-opaque: hsl(223, 47%, 14%);
     --bg-dropdown-hover: rgba(255, 255, 255, 0.08);
     --dropdown-inset: rgba(255, 255, 255, 0.1);
     --dropdown-shadow: rgba(0, 0, 0, 0.5);
@@ -62,6 +63,7 @@
 
     /* Dropdown specific variables */
     --bg-dropdown: hsla(210, 20%, 98%, 0.95);
+    --bg-dropdown-opaque: hsl(210, 20%, 98%);
     --bg-dropdown-hover: rgba(0, 0, 0, 0.06);
     --dropdown-inset: rgba(255, 255, 255, 0.6);
     --dropdown-shadow: rgba(0, 0, 0, 0.15);
@@ -491,6 +493,12 @@ body {
     border-left-color: hsl(var(--user-hue), 90%, var(--user-hue-lightness-border));
     transform: translateX(2px);
     box-shadow: 0 4px 12px hsla(var(--user-hue), 80%, 55%, 0.08);
+}
+
+.feed-item:has(.reaction-picker.show),
+.feed-item:has(.emoji-picker),
+.feed-item:has(.feed-item-actions-list.show) {
+    z-index: 1005;
 }
 
 .btn-reply-subtle {
@@ -1672,8 +1680,9 @@ body {
     right: 0;
     width: 320px;
     height: 380px;
-    background: hsla(223, 47%, 14%, 0.85);
-    backdrop-filter: blur(20px);
+    background: var(--bg-dropdown-opaque);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border: 1px solid var(--border-glass);
     border-radius: 1rem;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6),
@@ -2318,9 +2327,9 @@ body {
     top: 100%;
     left: 0;
     z-index: 100;
-    background: var(--bg-card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--bg-dropdown-opaque);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border: 1px solid var(--border-glass-hover);
     border-radius: 16px;
     padding: 8px;
