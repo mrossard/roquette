@@ -12,6 +12,7 @@
         "doctrine/orm": "^3.6",
         "ezyang/htmlpurifier": "^4.19",
         "league/commonmark": "^2.8",
+        "league/flysystem-aws-s3-v3": "^3.34",
         "league/flysystem-bundle": "*",
         "symfony/asset": "8.0.*",
         "symfony/asset-mapper": "8.0.*",

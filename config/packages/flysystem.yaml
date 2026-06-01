@@ -2,6 +2,21 @@
 flysystem:
     storages:
         default.storage:
-            adapter: 'local'
+            adapter: 'aws'
             options:
-                directory: '%kernel.project_dir%/var/storage/default'
+                client: 'app.s3_client'
+                bucket: '%env(AWS_BUCKET)%'
+
+services:
+    app.s3_client:
+        class: 'Aws\S3\S3Client'
+        arguments:
+            -
+                version: 'latest'
+                region: 'us-east-1'
+                endpoint: '%env(AWS_ENDPOINT)%'
+                use_path_style_endpoint: true
+                credentials:
+                    key: '%env(AWS_KEY)%'
+                    secret: '%env(AWS_SECRET)%'
+

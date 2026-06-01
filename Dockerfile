@@ -4,7 +4,7 @@ FROM dunglas/frankenphp:1.12.3-php8.5
 ENV SERVER_NAME=":80" \
     TZ="Europe/Paris" \
     COMPOSER_ALLOW_SUPERUSER=1 \
-    FRANKENPHP_CONFIG="worker ./public/index.php"
+    FRANKENPHP_CONFIG="worker ./public/index.php 8"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends supervisor tzdata && \

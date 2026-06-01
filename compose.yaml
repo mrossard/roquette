@@ -33,8 +33,23 @@ services:
     volumes:
       - clamav_data:/var/lib/clamav
 
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
 volumes:
   caddy_data:
   caddy_config:
   db_data:
   clamav_data:
+  minio_data:
+
