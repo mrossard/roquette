@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Channel;
 use App\Entity\Message;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -25,8 +28,8 @@ class MessageRepository extends ServiceEntityRepository
      * @return Message[]
      */
     public function findUnreadInChannel(
-        \App\Entity\Channel $channel,
-        \App\Entity\User $user,
+        Channel $channel,
+        User $user,
         ?int $lastReadMessageId,
     ): array {
         if ($lastReadMessageId === null) {
@@ -73,7 +76,7 @@ class MessageRepository extends ServiceEntityRepository
     /**
      * @return Message[]
      */
-    public function searchInChannel(\App\Entity\Channel $channel, string $query): array
+    public function searchInChannel(Channel $channel, string $query): array
     {
         return $this
             ->createQueryBuilder('m')
@@ -91,7 +94,7 @@ class MessageRepository extends ServiceEntityRepository
      *
      * @return Message[]
      */
-    public function findLatestInChannel(\App\Entity\Channel $channel, int $limit = 50, ?int $beforeId = null): array
+    public function findLatestInChannel(Channel $channel, int $limit = 50, ?int $beforeId = null): array
     {
         $qb = $this
             ->createQueryBuilder('m')
@@ -107,12 +110,13 @@ class MessageRepository extends ServiceEntityRepository
             $qb->andWhere('m.id < :beforeId')->setParameter('beforeId', $beforeId);
         }
 
-        return $qb
-            ->orderBy('m.id', 'DESC')
+        $qb->orderBy('m.id', 'DESC')
             ->setParameter('channel', $channel)
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit);
+
+        $paginator = new Paginator($qb->getQuery());
+
+        return iterator_to_array($paginator);
     }
 
     /**
@@ -121,7 +125,7 @@ class MessageRepository extends ServiceEntityRepository
      * @return Message[]
      */
     public function searchGlobal(
-        \App\Entity\User $currentUser,
+        User $currentUser,
         ?string $authorUsername = null,
         ?string $channelName = null,
         ?bool $hasFile = null,
@@ -175,9 +179,9 @@ class MessageRepository extends ServiceEntityRepository
     /**
      * @return Message[]
      */
-    public function findMessagesAround(\App\Entity\Channel $channel, int $messageId, int $limit = 50): array
+    public function findMessagesAround(Channel $channel, int $messageId, int $limit = 50): array
     {
-        return $this
+        $qb = $this
             ->createQueryBuilder('m')
             ->select('m', 'author', 'reactions', 'reaction_user', 'replies')
             ->leftJoin('m.author', 'author')
@@ -190,8 +194,10 @@ class MessageRepository extends ServiceEntityRepository
             ->setParameter('channel', $channel)
             ->setParameter('minId', max(1, $messageId - 5))
             ->orderBy('m.id', 'ASC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit);
+
+        $paginator = new Paginator($qb->getQuery());
+
+        return iterator_to_array($paginator);
     }
 }
