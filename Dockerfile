@@ -11,6 +11,8 @@ RUN apt-get update && \
     install-php-extensions apcu zip opcache intl ldap soap pdo_pgsql pgsql pcntl sockets && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
+RUN curl -fsSL https://raw.githubusercontent.com/alexandre-daubois/ember/main/install.sh | sh
+
 WORKDIR /app
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
