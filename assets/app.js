@@ -8,7 +8,7 @@ import './mercure.js';
 import './notifications.js';
 import './editor.js';
 import './autocomplete.js';
-import './emoji.js';
+import { buildEmojiPickerDOM } from './emoji.js';
 import './thread.js';
 import './offline.js';
 
@@ -43,7 +43,68 @@ window.toggleMessageReactionPicker = function(event, messageId) {
         }
     });
     
+    const isShowing = !picker.classList.contains('show');
     picker.classList.toggle('show');
+    
+    if (isShowing) {
+        // Dynamically move/initialize the full emoji picker inside this picker
+        let emojiPickerContainer = document.getElementById('shared-reaction-emoji-picker');
+        if (!emojiPickerContainer) {
+            // Build the local custom emoji picker DOM
+            const { element, focusSearch: focusSearchFn } = buildEmojiPickerDOM(emoji => {
+                const msgId = emojiPickerContainer.dataset.messageId;
+                if (emoji && msgId) {
+                    const targetFeedItem = document.querySelector(`.feed-item[data-message-id="${msgId}"]`);
+                    if (targetFeedItem) {
+                        htmx.ajax('POST', `/messages/${msgId}/react/${encodeURIComponent(emoji)}`, {
+                            target: targetFeedItem,
+                            swap: 'outerHTML'
+                        });
+                    }
+                }
+                // Close the picker
+                const activePicker = emojiPickerContainer.closest('.reaction-picker');
+                if (activePicker) {
+                    activePicker.classList.remove('show');
+                }
+            });
+            emojiPickerContainer = element;
+            emojiPickerContainer.id = 'shared-reaction-emoji-picker';
+            
+            // Store focusSearch function on the DOM element for subsequent clicks
+            emojiPickerContainer.focusSearch = focusSearchFn;
+        }
+        
+        emojiPickerContainer.dataset.messageId = messageId;
+        picker.appendChild(emojiPickerContainer);
+        
+        // Reset positioning styles
+        picker.style.left = '0';
+        picker.style.right = 'auto';
+        picker.style.top = '100%';
+        picker.style.bottom = 'auto';
+        picker.style.marginTop = '4px';
+        picker.style.marginBottom = '0';
+        
+        // Handle horizontal overflow (avoid going off screen to the right)
+        let rect = picker.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+            picker.style.left = 'auto';
+            picker.style.right = '0';
+        }
+        
+        // Handle vertical overflow (avoid going off screen at the bottom of the page)
+        if (rect.bottom > window.innerHeight) {
+            picker.style.top = 'auto';
+            picker.style.bottom = '100%';
+            picker.style.marginTop = '0';
+            picker.style.marginBottom = '8px';
+        }
+        
+        if (emojiPickerContainer.focusSearch) {
+            emojiPickerContainer.focusSearch();
+        }
+    }
 };
 
 // Global click/escape handlers to close picker

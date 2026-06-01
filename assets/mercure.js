@@ -589,8 +589,8 @@ export function updateTypingIndicatorUI() {
     if (!indicator) return;
 
     if (typingUsers.size === 0) {
-        indicator.style.display = 'none';
-        indicator.innerHTML = '';
+        indicator.style.visibility = 'hidden';
+        indicator.innerHTML = '&nbsp;';
         return;
     }
 
@@ -612,7 +612,7 @@ export function updateTypingIndicatorUI() {
         </div>
         <span class="typing-text">${text}</span>
     `;
-    indicator.style.display = 'flex';
+    indicator.style.visibility = 'visible';
 }
 
 function escapeHtml(str) {

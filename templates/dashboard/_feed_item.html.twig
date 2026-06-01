@@ -53,14 +53,16 @@
                         <span>Réagir</span>
                     </button>
                     <div class="reaction-picker" id="reaction-picker-{{ message_id }}">
-                        {% for picker_emoji in ['👍', '❤️', '😂', '😮', '😢', '🎉'] %}
-                            <button class="reaction-picker-btn"
-                                    hx-post="{{ path('app_message_react', {id: message_id, emoji: picker_emoji}) }}"
-                                    hx-target="closest .feed-item"
-                                    hx-swap="outerHTML">
-                                {{ picker_emoji }}
-                            </button>
-                        {% endfor %}
+                        <div class="reaction-picker-standards">
+                            {% for picker_emoji in ['👍', '❤️', '😂', '😮', '😢', '🎉'] %}
+                                <button class="reaction-picker-btn"
+                                        hx-post="{{ path('app_message_react', {id: message_id, emoji: picker_emoji}) }}"
+                                        hx-target="closest .feed-item"
+                                        hx-swap="outerHTML">
+                                    {{ picker_emoji }}
+                                </button>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
                 {% endif %}

@@ -62,10 +62,7 @@ function insertEmoji(textarea, emoji) {
     textarea.dispatchEvent(event);
 }
 
-function createEmojiPicker(trigger) {
-    const targetTextarea = getTargetTextarea(trigger);
-    if (!targetTextarea) return;
-    
+export function buildEmojiPickerDOM(onSelect) {
     const picker = document.createElement('div');
     picker.className = 'emoji-picker';
     
@@ -118,7 +115,7 @@ function createEmojiPicker(trigger) {
             btn.textContent = emoji;
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                insertEmoji(targetTextarea, emoji);
+                onSelect(emoji);
             });
             grid.appendChild(btn);
         });
@@ -127,23 +124,6 @@ function createEmojiPicker(trigger) {
         listContainer.appendChild(catSection);
     });
     picker.appendChild(listContainer);
-    
-    const wrapper = trigger.closest('.message-input-wrapper');
-    if (wrapper) {
-        wrapper.appendChild(picker);
-    } else {
-        document.body.appendChild(picker);
-        const rect = trigger.getBoundingClientRect();
-        picker.style.position = 'fixed';
-        picker.style.bottom = `${window.innerHeight - rect.top + 8}px`;
-        picker.style.right = `${window.innerWidth - rect.right}px`;
-    }
-    
-    activePicker = {
-        element: picker,
-        trigger: trigger,
-        textarea: targetTextarea
-    };
     
     function switchCategory(activeIndex) {
         const tabs = tabsContainer.querySelectorAll('.emoji-picker-tab');
@@ -226,7 +206,38 @@ function createEmojiPicker(trigger) {
         }
     });
     
-    setTimeout(() => searchInput.focus(), 50);
+    return {
+        element: picker,
+        focusSearch: () => setTimeout(() => searchInput.focus(), 50)
+    };
+}
+
+function createEmojiPicker(trigger) {
+    const targetTextarea = getTargetTextarea(trigger);
+    if (!targetTextarea) return;
+    
+    const { element: picker, focusSearch } = buildEmojiPickerDOM(emoji => {
+        insertEmoji(targetTextarea, emoji);
+    });
+    
+    const wrapper = trigger.closest('.message-input-wrapper');
+    if (wrapper) {
+        wrapper.appendChild(picker);
+    } else {
+        document.body.appendChild(picker);
+        const rect = trigger.getBoundingClientRect();
+        picker.style.position = 'fixed';
+        picker.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+        picker.style.right = `${window.innerWidth - rect.right}px`;
+    }
+    
+    activePicker = {
+        element: picker,
+        trigger: trigger,
+        textarea: targetTextarea
+    };
+    
+    focusSearch();
 }
 
 // Global click handler helper

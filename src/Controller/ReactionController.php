@@ -40,8 +40,8 @@ final class ReactionController extends AbstractController
             return new Response('Non autorisé.', 403);
         }
 
-        $allowedEmojis = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
-        if (!in_array($emoji, $allowedEmojis, true)) {
+        // Allow any emoji/character sequence as long as it is short enough to fit in the DB and prevent abuse
+        if (mb_strlen($emoji) < 1 || mb_strlen($emoji) > 16) {
             return new Response('Emoji non supporté.', 400);
         }
 

@@ -120,11 +120,11 @@ class ReactionControllerTest extends WebTestCase
     }
 
     #[Test]
-    public function testReactWithUnsupportedEmoji(): void
+    public function testReactWithTooLongString(): void
     {
         $messageId = $this->message->getId();
 
-        $this->client->request('POST', sprintf('/messages/%d/react/💩', $messageId));
+        $this->client->request('POST', sprintf('/messages/%d/react/invalid_too_long_reaction_string', $messageId));
         $this->assertResponseStatusCodeSame(400);
     }
 }
