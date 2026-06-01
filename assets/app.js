@@ -93,8 +93,17 @@ window.toggleMessageReactionPicker = function(event, messageId) {
             picker.style.right = '0';
         }
         
-        // Handle vertical overflow (avoid going off screen at the bottom of the page)
-        if (rect.bottom > window.innerHeight) {
+        // Handle vertical overflow (avoid going off screen or under the message composer at the bottom)
+        let bottomThreshold = window.innerHeight;
+        const container = picker.closest('#live-feed, .thread-content');
+        if (container && container.nextElementSibling) {
+            const nextEl = container.nextElementSibling;
+            if (nextEl.classList.contains('chat-input-area') || nextEl.classList.contains('thread-input-area')) {
+                bottomThreshold = nextEl.getBoundingClientRect().top;
+            }
+        }
+        
+        if (rect.bottom > bottomThreshold) {
             picker.style.top = 'auto';
             picker.style.bottom = '100%';
             picker.style.marginTop = '0';
