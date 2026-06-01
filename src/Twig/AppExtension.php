@@ -24,6 +24,7 @@ class AppExtension extends AbstractExtension
     {
         return [
             new TwigFilter('format_message', [$this->formatter, 'format'], ['is_safe' => ['html']]),
+            new TwigFilter('wrap_emojis', [$this->formatter, 'wrapUnicodeEmojis'], ['is_safe' => ['html']]),
             new TwigFilter('format_bytes', [$this, 'formatBytes']),
         ];
     }

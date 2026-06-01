@@ -93,6 +93,13 @@ class MessageFormatterTest extends TestCase
     }
 
     #[Test]
+    public function formatWrapsUnicodeEmojis(): void
+    {
+        $result = $this->formatter->format('*italique 🙂*');
+        $this->assertStringContainsString('<em>italique <span class="unicode-emoji">🙂</span></em>', $result);
+    }
+
+    #[Test]
     public function formatRendersStrikethrough(): void
     {
         $result = $this->formatter->format('~~barré~~');

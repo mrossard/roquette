@@ -201,6 +201,7 @@ class MessageFormatter
                 }
             } else {
                 if ($inCodeOrPre === 0) {
+                    $part = $this->wrapUnicodeEmojis($part);
                     $part = $this->replaceCustomEmojis($part);
                 }
             }
@@ -208,6 +209,12 @@ class MessageFormatter
         unset($part);
 
         return implode('', $parts);
+    }
+
+    public function wrapUnicodeEmojis(string $text): string
+    {
+        $pattern = '/(?:[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{1F1E6}-\x{1F1FF}\x{1F3FB}-\x{1F3FF}]\x{FE0F}?|\x{200D})+/u';
+        return preg_replace($pattern, '<span class="unicode-emoji">$0</span>', $text);
     }
 
     private function replaceCustomEmojis(string $text): string

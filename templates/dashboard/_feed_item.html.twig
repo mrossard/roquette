@@ -10,10 +10,10 @@
                 <span class="feed-item-time">{{ timestamp|date('H:i:s') }}</span>
                 {% if author %}
                     <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link" title="Discuter en privé avec {{ username }} ({{ author.statusLabel }})">
-                        <span class="feed-item-user">{{ username }}</span>
+                        <span class="feed-item-user">{{ username|wrap_emojis }}</span>
                     </a>
                 {% else %}
-                    <span class="feed-item-user">{{ username }}</span>
+                    <span class="feed-item-user">{{ username|wrap_emojis }}</span>
                 {% endif %}
                 <span class="feed-item-me-text">
                     {% set me_content = message|slice(4) %}
@@ -142,13 +142,13 @@
                             <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
                             <span class="status-dot-overlay {{ author.status }}" data-username="{{ author.username }}" data-status-override="{{ author.statusOverride|default('auto') }}" data-last-active="{{ author.lastActiveAt ? author.lastActiveAt.timestamp : '' }}" title="{{ author.statusLabel }}"></span>
                         </div>
-                        <span class="feed-item-user">{{ username }}</span>
+                        <span class="feed-item-user">{{ username|wrap_emojis }}</span>
                     </a>
                 {% else %}
                     <div class="avatar-container">
                         <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
                     </div>
-                    <span class="feed-item-user">{{ username }}</span>
+                    <span class="feed-item-user">{{ username|wrap_emojis }}</span>
                 {% endif %}
             </div>
             <span class="feed-item-time">{{ timestamp|date('H:i:s') }}</span>

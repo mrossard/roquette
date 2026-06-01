@@ -3030,6 +3030,11 @@ del {
     font-weight: 600;
 }
 
+/* Force emojis to not be italicized in italic contexts */
+.unicode-emoji {
+    font-style: normal !important;
+}
+
 /* Highlight feed item containing a mention to the current user */
 .feed-item:has(.mention-me) {
     background: rgba(168, 85, 247, 0.03) !important;
