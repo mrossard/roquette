@@ -9,6 +9,25 @@ window.addEventListener('beforeunload', () => {
     isUnloading = true;
 });
 
+let isRedirecting = false;
+function safeRedirectToLogin(reason = '') {
+    if (isRedirecting) return;
+    isRedirecting = true;
+    console.log(`Redirecting to login in 5 seconds due to: ${reason}`);
+    showOfflineBanner(true, 'Votre session a expiré. Redirection vers la page de connexion dans 5 secondes...');
+    
+    const reconnectBtn = document.querySelector('.offline-reconnect-btn');
+    if (reconnectBtn) {
+        reconnectBtn.disabled = true;
+        reconnectBtn.textContent = 'Session expirée...';
+    }
+
+    setTimeout(() => {
+        window.location.href = '/login';
+    }, 5000);
+}
+
+
 let typingUsers = new Map();
 let typingUserTimeouts = new Map();
 let typingTimeout = null;
@@ -225,6 +244,7 @@ function handleHtmlUpdate(data) {
 }
 
 export function connectMercure(isReconnect = false) {
+    if (isRedirecting) return;
     const statusBadge = document.getElementById('mercure-status');
     const feedContainer = document.getElementById('live-feed');
     
@@ -368,17 +388,20 @@ export function connectMercure(isReconnect = false) {
             })
             .then(response => {
                 if (response.redirected && response.url.includes('/login')) {
-                    window.location.href = '/login';
+                    safeRedirectToLogin('Redirected to login');
                     return;
                 }
                 if (!response.ok) {
                     if (response.status === 401 || response.status === 403) {
-                        window.location.href = '/login';
+                        safeRedirectToLogin(`Status ${response.status}`);
                         return;
+                    }
+                    if (response.status >= 500) {
+                        throw new Error(`Server error: ${response.status}`);
                     }
                     const contentType = response.headers.get('content-type');
                     if (contentType && contentType.includes('text/html')) {
-                        window.location.href = '/login';
+                        safeRedirectToLogin('HTML response on non-ok status');
                         return;
                     }
                 }
@@ -416,7 +439,7 @@ export function connectMercure(isReconnect = false) {
 }
 
 export function handleReconnect() {
-    if (isUnloading) return;
+    if (isUnloading || isRedirecting) return;
     if (reconnectTimeout) return;
 
     const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), maxReconnectDelay);
@@ -471,6 +494,7 @@ export function showOfflineBanner(show, text = 'Connexion avec le serveur perdue
 }
 
 export function manualReconnect(button) {
+    if (isRedirecting) return;
     if (button) {
         button.disabled = true;
         button.textContent = 'Vérification...';
@@ -485,14 +509,21 @@ export function manualReconnect(button) {
     .then(response => {
         // If we got redirected to login page, or response is 401/403/etc.
         if (response.redirected && response.url.includes('/login')) {
-            window.location.href = '/login';
+            safeRedirectToLogin('Redirected to login');
             return;
         }
         if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                safeRedirectToLogin(`Status ${response.status}`);
+                return;
+            }
+            if (response.status >= 500) {
+                throw new Error(`Server error: ${response.status}`);
+            }
             // Check if it's HTML (likely Symfony's redirect to login page returned as HTML)
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('text/html')) {
-                window.location.href = '/login';
+                safeRedirectToLogin('HTML response on non-ok status');
                 return;
             }
             throw new Error('Session invalid');
@@ -507,8 +538,15 @@ export function manualReconnect(button) {
     })
     .catch(err => {
         console.error('Manual reconnect failed checking session:', err);
-        // If session check fails or is invalid, redirect to login to renew session
-        window.location.href = '/login';
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Reconnexion';
+        }
+        if (err.message && err.message.includes('Session invalid')) {
+            safeRedirectToLogin('Session invalid exception');
+        } else {
+            showOfflineBanner(true, 'Le serveur ne répond pas. Veuillez réessayer dans quelques instants.');
+        }
     });
 }
 
