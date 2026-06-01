@@ -412,21 +412,40 @@ function checkJumpToMessage() {
 
 function initInfiniteScroll() {
     const feed = document.getElementById('live-feed');
-    if (!feed || feed.dataset.infiniteScrollBound) return;
+    if (!feed) return;
 
-    feed.addEventListener('scroll', () => {
-        // Trigger loading more messages when scrolled near the top
-        if (feed.scrollTop < 30) {
-            const trigger = document.getElementById('load-more-trigger');
-            if (trigger && !trigger.classList.contains('htmx-request')) {
-                const btn = trigger.querySelector('.btn-load-more');
-                if (btn) {
-                    btn.click();
-                }
+    if (!feed.dataset.infiniteScrollBound) {
+        feed.addEventListener('scroll', () => {
+            if (window.triggerInfiniteScrollCheck) {
+                window.triggerInfiniteScrollCheck();
+            }
+        });
+        feed.dataset.infiniteScrollBound = 'true';
+    }
+
+    // Always schedule a check to see if we need to load more immediately (e.g. if not scrollable or already near top)
+    setTimeout(() => {
+        if (window.triggerInfiniteScrollCheck) {
+            window.triggerInfiniteScrollCheck();
+        }
+    }, 100);
+}
+
+window.triggerInfiniteScrollCheck = function() {
+    const feed = document.getElementById('live-feed');
+    if (!feed) return;
+
+    const trigger = document.getElementById('load-more-trigger');
+    if (trigger && !trigger.classList.contains('htmx-request')) {
+        const isNearTop = feed.scrollTop < 30;
+        const isNotScrollable = feed.scrollHeight <= feed.clientHeight;
+        if (isNearTop || isNotScrollable) {
+            const btn = trigger.querySelector('.btn-load-more');
+            if (btn) {
+                btn.click();
             }
         }
-    });
-    feed.dataset.infiniteScrollBound = 'true';
-}
+    }
+};
 
 
