@@ -320,14 +320,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Reconnect and scroll when HTMX swaps content (e.g. switching channels)
     document.body.addEventListener('htmx:afterSwap', (evt) => {
-        if (evt.detail.target && evt.detail.target.id === 'global-search-results') {
+        const target = evt.detail.target;
+        if (target && (target.id === 'global-search-results' || target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
             return;
         }
         if (window.scrollToBottom) window.scrollToBottom(false);
     });
 
     document.body.addEventListener('htmx:afterSettle', (evt) => {
-        if (evt.detail.target && evt.detail.target.id === 'global-search-results') {
+        const target = evt.detail.target;
+        if (target && (target.id === 'global-search-results' || target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
+            if (target.id === 'global-search-results') {
+                return;
+            }
+            // For load more, just initialize infinite scroll and return without refocusing
+            initInfiniteScroll();
             return;
         }
         console.log('HTMX content settled. Checking Mercure connection...');
