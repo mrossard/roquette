@@ -58,9 +58,6 @@ final class AccountController extends AbstractController
                     $currentUser->setStatusOverride($statusOverride === 'auto' ? null : $statusOverride);
                 }
 
-                $mentionNotificationsEnabled = (bool) $request->request->get('mentionNotificationsEnabled');
-                $currentUser->setMentionNotificationsEnabled($mentionNotificationsEnabled);
-
                 $entityManager->flush();
 
                 // Publish status change via Mercure
@@ -77,6 +74,13 @@ final class AccountController extends AbstractController
                 $bus->dispatch($update);
 
                 $this->addFlash('success', 'Votre profil a été mis à jour avec succès !');
+            } elseif ($action === 'notifications') {
+                $mentionNotificationsEnabled = (bool) $request->request->get('mentionNotificationsEnabled');
+                $currentUser->setMentionNotificationsEnabled($mentionNotificationsEnabled);
+
+                $entityManager->flush();
+
+                $this->addFlash('success', 'Vos préférences de notification ont été mises à jour !');
             } elseif (hash_equals('password', $action ?? '')) {
                 $currentPassword = (string) $request->request->get('currentPassword', '');
                 $newPassword = (string) $request->request->get('newPassword', '');
