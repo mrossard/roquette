@@ -438,3 +438,111 @@ window.updateSettingsPageUI = updateSettingsPageUI;
 window.handleGlobalNotification = handleGlobalNotification;
 window.handleInvitationNotification = handleInvitationNotification;
 window.handleChannelDeletedNotification = handleChannelDeletedNotification;
+
+let originalFaviconHref = null;
+let faviconImage = null;
+let faviconObserverInitialized = false;
+
+export function updateFaviconUnreadCount() {
+    const faviconLink = document.querySelector('link[rel="icon"]') || document.querySelector('link[rel="shortcut icon"]');
+    if (!faviconLink) return;
+
+    if (!originalFaviconHref) {
+        originalFaviconHref = faviconLink.getAttribute('href');
+    }
+
+    let totalUnread = 0;
+    document.querySelectorAll('.channel-link .unread-badge').forEach(badge => {
+        // Check if the badge is visible and its parent is not active
+        if (badge.style.display !== 'none' && !badge.closest('.channel-link').classList.contains('active')) {
+            const count = parseInt(badge.textContent, 10) || 0;
+            totalUnread += count;
+        }
+    });
+
+    if (totalUnread <= 0) {
+        faviconLink.href = originalFaviconHref;
+        return;
+    }
+
+    const drawBadge = (img) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+
+        // Draw original favicon
+        ctx.drawImage(img, 0, 0, 64, 64);
+
+        const badgeText = totalUnread > 99 ? '99+' : totalUnread.toString();
+
+        ctx.font = 'bold 18px sans-serif';
+        const textWidth = ctx.measureText(badgeText).width;
+        const padding = 6;
+        const badgeHeight = 24;
+        const badgeWidth = Math.max(badgeHeight, textWidth + padding * 2);
+
+        // Draw badge background (rounded rect / pill)
+        ctx.beginPath();
+        ctx.arc(64 - badgeWidth + badgeHeight / 2, badgeHeight / 2, badgeHeight / 2, Math.PI / 2, (3 * Math.PI) / 2);
+        ctx.lineTo(64 - badgeHeight / 2, 0);
+        ctx.arc(64 - badgeHeight / 2, badgeHeight / 2, badgeHeight / 2, (3 * Math.PI) / 2, Math.PI / 2);
+        ctx.closePath();
+
+        ctx.fillStyle = '#ef4444'; // Red-500
+        ctx.fill();
+
+        // Dark/white border
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#1e1b4b'; // matching the dark background color of Roquette
+        ctx.stroke();
+
+        // Draw text
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(badgeText, 64 - badgeWidth / 2, badgeHeight / 2);
+
+        faviconLink.href = canvas.toDataURL('image/png');
+    };
+
+    if (faviconImage) {
+        drawBadge(faviconImage);
+    } else {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = originalFaviconHref;
+        img.onload = () => {
+            faviconImage = img;
+            drawBadge(img);
+        };
+        img.onerror = () => {
+            console.error('Failed to load favicon image');
+        };
+    }
+}
+
+export function initFaviconNotificationBadge() {
+    updateFaviconUnreadCount();
+
+    if (faviconObserverInitialized) return;
+
+    const target = document.body;
+    if (target) {
+        const observer = new MutationObserver(() => {
+            updateFaviconUnreadCount();
+        });
+        observer.observe(target, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributes: true,
+            attributeFilter: ['style', 'class']
+        });
+        faviconObserverInitialized = true;
+    }
+}
+
+window.updateFaviconUnreadCount = updateFaviconUnreadCount;
+window.initFaviconNotificationBadge = initFaviconNotificationBadge;
+

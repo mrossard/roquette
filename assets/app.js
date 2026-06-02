@@ -303,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initOfflineQueue) window.initOfflineQueue();
     if (window.initGlobalSearch) window.initGlobalSearch();
     if (window.initMobileSidebar) window.initMobileSidebar();
+    if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
     initInfiniteScroll();
 
     // Heartbeat to keep user status online
@@ -369,6 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initUnreadFilter) window.initUnreadFilter();
         if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
         if (window.renderChannelOfflineMessages) window.renderChannelOfflineMessages();
+        if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
         initInfiniteScroll();
 
         // Scroll thread replies to bottom if thread panel is open (handles OOB-injected replies)
