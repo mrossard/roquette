@@ -283,8 +283,10 @@ export function handleGlobalNotification(data) {
     const isPageActive = (document.visibilityState === 'visible' && document.hasFocus());
 
     // If it's a mention, we notify unless the page is visible and active on the channel or mention notifications are disabled
-    const shouldNotify = (data.isMention && data.isMentionNotificationAllowed !== false && (!isViewingActiveChannel || !isPageActive)) || 
-                         (!isViewingActiveChannel && data.notificationsEnabled);
+    const shouldNotify = (!isViewingActiveChannel || !isPageActive) && (
+        (data.isMention && data.isMentionNotificationAllowed !== false) ||
+        data.notificationsEnabled
+    );
 
     if (shouldNotify) {
         const title = data.isMention ? `Mention dans ${data.channelName}` : (data.channelName || 'Nouveau message 🚀');
@@ -299,8 +301,8 @@ export function handleGlobalNotification(data) {
         );
     }
 
-    if (data.channelSlug === activeChannelSlug) {
-        // We are currently viewing this channel, so mark it as read in the DB in background
+    if (data.channelSlug === activeChannelSlug && isPageActive) {
+        // We are currently viewing this channel and the page is active, so mark it as read in the DB in background
         const readUrl = `/channels/${data.channelSlug}/read`;
         fetch(readUrl, {
             method: 'POST',
@@ -442,6 +444,45 @@ window.handleChannelDeletedNotification = handleChannelDeletedNotification;
 let originalFaviconHref = null;
 let faviconImage = null;
 let faviconObserverInitialized = false;
+let focusListenersInitialized = false;
+
+export function markActiveChannelAsReadIfFocused() {
+    const isPageActive = (document.visibilityState === 'visible' && document.hasFocus());
+    if (!isPageActive) return;
+
+    const statusBadge = document.getElementById('mercure-status');
+    if (!statusBadge) return;
+
+    const activeChannelSlug = statusBadge.getAttribute('data-active-channel-slug');
+    if (!activeChannelSlug) return;
+
+    const channelLink = document.querySelector(`.channel-link[data-channel-slug="${activeChannelSlug}"]`);
+    if (!channelLink) return;
+
+    const badge = channelLink.querySelector('.unread-badge');
+    const isUnread = channelLink.classList.contains('unread') || (badge && badge.style.display !== 'none');
+
+    if (isUnread) {
+        channelLink.classList.remove('unread');
+        channelLink.classList.remove('has-mention');
+        if (badge) {
+            badge.textContent = '0';
+            badge.style.display = 'none';
+        }
+
+        const readUrl = `/channels/${activeChannelSlug}/read`;
+        fetch(readUrl, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(() => {
+            updateFaviconUnreadCount();
+        })
+        .catch(err => console.error('Error marking channel as read on focus:', err));
+    }
+}
 
 export function updateFaviconUnreadCount() {
     const faviconLink = document.querySelector('link[rel="icon"]') || document.querySelector('link[rel="shortcut icon"]');
@@ -453,8 +494,12 @@ export function updateFaviconUnreadCount() {
 
     let totalUnread = 0;
     document.querySelectorAll('.channel-link .unread-badge').forEach(badge => {
-        // Check if the badge is visible and its parent is not active
-        if (badge.style.display !== 'none' && !badge.closest('.channel-link').classList.contains('active')) {
+        // Check if the badge is visible and its parent is not active (or active but the page doesn't have focus)
+        const channelLink = badge.closest('.channel-link');
+        const isChannelActive = channelLink && channelLink.classList.contains('active');
+        const isPageActive = (document.visibilityState === 'visible' && document.hasFocus());
+
+        if (badge.style.display !== 'none' && (!isChannelActive || !isPageActive)) {
             const count = parseInt(badge.textContent, 10) || 0;
             totalUnread += count;
         }
@@ -519,6 +564,12 @@ export function updateFaviconUnreadCount() {
 export function initFaviconNotificationBadge() {
     updateFaviconUnreadCount();
 
+    if (!focusListenersInitialized) {
+        window.addEventListener('focus', markActiveChannelAsReadIfFocused);
+        document.addEventListener('visibilitychange', markActiveChannelAsReadIfFocused);
+        focusListenersInitialized = true;
+    }
+
     if (faviconObserverInitialized) return;
 
     const target = document.body;
@@ -539,4 +590,5 @@ export function initFaviconNotificationBadge() {
 
 window.updateFaviconUnreadCount = updateFaviconUnreadCount;
 window.initFaviconNotificationBadge = initFaviconNotificationBadge;
+window.markActiveChannelAsReadIfFocused = markActiveChannelAsReadIfFocused;
 
