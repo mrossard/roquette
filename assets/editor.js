@@ -180,6 +180,9 @@ document.addEventListener('keydown', (event) => {
     }
 
     if (event.key === 'ArrowDown') {
+        // Only act when cursor is at the very end of the textarea
+        if (textarea.selectionStart !== textarea.value.length || textarea.selectionEnd !== textarea.value.length) return;
+
         // In edit mode: navigate to the next own message or exit
         if (editModeMessageId !== null) {
             event.preventDefault();
