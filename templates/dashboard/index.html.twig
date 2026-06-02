@@ -112,8 +112,12 @@
                                     {{ activeChannel.description|default('Aucune description pour ce canal.') }}
                                 {% endif %}
                             </p>
-                            {% if not activeChannel.isDm %}
-                                <div style="display: flex; align-items: center; gap: 0.25rem; margin-top: 0.25rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; flex-wrap: wrap;">
+                                <button type="button" class="status-pill" onclick="openChannelMembersModal(this)" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass); font-size: 0.75rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer; transition: background 0.2s, color 0.2s; outline: none; font-family: inherit;" onmouseover="this.style.background='rgba(255, 255, 255, 0.12)'; this.style.color='var(--text-primary)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.color='var(--text-muted)'">
+                                    👥 {{ activeChannel.members|length }} membre{{ activeChannel.members|length > 1 ? 's' : '' }}
+                                </button>
+
+                                {% if not activeChannel.isDm %}
                                     <span class="status-pill" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass); font-size: 0.75rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: default;">
                                         ⏱️ Rétention : 
                                         <span style="color: var(--text-primary);">
@@ -124,8 +128,8 @@
                                             {% endif %}
                                         </span>
                                     </span>
-                                </div>
-                            {% endif %}
+                                {% endif %}
+                            </div>
                         </div>
 
                         <div class="chat-header-actions">

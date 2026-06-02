@@ -63,6 +63,9 @@
             {% if activeChannel is defined and activeChannel and not activeChannel.isDm and activeChannel.creator == app.user %}
                 {% include '_edit_channel_modal.html.twig' %}
             {% endif %}
+            {% if activeChannel is defined and activeChannel %}
+                {% include '_channel_members_modal.html.twig' %}
+            {% endif %}
 
             <script>
                 (function() {

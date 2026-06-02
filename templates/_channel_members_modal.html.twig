@@ -1,0 +1,128 @@
+<div id="channel-members-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="members-modal-title" style="display: none;" onclick="if(event.target === this) closeChannelMembersModal()">
+    <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width: 480px !important;">
+        <div class="modal-header">
+            <h3 id="members-modal-title">
+                {% if activeChannel.isDm %}
+                    Membres de la conversation
+                {% else %}
+                    Membres de #{{ activeChannel.name }}
+                {% endif %}
+            </h3>
+            <button type="button" onclick="closeChannelMembersModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
+        </div>
+        
+        <div class="input-group" style="margin-bottom: 0.5rem;">
+            <input type="text" id="member-search-input" placeholder="Rechercher un membre..." class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;">
+        </div>
+
+        <div id="modal-members-list" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.25rem;">
+            {% for member in activeChannel.members %}
+                <div class="modal-member-item" data-username="{{ member.username|lower }}" data-name="{{ (member.displayName|default(member.username))|lower }}" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 0.75rem; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); transition: background 0.2s;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div class="avatar-container" style="position: relative; width: 36px; height: 36px;">
+                            <div class="user-avatar-circle" style="background-color: hsl({{ member.hue }}, 90%, var(--user-hue-lightness-border)); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1rem; box-shadow: 0 0 10px hsla({{ member.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
+                                {{ member.username|slice(0,1)|upper }}
+                            </div>
+                            <span class="status-dot-overlay {{ member.status }}" style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-card); display: block;" title="{{ member.statusLabel }}"></span>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem; display: flex; align-items: center; gap: 0.35rem;">
+                                <span>{{ member.displayName|default(member.username) }}</span>
+                                {% if member == app.user %}
+                                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(vous)</span>
+                                {% endif %}
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">@{{ member.username }}</div>
+                        </div>
+                    </div>
+                    {% if member != app.user %}
+                        <a href="{{ path('app_dm_open', {username: member.username}) }}" class="btn-account" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); border-radius: 0.5rem; color: var(--text-primary);" hx-boost="false" title="Lui envoyer un message direct">
+                            💬
+                        </a>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let lastFocusedElement = null;
+
+        window.openChannelMembersModal = function(trigger) {
+            lastFocusedElement = trigger;
+            const modal = document.getElementById('channel-members-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                const searchInput = document.getElementById('member-search-input');
+                if (searchInput) {
+                    searchInput.value = '';
+                    // Reset filter
+                    const items = document.querySelectorAll('.modal-member-item');
+                    items.forEach(item => item.style.display = 'flex');
+                    setTimeout(() => searchInput.focus(), 50);
+                }
+                document.addEventListener('keydown', handleMembersModalKeyDown);
+            }
+        };
+
+        window.closeChannelMembersModal = function() {
+            const modal = document.getElementById('channel-members-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.removeEventListener('keydown', handleMembersModalKeyDown);
+                if (lastFocusedElement) {
+                    lastFocusedElement.focus();
+                }
+            }
+        };
+
+        function handleMembersModalKeyDown(e) {
+            if (e.key === 'Escape') {
+                closeChannelMembersModal();
+                return;
+            }
+            if (e.key === 'Tab') {
+                const modal = document.getElementById('channel-members-modal');
+                if (!modal) return;
+                const focusableElements = modal.querySelectorAll('button, input, textarea, select, a, [tabindex="0"]');
+                if (focusableElements.length === 0) return;
+                const firstFocusable = focusableElements[0];
+                const lastFocusable = focusableElements[focusableElements.length - 1];
+
+                if (e.shiftKey) {
+                    if (document.activeElement === firstFocusable) {
+                        lastFocusable.focus();
+                        e.preventDefault();
+                    }
+                } else {
+                    if (document.activeElement === lastFocusable) {
+                        firstFocusable.focus();
+                        e.preventDefault();
+                    }
+                }
+            }
+        }
+
+        // Live filtering
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('member-search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase().trim();
+                    const items = document.querySelectorAll('.modal-member-item');
+                    items.forEach(item => {
+                        const username = item.getAttribute('data-username') || '';
+                        const name = item.getAttribute('data-name') || '';
+                        if (username.includes(query) || name.includes(query)) {
+                            item.style.display = 'flex';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        });
+    })();
+</script>
