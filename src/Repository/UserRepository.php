@@ -52,9 +52,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /** @return User[] Users not already members of $channel and without a pending invitation */
-    public function findInvitableForChannel(Channel $channel, User $currentUser): array
+    public function findInvitableForChannel(Channel $channel, User $currentUser, ?string $searchQuery = null): array
     {
-        return $this
+        $qb = $this
             ->createQueryBuilder('u')
             ->where('u.id != :currentUserId')
             ->andWhere('u.id NOT IN (
@@ -64,9 +64,14 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 SELECT IDENTITY(i.invitee) FROM App\Entity\Invitation i WHERE i.channel = :channelId
             )')
             ->setParameter('currentUserId', $currentUser->getId())
-            ->setParameter('channelId', $channel->getId())
-            ->getQuery()
-            ->getResult();
+            ->setParameter('channelId', $channel->getId());
+
+        if ($searchQuery !== null && $searchQuery !== '') {
+            $qb->andWhere('LOWER(u.username) LIKE :searchQuery OR LOWER(u.displayName) LIKE :searchQuery')
+               ->setParameter('searchQuery', '%' . strtolower($searchQuery) . '%');
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     public function searchByName(string $query): array

@@ -803,12 +803,12 @@ export function openGlobalSearch() {
 
 export function closeGlobalSearch() {
     const modal = document.getElementById('global-search-modal');
-    if (modal) {
+    if (modal && modal.style.display !== 'none' && modal.style.display !== '') {
         modal.style.display = 'none';
+        const messageInput = document.getElementById('message');
+        const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (messageInput && !isMobile) messageInput.focus();
     }
-    const messageInput = document.getElementById('message');
-    const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    if (messageInput && !isMobile) messageInput.focus();
 }
 
 export function handleGlobalSearchBackdropClick(event) {

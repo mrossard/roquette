@@ -1,0 +1,23 @@
+<div id="invite-modal-list-container">
+    <div class="input-group" style="margin-bottom: 0.5rem; position: relative;">
+        <input type="text" 
+               name="q" 
+               id="invite-member-search-input" 
+               placeholder="Rechercher un membre à inviter..." 
+               class="input-sidebar" 
+               style="background: rgba(0, 0, 0, 0.3) !important; padding-right: 2.5rem;"
+               hx-get="{{ path('app_channel_invite_search', {slug: activeChannel.slug}) }}"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#modal-invite-members-list"
+               hx-swap="innerHTML transition:false"
+               onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }"
+               autocomplete="off">
+        <div id="search-indicator" class="htmx-indicator" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted);">
+            ...
+        </div>
+    </div>
+
+    <div id="modal-invite-members-list" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.25rem; margin-top: 0.75rem;">
+        <span style="font-size: 0.85rem; color: var(--text-muted); text-align: center; display: block; padding: 1rem 0;">Saisissez un nom pour rechercher un membre.</span>
+    </div>
+</div>

@@ -83,25 +83,56 @@ final class InvitationController extends AbstractController
             'html' => $sidebarHtml,
         ]);
 
-        $usersToInvite = $entityManager
-            ->getRepository(\App\Entity\User::class)
-            ->createQueryBuilder('u')
-            ->where('u.id != :currentUserId')
-            ->andWhere('u.id NOT IN (
-                SELECT mu.id FROM App\Entity\Channel c2 JOIN c2.members mu WHERE c2.id = :channelId
-            )')
-            ->andWhere('u.id NOT IN (
-                SELECT IDENTITY(i.invitee) FROM App\Entity\Invitation i WHERE i.channel = :channelId
-            )')
-            ->setParameter('currentUserId', $currentUser->getId())
-            ->setParameter('channelId', $activeChannel->getId())
-            ->getQuery()
-            ->getResult();
+        $query = $request->request->get('q', '');
+        $query = trim($query);
 
-        return $this->render('dashboard/_invite_section.html.twig', [
+        $usersToInvite = [];
+        if ($query !== '') {
+            $userRepository = $entityManager->getRepository(\App\Entity\User::class);
+            $usersToInvite = $userRepository->findInvitableForChannel($activeChannel, $currentUser, $query);
+        }
+
+        return $this->render('dashboard/_invite_modal_results.html.twig', [
             'activeChannel' => $activeChannel,
             'usersToInvite' => $usersToInvite,
             'successMessage' => sprintf('%s a été invité !', $invitedUser->getUsername()),
+            'searched' => $query !== '',
+        ]);
+    }
+
+    #[Route('/channels/{slug}/invite/search', name: 'app_channel_invite_search', methods: ['GET'])]
+    public function searchInvitableUsers(
+        string $slug,
+        Request $request,
+        ChannelRepository $channelRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        $activeChannel = $channelRepository->findOneBy(['slug' => $slug]);
+        if (!$activeChannel) {
+            return new Response('Canal non trouvé.', 404);
+        }
+
+        $query = $request->query->get('q', '');
+        $query = trim($query);
+
+        if ($query === '') {
+            return $this->render('dashboard/_invite_modal_results.html.twig', [
+                'usersToInvite' => [],
+                'activeChannel' => $activeChannel,
+                'searched' => false,
+            ]);
+        }
+
+        $userRepository = $entityManager->getRepository(\App\Entity\User::class);
+        $usersToInvite = $userRepository->findInvitableForChannel($activeChannel, $currentUser, $query);
+
+        return $this->render('dashboard/_invite_modal_results.html.twig', [
+            'usersToInvite' => $usersToInvite,
+            'activeChannel' => $activeChannel,
+            'searched' => true,
         ]);
     }
 

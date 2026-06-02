@@ -183,9 +183,6 @@ final class ChannelController extends AbstractController
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
 
         $usersToInvite = [];
-        if ($activeChannel->isPrivate() && !$activeChannel->isDm() && $activeChannel->getCreator() === $currentUser) {
-            $usersToInvite = $userRepository->findInvitableForChannel($activeChannel, $currentUser);
-        }
 
         $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
 

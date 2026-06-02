@@ -357,9 +357,13 @@ document.addEventListener('DOMContentLoaded', () => {
             initInfiniteScroll();
             return;
         }
+
+        const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
+        console.log('[Diagnostic] HTMX settle target:', target, 'isChannelSwitch:', isChannelSwitch);
+
         console.log('HTMX content settled. Checking Mercure connection...');
         // Cancel any pending inline edit when switching channels
-        if (window.cancelInlineEdit) {
+        if (isChannelSwitch && window.cancelInlineEdit) {
             window.cancelInlineEdit();
         }
         if (window.connectMercure) window.connectMercure();
@@ -388,27 +392,33 @@ document.addEventListener('DOMContentLoaded', () => {
             window.scrollToBottom(true, 'thread-replies-feed');
         }
 
-        // Refocus appropriate input after content swap/settle (unless search input is active or on mobile)
-        const searchInput = document.getElementById('channel-search-input');
-        const globalSearchInput = document.getElementById('global-search-input');
-        const isSearching = (searchInput && document.activeElement === searchInput) || 
-                            (globalSearchInput && document.activeElement === globalSearchInput);
+        // Refocus appropriate input after content swap/settle (ONLY when switching channels, i.e. target is BODY or .app-container)
         const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        if (!isSearching && !isMobileDevice) {
+        if (isChannelSwitch && !isMobileDevice) {
             // If the thread panel is open, keep focus on the thread input
             const threadPanel = document.getElementById('thread-panel');
             const threadTextarea = document.getElementById('thread-message');
             if (threadPanel && threadPanel.style.display !== 'none' && threadTextarea) {
+                console.log('[Diagnostic] Focusing thread input');
                 threadTextarea.focus();
             } else {
                 const messageInputAfterSettle = document.getElementById('message');
                 if (messageInputAfterSettle) {
+                    console.log('[Diagnostic] Focusing message input');
                     messageInputAfterSettle.focus();
                 }
             }
         }
         checkJumpToMessage();
     });
+
+    // Diagnosing focus steals on main message input
+    const messageEl = document.getElementById('message');
+    if (messageEl) {
+        messageEl.addEventListener('focus', () => {
+            console.trace('[Diagnostic] Message input #message gained focus!');
+        });
+    }
 });
 
 // Global HTMX listener to toggle data-search-active when searching
