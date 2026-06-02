@@ -92,7 +92,7 @@
                 <!-- Panel Canaux -->
                 <div id="panel-channels" role="tabpanel" aria-labelledby="tab-btn-channels">
                     <div class="directory-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
-                        {% for channel in allPublicChannels %}
+                        {% for channel in allPublicChannels|sort((a, b) => a.name|lower <=> b.name|lower) %}
                             {% set isMember = channel.members.contains(app.user) %}
                             <div class="directory-card glass-panel fade-in" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); border-radius: 0.75rem; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: var(--transition-smooth); cursor: default;">
                                 <div>
@@ -144,7 +144,7 @@
                 <!-- Panel Membres -->
                 <div id="panel-members" style="display: none;" role="tabpanel" aria-labelledby="tab-btn-members">
                     <div class="directory-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
-                        {% for user in allUsers %}
+                        {% for user in allUsers|sort((a, b) => (a.displayName|default(a.username))|lower <=> (b.displayName|default(b.username))|lower) %}
                             <div class="member-card glass-panel fade-in" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); border-radius: 0.75rem; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: var(--transition-smooth); cursor: default;">
                                 <div style="display: flex; align-items: center; gap: 1rem;">
                                     <div class="avatar-container large">
