@@ -2,6 +2,16 @@ import './styles/app.css';
 import htmx from 'htmx.org';
 window.htmx = htmx;
 
+import hljs from 'highlight.js';
+window.hljs = hljs;
+
+import { Idiomorph } from 'idiomorph';
+window.Idiomorph = Idiomorph;
+
+if (document.querySelector('meta[name="frankenphp-hot-reload:url"]')) {
+    import('frankenphp-hot-reload');
+}
+
 // Import our structured modules
 import './ui.js';
 import './mercure.js';

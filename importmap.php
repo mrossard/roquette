@@ -19,4 +19,13 @@ return [
     'htmx.org' => [
         'version' => '2.0.10',
     ],
+    'highlight.js' => [
+        'version' => '11.11.1',
+    ],
+    'idiomorph' => [
+        'version' => '0.7.4',
+    ],
+    'frankenphp-hot-reload' => [
+        'version' => '1.0.1',
+    ],
 ];

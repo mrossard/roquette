@@ -14,8 +14,8 @@
                 hljsLink.id = 'hljs-theme';
                 hljsLink.rel = 'stylesheet';
                 hljsLink.href = theme === 'dark' 
-                    ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css' 
-                    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css';
+                    ? '{{ asset('styles/highlight/atom-one-dark.min.css') }}' 
+                    : '{{ asset('styles/highlight/atom-one-light.min.css') }}';
                 document.head.appendChild(hljsLink);
             })();
         </script>
@@ -46,14 +46,11 @@
 
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
         {% endblock %}
 
         {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
         {% if frankenphpHotReload %}
         <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
         {% endif %}
     </head>
     <body>
@@ -82,8 +79,8 @@
                                 const hljsLink = document.getElementById('hljs-theme');
                                 if (hljsLink) {
                                     hljsLink.href = newTheme === 'dark' 
-                                        ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css' 
-                                        : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css';
+                                        ? '{{ asset('styles/highlight/atom-one-dark.min.css') }}' 
+                                        : '{{ asset('styles/highlight/atom-one-light.min.css') }}';
                                 }
 
                                 // Update database state asynchronously
