@@ -460,6 +460,14 @@ export function updateFaviconUnreadCount() {
         }
     });
 
+    // Update document title
+    const cleanTitle = document.title.replace(/\s*\(\d+\s*messages?\s*non\s*lus\)/gi, '').replace(/^\(\d+\)\s*/, '');
+    if (totalUnread > 0) {
+        document.title = `(${totalUnread}) ${cleanTitle} (${totalUnread} message${totalUnread > 1 ? 's' : ''} non lus)`;
+    } else {
+        document.title = cleanTitle;
+    }
+
     if (totalUnread <= 0) {
         faviconLink.href = originalFaviconHref;
         return;
@@ -474,21 +482,13 @@ export function updateFaviconUnreadCount() {
         // Draw original favicon
         ctx.drawImage(img, 0, 0, 64, 64);
 
-        const badgeText = totalUnread > 99 ? '99+' : totalUnread.toString();
+        // Draw a clean, bright red notification dot in the bottom-right corner (empty space)
+        const badgeRadius = 10;
+        const centerX = 50;
+        const centerY = 50;
 
-        ctx.font = 'bold 18px sans-serif';
-        const textWidth = ctx.measureText(badgeText).width;
-        const padding = 6;
-        const badgeHeight = 24;
-        const badgeWidth = Math.max(badgeHeight, textWidth + padding * 2);
-
-        // Draw badge background (rounded rect / pill)
         ctx.beginPath();
-        ctx.arc(64 - badgeWidth + badgeHeight / 2, badgeHeight / 2, badgeHeight / 2, Math.PI / 2, (3 * Math.PI) / 2);
-        ctx.lineTo(64 - badgeHeight / 2, 0);
-        ctx.arc(64 - badgeHeight / 2, badgeHeight / 2, badgeHeight / 2, (3 * Math.PI) / 2, Math.PI / 2);
-        ctx.closePath();
-
+        ctx.arc(centerX, centerY, badgeRadius, 0, 2 * Math.PI, false);
         ctx.fillStyle = '#ef4444'; // Red-500
         ctx.fill();
 
@@ -496,12 +496,6 @@ export function updateFaviconUnreadCount() {
         ctx.lineWidth = 3;
         ctx.strokeStyle = '#1e1b4b'; // matching the dark background color of Roquette
         ctx.stroke();
-
-        // Draw text
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(badgeText, 64 - badgeWidth / 2, badgeHeight / 2);
 
         faviconLink.href = canvas.toDataURL('image/png');
     };
