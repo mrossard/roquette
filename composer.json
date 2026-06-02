@@ -32,6 +32,7 @@
         "symfony/runtime": "8.0.*",
         "symfony/security-bundle": "8.0.*",
         "symfony/twig-bundle": "8.0.*",
+        "symfony/ux-icons": "^3.1",
         "symfony/validator": "8.0.*",
         "symfony/yaml": "8.0.*",
         "twig/extra-bundle": "^2.12|^3.0",

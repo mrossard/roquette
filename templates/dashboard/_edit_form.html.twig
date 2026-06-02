@@ -16,22 +16,16 @@
             <div class="message-input-wrapper">
                 <textarea name="content" class="edit-message-textarea" required aria-label="Modifier le message" style="width: 100%; min-height: 80px; padding: 0.6rem; padding-right: 2.5rem; border-radius: 0.5rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: inherit; font-size: 0.925rem; resize: vertical; outline: none; transition: var(--transition-smooth);" onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); } else if(event.key === 'Escape') { this.form.querySelector('.btn-cancel').click(); }">{{ message.content }}</textarea>
                 <button type="button" class="btn-emoji-toggle" data-emoji-target="textarea" title="Ajouter un émoji" aria-label="Ajouter un émoji">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
-                    </svg>
+                    {{ ux_icon('heroicons:face-smile', {'aria-hidden': 'true'}) }}
                 </button>
             </div>
             <div class="edit-message-actions" style="display: flex; gap: 0.5rem; align-self: flex-start;">
                 <button type="submit" class="btn-publish" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 0.4rem; height: auto;">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 12px; height: 12px; margin-right: 0.25rem;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
+                    {{ ux_icon('heroicons:check', {class: 'action-icon', style: 'width: 12px; height: 12px; margin-right: 0.25rem;'}) }}
                     <span>Enregistrer</span>
                 </button>
                 <button type="button" class="btn-reply-subtle btn-cancel" hx-get="{{ path('app_message_view', {id: message.id}) }}" hx-target="closest .feed-item" hx-swap="outerHTML" style="opacity: 1; padding: 0.4rem 0.8rem; border: 1px solid var(--border-glass); font-size: 0.8rem; border-radius: 0.4rem; display: inline-flex; align-items: center; justify-content: center; margin-left: 0;">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="action-icon" style="width: 12px; height: 12px; margin-right: 0.25rem;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    {{ ux_icon('heroicons:x-mark', {class: 'action-icon', style: 'width: 12px; height: 12px; margin-right: 0.25rem;'}) }}
                     <span>Annuler</span>
                 </button>
             </div>
