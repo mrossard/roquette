@@ -201,6 +201,7 @@ class MessageFormatter
                 }
             } else {
                 if ($inCodeOrPre === 0) {
+                    $part = $this->replaceShortcodes($part);
                     $part = $this->wrapUnicodeEmojis($part);
                     $part = $this->replaceCustomEmojis($part);
                 }
@@ -209,6 +210,17 @@ class MessageFormatter
         unset($part);
 
         return implode('', $parts);
+    }
+
+    private function replaceShortcodes(string $text): string
+    {
+        return preg_replace_callback('/:([a-zA-Z0-9_\-\+]+):/', static function ($matches) {
+            $shortcode = $matches[1];
+            if (isset(EmojiMapping::MAPPING[$shortcode])) {
+                return EmojiMapping::MAPPING[$shortcode];
+            }
+            return $matches[0];
+        }, $text);
     }
 
     public function wrapUnicodeEmojis(string $text): string

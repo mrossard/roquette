@@ -1,3 +1,5 @@
+import { EMOJI_ALIASES } from './emoji-aliases.js';
+
 // Emoji definitions grouped by category
 export const EMOJI_CATEGORIES = [
     {
@@ -607,3 +609,13 @@ export const EMOJI_KEYWORDS = {
     '🏳️‍⚧️': ['drapeau trans', 'transgender'],
     '🏴': ['drapeau noir', 'black flag']
 };
+
+// Inject JoyPixels emoji shortnames into the keyword list
+for (const [shortname, emoji] of Object.entries(EMOJI_ALIASES)) {
+    if (!EMOJI_KEYWORDS[emoji]) {
+        EMOJI_KEYWORDS[emoji] = [];
+    }
+    if (!EMOJI_KEYWORDS[emoji].includes(shortname)) {
+        EMOJI_KEYWORDS[emoji].push(shortname);
+    }
+}
