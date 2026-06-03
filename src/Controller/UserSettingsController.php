@@ -90,7 +90,7 @@ final class UserSettingsController extends AbstractController
                 'lastActive' => $currentUser->getLastActiveAt()
                     ? $currentUser->getLastActiveAt()->getTimestamp()
                     : null,
-            ]);
+            ], true);
 
             return new Response(null, 204);
         }

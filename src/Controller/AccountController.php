@@ -70,7 +70,7 @@ final class AccountController extends AbstractController
                     'lastActive' => $currentUser->getLastActiveAt()
                         ? $currentUser->getLastActiveAt()->getTimestamp()
                         : null,
-                ]));
+                ]), true);
                 $bus->dispatch($update);
 
                 $this->addFlash('success', 'Votre profil a été mis à jour avec succès !');

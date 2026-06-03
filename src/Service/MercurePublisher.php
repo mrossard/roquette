@@ -51,7 +51,7 @@ class MercurePublisher
     public function publishToChannel(Channel $channel, array $payload): void
     {
         $this->bus->dispatch(
-            new Update($this->getChannelTopic($channel), json_encode($payload), $channel->isPrivate()),
+            new Update($this->getChannelTopic($channel), json_encode($payload), $channel->isPrivate() || $channel->isDm()),
         );
     }
 
