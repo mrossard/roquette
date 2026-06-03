@@ -213,7 +213,7 @@ body {
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1rem;
     flex-grow: 1;
     height: 100%;
     min-height: 0;
@@ -226,11 +226,11 @@ body {
     }
     .app-container {
         height: 100vh;
-        padding: 1.5rem;
+        padding: 1rem;
         overflow: hidden;
         display: grid;
         grid-template-rows: auto 1fr auto;
-        gap: 1.25rem;
+        gap: 1rem;
     }
     .app-header {
         margin-bottom: 0;
@@ -682,8 +682,8 @@ body {
 /* Footer styling */
 .app-footer {
     text-align: center;
-    padding-top: 1rem;
-    padding-bottom: 1rem;
+    padding-top: 0;
+    padding-bottom: 0;
     color: var(--text-muted);
     font-size: 0.8rem;
 }
@@ -1012,13 +1012,13 @@ body {
     height: 8px !important;
     padding: 0 !important;
     border-radius: 9999px !important;
-    background: linear-gradient(to right, 
-        hsl(0, 100%, 55%), 
-        hsl(60, 100%, 55%), 
-        hsl(120, 100%, 55%), 
-        hsl(180, 100%, 55%), 
-        hsl(240, 100%, 55%), 
-        hsl(300, 100%, 55%), 
+    background: linear-gradient(to right,
+        hsl(0, 100%, 55%),
+        hsl(60, 100%, 55%),
+        hsl(120, 100%, 55%),
+        hsl(180, 100%, 55%),
+        hsl(240, 100%, 55%),
+        hsl(300, 100%, 55%),
         hsl(360, 100%, 55%)
     ) !important;
     outline: none;
@@ -4194,11 +4194,11 @@ del {
 }
 
 @keyframes fadeOut {
-    from { 
-        opacity: 1; 
+    from {
+        opacity: 1;
     }
-    to { 
-        opacity: 0; 
+    to {
+        opacity: 0;
     }
 }
 
@@ -4560,16 +4560,16 @@ del {
         width: auto;
         flex-grow: 1;
     }
-    
+
     .global-search-trigger {
         padding: 0.35rem 0.6rem;
     }
-    
+
     .search-trigger-placeholder,
     .search-trigger-shortcut {
         display: none !important;
     }
-    
+
     .app-header {
         flex-wrap: nowrap;
         gap: 0.35rem;
@@ -4790,7 +4790,7 @@ del {
         box-sizing: border-box;
     }
 
-    .attachment-preview img, 
+    .attachment-preview img,
     .attachment-preview video {
         max-width: 100% !important;
         height: auto !important;
@@ -4800,7 +4800,7 @@ del {
     .status-badge .status-text {
         display: none;
     }
-    
+
     .status-badge {
         padding: 0.5rem;
         gap: 0;
@@ -4810,7 +4810,7 @@ del {
     .logo-text {
         display: none;
     }
-    
+
     .logo-rocket {
         font-size: 1.75rem !important;
     }
@@ -4845,7 +4845,7 @@ del {
         font-size: 1.35rem !important;
     }
 
-    .btn-directory-trigger, 
+    .btn-directory-trigger,
     .btn-add-channel-trigger {
         padding: 0.6rem 0.8rem !important;
         font-size: 1.1rem !important;
@@ -5036,7 +5036,7 @@ del {
     .chat-header-actions .search-container input {
         width: 100% !important;
     }
-    .chat-header-actions button, 
+    .chat-header-actions button,
     .chat-header-actions form,
     .chat-header-actions form button {
         width: 100% !important;
@@ -5149,7 +5149,7 @@ del {
         height: 100%;
         min-height: 0;
     }
-    
+
     .settings-panel .card-body {
         overflow-y: auto;
         padding-right: 0.5rem;
