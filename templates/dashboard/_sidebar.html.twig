@@ -6,12 +6,20 @@
 <section class="card glass-panel sidebar-panel" id="sidebar-panel">
     <div class="card-header" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
         <div class="sidebar-actions" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-            <button id="btn-filter-unread" class="btn-directory-trigger" title="Filtrer par nouveaux messages" aria-label="Filtrer par nouveaux messages">✉️</button>
+            <button id="btn-filter-unread" class="btn-directory-trigger"
+                    title="{{ 'Filtrer par nouveaux messages'|trans }}"
+                    aria-label="{{ 'Filtrer par nouveaux messages'|trans }}">✉️
+            </button>
             {% if showReorder %}
-                <button id="btn-edit-order-trigger" class="btn-directory-trigger" title="Ordonner les canaux" aria-label="Ordonner les canaux">⇅</button>
+                <button id="btn-edit-order-trigger" class="btn-directory-trigger"
+                        title="{{ 'Ordonner les canaux'|trans }}" aria-label="{{ 'Ordonner les canaux'|trans }}">⇅
+                </button>
             {% endif %}
-            <a href="{{ path('app_channels_directory') }}" class="btn-directory-trigger" style="text-decoration: none;" title="Parcourir les canaux" aria-label="Parcourir les canaux">🔍</a>
-            <button onclick="openChannelModal(this)" class="btn-add-channel-trigger" title="Créer un canal" aria-label="Créer un canal">＋</button>
+            <a href="{{ path('app_channels_directory') }}" class="btn-directory-trigger" style="text-decoration: none;"
+               title="{{ 'Parcourir les canaux'|trans }}" aria-label="{{ 'Parcourir les canaux'|trans }}">🔍</a>
+            <button onclick="openChannelModal(this)" class="btn-add-channel-trigger"
+                    title="{{ 'Créer un canal'|trans }}" aria-label="{{ 'Créer un canal'|trans }}">＋
+            </button>
         </div>
     </div>
 
@@ -20,7 +28,7 @@
             <div class="sidebar-saved-messages-link-wrapper" style="margin-bottom: 1.5rem;">
                 <a href="{{ path('app_saved_messages') }}" class="btn-sidebar-item {% if app.request.attributes.get('_route') == 'app_saved_messages' %}active{% endif %}" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 0.5rem; text-decoration: none; color: var(--text-primary); transition: var(--transition-smooth); font-size: 0.9rem; font-weight: 500; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass);">
                     <span style="font-size: 1.1rem; line-height: 1;">⭐</span>
-                    <span>Messages enregistrés</span>
+                    <span>{{ 'Messages enregistrés'|trans }}</span>
                 </a>
             </div>
             {% set hasFavorites = false %}
@@ -35,7 +43,7 @@
                 <h3 class="sidebar-section-header" data-section="favorites" onclick="toggleSidebarSection('favorites')">
                     <span>
                         <span class="sidebar-section-toggle-icon">▼</span>
-                        Favoris
+                        {{ 'Favoris'|trans }}
                     </span>
                 </h3>
                 <div class="channel-list" id="section-favorites" data-list-type="favorites">
@@ -56,7 +64,7 @@
                 <h3 class="sidebar-section-header" data-section="channels" onclick="toggleSidebarSection('channels')">
                     <span>
                         <span class="sidebar-section-toggle-icon">▼</span>
-                        Canaux
+                        {{ 'Canaux'|trans }}
                     </span>
                 </h3>
                 <div class="channel-list" id="section-channels" data-list-type="channels">
@@ -72,7 +80,7 @@
                         {% endif %}
                     {% endfor %}
                     {% if not hasChannels %}
-                        <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 0.25rem 0.5rem;">Aucun canal</p>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 0.25rem 0.5rem;">{{ 'Aucun canal'|trans }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -82,7 +90,7 @@
             <h3 class="sidebar-section-header" data-section="dms" onclick="toggleSidebarSection('dms')">
                 <span>
                     <span class="sidebar-section-toggle-icon">▼</span>
-                    Messages Directs
+                    {{ 'Messages Directs'|trans }}
                 </span>
             </h3>
             <div class="channel-list" id="section-dms" data-list-type="dms">
@@ -98,13 +106,13 @@
                     {% endif %}
                 {% endfor %}
                 {% if not hasDms %}
-                    <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 0.25rem 0.5rem;">Aucun message direct</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 0.25rem 0.5rem;">{{ 'Aucun message direct'|trans }}</p>
                 {% endif %}
             </div>
         </div>
 
         <div class="invitations-section" id="invitations-section" {% if pendingInvitations is empty %}style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1.25rem;"{% else %}style="margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1.25rem;"{% endif %}>
-            <h3 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem;">Invitations</h3>
+            <h3 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem;">{{ 'Invitations'|trans }}</h3>
             <div class="invitations-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 {% for invite in pendingInvitations %}
                     {% include 'dashboard/_invite_sidebar_item.html.twig' with {'invite': invite} %}
@@ -125,7 +133,7 @@
 
             const isCollapsed = list.classList.toggle('collapsed');
             header.classList.toggle('collapsed', isCollapsed);
-            
+
             localStorage.setItem(`roquette-section-${sectionName}-collapsed`, isCollapsed ? 'true' : 'false');
         };
 

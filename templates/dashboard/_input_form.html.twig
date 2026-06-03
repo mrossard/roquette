@@ -13,7 +13,7 @@
         <div class="giphy-preview-panel glass-panel">
             <div class="giphy-preview-header">
                 <span class="giphy-preview-title">👾 Choisir un GIF pour "{{ giphyQuery }}" :</span>
-                <button type="button" class="btn-giphy-cancel" 
+                <button type="button" class="btn-giphy-cancel"
                         hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
                         hx-vals='{"message": ""}'
                         hx-target="closest form"
@@ -57,13 +57,13 @@
             <span style="font-weight: 600; font-size: 0.95rem; color: var(--accent-cyan);">📊 Créer un sondage</span>
             <button type="button" onclick="togglePollComposer()" title="Fermer" style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">✕</button>
         </div>
-        
+
         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
             <div>
                 <label for="poll_question" style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Question</label>
                 <input type="text" id="poll_question" name="poll_question" placeholder="Posez votre question..." class="input-sidebar" />
             </div>
-            
+
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(0, 0, 0, 0.2); padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-glass);">
                 <label for="allow_multiple" style="font-size: 0.85rem; color: var(--text-color); cursor: pointer; user-select: none; margin-bottom: 0; font-weight: 500;">Autoriser plusieurs réponses</label>
                 <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; margin-bottom: 0;">
@@ -72,7 +72,7 @@
                     <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.1); transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
                 </label>
             </div>
-            
+
             <div>
                 <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Options de réponse</label>
                 <div id="poll-options-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -89,7 +89,7 @@
                     <button type="button" class="btn-format" onclick="addPollOption()" style="font-size: 0.8rem; padding: 0.4rem 0.8rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.5rem; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
                         <span>+</span> Ajouter une option
                     </button>
-                    
+
                     <button type="submit" class="btn-submit" style="padding: 0.4rem 1.2rem; font-size: 0.85rem; border-radius: 0.5rem; margin-top: 0;">
                         Publier
                     </button>
@@ -100,40 +100,48 @@
 
     <!-- Formatting Toolbar -->
     <div class="formatting-toolbar">
-        <button type="button" class="btn-format" onclick="insertMarkdown('bold')" title="Gras (**)">
+        <button type="button" class="btn-format" onclick="insertMarkdown('bold')" title="{{ 'Gras (**)'|trans }}">
             <span class="icon">B</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('italic')" title="Italique (*)">
+        <button type="button" class="btn-format" onclick="insertMarkdown('italic')" title="{{ 'Italique (*)'|trans }}">
             <span class="icon">I</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('strikethrough')" title="Barré (~~)">
+        <button type="button" class="btn-format" onclick="insertMarkdown('strikethrough')"
+                title="{{ 'Barré (~~)'|trans }}">
             <span class="icon">S</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('quote')" title="Citation (&gt;)">
+        <button type="button" class="btn-format" onclick="insertMarkdown('quote')"
+                title="{{ 'Citation (&gt;)'|trans }}">
             <span class="icon">”</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('code')" title="Code en ligne (`)">
+        <button type="button" class="btn-format" onclick="insertMarkdown('code')"
+                title="{{ 'Code en ligne (`)'|trans }}">
             <span class="icon">&lt;/&gt;</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('codeblock')" title="Bloc de code (```)">
+        <button type="button" class="btn-format" onclick="insertMarkdown('codeblock')"
+                title="{{ 'Bloc de code (```)'|trans }}">
             <span class="icon">code</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('link')" title="Lien [texte](url)">
+        <button type="button" class="btn-format" onclick="insertMarkdown('link')"
+                title="{{ 'Lien [texte](url)'|trans }}">
             <span class="icon">🔗</span>
         </button>
-        <button type="button" class="btn-format btn-poll-toggle" onclick="togglePollComposer()" title="Créer un sondage">
+        <button type="button" class="btn-format btn-poll-toggle" onclick="togglePollComposer()"
+                title="{{ 'Créer un sondage'|trans }}">
             <span class="icon">📊</span>
         </button>
-        
+
         <div class="toolbar-tabs" style="margin-left: auto; display: flex; gap: 4px;">
-            <button type="button" class="btn-format active" id="message-btn-edit-tab" onclick="switchInputTab('message', 'edit')" title="Écrire">Écrire</button>
+            <button type="button" class="btn-format active" id="message-btn-edit-tab"
+                    onclick="switchInputTab('message', 'edit')"
+                    title="{{ 'Écrire'|trans }}">{{ 'Écrire'|trans }}</button>
             <button type="button" class="btn-format" id="message-btn-preview-tab"
                     hx-post="{{ path('app_api_message_preview') }}"
                     hx-include="#message"
                     hx-target="#message-preview"
                     hx-swap="innerHTML"
                     onclick="switchInputTab('message', 'preview')"
-                    title="Aperçu">Aperçu</button>
+                    title="{{ 'Aperçu'|trans }}">{{ 'Aperçu'|trans }}</button>
         </div>
     </div>
 
@@ -145,36 +153,43 @@
                     <span class="file-preview-icon">📎</span>
                     <span id="file-preview-name" class="file-preview-name"></span>
                 </div>
-                <button type="button" id="btn-clear-file" class="btn-clear-file" title="Supprimer le fichier">✕</button>
+                <button type="button" id="btn-clear-file" class="btn-clear-file"
+                        title="{{ 'Supprimer le fichier'|trans }}">✕
+                </button>
             </div>
             <div id="file-upload-progress" class="upload-progress-wrapper" style="display: none; width: 100%;">
                 <div class="upload-progress-bar-bg" style="background: rgba(255, 255, 255, 0.1); border-radius: 4px; height: 6px; overflow: hidden; width: 100%;">
                     <div id="file-upload-progress-bar" class="upload-progress-bar" style="background: var(--accent-cyan); height: 100%; width: 0%; transition: width 0.15s ease;"></div>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-                    <span>Envoi en cours...</span>
+                    <span>{{ 'Envoi en cours...'|trans }}</span>
                     <span id="file-upload-progress-percent" class="upload-progress-percent">0%</span>
                 </div>
             </div>
         </div>
 
-        <label for="message" class="sr-only">Message</label>
+        <label for="message" class="sr-only">{{ 'Message'|trans }}</label>
         <div class="message-input-wrapper">
             <input type="file" id="file-upload" name="file" style="display: none;" />
-            <textarea id="message" name="message" required placeholder="Saisissez votre message dans #{{ activeChannel.name }}..." rows="1"></textarea>
+            <textarea id="message" name="message" required
+                      placeholder="{{ 'Saisissez votre message dans #%name%...'|trans({'%name%': activeChannel.name}) }}"
+                      rows="1"></textarea>
             <div id="message-preview" class="message-preview-box" style="display: none;"></div>
 
-            
+
             <div class="input-actions-wrapper">
-                <button type="button" class="btn-file-toggle" onclick="document.getElementById('file-upload').click()" title="Joindre un fichier" aria-label="Joindre un fichier">
+                <button type="button" class="btn-file-toggle" onclick="document.getElementById('file-upload').click()"
+                        title="{{ 'Joindre un fichier'|trans }}" aria-label="{{ 'Joindre un fichier'|trans }}">
                     {{ ux_icon('heroicons:paper-clip', {class: 'btn-icon', 'aria-hidden': 'true'}) }}
                 </button>
-                <button type="button" class="btn-emoji-toggle" data-emoji-target="#message" title="Ajouter un émoji" aria-label="Ajouter un émoji">
+                <button type="button" class="btn-emoji-toggle" data-emoji-target="#message"
+                        title="{{ 'Ajouter un émoji'|trans }}" aria-label="{{ 'Ajouter un émoji'|trans }}">
                     {{ ux_icon('heroicons:face-smile', {'aria-hidden': 'true'}) }}
                 </button>
             </div>
         </div>
-        <button type="submit" class="btn-publish-compact" title="Diffuser" aria-label="Diffuser le message">
+        <button type="submit" class="btn-publish-compact" title="{{ 'Diffuser'|trans }}"
+                aria-label="{{ 'Diffuser le message'|trans }}">
             {{ ux_icon('heroicons:paper-airplane', {class: 'btn-icon', 'aria-hidden': 'true'}) }}
         </button>
     </div>

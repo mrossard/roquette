@@ -3,7 +3,7 @@
 {% set hasMention = unread ? unread.hasMention : false %}
 {% set partner = channel.isDm ? channel.getDmPartner(app.user) : null %}
 {% set channelName = partner ? partner.displayName|default(partner.username) : channel.name %}
-<a href="{{ path('app_channel', {slug: channel.slug}) }}" 
+<a href="{{ path('app_channel', {slug: channel.slug}) }}"
    class="channel-link {% if activeChannel and channel.id == activeChannel.id %}active{% endif %} {% if count > 0 and (not activeChannel or channel.id != activeChannel.id) %}unread{% endif %} {% if hasMention and (not activeChannel or channel.id != activeChannel.id) %}has-mention{% endif %}"
    data-channel-slug="{{ channel.slug }}"
    data-channel-id="{{ channel.id }}"
@@ -30,7 +30,8 @@
     {% if lastMessage %}
         {% set lastMessageDate = lastMessage.createdAt %}
         {% set isToday = lastMessageDate|date('Y-m-d') == 'now'|date('Y-m-d') %}
-        <span class="channel-last-message-date" title="Dernier message : {{ lastMessageDate|date('d/m/Y H:i') }}">
+        <span class="channel-last-message-date"
+              title="{{ 'Dernier message :'|trans }} {{ lastMessageDate|date('d/m/Y H:i') }}">
             {{ isToday ? lastMessageDate|date('H:i') : lastMessageDate|date('d/m') }}
         </span>
     {% endif %}
@@ -38,7 +39,7 @@
             hx-post="{{ path('app_channel_favorite_toggle', {slug: channel.slug}) }}"
             hx-swap="none"
             onclick="event.stopPropagation(); event.preventDefault();"
-            title="{% if app.user.isChannelFavorite(channel) %}Retirer des favoris{% else %}Ajouter aux favoris{% endif %}">
+            title="{% if app.user.isChannelFavorite(channel) %}{{ 'Retirer des favoris'|trans }}{% else %}{{ 'Ajouter aux favoris'|trans }}{% endif %}">
         ★
     </button>
     <span class="unread-badge" {% if count == 0 or (activeChannel and channel.id == activeChannel.id) %}style="display: none;"{% endif %}>{{ count }}</span>

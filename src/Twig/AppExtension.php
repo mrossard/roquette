@@ -8,6 +8,8 @@ use App\Service\MessageFormatter;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 
+use Symfony\Contracts\Translation\TranslatorInterface;
+
 /**
  * Extension Twig exposant les filtres `format_message` et `format_bytes`.
  *
@@ -18,6 +20,7 @@ class AppExtension extends AbstractExtension
 {
     public function __construct(
         private readonly MessageFormatter $formatter,
+        private readonly TranslatorInterface $translator,
     ) {}
 
     public function getFilters(): array
@@ -54,12 +57,19 @@ class AppExtension extends AbstractExtension
 
         $count = count($usernames);
         if ($count === 1) {
-            return sprintf('%s a réagi avec %s', $usernames[0], $reactionName);
+            return $this->translator->trans('%username% a réagi avec %reaction%', [
+                '%username%' => $usernames[0],
+                '%reaction%' => $reactionName,
+            ]);
         }
 
         $lastUser = array_pop($usernames);
-        $usersString = implode(', ', $usernames).' et '.$lastUser;
+        $and = $this->translator->trans('et');
+        $usersString = implode(', ', $usernames).' '.$and.' '.$lastUser;
 
-        return sprintf('%s ont réagi avec %s', $usersString, $reactionName);
+        return $this->translator->trans('%users% ont réagi avec %reaction%', [
+            '%users%' => $usersString,
+            '%reaction%' => $reactionName,
+        ]);
     }
 }

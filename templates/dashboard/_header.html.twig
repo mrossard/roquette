@@ -1,6 +1,6 @@
 <header class="app-header">
     <div class="logo-area">
-        <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+        <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="{{ 'Afficher le menu'|trans }}">
             <span class="hamburger-bar"></span>
             <span class="hamburger-bar"></span>
             <span class="hamburger-bar"></span>
@@ -11,15 +11,16 @@
             <p class="subtitle">Symfony + HTMX + Mercure + AssetMapper</p>
         </div>
     </div>
-    
+
     <div class="global-search-trigger-container">
-        <button id="global-search-trigger-btn" class="global-search-trigger" onclick="openGlobalSearch()" title="Recherche globale (Ctrl+K)">
+        <button id="global-search-trigger-btn" class="global-search-trigger" onclick="openGlobalSearch()"
+                title="{{ 'Recherche globale (Ctrl+K)'|trans }}">
             <span class="search-trigger-icon">🔍</span>
-            <span class="search-trigger-placeholder">Rechercher...</span>
+            <span class="search-trigger-placeholder">{{ 'Rechercher...'|trans }}</span>
             <kbd class="search-trigger-shortcut">Ctrl+K</kbd>
         </button>
     </div>
-    
+
     <div class="header-controls">
         {% set mercureTopics = [
             mercure_topic_prefix ~ '/users/' ~ app.user.username,
@@ -28,15 +29,15 @@
         {% for ch in channels %}
             {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
         {% endfor %}
-        <div class="status-badge" id="mercure-status" 
+        <div class="status-badge" id="mercure-status"
              data-active-channel-slug="{{ activeChannel.slug }}"
              data-current-username="{{ app.user.username }}"
              data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
             <span class="status-dot disconnected"></span>
-            <span class="status-text">Connexion au Hub...</span>
+            <span class="status-text">{{ 'Connexion au Hub...'|trans }}</span>
         </div>
-        
-        <button id="theme-toggle" class="btn-theme-toggle" aria-label="Changer de thème">🌓</button>
+
+        <button id="theme-toggle" class="btn-theme-toggle" aria-label="{{ 'Changer de thème'|trans }}">🌓</button>
 
         {% include 'dashboard/_user_menu_dropdown.html.twig' %}
     </div>

@@ -10,37 +10,37 @@
             <span class="user-menu-username">@{{ app.user.username }}</span>
         </div>
 
-        <div class="user-menu-section-title">Statut</div>
+        <div class="user-menu-section-title">{{ 'Statut'|trans }}</div>
         <button class="user-status-option {% if app.user.statusOverride is null %}active{% endif %}" data-status-value="auto" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "auto"}' hx-swap="none" role="menuitem">
             <span class="status-dot {{ app.user.status }}" style="display: inline-block;"></span>
-            <span class="option-label">Automatique</span>
+            <span class="option-label">{{ 'Automatique'|trans }}</span>
         </button>
         <button class="user-status-option {% if app.user.statusOverride == 'online' %}active{% endif %}" data-status-value="online" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "online"}' hx-swap="none" role="menuitem">
             <span class="status-dot online" style="display: inline-block;"></span>
-            <span class="option-label">En ligne</span>
+            <span class="option-label">{{ 'En ligne'|trans }}</span>
         </button>
         <button class="user-status-option {% if app.user.statusOverride == 'away' %}active{% endif %}" data-status-value="away" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "away"}' hx-swap="none" role="menuitem">
             <span class="status-dot away" style="display: inline-block;"></span>
-            <span class="option-label">Absent</span>
+            <span class="option-label">{{ 'Absent'|trans }}</span>
         </button>
         <button class="user-status-option {% if app.user.statusOverride == 'busy' %}active{% endif %}" data-status-value="busy" onclick="handleBusyOptionClick(event)" role="menuitem">
             <span class="status-dot busy" style="display: inline-block;"></span>
-            <span class="option-label">Occupé</span>
+            <span class="option-label">{{ 'Occupé'|trans }}</span>
         </button>
         <button class="user-status-option {% if app.user.statusOverride == 'offline' %}active{% endif %}" data-status-value="offline" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "offline"}' hx-swap="none" role="menuitem">
             <span class="status-dot offline" style="display: inline-block;"></span>
-            <span class="option-label">Hors ligne</span>
+            <span class="option-label">{{ 'Hors ligne'|trans }}</span>
         </button>
 
         <div class="user-menu-divider"></div>
 
         <a href="{{ path('app_account') }}" class="user-status-option" role="menuitem">
             <span class="option-icon">⚙️</span>
-            <span class="option-label">Mon Compte</span>
+            <span class="option-label">{{ 'Mon Compte'|trans }}</span>
         </a>
         <a href="{{ path('app_logout') }}" class="user-status-option logout-option" hx-boost="false" role="menuitem">
             <span class="option-icon">🚪</span>
-            <span class="option-label">Déconnexion</span>
+            <span class="option-label">{{ 'Déconnexion'|trans }}</span>
         </a>
     </div>
 </div>

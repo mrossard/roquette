@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Connexion - Roquette{% endblock %}
+{% block title %}{{ 'Connexion - Roquette'|trans }}{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -112,14 +112,14 @@
     <div class="card glass-panel auth-card fade-in">
         <div class="auth-header">
             <span class="auth-logo">🚀</span>
-            <h1>Connexion</h1>
-            <p>Accédez à votre espace Roquette en temps réel</p>
+            <h1>{{ 'Connexion'|trans }}</h1>
+            <p>{{ 'Accédez à votre espace Roquette en temps réel'|trans }}</p>
         </div>
 
         {# Show flash success messages e.g. after successful registration #}
         {% for message in app.flashes('success') %}
             <div class="flash-success">
-                {{ message }}
+                {{ message|trans }}
             </div>
         {% endfor %}
 
@@ -133,12 +133,13 @@
         {% if auth_form_enabled %}
         <form action="{{ path('app_login') }}" method="post" class="input-form">
             <div class="input-group">
-                <label for="username">Nom d'utilisateur</label>
-                <input type="text" id="username" name="_username" value="{{ last_username }}" required autocomplete="username" autofocus placeholder="Entrez votre nom">
+                <label for="username">{{ "Nom d'utilisateur"|trans }}</label>
+                <input type="text" id="username" name="_username" value="{{ last_username }}" required
+                       autocomplete="username" autofocus placeholder="{{ 'Entrez votre nom'|trans }}">
             </div>
 
             <div class="input-group">
-                <label for="password">Mot de passe</label>
+                <label for="password">{{ 'Mot de passe'|trans }}</label>
                 <input type="password" id="password" name="_password" required autocomplete="current-password" placeholder="••••••••">
             </div>
 
@@ -147,7 +148,7 @@
 
             <div class="form-actions" style="margin-top: 0.5rem;">
                 <button type="submit" class="btn-publish">
-                    <span>Se connecter</span>
+                    <span>{{ 'Se connecter'|trans }}</span>
                 </button>
             </div>
         </form>
@@ -156,7 +157,7 @@
         {% if auth_form_enabled and auth_oauth_enabled %}
         <div class="auth-divider" style="margin: 1.5rem 0; display: flex; align-items: center; text-align: center; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
             <span style="flex-grow: 1; height: 1px; background: var(--border-glass);"></span>
-            <span style="padding: 0 0.75rem;">Ou</span>
+            <span style="padding: 0 0.75rem;">{{ 'Ou'|trans }}</span>
             <span style="flex-grow: 1; height: 1px; background: var(--border-glass);"></span>
         </div>
         {% endif %}
@@ -165,22 +166,31 @@
         <div class="oauth-actions" style="margin-bottom: 1rem;">
             <a href="{{ path('app_oauth_connect') }}" class="btn-oauth">
                 <span style="font-size: 1.15rem;">🚀</span>
-                <span>Se connecter avec OAuth2</span>
+                <span>{{ 'Se connecter avec OAuth2'|trans }}</span>
             </a>
         </div>
         {% endif %}
 
         {% if not auth_form_enabled and not auth_oauth_enabled %}
             <div class="error-alert">
-                Aucun mode d'authentification n'est activé. Veuillez contacter un administrateur.
+                {{ "Aucun mode d'authentification n'est activé. Veuillez contacter un administrateur."|trans }}
             </div>
         {% endif %}
 
         {% if auth_form_enabled %}
         <div class="auth-footer">
-            Pas encore de compte ? <a href="{{ path('app_register') }}">S'inscrire</a>
+            {{ "Pas encore de compte ?"|trans }} <a href="{{ path('app_register') }}">{{ "S'inscrire"|trans }}</a>
         </div>
         {% endif %}
+
+        <div class="language-switcher"
+             style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; display: flex; justify-content: center; gap: 0.75rem;">
+            <a href="?_locale=fr"
+               style="color: var(--text-muted); text-decoration: none; font-weight: {% if app.request.locale == 'fr' %}600{% else %}400{% endif %};">Français</a>
+            <span style="color: var(--border-glass);">|</span>
+            <a href="?_locale=en"
+               style="color: var(--text-muted); text-decoration: none; font-weight: {% if app.request.locale == 'en' %}600{% else %}400{% endif %};">English</a>
+        </div>
     </div>
 </div>
 {% endblock %}

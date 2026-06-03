@@ -8,6 +8,8 @@ use App\Twig\AppExtension;
 use App\Service\MessageFormatter;
 use PHPUnit\Framework\TestCase;
 
+use Symfony\Contracts\Translation\TranslatorInterface;
+
 class AppExtensionTest extends TestCase
 {
     private AppExtension $extension;
@@ -15,7 +17,16 @@ class AppExtensionTest extends TestCase
     protected function setUp(): void
     {
         $formatter = $this->createMock(MessageFormatter::class);
-        $this->extension = new AppExtension($formatter);
+        $translator = $this->createMock(TranslatorInterface::class);
+        $translator->method('trans')->willReturnCallback(function (string $id, array $parameters = []) {
+            if ($id === 'et') {
+                return 'et';
+            }
+
+            return strtr($id, $parameters);
+        });
+
+        $this->extension = new AppExtension($formatter, $translator);
     }
 
     public function testFormatReactionTooltipWithSingleUser(): void

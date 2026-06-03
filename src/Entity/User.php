@@ -61,6 +61,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 10, options: ['default' => 'dark'])]
     private string $theme = 'dark';
 
+    #[ORM\Column(length: 10, options: ['default' => 'fr'])]
+    private string $locale = 'fr';
+
     #[ORM\Column(options: ['default' => false])]
     private bool $admin = false;
 
@@ -175,6 +178,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (in_array($theme, ['light', 'dark'], true)) {
             $this->theme = $theme;
+        }
+
+        return $this;
+    }
+
+    public function getLocale(): string
+    {
+        return $this->locale;
+    }
+
+    public function setLocale(string $locale): static
+    {
+        if (in_array($locale, ['fr', 'en'], true)) {
+            $this->locale = $locale;
         }
 
         return $this;

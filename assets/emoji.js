@@ -73,7 +73,7 @@ export function buildEmojiPickerDOM(onSelect) {
     searchContainer.className = 'emoji-picker-search';
     const searchInput = document.createElement('input');
     searchInput.type = 'text';
-    searchInput.placeholder = 'Rechercher un émoji...';
+    searchInput.placeholder = window.AppTranslations?.["Rechercher un émoji..."] || 'Rechercher un émoji...';
     searchContainer.appendChild(searchInput);
     picker.appendChild(searchContainer);
     
@@ -84,7 +84,7 @@ export function buildEmojiPickerDOM(onSelect) {
         const tabBtn = document.createElement('button');
         tabBtn.type = 'button';
         tabBtn.className = `emoji-picker-tab ${idx === 0 ? 'active' : ''}`;
-        tabBtn.title = cat.name;
+        tabBtn.title = window.AppTranslations?.[cat.name] || cat.name;
         tabBtn.textContent = cat.icon;
         tabBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -105,7 +105,7 @@ export function buildEmojiPickerDOM(onSelect) {
         
         const catTitle = document.createElement('h4');
         catTitle.className = 'emoji-category-title';
-        catTitle.textContent = cat.name;
+        catTitle.textContent = window.AppTranslations?.[cat.name] || cat.name;
         catSection.appendChild(catTitle);
         
         const grid = document.createElement('div');
@@ -203,7 +203,7 @@ export function buildEmojiPickerDOM(onSelect) {
             noResultsDiv.className = 'emoji-picker-no-results';
             noResultsDiv.innerHTML = `
                 <div style="font-size: 2rem;">🔍</div>
-                <div>Aucun émoji ne correspond</div>
+                <div>${window.AppTranslations?.["Aucun émoji ne correspond"] || 'Aucun émoji ne correspond'}</div>
             `;
             listContainer.appendChild(noResultsDiv);
         }

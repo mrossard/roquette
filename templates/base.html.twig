@@ -1,10 +1,30 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ app.request.locale }}">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="app-env" content="{{ app.environment }}">
         <meta name="htmx-config" content='{"historyCacheSize": 0, "globalViewTransitions": true}'>
+        <script>
+            window.AppTranslations = {
+                "Rechercher un émoji...": "{{ 'Rechercher un émoji...'|trans|escape('js') }}",
+                "Aucun émoji ne correspond": "{{ 'Aucun émoji ne correspond'|trans|escape('js') }}",
+                "Visages & Personnes": "{{ 'Visages & Personnes'|trans|escape('js') }}",
+                "Animaux & Nature": "{{ 'Animaux & Nature'|trans|escape('js') }}",
+                "Nourriture & Boissons": "{{ 'Nourriture & Boissons'|trans|escape('js') }}",
+                "Activités & Loisirs": "{{ 'Activités & Loisirs'|trans|escape('js') }}",
+                "Voyages & Lieux": "{{ 'Voyages & Lieux'|trans|escape('js') }}",
+                "Objets & Outils": "{{ 'Objets & Outils'|trans|escape('js') }}",
+                "Symboles": "{{ 'Symboles'|trans|escape('js') }}",
+                "Drapeaux": "{{ 'Drapeaux'|trans|escape('js') }}",
+                "Connecté au Hub": "{{ 'Connecté au Hub'|trans|escape('js') }}",
+                "Connexion au Hub...": "{{ 'Connexion au Hub...'|trans|escape('js') }}",
+                "Erreur: Hub non configuré": "{{ 'Erreur: Hub non configuré'|trans|escape('js') }}",
+                "Connexion interrompue": "{{ 'Connexion interrompue'|trans|escape('js') }}",
+                "Erreur de connexion": "{{ 'Erreur de connexion'|trans|escape('js') }}",
+                "Connexion au serveur instable. Reconnexion en cours...": "{{ 'Connexion au serveur instable. Reconnexion en cours...'|trans|escape('js') }}"
+            };
+        </script>
         <script>
             (function() {
                 const theme = {% if app.user %}'{{ app.user.theme }}'{% else %}localStorage.getItem('theme') || 'dark'{% endif %};

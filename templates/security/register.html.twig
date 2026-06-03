@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Inscription - Roquette{% endblock %}
+{% block title %}{{ 'Inscription - Roquette'|trans }}{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -80,15 +80,15 @@
     <div class="card glass-panel auth-card fade-in">
         <div class="auth-header">
             <span class="auth-logo">🚀</span>
-            <h1>Inscription</h1>
-            <p>Créez un compte pour rejoindre la diffusion live</p>
+            <h1>{{ 'Inscription'|trans }}</h1>
+            <p>{{ 'Créez un compte pour rejoindre la diffusion live'|trans }}</p>
         </div>
 
         {# Show flash error messages (ex. rate limit error) #}
         {% for label, messages in app.flashes('error') %}
             {% for msg in messages %}
                 <div class="error-alert">
-                    {{ msg }}
+                    {{ msg|trans }}
                 </div>
             {% endfor %}
         {% endfor %}
@@ -97,11 +97,11 @@
         {% if not registrationForm.vars.valid %}
             <div class="error-alert">
                 {% for error in registrationForm.vars.errors %}
-                    {{ error.message }}<br>
+                    {{ error.message|trans }}<br>
                 {% endfor %}
                 {% for child in registrationForm.children %}
                     {% for error in child.vars.errors %}
-                        {{ error.message }}<br>
+                        {{ error.message|trans }}<br>
                     {% endfor %}
                 {% endfor %}
             </div>
@@ -109,36 +109,45 @@
 
         {{ form_start(registrationForm, {'action': path('app_register'), 'method': 'post', 'attr': {'class': 'input-form'}}) }}
             <div class="input-group">
-                {{ form_label(registrationForm.username, "Nom d'utilisateur") }}
+                {{ form_label(registrationForm.username, "Nom d'utilisateur"|trans) }}
                 {{ form_widget(registrationForm.username, {
                     'attr': {
                         'autocomplete': 'username',
                         'autofocus': 'autofocus',
-                        'placeholder': 'Ex: Jean Dupont'
+                        'placeholder': 'Ex: Jean Dupont'|trans
                     }
                 }) }}
             </div>
 
             <div class="input-group">
-                {{ form_label(registrationForm.plainPassword, "Mot de passe") }}
+                {{ form_label(registrationForm.plainPassword, "Mot de passe"|trans) }}
                 {{ form_widget(registrationForm.plainPassword, {
                     'attr': {
                         'autocomplete': 'new-password',
-                        'placeholder': 'Min. 6 caractères'
+                        'placeholder': 'Min. 6 caractères'|trans
                     }
                 }) }}
             </div>
 
             <div class="form-actions" style="margin-top: 0.5rem;">
                 <button type="submit" class="btn-publish">
-                    <span>Créer le compte</span>
+                    <span>{{ 'Créer le compte'|trans }}</span>
                 </button>
             </div>
             {{ form_rest(registrationForm) }}
         {{ form_end(registrationForm) }}
 
         <div class="auth-footer">
-            Vous avez déjà un compte ? <a href="{{ path('app_login') }}">Se connecter</a>
+            {{ "Vous avez déjà un compte ?"|trans }} <a href="{{ path('app_login') }}">{{ "Se connecter"|trans }}</a>
+        </div>
+
+        <div class="language-switcher"
+             style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; display: flex; justify-content: center; gap: 0.75rem;">
+            <a href="?_locale=fr"
+               style="color: var(--text-muted); text-decoration: none; font-weight: {% if app.request.locale == 'fr' %}600{% else %}400{% endif %};">Français</a>
+            <span style="color: var(--border-glass);">|</span>
+            <a href="?_locale=en"
+               style="color: var(--text-muted); text-decoration: none; font-weight: {% if app.request.locale == 'en' %}600{% else %}400{% endif %};">English</a>
         </div>
     </div>
 </div>

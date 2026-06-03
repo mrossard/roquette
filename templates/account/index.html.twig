@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Roquette - Mon Compte{% endblock %}
+{% block title %}Roquette - {{ 'Mon Compte'|trans }}{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -24,7 +24,7 @@
                 <p class="subtitle">Symfony + HTMX + Mercure + AssetMapper</p>
             </div>
         </div>
-        
+
         <div class="header-controls">
             {% set mercureTopics = [
                 mercure_topic_prefix ~ '/users/' ~ app.user.username,
@@ -33,7 +33,7 @@
             {% for ch in channels %}
                 {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
             {% endfor %}
-            <div class="status-badge" id="mercure-status" 
+            <div class="status-badge" id="mercure-status"
                  data-active-channel-slug=""
                  data-current-username="{{ app.user.username }}"
                  data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
@@ -65,16 +65,16 @@
         <section class="card glass-panel settings-panel" style="flex-grow: 1;">
             {% include 'dashboard/_settings_skeleton.html.twig' %}
             <div class="card-header">
-                <h2>Gestion du Compte</h2>
-                <p class="card-description">Personnalisez votre profil et gérez vos informations de connexion.</p>
+                <h2>{{ 'Gestion du Compte'|trans }}</h2>
+                <p class="card-description">{{ 'Personnalisez votre profil et gérez vos informations de connexion.'|trans }}</p>
             </div>
-            
+
             <div class="card-body" style="gap: 1rem;">
                 {# Display Flash Messages #}
                 {% for label, messages in app.flashes %}
                     {% for msg in messages %}
                         <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in">
-                            {{ msg }}
+                            {{ msg|trans }}
                         </div>
                     {% endfor %}
                 {% endfor %}
@@ -83,20 +83,21 @@
                     <!-- Profile Settings Form -->
                     <form action="{{ path('app_account') }}" method="POST" class="form-section">
                         <input type="hidden" name="action" value="profile">
-                        <h3>Informations de profil</h3>
-                        
+                        <h3>{{ 'Informations de profil'|trans }}</h3>
+
                         <div class="input-group">
-                            <label for="username-static">Nom d'utilisateur (non modifiable)</label>
+                            <label for="username-static">{{ "Nom d'utilisateur (non modifiable)"|trans }}</label>
                             <input type="text" id="username-static" value="{{ user.username }}" disabled style="opacity: 0.6; cursor: not-allowed; background: rgba(0, 0, 0, 0.3);">
                         </div>
 
                         <div class="input-group">
-                            <label for="displayName">Nom d'affichage</label>
-                            <input type="text" name="displayName" id="displayName" value="{{ user.displayName }}" placeholder="Ex: Jean Dupont" maxlength="30">
+                            <label for="displayName">{{ "Nom d'affichage"|trans }}</label>
+                            <input type="text" name="displayName" id="displayName" value="{{ user.displayName }}"
+                                   placeholder="{{ 'Ex: Jean Dupont'|trans }}" maxlength="30">
                         </div>
 
                         <div class="input-group">
-                            <label>Couleur du profil</label>
+                            <label>{{ 'Couleur du profil'|trans }}</label>
                             <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; background: rgba(0, 0, 0, 0.2); padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-glass);">
                                 <span class="feed-item-avatar" style="--user-hue: {{ user.hue }}; margin-bottom: 0; width: 36px; height: 36px; font-size: 1.1rem;">
                                     {{ user.username|slice(0, 1)|upper }}
@@ -116,7 +117,7 @@
                         </div>
 
                         <div class="input-group">
-                            <label for="statusOverride">Statut de présence</label>
+                            <label for="statusOverride">{{ 'Statut de présence'|trans }}</label>
                             <select name="statusOverride" id="statusOverride" class="form-control" style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: var(--font-sans); cursor: pointer; outline: none; margin-bottom: 0.5rem;" data-prev-value="{{ user.statusOverride|default('auto') }}" onchange="
                                 if (this.value === 'busy') {
                                     const self = this;
@@ -131,53 +132,72 @@
                                     this.setAttribute('data-prev-value', this.value);
                                 }
                             ">
-                                <option value="auto" {% if user.statusOverride == 'auto' or user.statusOverride is null %}selected{% endif %}>Automatique (Basé sur l'activité)</option>
-                                <option value="online" {% if user.statusOverride == 'online' %}selected{% endif %}>En ligne</option>
-                                <option value="away" {% if user.statusOverride == 'away' %}selected{% endif %}>Absent</option>
-                                <option value="busy" {% if user.statusOverride == 'busy' %}selected{% endif %}>Occupé</option>
-                                <option value="offline" {% if user.statusOverride == 'offline' %}selected{% endif %}>Hors ligne (Invisible)</option>
+                                <option value="auto"
+                                        {% if user.statusOverride == 'auto' or user.statusOverride is null %}selected{% endif %}>{{ "Automatique (Basé sur l'activité)"|trans }}</option>
+                                <option value="online"
+                                        {% if user.statusOverride == 'online' %}selected{% endif %}>{{ 'En ligne'|trans }}</option>
+                                <option value="away"
+                                        {% if user.statusOverride == 'away' %}selected{% endif %}>{{ 'Absent'|trans }}</option>
+                                <option value="busy"
+                                        {% if user.statusOverride == 'busy' %}selected{% endif %}>{{ 'Occupé'|trans }}</option>
+                                <option value="offline"
+                                        {% if user.statusOverride == 'offline' %}selected{% endif %}>{{ 'Hors ligne (Invisible)'|trans }}</option>
                             </select>
                         </div>
 
-                        <button type="submit" class="btn-submit">Sauvegarder le profil</button>
+                        <div class="input-group">
+                            <label for="locale">{{ 'Langue'|trans }}</label>
+                            <select name="locale" id="locale" class="form-control"
+                                    style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: var(--font-sans); cursor: pointer; outline: none; margin-bottom: 0.5rem;">
+                                <option value="fr"
+                                        {% if user.locale == 'fr' %}selected{% endif %}>{{ 'Français'|trans }}</option>
+                                <option value="en"
+                                        {% if user.locale == 'en' %}selected{% endif %}>{{ 'English'|trans }}</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn-submit">{{ 'Sauvegarder le profil'|trans }}</button>
                     </form>
 
                     <!-- Password Settings Form -->
                     <form action="{{ path('app_account') }}" method="POST" class="form-section">
                         <input type="hidden" name="action" value="password">
-                        <h3>Changer le mot de passe</h3>
+                        <h3>{{ 'Changer le mot de passe'|trans }}</h3>
 
                         <div class="input-group">
-                            <label for="currentPassword">Mot de passe actuel</label>
+                            <label for="currentPassword">{{ 'Mot de passe actuel'|trans }}</label>
                             <input type="password" name="currentPassword" id="currentPassword" required placeholder="••••••••">
                         </div>
 
                         <div class="input-group">
-                            <label for="newPassword">Nouveau mot de passe</label>
-                            <input type="password" name="newPassword" id="newPassword" required placeholder="Min. 6 caractères">
+                            <label for="newPassword">{{ 'Nouveau mot de passe'|trans }}</label>
+                            <input type="password" name="newPassword" id="newPassword" required
+                                   placeholder="{{ 'Min. 6 caractères'|trans }}">
                         </div>
 
                         <div class="input-group">
-                            <label for="confirmPassword">Confirmer le nouveau mot de passe</label>
-                            <input type="password" name="confirmPassword" id="confirmPassword" required placeholder="Confirmez">
+                            <label for="confirmPassword">{{ 'Confirmer le nouveau mot de passe'|trans }}</label>
+                            <input type="password" name="confirmPassword" id="confirmPassword" required
+                                   placeholder="{{ 'Confirmez'|trans }}">
                         </div>
 
-                        <button type="submit" class="btn-submit">Mettre à jour le mot de passe</button>
+                        <button type="submit" class="btn-submit">{{ 'Mettre à jour le mot de passe'|trans }}</button>
                     </form>
 
                     <!-- Desktop Notifications Settings -->
                     <form action="{{ path('app_account') }}" method="POST" class="form-section" id="desktop-notifications-section">
                         <input type="hidden" name="action" value="notifications">
-                        <h3>Notifications de bureau</h3>
+                        <h3>{{ 'Notifications de bureau'|trans }}</h3>
                         <p class="card-description" style="margin-bottom: 1.25rem;">
-                            Recevez des notifications en direct pour les nouveaux messages et invitations lorsque l'application est en arrière-plan.
+                            {{ 'Recevez des notifications en direct pour les nouveaux messages et invitations lorsque l\'application est en arrière-plan.'|trans }}
                         </p>
                         <div id="notification-settings-content">
                             <!-- Populated dynamically via JS -->
                         </div>
 
                         <div class="input-group" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; margin-bottom: 1.25rem; background: rgba(0, 0, 0, 0.2); padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-glass);">
-                            <label for="mentionNotificationsEnabled" style="margin-bottom: 0; cursor: pointer; font-weight: 500;">Notifications de bureau pour les mentions</label>
+                            <label for="mentionNotificationsEnabled"
+                                   style="margin-bottom: 0; cursor: pointer; font-weight: 500;">{{ 'Notifications de bureau pour les mentions'|trans }}</label>
                             <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; margin-bottom: 0;">
                                 <input type="checkbox" name="mentionNotificationsEnabled" id="mentionNotificationsEnabled" value="1" {% if user.mentionNotificationsEnabled %}checked{% endif %} style="opacity: 0; width: 0; height: 0;"
                                        onchange="this.nextElementSibling.style.backgroundColor = this.checked ? 'var(--accent-cyan)' : 'rgba(255, 255, 255, 0.1)';">
@@ -185,7 +205,7 @@
                             </label>
                         </div>
 
-                        <button type="submit" class="btn-submit">Sauvegarder les notifications</button>
+                        <button type="submit" class="btn-submit">{{ 'Sauvegarder les notifications'|trans }}</button>
                     </form>
                 </div>
             </div>

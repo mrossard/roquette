@@ -58,6 +58,13 @@ final class AccountController extends AbstractController
                     $currentUser->setStatusOverride($statusOverride === 'auto' ? null : $statusOverride);
                 }
 
+                $locale = $request->request->get('locale');
+                if (in_array($locale, ['fr', 'en'], true)) {
+                    $currentUser->setLocale($locale);
+                    $request->getSession()->set('_locale', $locale);
+                    $request->setLocale($locale);
+                }
+
                 $entityManager->flush();
 
                 // Publish status change via Mercure

@@ -214,4 +214,30 @@ class UserSettingsControllerTest extends WebTestCase
         static::assertStringContainsString('sondage : Quelle est votre couleur préférée ?', $content);
         static::assertStringNotContainsString('test_settings_user', $content);
     }
+
+    #[Test]
+    public function testUpdateLocaleSuccess(): void
+    {
+        $this->client->request('POST', '/account', [
+            'action' => 'profile',
+            'displayName' => 'New Name',
+            'hue' => 200,
+            'statusOverride' => 'online',
+            'locale' => 'en',
+        ]);
+
+        $this->assertResponseRedirects('/account');
+
+        $this->entityManager->clear();
+        $user = $this->entityManager->getRepository(User::class)->find($this->testUser->getId());
+        static::assertSame('en', $user->getLocale());
+    }
+
+    #[Test]
+    public function testLocaleSwitcherQueryParam(): void
+    {
+        $this->client->request('GET', '/login?_locale=en');
+        $this->assertResponseRedirects('/');
+        static::assertSame('en', $this->client->getRequest()->getLocale());
+    }
 }

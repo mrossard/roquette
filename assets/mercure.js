@@ -305,11 +305,11 @@ export function connectMercure(isReconnect = false) {
         // Already connected to the correct hub topic, but the DOM element might have been replaced (e.g. by HTMX)
         // update the status UI accordingly
         if (eventSource.readyState === EventSource.OPEN) {
-            updateMercureStatus(true, 'Connecté au Hub');
+            updateMercureStatus(true, window.AppTranslations?.['Connecté au Hub'] || 'Connecté au Hub');
             showOfflineBanner(false);
         } else if (eventSource.readyState === EventSource.CONNECTING) {
-            updateMercureStatus(false, 'Connexion au Hub...', 'connecting');
-            showOfflineBanner(true, 'Connexion au serveur instable. Reconnexion en cours...');
+            updateMercureStatus(false, window.AppTranslations?.['Connexion au Hub...'] || 'Connexion au Hub...', 'connecting');
+            showOfflineBanner(true, window.AppTranslations?.['Connexion au serveur instable. Reconnexion en cours...'] || 'Connexion au serveur instable. Reconnexion en cours...');
         }
         return;
     }
@@ -332,7 +332,7 @@ export function connectMercure(isReconnect = false) {
 
     if (!hubUrl) {
         console.error('Mercure Hub URL is missing. Make sure MERCURE_PUBLIC_URL is configured.');
-        updateMercureStatus(false, 'Erreur: Hub non configuré');
+        updateMercureStatus(false, window.AppTranslations?.['Erreur: Hub non configuré'] || 'Erreur: Hub non configuré');
         return;
     }
 
@@ -368,7 +368,7 @@ export function connectMercure(isReconnect = false) {
                 clearTimeout(reconnectTimeout);
                 reconnectTimeout = null;
             }
-            updateMercureStatus(true, 'Connecté au Hub');
+            updateMercureStatus(true, window.AppTranslations?.['Connecté au Hub'] || 'Connecté au Hub');
             showOfflineBanner(false);
             if (typeof window.scrollToBottom === 'function') {
                 window.scrollToBottom(false); // Initial scroll to bottom (immediate)
@@ -461,23 +461,23 @@ export function connectMercure(isReconnect = false) {
                 }
 
                 // Session is still valid, handle reconnection with exponential backoff
-                updateMercureStatus(false, 'Connexion interrompue', 'disconnected');
-                showOfflineBanner(true, 'Connexion au serveur perdue. Tentative de reconnexion...');
+                updateMercureStatus(false, window.AppTranslations?.['Connexion interrompue'] || 'Connexion interrompue', 'disconnected');
+                showOfflineBanner(true, window.AppTranslations?.['Connexion au serveur perdue. Tentative de reconnexion...'] || 'Connexion au serveur perdue. Tentative de reconnexion...');
                 handleReconnect();
             })
             .catch(pingErr => {
                 // If it's a network error (user is offline), do not log out. Just reconnect.
                 console.warn('Network error checking session status, assuming offline:', pingErr);
-                updateMercureStatus(false, 'Connexion interrompue', 'disconnected');
-                showOfflineBanner(true, 'Connexion au serveur perdue. Tentative de reconnexion...');
+                updateMercureStatus(false, window.AppTranslations?.['Connexion interrompue'] || 'Connexion interrompue', 'disconnected');
+                showOfflineBanner(true, window.AppTranslations?.['Connexion au serveur perdue. Tentative de reconnexion...'] || 'Connexion au serveur perdue. Tentative de reconnexion...');
                 handleReconnect();
             });
         };
 
     } catch (e) {
         console.error('Error establishing Mercure EventSource:', e);
-        updateMercureStatus(false, 'Erreur de connexion');
-        showOfflineBanner(true, 'Impossible d\'établir la connexion.');
+        updateMercureStatus(false, window.AppTranslations?.['Erreur de connexion'] || 'Erreur de connexion');
+        showOfflineBanner(true, window.AppTranslations?.['Impossible d\'établir la connexion.'] || 'Impossible d\'établir la connexion.');
         handleReconnect();
     }
 }
