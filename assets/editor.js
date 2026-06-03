@@ -7,11 +7,15 @@ let historyDraft = ''; // save current draft when entering history mode
 let editModeMessageId = null;   // ID of the message being edited inline
 let editModeItemIndex = -1;     // index into ownFeedItems[] currently being edited
 
+const isMobile = () => window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
 export function insertMarkdown(formattingType) {
     const textarea = document.getElementById('message');
     if (!textarea) return;
 
-    textarea.focus();
+    if (!isMobile()) {
+        textarea.focus();
+    }
     
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -95,7 +99,9 @@ export function replyToMessage(author, content) {
         textarea.value = quote;
     }
     
-    textarea.focus();
+    if (!isMobile()) {
+        textarea.focus();
+    }
     
     // Set selection/cursor at the end of the text
     textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
@@ -268,7 +274,9 @@ export function editMessageInline(feedItem, itemIndex, cursorPosition = 'end') {
 
     textarea.value = rawText;
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    textarea.focus();
+    if (!isMobile()) {
+        textarea.focus();
+    }
     
     if (cursorPosition === 'start') {
         textarea.selectionStart = textarea.selectionEnd = 0;
@@ -312,7 +320,9 @@ export function cancelInlineEdit() {
     if (textarea) {
         textarea.value = '';
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        textarea.focus();
+        if (!isMobile()) {
+            textarea.focus();
+        }
     }
 
     // Clear file preview container
@@ -466,7 +476,9 @@ export function switchInputTab(textareaId, mode) {
         textarea.style.display = 'block';
         if (actionsWrapper) actionsWrapper.style.display = 'flex';
         previewContainer.style.display = 'none';
-        textarea.focus();
+        if (!isMobile()) {
+            textarea.focus();
+        }
     }
 }
 
