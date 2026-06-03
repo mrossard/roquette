@@ -53,7 +53,7 @@
         <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
         {% endif %}
     </head>
-    <body>
+    <body hx-ext="morph">
         {% block body %}{% endblock %}
 
         {% if app.user %}

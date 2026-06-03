@@ -118,15 +118,25 @@ final class MessageController extends AbstractController
 
         $messageText = $request->request->get('message', '');
         $uploadedFile = $request->files->get('file');
+        $pollQuestion = $request->request->get('poll_question');
+        $isPoll = !empty($pollQuestion);
 
-        if (trim($messageText) === '' && !$uploadedFile) {
+        if (trim($messageText) === '' && !$uploadedFile && !$isPoll) {
             return $this->render('dashboard/_input_form.html.twig', [
                 'activeChannel' => $activeChannel,
             ]);
         }
 
-        // Slash commands (only when no file)
-        if (!$uploadedFile && str_starts_with(trim($messageText), '/')) {
+        if ($isPoll) {
+            $optionsData = $this->getPollOptions($request);
+
+            if (count($optionsData) < 2) {
+                return new Response('Un sondage requiert au moins 2 options.', 400);
+            }
+        }
+
+        // Slash commands (only when no file and not a poll)
+        if (!$isPoll && !$uploadedFile && str_starts_with(trim($messageText), '/')) {
             $response = $this->handleSlashCommand($messageText, $activeChannel, $currentUser, $entityManager);
             if ($response !== null) {
                 return $response;
@@ -136,22 +146,40 @@ final class MessageController extends AbstractController
         }
 
         $message = new Message();
-        $message->setContent(trim($messageText) === '' ? null : $messageText);
         $message->setAuthor($currentUser);
         $message->setChannel($activeChannel);
 
-        if ($uploadedFile) {
-            try {
-                $meta = $fileUploadService->upload($uploadedFile);
-                $message->setFileName($meta['fileName']);
-                $message->setFilePath($meta['filePath']);
-                $message->setFileSize($meta['fileSize']);
-                $message->setMimeType($meta['mimeType']);
-            } catch (\InvalidArgumentException $e) {
-                $this->addFlash('error', $e->getMessage());
-                return $this->render('dashboard/_input_form.html.twig', [
-                    'activeChannel' => $activeChannel,
-                ]);
+        if ($isPoll) {
+            $poll = new \App\Entity\Poll();
+            $poll->setQuestion(trim($pollQuestion));
+            $poll->setAllowMultiple((bool) $request->request->get('allow_multiple'));
+            $poll->setMessage($message);
+            $message->setPoll($poll);
+
+            $position = 0;
+            foreach ($optionsData as $optionText) {
+                $option = new \App\Entity\PollOption();
+                $option->setText($optionText);
+                $option->setPosition($position++);
+                $poll->addOption($option);
+            }
+            $entityManager->persist($poll);
+        } else {
+            $message->setContent(trim($messageText) === '' ? null : $messageText);
+
+            if ($uploadedFile) {
+                try {
+                    $meta = $fileUploadService->upload($uploadedFile);
+                    $message->setFileName($meta['fileName']);
+                    $message->setFilePath($meta['filePath']);
+                    $message->setFileSize($meta['fileSize']);
+                    $message->setMimeType($meta['mimeType']);
+                } catch (\InvalidArgumentException $e) {
+                    $this->addFlash('error', $e->getMessage());
+                    return $this->render('dashboard/_input_form.html.twig', [
+                        'activeChannel' => $activeChannel,
+                    ]);
+                }
             }
         }
 
@@ -164,7 +192,7 @@ final class MessageController extends AbstractController
             $activeChannel,
             $message,
             $currentUser,
-            $messageText,
+            $isPoll ? 'Sondage : ' . $poll->getQuestion() : $messageText,
             $renderedHtml,
             $entityManager,
         );
@@ -193,6 +221,10 @@ final class MessageController extends AbstractController
             return new Response('Non autorisé à modifier ce message.', 403);
         }
 
+        if ($message->isPoll() && $message->getPoll()->getTotalVotes() > 0) {
+            return new Response('Impossible de modifier un sondage qui a déjà des votes.', 400);
+        }
+
         return $this->render('dashboard/_edit_form.html.twig', [
             'message' => $message,
         ]);
@@ -218,14 +250,58 @@ final class MessageController extends AbstractController
             return new Response('Non autorisé à modifier ce message.', 403);
         }
 
-        $newContent = $request->request->get('content', '');
-        if (trim($newContent) === '' && !$message->getFilePath()) {
-            return new Response('Le message ne peut pas être vide.', 400);
-        }
+        if ($message->isPoll()) {
+            if ($message->getPoll()->getTotalVotes() > 0) {
+                return new Response('Impossible de modifier un sondage qui a déjà des votes.', 400);
+            }
+            $pollQuestion = $request->request->get('poll_question');
+            $optionsData = $this->getPollOptions($request);
 
-        $message->setContent(trim($newContent) === '' ? null : $newContent);
-        $message->setUpdatedAt(new \DateTimeImmutable());
-        $entityManager->flush();
+            if (empty($pollQuestion)) {
+                return new Response('La question du sondage ne peut pas être vide.', 400);
+            }
+            if (count($optionsData) < 2) {
+                return new Response('Un sondage requiert au moins 2 options.', 400);
+            }
+
+            $poll = $message->getPoll();
+            $poll->setQuestion(trim($pollQuestion));
+            $poll->setAllowMultiple((bool) $request->request->get('allow_multiple'));
+
+            $existingOptions = $poll->getOptions()->getValues();
+            $position = 0;
+            foreach ($optionsData as $idx => $optText) {
+                if (isset($existingOptions[$idx])) {
+                    if ($existingOptions[$idx]->getText() !== $optText) {
+                        $existingOptions[$idx]->setText($optText);
+                        $existingOptions[$idx]->getVotes()->clear();
+                    }
+                    $existingOptions[$idx]->setPosition($position++);
+                } else {
+                    $newOption = new \App\Entity\PollOption();
+                    $newOption->setText($optText);
+                    $newOption->setPosition($position++);
+                    $poll->addOption($newOption);
+                }
+            }
+
+            // Remove extra options if the new count is less than existing count
+            for ($i = count($optionsData); $i < count($existingOptions); $i++) {
+                $poll->removeOption($existingOptions[$i]);
+            }
+            
+            $message->setUpdatedAt(new \DateTimeImmutable());
+            $entityManager->flush();
+        } else {
+            $newContent = $request->request->get('content', '');
+            if (trim($newContent) === '' && !$message->getFilePath()) {
+                return new Response('Le message ne peut pas être vide.', 400);
+            }
+
+            $message->setContent(trim($newContent) === '' ? null : $newContent);
+            $message->setUpdatedAt(new \DateTimeImmutable());
+            $entityManager->flush();
+        }
 
         $renderedHtml = $this->renderFeedItem($message);
 
@@ -435,5 +511,18 @@ final class MessageController extends AbstractController
         }
 
         return null;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function getPollOptions(Request $request): array
+    {
+        $optionsData = $request->request->all()['poll_options'] ?? [];
+        if (!is_array($optionsData)) {
+            return [];
+        }
+
+        return array_filter(array_map('trim', $optionsData), fn($val) => $val !== '');
     }
 }

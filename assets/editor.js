@@ -12,14 +12,14 @@ export function insertMarkdown(formattingType) {
     if (!textarea) return;
 
     textarea.focus();
-    
+
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = textarea.value;
     const selectedText = text.substring(start, end);
-    
+
     let replacement = '';
-    
+
     switch (formattingType) {
         case 'bold':
             replacement = `**${selectedText || 'texte'}**`;
@@ -43,9 +43,9 @@ export function insertMarkdown(formattingType) {
             replacement = `[${selectedText || 'lien'}](https://)`;
             break;
     }
-    
+
     textarea.setRangeText(replacement, start, end, 'select');
-    
+
     // adjust selection/cursor if dummy text was used
     if (!selectedText) {
         if (formattingType === 'bold') {
@@ -68,7 +68,7 @@ export function insertMarkdown(formattingType) {
         const newCursorPos = start + replacement.length;
         textarea.setSelectionRange(newCursorPos, newCursorPos);
     }
-    
+
     // Trigger any auto-resize listeners
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
 }
@@ -80,13 +80,13 @@ export function replyToMessage(author, content) {
     // Split content by lines, prefix each with "> "
     const lines = content.split('\n');
     const quotedLines = lines.map(line => `> ${line}`).join('\n');
-    
+
     // Add header to make it clear who said it
     const quoteHeader = `> **@${author}** a écrit :\n`;
-    
+
     // Combine quote header and the quoted lines, then add empty lines for user's reply
     const quote = `${quoteHeader}${quotedLines}\n\n`;
-    
+
     // Prepend or set the quote
     const currentValue = textarea.value;
     if (currentValue.trim()) {
@@ -94,9 +94,9 @@ export function replyToMessage(author, content) {
     } else {
         textarea.value = quote;
     }
-    
+
     textarea.focus();
-    
+
     // Set selection/cursor at the end of the text
     textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
 
@@ -169,10 +169,9 @@ document.addEventListener('keydown', (event) => {
             historyDraft = textarea.value;
         }
         event.preventDefault();
-        const newIndex = historyIndex === -1
+        historyIndex = historyIndex === -1
             ? messageHistory.length - 1
             : Math.max(0, historyIndex - 1);
-        historyIndex = newIndex;
         textarea.value = messageHistory[historyIndex];
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
         textarea.selectionStart = textarea.selectionEnd = 0;
@@ -269,7 +268,7 @@ export function editMessageInline(feedItem, itemIndex, cursorPosition = 'end') {
     textarea.value = rawText;
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
     textarea.focus();
-    
+
     if (cursorPosition === 'start') {
         textarea.selectionStart = textarea.selectionEnd = 0;
     } else {
@@ -392,7 +391,8 @@ export function updateEditButtonsVisibility() {
         const authorUsername = item.getAttribute('data-author-username');
         const editBtn = item.querySelector('.btn-edit-subtle');
         if (editBtn) {
-            if (authorUsername === currentUsername) {
+            const hasVotes = item.getAttribute('data-poll-has-votes') === '1';
+            if (authorUsername === currentUsername && !hasVotes) {
                 editBtn.style.display = 'inline-flex';
             } else {
                 editBtn.style.display = 'none';

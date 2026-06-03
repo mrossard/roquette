@@ -98,11 +98,15 @@ class MessageRepository extends ServiceEntityRepository
     {
         $qb = $this
             ->createQueryBuilder('m')
-            ->select('m', 'author', 'reactions', 'reaction_user', 'replies')
+            ->select('m', 'author', 'reactions', 'reaction_user', 'replies', 'poll', 'poll_options', 'poll_votes', 'poll_vote_user')
             ->leftJoin('m.author', 'author')
             ->leftJoin('m.reactions', 'reactions')
             ->leftJoin('reactions.user', 'reaction_user')
             ->leftJoin('m.replies', 'replies')
+            ->leftJoin('m.poll', 'poll')
+            ->leftJoin('poll.options', 'poll_options')
+            ->leftJoin('poll_options.votes', 'poll_votes')
+            ->leftJoin('poll_votes.user', 'poll_vote_user')
             ->where('m.channel = :channel')
             ->andWhere('m.parent IS NULL');
 
@@ -183,11 +187,15 @@ class MessageRepository extends ServiceEntityRepository
     {
         $qb = $this
             ->createQueryBuilder('m')
-            ->select('m', 'author', 'reactions', 'reaction_user', 'replies')
+            ->select('m', 'author', 'reactions', 'reaction_user', 'replies', 'poll', 'poll_options', 'poll_votes', 'poll_vote_user')
             ->leftJoin('m.author', 'author')
             ->leftJoin('m.reactions', 'reactions')
             ->leftJoin('reactions.user', 'reaction_user')
             ->leftJoin('m.replies', 'replies')
+            ->leftJoin('m.poll', 'poll')
+            ->leftJoin('poll.options', 'poll_options')
+            ->leftJoin('poll_options.votes', 'poll_votes')
+            ->leftJoin('poll_votes.user', 'poll_vote_user')
             ->where('m.channel = :channel')
             ->andWhere('m.parent IS NULL')
             ->andWhere('m.id >= :minId')

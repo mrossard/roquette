@@ -3,7 +3,8 @@
 {% set messageChannel = messageObject is defined and messageObject ? messageObject.getChannel() : null %}
 {% set isThisMessagePinned = messageChannel and messageChannel.pinnedMessage == (messageObject|default(null)) %}
 {% set isMeMessage = message is defined and message is not null and (message starts with '/me ' or message == '/me') %}
-<div class="feed-item fade-in {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isMeMessage ? 'is-me-message' : '' }}" style="--user-hue: {{ user_hue }};" data-message-id="{{ message_id|default('') }}" data-author-username="{{ author ? author.username : '' }}" data-raw-content="{{ message|default('') }}" data-file-name="{{ fileName|default('') }}" data-file-size="{{ fileSize|default('') }}">
+{% set pollHasVotes = messageObject is defined and messageObject and messageObject.poll and messageObject.poll.totalVotes > 0 %}
+<div class="feed-item fade-in {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isMeMessage ? 'is-me-message' : '' }}" style="--user-hue: {{ user_hue }};" data-message-id="{{ message_id|default('') }}" data-author-username="{{ author ? author.username : '' }}" data-raw-content="{{ message|default('') }}" data-file-name="{{ fileName|default('') }}" data-file-size="{{ fileSize|default('') }}" data-poll-has-votes="{{ pollHasVotes ? '1' : '0' }}">
     {% if isMeMessage %}
         <div class="feed-item-header">
             <div class="feed-item-me-content">
@@ -26,10 +27,12 @@
             <div class="feed-item-actions">
                 <button type="button" class="btn-actions-toggle" onclick="toggleMessageActions(this, event)" title="Actions" aria-label="Actions du message">•••</button>
                 <div class="feed-item-actions-list">
+                    {% if messageObject is not defined or not messageObject or not messageObject.poll %}
                     <button class="btn-reply-subtle" onclick="replyToMessage('{{ username|escape('js') }}', '{{ message|escape('js') }}')" title="Répondre">
                         {{ ux_icon('heroicons:arrow-uturn-left', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
                         <span>Répondre</span>
                     </button>
+                    {% endif %}
                     {% if messageObject is defined and messageObject and messageObject.parent is null and message_id|default(0) > 0 %}
                     <button class="btn-reply-subtle btn-thread-subtle" onclick="openThread({{ message_id }})" title="Fil de discussion">
                         {{ ux_icon('heroicons:chat-bubble-left-right', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
@@ -57,7 +60,7 @@
                     </div>
                     {% endif %}
                     {% if message_id|default(0) > 0 %}
-                    <button class="btn-reply-subtle btn-edit-subtle" hx-get="{{ path('app_message_edit_form', {id: message_id}) }}" hx-target="closest .feed-item" hx-swap="outerHTML" title="Modifier" style="display: {% if app.user and author and author.id == app.user.id %}inline-flex{% else %}none{% endif %};">
+                    <button class="btn-reply-subtle btn-edit-subtle" hx-get="{{ path('app_message_edit_form', {id: message_id}) }}" hx-target="closest .feed-item" hx-swap="outerHTML" title="Modifier" style="display: {% if app.user and author and author.id == app.user.id and not pollHasVotes %}inline-flex{% else %}none{% endif %};">
                         {{ ux_icon('heroicons:pencil-square', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
                         <span>Modifier</span>
                     </button>
@@ -151,10 +154,12 @@
             <div class="feed-item-actions">
                 <button type="button" class="btn-actions-toggle" onclick="toggleMessageActions(this, event)" title="Actions" aria-label="Actions du message">•••</button>
                 <div class="feed-item-actions-list">
+                    {% if messageObject is not defined or not messageObject or not messageObject.poll %}
                     <button class="btn-reply-subtle" onclick="replyToMessage('{{ username|escape('js') }}', '{{ message|escape('js') }}')" title="Répondre">
                         {{ ux_icon('heroicons:arrow-uturn-left', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
                         <span>Répondre</span>
                     </button>
+                    {% endif %}
                     {% if messageObject is defined and messageObject and messageObject.parent is null and message_id|default(0) > 0 %}
                     <button class="btn-reply-subtle btn-thread-subtle" onclick="openThread({{ message_id }})" title="Fil de discussion">
                         {{ ux_icon('heroicons:chat-bubble-left-right', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
@@ -182,7 +187,7 @@
                     </div>
                     {% endif %}
                     {% if message_id|default(0) > 0 %}
-                    <button class="btn-reply-subtle btn-edit-subtle" hx-get="{{ path('app_message_edit_form', {id: message_id}) }}" hx-target="closest .feed-item" hx-swap="outerHTML" title="Modifier" style="display: {% if app.user and author and author.id == app.user.id %}inline-flex{% else %}none{% endif %};">
+                    <button class="btn-reply-subtle btn-edit-subtle" hx-get="{{ path('app_message_edit_form', {id: message_id}) }}" hx-target="closest .feed-item" hx-swap="outerHTML" title="Modifier" style="display: {% if app.user and author and author.id == app.user.id and not pollHasVotes %}inline-flex{% else %}none{% endif %};">
                         {{ ux_icon('heroicons:pencil-square', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
                         <span>Modifier</span>
                     </button>
@@ -222,7 +227,9 @@
             </div>
         </div>
         <div class="feed-item-body">
-            {% if message is defined and message is not empty and message != '' %}
+            {% if messageObject is defined and messageObject and messageObject.poll %}
+                {% include 'dashboard/_poll.html.twig' with { poll: messageObject.poll } %}
+            {% elseif message is defined and message is not empty and message != '' %}
                 <p>{{ message|format_message }}</p>
             {% endif %}
             {% if fileName is defined and fileName %}

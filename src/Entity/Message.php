@@ -54,6 +54,9 @@ class Message
     #[ORM\OneToMany(targetEntity: Reaction::class, mappedBy: 'message', orphanRemoval: true)]
     private Collection $reactions;
 
+    #[ORM\OneToOne(mappedBy: 'message', targetEntity: Poll::class, cascade: ['persist', 'remove'])]
+    private ?Poll $poll = null;
+
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'replies')]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE', nullable: true)]
     private ?Message $parent = null;
@@ -248,5 +251,24 @@ class Message
             }
         }
         return $this;
+    }
+
+    public function getPoll(): ?Poll
+    {
+        return $this->poll;
+    }
+
+    public function setPoll(?Poll $poll): static
+    {
+        if ($poll !== null && $poll->getMessage() !== $this) {
+            $poll->setMessage($this);
+        }
+        $this->poll = $poll;
+        return $this;
+    }
+
+    public function isPoll(): bool
+    {
+        return $this->poll !== null;
     }
 }

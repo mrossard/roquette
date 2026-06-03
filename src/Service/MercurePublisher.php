@@ -163,6 +163,10 @@ class MercurePublisher
 
     private function buildContentSummary(Message $message): string
     {
+        if ($message->getPoll()) {
+            return 'a créé un sondage : ' . $message->getPoll()->getQuestion();
+        }
+
         if ($message->getContent()) {
             return $message->getContent();
         }

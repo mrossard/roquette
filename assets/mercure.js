@@ -15,7 +15,7 @@ function safeRedirectToLogin(reason = '') {
     isRedirecting = true;
     console.log(`Redirecting to login in 5 seconds due to: ${reason}`);
     showOfflineBanner(true, 'Votre session a expiré. Redirection vers la page de connexion dans 5 secondes...');
-    
+
     const reconnectBtn = document.querySelector('.offline-reconnect-btn');
     if (reconnectBtn) {
         reconnectBtn.disabled = true;
@@ -39,7 +39,7 @@ function updateMercureStatus(isConnected, text, stateClass = null) {
 
     const dot = activeStatusBadge.querySelector('.status-dot');
     const label = activeStatusBadge.querySelector('.status-text');
-    
+
     if (dot && label) {
         if (stateClass) {
             dot.className = `status-dot ${stateClass}`;
@@ -165,10 +165,15 @@ function handleFeedItemUpdateOrAppend(data, activeFeedContainer) {
 
     // Check if this message already exists in the feed (for edits)
     const existingFeedItem = (messageId && messageId !== '') ? activeFeedContainer.querySelector(`[data-message-id="${messageId}"]`) : null;
+    const targetElement = existingFeedItem ? existingFeedItem : newFeedItem;
 
     if (existingFeedItem) {
-        // Replace the existing feed item
-        activeFeedContainer.replaceChild(newFeedItem, existingFeedItem);
+        // Replace or morph the existing feed item
+        if (window.Idiomorph) {
+            window.Idiomorph.morph(existingFeedItem, newFeedItem);
+        } else {
+            activeFeedContainer.replaceChild(newFeedItem, existingFeedItem);
+        }
     } else {
         // Remove empty state if present
         const emptyState = document.getElementById('feed-empty-state');
@@ -180,8 +185,8 @@ function handleFeedItemUpdateOrAppend(data, activeFeedContainer) {
         activeFeedContainer.appendChild(newFeedItem);
     }
 
-    // Initialize HTMX on the new element
-    if (window.htmx) window.htmx.process(newFeedItem);
+    // Initialize HTMX on the updated/new element
+    if (window.htmx) window.htmx.process(targetElement);
 
     // Correct edit button visibility
     if (window.updateEditButtonsVisibility) {
@@ -190,12 +195,12 @@ function handleFeedItemUpdateOrAppend(data, activeFeedContainer) {
 
     // Highlight code blocks
     if (window.highlightAllCodeBlocks) {
-        window.highlightAllCodeBlocks(newFeedItem);
+        window.highlightAllCodeBlocks(targetElement);
     }
 
     // Initialize link previews
     if (window.initLinkPreviews) {
-        window.initLinkPreviews(newFeedItem);
+        window.initLinkPreviews(targetElement);
     }
 
     if (!existingFeedItem) {
@@ -217,7 +222,7 @@ function handleHtmlUpdate(data) {
     const searchActive = statusBadge ? statusBadge.hasAttribute('data-search-active') : false;
     const unreadFilterBtn = document.getElementById('btn-unread-filter');
     const unreadFilterActive = unreadFilterBtn && unreadFilterBtn.classList.contains('active');
-    
+
     if (data.channelSlug === activeChannelSlug && !searchActive) {
         // If this is a thread reply, update thread pane (if open) and reply count badge
         if (data.parentId) {
@@ -247,7 +252,7 @@ export function connectMercure(isReconnect = false) {
     if (isRedirecting) return;
     const statusBadge = document.getElementById('mercure-status');
     const feedContainer = document.getElementById('live-feed');
-    
+
     if (!statusBadge || !feedContainer) {
         if (eventSource) {
             console.log('Closing Mercure EventSource (elements no longer exist)...');
@@ -297,7 +302,7 @@ export function connectMercure(isReconnect = false) {
     }
 
     currentHubUrl = hubUrl;
-    
+
     let connectionUrl = hubUrl;
     let lastEventId = localStorage.getItem('mercureLastEventId');
     if (lastEventId && reconnectAttempts >= 2) {
@@ -315,9 +320,9 @@ export function connectMercure(isReconnect = false) {
             console.error('Error appending lastEventID:', urlErr);
         }
     }
-    
+
     console.log(`Connecting to Mercure Hub at: ${connectionUrl} for topic: ${topicUrl}`);
-    
+
     try {
         eventSource = new EventSource(connectionUrl, { withCredentials: true });
 
@@ -446,7 +451,7 @@ export function handleReconnect() {
     reconnectAttempts++;
 
     console.log(`Scheduling Mercure reconnect in ${delay}ms (attempt ${reconnectAttempts})`);
-    
+
     const activeStatusBadge = document.getElementById('mercure-status');
     if (activeStatusBadge) {
         const dot = activeStatusBadge.querySelector('.status-dot');
@@ -465,7 +470,7 @@ export function handleReconnect() {
 
 export function showOfflineBanner(show, text = 'Connexion avec le serveur perdue. Tentative de reconnexion...') {
     let banner = document.getElementById('mercure-offline-banner');
-    
+
     if (show) {
         if (!banner) {
             const feedContainer = document.getElementById('live-feed');
@@ -528,7 +533,7 @@ export function manualReconnect(button) {
             }
             throw new Error('Session invalid');
         }
-        
+
         // Session is valid, attempt to reconnect Mercure immediately
         console.log('Session is valid. Retrying Mercure connection immediately...');
         if (button) {
@@ -571,7 +576,6 @@ export function initTypingIndicator() {
                 isCurrentlyTyping = false;
                 sendTypingStatus(channelSlug, false);
             }
-            return;
         }
     });
 
@@ -719,8 +723,13 @@ export function handlePinChange(data) {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = data.messageHtml.trim();
                 const newFeedItem = tempDiv.firstChild;
-                activeFeedContainer.replaceChild(newFeedItem, existingFeedItem);
-                if (window.htmx) window.htmx.process(newFeedItem);
+                if (window.Idiomorph) {
+                    window.Idiomorph.morph(existingFeedItem, newFeedItem);
+                    if (window.htmx) window.htmx.process(existingFeedItem);
+                } else {
+                    activeFeedContainer.replaceChild(newFeedItem, existingFeedItem);
+                    if (window.htmx) window.htmx.process(newFeedItem);
+                }
             }
         }
     }
@@ -733,8 +742,13 @@ export function handlePinChange(data) {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = data.previousMessageHtml.trim();
                 const newFeedItem = tempDiv.firstChild;
-                activeFeedContainer.replaceChild(newFeedItem, existingFeedItem);
-                if (window.htmx) window.htmx.process(newFeedItem);
+                if (window.Idiomorph) {
+                    window.Idiomorph.morph(existingFeedItem, newFeedItem);
+                    if (window.htmx) window.htmx.process(existingFeedItem);
+                } else {
+                    activeFeedContainer.replaceChild(newFeedItem, existingFeedItem);
+                    if (window.htmx) window.htmx.process(newFeedItem);
+                }
             }
         }
     }
