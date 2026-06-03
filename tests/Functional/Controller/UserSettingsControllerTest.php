@@ -184,4 +184,34 @@ class UserSettingsControllerTest extends WebTestCase
         // Should return 403 Forbidden since testUser is not the creator
         $this->assertResponseStatusCodeSame(403);
     }
+
+    #[Test]
+    public function testPinPollMessage(): void
+    {
+        $channel = new Channel();
+        $channel->setName('Test Channel Settings');
+        $channel->setSlug('test-channel-settings');
+        $channel->setCreator($this->testUser);
+        $this->entityManager->persist($channel);
+
+        $message = new Message();
+        $message->setChannel($channel);
+        $message->setAuthor($this->testUser);
+
+        $poll = new \App\Entity\Poll();
+        $poll->setQuestion('Quelle est votre couleur préférée ?');
+        $poll->setMessage($message);
+        $message->setPoll($poll);
+
+        $this->entityManager->persist($poll);
+        $this->entityManager->persist($message);
+        $this->entityManager->flush();
+
+        $this->client->request('POST', sprintf('/messages/%d/pin', $message->getId()));
+        $this->assertResponseIsSuccessful();
+
+        $content = $this->client->getResponse()->getContent();
+        static::assertStringContainsString('sondage : Quelle est votre couleur préférée ?', $content);
+        static::assertStringNotContainsString('test_settings_user', $content);
+    }
 }

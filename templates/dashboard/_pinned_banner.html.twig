@@ -5,12 +5,16 @@
             <div class="pinned-text">
                 <span class="pinned-label">Message épinglé</span>
                 <span class="pinned-message-preview">
-                    {% set author_name = pinnedMessage.author ? (pinnedMessage.author.displayName|default(pinnedMessage.author.username)) : 'Utilisateur' %}
-                    <strong>{{ author_name }}</strong> : 
-                    {% if pinnedMessage.content %}
-                        {{ pinnedMessage.content|slice(0, 120) }}{{ pinnedMessage.content|length > 120 ? '...' : '' }}
+                    {% if pinnedMessage.poll %}
+                        sondage : {{ pinnedMessage.poll.question }}
                     {% else %}
-                        📎 {{ pinnedMessage.fileName }}
+                        {% set author_name = pinnedMessage.author ? (pinnedMessage.author.displayName|default(pinnedMessage.author.username)) : 'Utilisateur' %}
+                        <strong>{{ author_name }}</strong> :
+                        {% if pinnedMessage.content %}
+                            {{ pinnedMessage.content|slice(0, 120) }}{{ pinnedMessage.content|length > 120 ? '...' : '' }}
+                        {% else %}
+                            📎 {{ pinnedMessage.fileName }}
+                        {% endif %}
                     {% endif %}
                 </span>
             </div>
