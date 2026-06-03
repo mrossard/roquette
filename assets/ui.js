@@ -691,6 +691,70 @@ export function showCustomConfirm(message, callback) {
     document.addEventListener('keydown', onKeyDown);
 }
 
+export function showCustomAlert(message, title = 'Attention', icon = '⚠️', onCloseCallback = null) {
+    let alertModal = document.getElementById('custom-alert-modal');
+    if (!alertModal) {
+        alertModal = document.createElement('div');
+        alertModal.id = 'custom-alert-modal';
+        alertModal.className = 'modal-backdrop confirmation-backdrop';
+        alertModal.setAttribute('role', 'dialog');
+        alertModal.setAttribute('aria-modal', 'true');
+        alertModal.innerHTML = `
+            <div class="modal-content glass-panel confirmation-content" onclick="event.stopPropagation()">
+                <div class="confirmation-icon" id="alert-modal-icon">⚠️</div>
+                <h3 class="confirmation-title" id="alert-modal-title">Attention</h3>
+                <p class="confirmation-message" id="alert-modal-message"></p>
+                <div class="confirmation-actions">
+                    <button type="button" class="btn-confirm-action" id="alert-modal-ok">OK</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(alertModal);
+    }
+    
+    const iconEl = document.getElementById('alert-modal-icon');
+    const titleEl = document.getElementById('alert-modal-title');
+    const messageEl = document.getElementById('alert-modal-message');
+    const okBtn = document.getElementById('alert-modal-ok');
+    
+    iconEl.textContent = icon;
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    
+    titleEl.className = 'confirmation-title info-type';
+    okBtn.className = 'btn-confirm-action info-type';
+    
+    alertModal.style.display = 'flex';
+    
+    setTimeout(() => okBtn.focus(), 50);
+    
+    function closeAlertModal() {
+        alertModal.style.display = 'none';
+        okBtn.removeEventListener('click', onClose);
+        document.removeEventListener('keydown', onKeyDown);
+        if (onCloseCallback) {
+            onCloseCallback();
+        }
+    }
+    
+    function onClose() {
+        closeAlertModal();
+    }
+    
+    function onKeyDown(e) {
+        if (e.key === 'Escape' || e.key === 'Enter') {
+            onClose();
+            e.preventDefault();
+        }
+    }
+    
+    okBtn.addEventListener('click', onClose);
+    alertModal.onclick = (e) => {
+        if (e.target === alertModal) onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+}
+
 export function initConfirmModals() {
     // Intercept HTMX confirm requests (only when hx-confirm is actually set)
     document.body.addEventListener('htmx:confirm', function(evt) {
@@ -954,6 +1018,7 @@ window.updateChannelLastMessageDate = updateChannelLastMessageDate;
 window.initChannelReordering = initChannelReordering;
 window.initUnreadFilter = initUnreadFilter;
 window.showCustomConfirm = showCustomConfirm;
+window.showCustomAlert = showCustomAlert;
 window.initConfirmModals = initConfirmModals;
 window.initLinkPreviews = initLinkPreviews;
 window.openGlobalSearch = openGlobalSearch;

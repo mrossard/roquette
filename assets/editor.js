@@ -341,6 +341,22 @@ export function cancelInlineEdit() {
 
 export function submitInlineEdit(textarea) {
     const messageId = editModeMessageId;
+
+    // Check if the message is a poll with votes
+    const feedItem = document.querySelector(`[data-message-id="${messageId}"]`);
+    const hasVotes = feedItem && feedItem.getAttribute('data-poll-has-votes') === '1';
+    if (hasVotes) {
+        if (window.showCustomAlert) {
+            window.showCustomAlert('Impossible de modifier un sondage qui a déjà des votes.', 'Modification impossible', '📊', () => {
+                setTimeout(() => textarea.focus(), 50);
+            });
+        } else {
+            alert('Impossible de modifier un sondage qui a déjà des votes.');
+            textarea.focus();
+        }
+        return;
+    }
+
     const newContent = textarea.value;
 
     cancelInlineEdit();
