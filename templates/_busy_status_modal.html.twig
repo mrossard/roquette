@@ -1,0 +1,77 @@
+<div id="busy-status-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="busy-modal-title" style="display: none;" onclick="if(event.target === this) closeBusyStatusModal()">
+    <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width: 440px !important;">
+        <div class="modal-header">
+            <h3 id="busy-modal-title" style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">⚠️ Activer le statut Occupé ?</h3>
+            <button type="button" onclick="closeBusyStatusModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <div class="modal-body" style="color: var(--text-primary); font-size: 0.95rem; line-height: 1.5; margin: 1rem 0 1.5rem 0; display: flex; flex-direction: column; gap: 0.75rem;">
+            <p>En passant votre statut en <strong>"Occupé"</strong> :</p>
+            <ul style="margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <li>Toutes les notifications de bureau seront désactivées.</li>
+                <li>Le rafraîchissement en direct de l'interface (nouveaux messages, fils) sera suspendu.</li>
+            </ul>
+            <p style="margin-top: 0.5rem; color: #ffca28;">
+                💡 <em>Votre contenu et les messages reçus s'actualiseront automatiquement dès que vous changerez à nouveau de statut.</em>
+            </p>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <button type="button" class="btn-cancel" onclick="closeBusyStatusModal()" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s;">Annuler</button>
+            <button type="button" id="btn-confirm-busy" class="btn-publish" style="margin-top: 0; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; background: #ffab00; border: none; color: #000; font-weight: bold; transition: opacity 0.2s;">Confirmer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let currentOnConfirm = null;
+        let currentOnCancel = null;
+
+        window.openBusyStatusModal = function(onConfirm, onCancel) {
+            const modal = document.getElementById('busy-status-modal');
+            if (modal) {
+                currentOnConfirm = onConfirm;
+                currentOnCancel = onCancel;
+                modal.style.display = 'flex';
+                document.addEventListener('keydown', handleBusyModalKeyDown);
+                
+                const confirmBtn = document.getElementById('btn-confirm-busy');
+                if (confirmBtn) {
+                    confirmBtn.focus();
+                }
+            }
+        };
+
+        window.closeBusyStatusModal = function(confirmed = false) {
+            const modal = document.getElementById('busy-status-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.removeEventListener('keydown', handleBusyModalKeyDown);
+                
+                if (confirmed) {
+                    if (typeof currentOnConfirm === 'function') {
+                        currentOnConfirm();
+                    }
+                } else {
+                    if (typeof currentOnCancel === 'function') {
+                        currentOnCancel();
+                    }
+                }
+                currentOnConfirm = null;
+                currentOnCancel = null;
+            }
+        };
+
+        function handleBusyModalKeyDown(e) {
+            if (e.key === 'Escape') {
+                closeBusyStatusModal(false);
+            }
+        }
+
+        const confirmBtn = document.getElementById('btn-confirm-busy');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function() {
+                closeBusyStatusModal(true);
+            });
+        }
+    })();
+</script>

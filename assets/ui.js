@@ -323,6 +323,34 @@ export function updateElementStatus(element, status, label) {
     }
 }
 
+export function handleBusyOptionClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    closeAllStatusDropdowns();
+    
+    if (window.openBusyStatusModal) {
+        window.openBusyStatusModal(function() {
+            if (window.htmx) {
+                window.htmx.ajax('POST', '/user/update-status', {
+                    values: { status: 'busy' },
+                    swap: 'none'
+                });
+            } else {
+                fetch('/user/update-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'status=busy'
+                });
+            }
+        });
+    }
+}
+window.handleBusyOptionClick = handleBusyOptionClick;
+
 // Close dropdowns on document click
 document.addEventListener('click', () => {
     closeAllStatusDropdowns();

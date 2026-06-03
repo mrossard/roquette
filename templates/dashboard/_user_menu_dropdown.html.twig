@@ -23,7 +23,7 @@
             <span class="status-dot away" style="display: inline-block;"></span>
             <span class="option-label">Absent</span>
         </button>
-        <button class="user-status-option {% if app.user.statusOverride == 'busy' %}active{% endif %}" data-status-value="busy" hx-post="{{ path('app_user_update_status') }}" hx-vals='{"status": "busy"}' hx-swap="none" role="menuitem">
+        <button class="user-status-option {% if app.user.statusOverride == 'busy' %}active{% endif %}" data-status-value="busy" onclick="handleBusyOptionClick(event)" role="menuitem">
             <span class="status-dot busy" style="display: inline-block;"></span>
             <span class="option-label">Occupé</span>
         </button>
