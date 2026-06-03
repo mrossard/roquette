@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page non trouvée - Roquette</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: hsl(222, 47%, 9%);
+            --bg-card: hsla(223, 47%, 14%, 0.6);
+            --border-glass: rgba(255, 255, 255, 0.06);
+            --text-primary: hsl(210, 40%, 98%);
+            --text-muted: hsl(215, 20%, 65%);
+            --accent-cyan: hsl(187, 100%, 45%);
+            --accent-cyan-glow: rgba(0, 229, 255, 0.2);
+            --accent-purple: hsl(271, 91%, 65%);
+            --accent-purple-glow: rgba(168, 85, 247, 0.2);
+            --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        [data-theme="light"] {
+            --bg-base: hsl(210, 15%, 90%);
+            --bg-card: hsla(210, 20%, 100%, 0.85);
+            --border-glass: rgba(0, 0, 0, 0.15);
+            --text-primary: hsl(222, 47%, 10%);
+            --text-muted: hsl(215, 20%, 35%);
+            --accent-cyan: hsl(195, 100%, 28%);
+            --accent-cyan-glow: rgba(0, 120, 160, 0.2);
+            --accent-purple: hsl(271, 75%, 45%);
+            --accent-purple-glow: rgba(110, 30, 180, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            background-image: radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(0, 229, 255, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Stars/particles animation background */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: currentColor;
+            color: var(--text-primary);
+            border-radius: 50%;
+            opacity: 0.15;
+            animation: float-around var(--speed, 20s) infinite linear;
+        }
+
+        @keyframes float-around {
+            0% {
+                transform: translateY(0) translateX(0) scale(1);
+            }
+            50% {
+                transform: translateY(-50px) translateX(30px) scale(1.2);
+            }
+            100% {
+                transform: translateY(0) translateX(0) scale(1);
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 2.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            animation: slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slide-up {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .rocket-container {
+            position: relative;
+            margin-bottom: 2rem;
+            display: inline-block;
+            animation: hover-animation 4s ease-in-out infinite;
+        }
+
+        .rocket-svg {
+            width: 120px;
+            height: 120px;
+            fill: url(#rocket-gradient);
+            filter: drop-shadow(0 0 15px var(--accent-purple-glow));
+        }
+
+        @keyframes hover-animation {
+            0%, 100% {
+                transform: translateY(0) rotate(5deg);
+            }
+            50% {
+                transform: translateY(-15px) rotate(-5deg);
+            }
+        }
+
+        h1 {
+            font-size: 5rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -2px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.8rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: white;
+            box-shadow: 0 4px 15px var(--accent-cyan-glow);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--accent-purple-glow);
+            opacity: 0.95;
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .stars-trail {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 30px;
+            background: linear-gradient(to bottom, var(--accent-purple), transparent);
+            opacity: 0.7;
+            animation: trail 1.5s infinite ease-out;
+        }
+
+        @keyframes trail {
+            0% {
+                height: 0;
+                opacity: 0.8;
+            }
+            50% {
+                height: 40px;
+                opacity: 0.5;
+            }
+            100% {
+                height: 0;
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="stars" id="stars-container"></div>
+<div class="container">
+    <div class="rocket-container">
+        <svg class="rocket-svg" viewBox="0 0 24 24">
+            <defs>
+                <linearGradient id="rocket-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="var(--accent-cyan)"/>
+                    <stop offset="100%" stop-color="var(--accent-purple)"/>
+                </linearGradient>
+            </defs>
+            <!-- Rocket Silhouette Icon SVG -->
+            <path d="M12 2C12 2 15 6 15 10C15 13.5 13.5 15.5 12 17.5C10.5 15.5 9 13.5 9 10C9 6 12 2 12 2Z"/>
+            <path
+                d="M12 17.5C11.5 18.5 10 20.5 8 21.5C9.5 21.5 11 20 12 19C13 20 14.5 21.5 16 21.5C14 20.5 12.5 18.5 12 17.5Z"
+                opacity="0.8"/>
+            <circle cx="12" cy="9" r="1.5" fill="var(--bg-card)"/>
+        </svg>
+        <div class="stars-trail"></div>
+    </div>
+    <h1>404</h1>
+    <h2>Oups ! Page introuvable.</h2>
+    <p>La fusée Roquette a cherché partout, mais l'adresse demandée n'existe pas ou a été déplacée dans une autre
+        galaxie.</p>
+    <a href="/" class="btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        Retourner à l'accueil
+    </a>
+</div>
+
+<script>
+    // Set dynamic theme based on local storage
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // Generate random floating background stars
+    const container = document.getElementById('stars-container');
+    const starCount = 35;
+    for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        const size = Math.random() * 3 + 1;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.left = `${Math.random() * 100}%`;
+        star.style.top = `${Math.random() * 100}%`;
+        star.style.setProperty('--speed', `${Math.random() * 15 + 10}s`);
+        container.appendChild(star);
+    }
+</script>
+</body>
+</html>
