@@ -371,7 +371,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target && (target.id === 'global-search-results' || target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
             return;
         }
-        if (window.scrollToBottom) window.scrollToBottom(false);
+        const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
+        if (isChannelSwitch && window.scrollToBottom) {
+            window.scrollToBottom(false);
+        }
     });
 
     document.body.addEventListener('htmx:afterSettle', (evt) => {
@@ -394,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.cancelInlineEdit();
         }
         if (window.connectMercure) window.connectMercure();
-        if (window.scrollToBottom) window.scrollToBottom(false);
+        if (isChannelSwitch && window.scrollToBottom) window.scrollToBottom(false);
         if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
         if (window.highlightAllCodeBlocks) {
             window.highlightAllCodeBlocks();
