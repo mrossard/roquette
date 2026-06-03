@@ -1,3 +1,11 @@
+const isProd = document.querySelector('meta[name="app-env"]')?.getAttribute('content') === 'prod';
+const console = {
+    log: (...args) => { if (!isProd) window.console.log(...args); },
+    warn: (...args) => { if (!isProd) window.console.warn(...args); },
+    error: (...args) => { if (!isProd) window.console.error(...args); },
+    trace: (...args) => { if (!isProd) window.console.trace(...args); }
+};
+
 let eventSource = null;
 let currentHubUrl = null;
 let reconnectTimeout = null;
