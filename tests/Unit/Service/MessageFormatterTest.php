@@ -373,4 +373,65 @@ class MessageFormatterTest extends TestCase
         $this->assertStringContainsString('[:smile]', $result);
         $this->assertStringNotContainsString('<img', $result);
     }
+
+    #[Test]
+    public function formatReplacesShortcodesWithUnicodeEmoji(): void
+    {
+        $result = $this->formatter->format('Hello :grin: and :smile:!');
+        $this->assertStringContainsString('Hello <span class="unicode-emoji">😁</span> and <span class="unicode-emoji">😄</span>!', $result);
+    }
+
+    #[Test]
+    public function formatDoesNotReplaceUnknownShortcodes(): void
+    {
+        $result = $this->formatter->format('Hello :unknown_shortcode_not_exists:!');
+        $this->assertStringContainsString('Hello :unknown_shortcode_not_exists:!', $result);
+        $this->assertStringNotContainsString('<span class="unicode-emoji">', $result);
+    }
+
+    #[Test]
+    public function formatDoesNotReplaceShortcodesInCodeBlocks(): void
+    {
+        $result = $this->formatter->format('Code `:grin:` block');
+        $this->assertStringContainsString('<code class="message-inline-code">:grin:</code>', $result);
+        $this->assertStringNotContainsString('😁', $result);
+    }
+
+    #[Test]
+    public function formatReplacesAllConfiguredEmoticons(): void
+    {
+        // Testing that all configured emoticons map to their correct emojis
+        $emoticons = [
+            ':-)' => '🙂',
+            ':)' => '🙂',
+            ':-D' => '😀',
+            ':D' => '😀',
+            ';-)' => '😉',
+            ';)' => '😉',
+            ':-(' => '🙁',
+            ':(' => '🙁',
+            ':-P' => '😛',
+            ':-p' => '😛',
+            ':P' => '😛',
+            ':p' => '😛',
+            ':-O' => '😮',
+            ':-o' => '😮',
+            ':O' => '😮',
+            ':o' => '😮',
+            '<3' => '❤️',
+            '8)' => '😎',
+            'B)' => '😎',
+            'xD' => '😆',
+            'XD' => '😆',
+            ':-*' => '😘',
+            ':*' => '😘',
+            ":'(" => '😢',
+            ';(' => '😢',
+        ];
+
+        foreach ($emoticons as $emoticon => $expectedEmoji) {
+            $result = $this->formatter->format("Hello $emoticon !");
+            $this->assertStringContainsString($expectedEmoji, $result, "Failed replacing emoticon: $emoticon");
+        }
+    }
 }

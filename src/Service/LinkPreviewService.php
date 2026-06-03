@@ -28,28 +28,29 @@ class LinkPreviewService
 
         return $this->cache->get($cacheKey, function (ItemInterface $item) use ($url) {
             if (!$this->isSafeUrl($url)) {
-                $item->expiresAfter(0);
+                // Pour éviter d'attaquer l'infra en boucle, on garde en cache (négatif) les URLs invalides/non sécurisées pendant 5 min
+                $item->expiresAfter(300);
                 return null;
             }
 
             try {
                 $html = $this->fetchHtml($url);
                 if (!$html) {
-                    $item->expiresAfter(0);
+                    $item->expiresAfter(300); // Cache négatif : 5 minutes en cas d'échec de récupération
                     return null;
                 }
 
                 $metadata = $this->parseMetadata($url, $html);
                 $titleVal = $metadata['title'] ?? null;
                 if ($titleVal === null || trim((string) $titleVal) === '') {
-                    $item->expiresAfter(0);
+                    $item->expiresAfter(300); // Cache négatif : 5 minutes en cas de métadonnées invalides
                     return null;
                 }
 
                 $item->expiresAfter(3600); // 1 hour expiration for successful previews
                 return $metadata;
             } catch (\Exception $e) {
-                $item->expiresAfter(0);
+                $item->expiresAfter(300); // Cache négatif : 5 minutes en cas d'exception/erreur réseau
                 // Silencieusement ignorer les erreurs de requêtes externes
                 return null;
             }
@@ -76,10 +77,44 @@ class LinkPreviewService
         }
 
         $host = $parsed['host'];
+        $cleanHost = $host;
+        if (str_starts_with($cleanHost, '[') && str_ends_with($cleanHost, ']')) {
+            $cleanHost = substr($cleanHost, 1, -1);
+        }
 
-        // Résoudre les adresses IP pour éviter SSRF sur le réseau privé/local
-        $ips = gethostbynamel($host);
-        if ($ips === false) {
+        $ips = [];
+        if (filter_var($cleanHost, FILTER_VALIDATE_IP)) {
+            $ips[] = $cleanHost;
+        } else {
+            // Résolution DNS des enregistrements IPv4 (A)
+            $ipv4Records = @dns_get_record($cleanHost, DNS_A);
+            if (is_array($ipv4Records)) {
+                foreach ($ipv4Records as $record) {
+                    if (isset($record['ip'])) {
+                        $ips[] = $record['ip'];
+                    }
+                }
+            }
+            // Résolution DNS des enregistrements IPv6 (AAAA)
+            $ipv6Records = @dns_get_record($cleanHost, DNS_AAAA);
+            if (is_array($ipv6Records)) {
+                foreach ($ipv6Records as $record) {
+                    if (isset($record['ipv6'])) {
+                        $ips[] = $record['ipv6'];
+                    }
+                }
+            }
+
+            // Repli vers gethostbynamel si aucune IP n'a été résolue (ex. fichiers hosts locaux)
+            if (empty($ips)) {
+                $fallbackIps = @gethostbynamel($cleanHost);
+                if (is_array($fallbackIps)) {
+                    $ips = array_merge($ips, $fallbackIps);
+                }
+            }
+        }
+
+        if (empty($ips)) {
             return false;
         }
 

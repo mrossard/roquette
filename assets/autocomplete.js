@@ -1,4 +1,5 @@
 import { EMOJI_CATEGORIES, EMOJI_KEYWORDS } from './emoji-data.js';
+import { EMOJI_PRIMARY_SHORTCODES } from './emoji-primary-shortcodes.js';
 
 let activeAutocomplete = null;
 let appUsers = [];
@@ -68,9 +69,10 @@ function findMatchingEmojisForQuery(query) {
             const containsMatch = keywords.some(kw => kw.includes(query));
 
             if (priorityMatch || containsMatch) {
+                const primaryShortcode = EMOJI_PRIMARY_SHORTCODES[emoji] || keywords[0] || '';
                 matched.push({
                     emoji,
-                    keyword: keywords[0] || '',
+                    keyword: primaryShortcode,
                     priority: priorityMatch ? 2 : 1
                 });
                 seen.add(emoji);

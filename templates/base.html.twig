@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="app-env" content="{{ app.environment }}">
         <meta name="htmx-config" content='{"historyCacheSize": 0, "globalViewTransitions": true}'>
         <script>
             (function() {
@@ -60,6 +61,7 @@
             {% include '_create_channel_modal.html.twig' %}
             {% include '_lightbox_modal.html.twig' %}
             {% include '_global_search_modal.html.twig' %}
+            {% include '_busy_status_modal.html.twig' %}
             {% if activeChannel is defined and activeChannel and not activeChannel.isDm and activeChannel.creator == app.user %}
                 {% include '_edit_channel_modal.html.twig' %}
             {% endif %}

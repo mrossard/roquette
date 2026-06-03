@@ -1,6 +1,16 @@
+function isCurrentUserBusy() {
+    const statusBadge = document.getElementById('mercure-status');
+    if (!statusBadge) return false;
+    const currentUsername = statusBadge.getAttribute('data-current-username');
+    if (!currentUsername) return false;
+    const currentUserDot = document.querySelector(`.status-dot[data-username="${currentUsername}"]`);
+    return currentUserDot && currentUserDot.classList.contains('busy');
+}
+
 export function sendDesktopNotification(title, body, icon = null, tag = null, url = null) {
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
+    if (isCurrentUserBusy()) return;
     
     // Check user preference in localStorage
     const enabled = localStorage.getItem('roquette_notifications_enabled') !== 'false';
@@ -267,6 +277,7 @@ export function updateSettingsPageUI() {
 }
 
 export function handleGlobalNotification(data) {
+    if (isCurrentUserBusy()) return;
     const statusBadge = document.getElementById('mercure-status');
     if (!statusBadge) return;
 
@@ -443,7 +454,9 @@ window.handleChannelDeletedNotification = handleChannelDeletedNotification;
 
 let originalFaviconHref = null;
 let faviconImage = null;
-let faviconObserverInitialized = false;
+let faviconObserver = null;
+let observedTarget = null;
+let lastTotalUnread = null;
 let focusListenersInitialized = false;
 
 export function markActiveChannelAsReadIfFocused() {
@@ -505,6 +518,11 @@ export function updateFaviconUnreadCount() {
         }
     });
 
+    if (totalUnread === lastTotalUnread) {
+        return;
+    }
+    lastTotalUnread = totalUnread;
+
     // Update document title
     const cleanTitle = document.title.replace(/\s*\(\d+\s*messages?\s*non\s*lus\)/gi, '').replace(/^\(\d+\)\s*/, '');
     if (totalUnread > 0) {
@@ -562,6 +580,7 @@ export function updateFaviconUnreadCount() {
 }
 
 export function initFaviconNotificationBadge() {
+    lastTotalUnread = null; // Force refresh on initialization
     updateFaviconUnreadCount();
 
     if (!focusListenersInitialized) {
@@ -570,22 +589,29 @@ export function initFaviconNotificationBadge() {
         focusListenersInitialized = true;
     }
 
-    if (faviconObserverInitialized) return;
+    const currentTarget = document.getElementById('sidebar-panel') || document.body;
 
-    const target = document.body;
-    if (target) {
-        const observer = new MutationObserver(() => {
-            updateFaviconUnreadCount();
-        });
-        observer.observe(target, {
-            childList: true,
-            subtree: true,
-            characterData: true,
-            attributes: true,
-            attributeFilter: ['style', 'class']
-        });
-        faviconObserverInitialized = true;
+    // Check if the observer is already watching the correct element and it's still in the DOM
+    if (faviconObserver && observedTarget && observedTarget.isConnected && observedTarget === currentTarget) {
+        return;
     }
+
+    if (faviconObserver) {
+        faviconObserver.disconnect();
+    }
+
+    const observer = new MutationObserver(() => {
+        updateFaviconUnreadCount();
+    });
+    observer.observe(currentTarget, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+    });
+    faviconObserver = observer;
+    observedTarget = currentTarget;
 }
 
 window.updateFaviconUnreadCount = updateFaviconUnreadCount;

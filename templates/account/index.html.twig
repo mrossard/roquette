@@ -117,7 +117,20 @@
 
                         <div class="input-group">
                             <label for="statusOverride">Statut de présence</label>
-                            <select name="statusOverride" id="statusOverride" class="form-control" style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: var(--font-sans); cursor: pointer; outline: none; margin-bottom: 0.5rem;">
+                            <select name="statusOverride" id="statusOverride" class="form-control" style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: var(--font-sans); cursor: pointer; outline: none; margin-bottom: 0.5rem;" data-prev-value="{{ user.statusOverride|default('auto') }}" onchange="
+                                if (this.value === 'busy') {
+                                    const self = this;
+                                    if (window.openBusyStatusModal) {
+                                        window.openBusyStatusModal(function() {
+                                            self.setAttribute('data-prev-value', 'busy');
+                                        }, function() {
+                                            self.value = self.getAttribute('data-prev-value') || 'auto';
+                                        });
+                                    }
+                                } else {
+                                    this.setAttribute('data-prev-value', this.value);
+                                }
+                            ">
                                 <option value="auto" {% if user.statusOverride == 'auto' or user.statusOverride is null %}selected{% endif %}>Automatique (Basé sur l'activité)</option>
                                 <option value="online" {% if user.statusOverride == 'online' %}selected{% endif %}>En ligne</option>
                                 <option value="away" {% if user.statusOverride == 'away' %}selected{% endif %}>Absent</option>

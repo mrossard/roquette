@@ -56,7 +56,10 @@ function insertEmoji(textarea, emoji) {
     const newCursorPos = start + emoji.length;
     textarea.selectionStart = textarea.selectionEnd = newCursorPos;
     
-    textarea.focus();
+    const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (!isMobile) {
+        textarea.focus();
+    }
     
     const event = new Event('input', { bubbles: true });
     textarea.dispatchEvent(event);

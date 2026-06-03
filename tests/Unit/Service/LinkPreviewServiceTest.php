@@ -21,6 +21,7 @@ class LinkPreviewServiceTest extends TestCase
             ->method('get')
             ->willReturnCallback(function ($key, $callback) {
                 $item = $this->createMock(ItemInterface::class);
+                $item->expects(static::once())->method('expiresAfter')->with(300);
                 return $callback($item);
             });
 
@@ -38,12 +39,49 @@ class LinkPreviewServiceTest extends TestCase
             ->method('get')
             ->willReturnCallback(function ($key, $callback) {
                 $item = $this->createMock(ItemInterface::class);
+                $item->expects(static::once())->method('expiresAfter')->with(300);
                 return $callback($item);
             });
 
         $httpClient = $this->createMock(HttpClientInterface::class);
         $service = new LinkPreviewService($cache, $httpClient);
         $result = $service->getPreview('http://127.0.0.1/status');
+        static::assertNull($result);
+    }
+
+    #[Test]
+    public function testGetPreviewPrivateIpv6(): void
+    {
+        $cache = $this->createMock(CacheInterface::class);
+        $cache
+            ->method('get')
+            ->willReturnCallback(function ($key, $callback) {
+                $item = $this->createMock(ItemInterface::class);
+                $item->expects(static::once())->method('expiresAfter')->with(300);
+                return $callback($item);
+            });
+
+        $httpClient = $this->createMock(HttpClientInterface::class);
+        $service = new LinkPreviewService($cache, $httpClient);
+        $result = $service->getPreview('http://[::1]/status');
+        static::assertNull($result);
+    }
+
+    #[Test]
+    public function testGetPreviewPrivateIpv6UniqueLocal(): void
+    {
+        $cache = $this->createMock(CacheInterface::class);
+        $cache
+            ->method('get')
+            ->willReturnCallback(function ($key, $callback) {
+                $item = $this->createMock(ItemInterface::class);
+                $item->expects(static::once())->method('expiresAfter')->with(300);
+                return $callback($item);
+            });
+
+        $httpClient = $this->createMock(HttpClientInterface::class);
+        $service = new LinkPreviewService($cache, $httpClient);
+        $result = $service->getPreview('http://[fd00::1]/status');
         static::assertNull($result);
     }
 }

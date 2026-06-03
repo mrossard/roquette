@@ -1,3 +1,11 @@
+const isProd = document.querySelector('meta[name="app-env"]')?.getAttribute('content') === 'prod';
+const console = {
+    log: (...args) => { if (!isProd) window.console.log(...args); },
+    warn: (...args) => { if (!isProd) window.console.warn(...args); },
+    error: (...args) => { if (!isProd) window.console.error(...args); },
+    trace: (...args) => { if (!isProd) window.console.trace(...args); }
+};
+
 let eventSource = null;
 let currentHubUrl = null;
 let reconnectTimeout = null;
@@ -73,11 +81,30 @@ function handleMessageDeleted(data) {
     }
 }
 
+function isCurrentUserBusy() {
+    const statusBadge = document.getElementById('mercure-status');
+    if (!statusBadge) return false;
+    const currentUsername = statusBadge.getAttribute('data-current-username');
+    if (!currentUsername) return false;
+    const currentUserDot = document.querySelector(`.status-dot[data-username="${currentUsername}"]`);
+    return currentUserDot && currentUserDot.classList.contains('busy');
+}
+
 function handleUserStatusChanged(data) {
     const username = data.username;
     const newStatus = data.status;
     const label = data.statusLabel;
     console.log(`Updating status for user ${username} to ${newStatus}`);
+    
+    const statusBadge = document.getElementById('mercure-status');
+    const currentUsername = statusBadge ? statusBadge.getAttribute('data-current-username') : null;
+    
+    if (isCurrentUserBusy() && username !== currentUsername) {
+        return;
+    }
+    
+    const wasBusy = (username === currentUsername) ? isCurrentUserBusy() : false;
+
     document.querySelectorAll(`[data-username="${username}"]`).forEach(el => {
         if (data.statusOverride !== undefined) {
             el.setAttribute('data-status-override', data.statusOverride || 'auto');
@@ -89,6 +116,14 @@ function handleUserStatusChanged(data) {
             window.updateElementStatus(el, newStatus, label);
         }
     });
+
+    if (username === currentUsername) {
+        const isBusyNow = isCurrentUserBusy();
+        if (wasBusy && !isBusyNow) {
+            console.log('User transitioned from busy to active status. Reloading page/feed to catch up...');
+            window.location.reload();
+        }
+    }
 }
 
 function handleThreadReply(data, activeChannelSlug, unreadFilterActive, unreadFilterBtn) {
@@ -348,6 +383,16 @@ export function connectMercure(isReconnect = false) {
                 const data = JSON.parse(event.data);
                 console.log('Received Mercure Update:', data);
 
+                if (data.type === 'user_status_changed') {
+                    handleUserStatusChanged(data);
+                    return;
+                }
+
+                if (isCurrentUserBusy()) {
+                    console.log('User is busy. Ignoring Mercure update to prevent distractions.', data.type || 'message');
+                    return;
+                }
+
                 if (data.type === 'invitation_received') {
                     if (window.handleInvitationNotification) {
                         window.handleInvitationNotification(data);
@@ -362,8 +407,6 @@ export function connectMercure(isReconnect = false) {
                     handleMessageDeleted(data);
                 } else if (data.type === 'user_typing') {
                     handleUserTyping(data);
-                } else if (data.type === 'user_status_changed') {
-                    handleUserStatusChanged(data);
                 } else if (data.html) {
                     handleHtmlUpdate(data);
                 } else if (data.channelSlug) {
@@ -383,6 +426,12 @@ export function connectMercure(isReconnect = false) {
         eventSource.onerror = (err) => {
             if (isUnloading) return;
             console.error('Mercure EventSource error:', err);
+
+            // Close current event source to prevent browser's native automatic constant retry loop
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
 
             // Verify if the session is still active
             fetch('/user/ping', {
@@ -411,27 +460,17 @@ export function connectMercure(isReconnect = false) {
                     }
                 }
 
-                // Session is still valid, handle reconnection normally
-                if (eventSource.readyState === EventSource.CLOSED) {
-                    updateMercureStatus(false, 'Connexion interrompue', 'disconnected');
-                    showOfflineBanner(true, 'Connexion au serveur perdue. Tentative de reconnexion...');
-                    handleReconnect();
-                } else {
-                    updateMercureStatus(false, 'Reconnexion en cours...', 'connecting');
-                    showOfflineBanner(true, 'Connexion au serveur instable. Reconnexion en cours...');
-                }
+                // Session is still valid, handle reconnection with exponential backoff
+                updateMercureStatus(false, 'Connexion interrompue', 'disconnected');
+                showOfflineBanner(true, 'Connexion au serveur perdue. Tentative de reconnexion...');
+                handleReconnect();
             })
             .catch(pingErr => {
                 // If it's a network error (user is offline), do not log out. Just reconnect.
                 console.warn('Network error checking session status, assuming offline:', pingErr);
-                if (eventSource.readyState === EventSource.CLOSED) {
-                    updateMercureStatus(false, 'Connexion interrompue', 'disconnected');
-                    showOfflineBanner(true, 'Connexion au serveur perdue. Tentative de reconnexion...');
-                    handleReconnect();
-                } else {
-                    updateMercureStatus(false, 'Reconnexion en cours...', 'connecting');
-                    showOfflineBanner(true, 'Connexion au serveur instable. Reconnexion en cours...');
-                }
+                updateMercureStatus(false, 'Connexion interrompue', 'disconnected');
+                showOfflineBanner(true, 'Connexion au serveur perdue. Tentative de reconnexion...');
+                handleReconnect();
             });
         };
 

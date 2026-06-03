@@ -266,8 +266,13 @@ function handleDropdownKeyDown(e) {
 
 export function updateElementStatus(element, status, label) {
     if (element.classList.contains('status-dot') || element.classList.contains('status-dot-overlay')) {
-        element.className = element.classList.contains('status-dot') ? 'status-dot ' + status : 'status-dot-overlay ' + status;
-        element.setAttribute('title', label);
+        const expectedClass = element.classList.contains('status-dot') ? 'status-dot ' + status : 'status-dot-overlay ' + status;
+        if (element.className !== expectedClass) {
+            element.className = expectedClass;
+        }
+        if (element.getAttribute('title') !== label) {
+            element.setAttribute('title', label);
+        }
     }
     
     // Find matching container
@@ -275,18 +280,28 @@ export function updateElementStatus(element, status, label) {
     if (container) {
         const overlay = container.querySelector('.status-dot-overlay');
         if (overlay && overlay !== element) {
-            overlay.className = 'status-dot-overlay ' + status;
-            overlay.setAttribute('title', label);
+            const expectedOverlayClass = 'status-dot-overlay ' + status;
+            if (overlay.className !== expectedOverlayClass) {
+                overlay.className = expectedOverlayClass;
+            }
+            if (overlay.getAttribute('title') !== label) {
+                overlay.setAttribute('title', label);
+            }
         }
         
         const dot = container.querySelector('.status-dot');
         if (dot && dot !== element) {
-            dot.className = 'status-dot ' + status;
-            dot.setAttribute('title', label);
+            const expectedDotClass = 'status-dot ' + status;
+            if (dot.className !== expectedDotClass) {
+                dot.className = expectedDotClass;
+            }
+            if (dot.getAttribute('title') !== label) {
+                dot.setAttribute('title', label);
+            }
         }
 
         const textLabel = container.querySelector('.status-label');
-        if (textLabel) {
+        if (textLabel && textLabel.textContent !== label) {
             textLabel.textContent = label;
         }
 
@@ -297,15 +312,44 @@ export function updateElementStatus(element, status, label) {
             const options = dropdown.querySelectorAll('.user-status-option');
             options.forEach(opt => {
                 const val = opt.getAttribute('data-status-value');
-                if (val === statusOverride) {
+                const isSelected = val === statusOverride;
+                if (isSelected && !opt.classList.contains('active')) {
                     opt.classList.add('active');
-                } else {
+                } else if (!isSelected && opt.classList.contains('active')) {
                     opt.classList.remove('active');
                 }
             });
         }
     }
 }
+
+export function handleBusyOptionClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    closeAllStatusDropdowns();
+    
+    if (window.openBusyStatusModal) {
+        window.openBusyStatusModal(function() {
+            if (window.htmx) {
+                window.htmx.ajax('POST', '/user/update-status', {
+                    values: { status: 'busy' },
+                    swap: 'none'
+                });
+            } else {
+                fetch('/user/update-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'status=busy'
+                });
+            }
+        });
+    }
+}
+window.handleBusyOptionClick = handleBusyOptionClick;
 
 // Close dropdowns on document click
 document.addEventListener('click', () => {
