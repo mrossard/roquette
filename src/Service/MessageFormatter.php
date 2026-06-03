@@ -214,6 +214,10 @@ class MessageFormatter
 
     private function replaceShortcodes(string $text): string
     {
+        if (!str_contains($text, ':')) {
+            return $text;
+        }
+
         return preg_replace_callback('/:([a-zA-Z0-9_\-\+]+):/', static function ($matches) {
             $shortcode = $matches[1];
             if (isset(EmojiMapping::MAPPING[$shortcode])) {
@@ -231,7 +235,7 @@ class MessageFormatter
 
     private function replaceCustomEmojis(string $text): string
     {
-        if (empty($this->emojiBaseUrl)) {
+        if (empty($this->emojiBaseUrl) || !str_contains($text, '[:')) {
             return $text;
         }
 
@@ -278,13 +282,23 @@ class MessageFormatter
     private function replaceEmoticons(string $content): string
     {
         // Échapper au préalable pour la comparaison avec &lt;3
+        if (!preg_match('/[:;8BxX&<]/', $content)) {
+            return $content;
+        }
+
         $safeContent = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
 
-        foreach (self::EMOTICONS as $emoticon => $emoji) {
-            $quoted = preg_quote($emoticon, '/');
-            $pattern = '/(?<=^|\s)' . $quoted . '(?=$|\s|[\.!?,])/';
-            $safeContent = preg_replace($pattern, $emoji, $safeContent);
-        }
+        // Match all emoticons in a single pattern ordered by length descending.
+        // We handle the single quote being escaped as &#039; by htmlspecialchars.
+        $pattern = '/(?<=^|\s)(?:&lt;3|:(?:\'|&#039;)\(|:-\)|:-D|;-\)|:-\(|:-P|:-p|:-O|:-o|:-\*|:\)|:D|;\)|:\(|:P|:p|:O|:o|8\)|B\)|xD|XD|:\*|;\()(?=$|\s|[\.!?,])/';
+
+        $safeContent = preg_replace_callback($pattern, static function ($matches) {
+            $key = $matches[0];
+            if (str_contains($key, '&#039;')) {
+                $key = str_replace('&#039;', "'", $key);
+            }
+            return self::EMOTICONS[$key] ?? $matches[0];
+        }, $safeContent);
 
         // On décode avant d'envoyer à CommonMark pour qu'il parse correctement les caractères complexes
         return htmlspecialchars_decode($safeContent, ENT_QUOTES);

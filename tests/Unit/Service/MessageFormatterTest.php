@@ -396,4 +396,42 @@ class MessageFormatterTest extends TestCase
         $this->assertStringContainsString('<code class="message-inline-code">:grin:</code>', $result);
         $this->assertStringNotContainsString('😁', $result);
     }
+
+    #[Test]
+    public function formatReplacesAllConfiguredEmoticons(): void
+    {
+        // Testing that all configured emoticons map to their correct emojis
+        $emoticons = [
+            ':-)' => '🙂',
+            ':)' => '🙂',
+            ':-D' => '😀',
+            ':D' => '😀',
+            ';-)' => '😉',
+            ';)' => '😉',
+            ':-(' => '🙁',
+            ':(' => '🙁',
+            ':-P' => '😛',
+            ':-p' => '😛',
+            ':P' => '😛',
+            ':p' => '😛',
+            ':-O' => '😮',
+            ':-o' => '😮',
+            ':O' => '😮',
+            ':o' => '😮',
+            '<3' => '❤️',
+            '8)' => '😎',
+            'B)' => '😎',
+            'xD' => '😆',
+            'XD' => '😆',
+            ':-*' => '😘',
+            ':*' => '😘',
+            ":'(" => '😢',
+            ';(' => '😢',
+        ];
+
+        foreach ($emoticons as $emoticon => $expectedEmoji) {
+            $result = $this->formatter->format("Hello $emoticon !");
+            $this->assertStringContainsString($expectedEmoji, $result, "Failed replacing emoticon: $emoticon");
+        }
+    }
 }
