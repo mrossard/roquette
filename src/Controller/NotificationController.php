@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
@@ -20,6 +21,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 final class NotificationController extends AbstractController
 {
+    use ChannelAccessTrait;
     // -------------------------------------------------------------------------
     // Mark channel as read
     // -------------------------------------------------------------------------
@@ -33,13 +35,10 @@ final class NotificationController extends AbstractController
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $activeChannel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$activeChannel) {
-            return new Response('Canal non trouvé.', 404);
-        }
-
-        if ($activeChannel->isPrivate() && !$activeChannel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
+        try {
+            $activeChannel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            return new Response($e->getMessage(), $e->getStatusCode());
         }
 
         $readTrackingService->markChannelAsRead($currentUser, $activeChannel);
@@ -61,13 +60,10 @@ final class NotificationController extends AbstractController
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $activeChannel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$activeChannel) {
-            return new Response('Canal non trouvé.', 404);
-        }
-
-        if ($activeChannel->isPrivate() && !$activeChannel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
+        try {
+            $activeChannel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            return new Response($e->getMessage(), $e->getStatusCode());
         }
 
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
@@ -99,13 +95,10 @@ final class NotificationController extends AbstractController
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $activeChannel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$activeChannel) {
-            return new Response('Canal non trouvé.', 404);
-        }
-
-        if ($activeChannel->isPrivate() && !$activeChannel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
+        try {
+            $activeChannel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            return new Response($e->getMessage(), $e->getStatusCode());
         }
 
         $query = trim($request->query->get('q', ''));
@@ -148,9 +141,10 @@ final class NotificationController extends AbstractController
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel) {
-            return new Response('Canal non trouvé.', 404);
+        try {
+            $channel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            return new Response($e->getMessage(), $e->getStatusCode());
         }
 
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
@@ -191,13 +185,10 @@ final class NotificationController extends AbstractController
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $activeChannel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$activeChannel) {
-            return new Response('Canal non trouvé.', 404);
-        }
-
-        if ($activeChannel->isPrivate() && !$activeChannel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
+        try {
+            $activeChannel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            return new Response($e->getMessage(), $e->getStatusCode());
         }
 
         $data = json_decode($request->getContent(), true);

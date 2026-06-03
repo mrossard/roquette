@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
+use App\Controller\Trait\ChannelAccessTrait;
+use App\Controller\Trait\RequestValidationTrait;
 use App\Entity\Message;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
@@ -26,6 +28,8 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 final class MessageController extends AbstractController
 {
     use MessageRendererTrait;
+    use ChannelAccessTrait;
+    use RequestValidationTrait;
 
     public function __construct(
         #[\SensitiveParameter]
@@ -80,9 +84,10 @@ final class MessageController extends AbstractController
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $activeChannel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$activeChannel) {
-            return new Response('Canal non trouvé.', 404);
+        try {
+            $activeChannel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            return new Response($e->getMessage(), $e->getStatusCode());
         }
 
         $limiter = $messageApiLimiter->create('user_' . $currentUser->getId());
@@ -97,16 +102,7 @@ final class MessageController extends AbstractController
             );
         }
 
-        if ($activeChannel->isPrivate() && !$activeChannel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
-        }
-
-        if (
-            $request->isMethod('POST')
-            && count($request->request) === 0
-            && count($request->files) === 0
-            && (int) $request->headers->get('CONTENT_LENGTH', 0) > 0
-        ) {
+        if ($this->isPostMaxSizeExceeded($request)) {
             $this->addFlash(
                 'error',
                 'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).',
@@ -167,20 +163,16 @@ final class MessageController extends AbstractController
         } else {
             $message->setContent(trim($messageText) === '' ? null : $messageText);
 
-            if ($uploadedFile) {
-                try {
-                    $meta = $fileUploadService->upload($uploadedFile);
-                    $message->setFileName($meta['fileName']);
-                    $message->setFilePath($meta['filePath']);
-                    $message->setFileSize($meta['fileSize']);
-                    $message->setMimeType($meta['mimeType']);
-                } catch (\InvalidArgumentException $e) {
-                    $this->addFlash('error', $e->getMessage());
-                    return $this->render('dashboard/_input_form.html.twig', [
-                        'activeChannel' => $activeChannel,
-                    ]);
-                }
+        if ($uploadedFile) {
+            try {
+                $fileUploadService->uploadAndAttachToMessage($uploadedFile, $message);
+            } catch (\InvalidArgumentException $e) {
+                $this->addFlash('error', $e->getMessage());
+                return $this->render('dashboard/_input_form.html.twig', [
+                    'activeChannel' => $activeChannel,
+                ]);
             }
+        }
         }
 
         $entityManager->persist($message);
@@ -289,7 +281,7 @@ final class MessageController extends AbstractController
             for ($i = count($optionsData); $i < count($existingOptions); $i++) {
                 $poll->removeOption($existingOptions[$i]);
             }
-            
+
             $message->setUpdatedAt(new \DateTimeImmutable());
             $entityManager->flush();
         } else {

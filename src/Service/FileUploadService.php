@@ -11,8 +11,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 /**
  * Handles file upload and deletion via Flysystem.
  *
- * Extracted from DashboardController to eliminate copy-pasted upload logic
- * across publish(), postReply() and deleteMessage() actions.
  */
 class FileUploadService
 {
@@ -216,5 +214,19 @@ class FileUploadService
     public function readStream(string $filePath): mixed
     {
         return $this->defaultStorage->readStream($filePath);
+    }
+
+    /**
+     * Uploads an UploadedFile and populates metadata on a Message entity.
+     *
+     * @throws \InvalidArgumentException if the file is invalid or not allowed
+     */
+    public function uploadAndAttachToMessage(UploadedFile $file, \App\Entity\Message $message): void
+    {
+        $meta = $this->upload($file);
+        $message->setFileName($meta['fileName']);
+        $message->setFilePath($meta['filePath']);
+        $message->setFileSize($meta['fileSize']);
+        $message->setMimeType($meta['mimeType']);
     }
 }

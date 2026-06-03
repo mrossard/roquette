@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
+use App\Controller\Trait\RequestValidationTrait;
 use App\Entity\Message;
 use App\Entity\UserChannelRead;
 use App\Repository\MessageRepository;
@@ -22,6 +23,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class ThreadController extends AbstractController
 {
     use MessageRendererTrait;
+    use RequestValidationTrait;
 
     // -------------------------------------------------------------------------
     // View thread
@@ -132,12 +134,7 @@ final class ThreadController extends AbstractController
             return new Response('Non autorisé.', 403);
         }
 
-        if (
-            $request->isMethod('POST')
-            && count($request->request) === 0
-            && count($request->files) === 0
-            && (int) $request->headers->get('CONTENT_LENGTH', 0) > 0
-        ) {
+        if ($this->isPostMaxSizeExceeded($request)) {
             $this->addFlash(
                 'error',
                 'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).',
@@ -162,11 +159,7 @@ final class ThreadController extends AbstractController
 
         if ($uploadedFile) {
             try {
-                $meta = $fileUploadService->upload($uploadedFile);
-                $message->setFileName($meta['fileName']);
-                $message->setFilePath($meta['filePath']);
-                $message->setFileSize($meta['fileSize']);
-                $message->setMimeType($meta['mimeType']);
+                $fileUploadService->uploadAndAttachToMessage($uploadedFile, $message);
             } catch (\InvalidArgumentException $e) {
                 $this->addFlash('error', $e->getMessage());
                 return $this->render('dashboard/_thread_input_form.html.twig', [
