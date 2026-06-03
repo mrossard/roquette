@@ -301,18 +301,18 @@ export function connectMercure(isReconnect = false) {
     let connectionUrl = hubUrl;
     let lastEventId = localStorage.getItem('mercureLastEventId');
     if (lastEventId && reconnectAttempts >= 2) {
-        console.warn(`Clearing Mercure Last-Event-ID due to repeated connection failures (attempt ${reconnectAttempts}): ${lastEventId}`);
+        console.warn(`Clearing Mercure lastEventID due to repeated connection failures (attempt ${reconnectAttempts}): ${lastEventId}`);
         localStorage.removeItem('mercureLastEventId');
         lastEventId = null;
     }
     if (lastEventId) {
         try {
             const urlObj = new URL(hubUrl, window.location.origin);
-            urlObj.searchParams.set('Last-Event-ID', lastEventId);
+            urlObj.searchParams.set('lastEventID', lastEventId);
             connectionUrl = urlObj.toString();
-            console.log(`Resuming Mercure connection from Last-Event-ID: ${lastEventId}`);
+            console.log(`Resuming Mercure connection from lastEventID: ${lastEventId}`);
         } catch (urlErr) {
-            console.error('Error appending Last-Event-ID:', urlErr);
+            console.error('Error appending lastEventID:', urlErr);
         }
     }
     
