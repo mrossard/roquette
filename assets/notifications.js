@@ -1,6 +1,16 @@
+function isCurrentUserBusy() {
+    const statusBadge = document.getElementById('mercure-status');
+    if (!statusBadge) return false;
+    const currentUsername = statusBadge.getAttribute('data-current-username');
+    if (!currentUsername) return false;
+    const currentUserDot = document.querySelector(`.status-dot[data-username="${currentUsername}"]`);
+    return currentUserDot && currentUserDot.classList.contains('busy');
+}
+
 export function sendDesktopNotification(title, body, icon = null, tag = null, url = null) {
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
+    if (isCurrentUserBusy()) return;
     
     // Check user preference in localStorage
     const enabled = localStorage.getItem('roquette_notifications_enabled') !== 'false';
@@ -267,6 +277,7 @@ export function updateSettingsPageUI() {
 }
 
 export function handleGlobalNotification(data) {
+    if (isCurrentUserBusy()) return;
     const statusBadge = document.getElementById('mercure-status');
     if (!statusBadge) return;
 

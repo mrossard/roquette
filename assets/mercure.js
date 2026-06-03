@@ -81,11 +81,30 @@ function handleMessageDeleted(data) {
     }
 }
 
+function isCurrentUserBusy() {
+    const statusBadge = document.getElementById('mercure-status');
+    if (!statusBadge) return false;
+    const currentUsername = statusBadge.getAttribute('data-current-username');
+    if (!currentUsername) return false;
+    const currentUserDot = document.querySelector(`.status-dot[data-username="${currentUsername}"]`);
+    return currentUserDot && currentUserDot.classList.contains('busy');
+}
+
 function handleUserStatusChanged(data) {
     const username = data.username;
     const newStatus = data.status;
     const label = data.statusLabel;
     console.log(`Updating status for user ${username} to ${newStatus}`);
+    
+    const statusBadge = document.getElementById('mercure-status');
+    const currentUsername = statusBadge ? statusBadge.getAttribute('data-current-username') : null;
+    
+    if (isCurrentUserBusy() && username !== currentUsername) {
+        return;
+    }
+    
+    const wasBusy = (username === currentUsername) ? isCurrentUserBusy() : false;
+
     document.querySelectorAll(`[data-username="${username}"]`).forEach(el => {
         if (data.statusOverride !== undefined) {
             el.setAttribute('data-status-override', data.statusOverride || 'auto');
@@ -97,6 +116,14 @@ function handleUserStatusChanged(data) {
             window.updateElementStatus(el, newStatus, label);
         }
     });
+
+    if (username === currentUsername) {
+        const isBusyNow = isCurrentUserBusy();
+        if (wasBusy && !isBusyNow) {
+            console.log('User transitioned from busy to active status. Reloading page/feed to catch up...');
+            window.location.reload();
+        }
+    }
 }
 
 function handleThreadReply(data, activeChannelSlug, unreadFilterActive, unreadFilterBtn) {
@@ -351,6 +378,16 @@ export function connectMercure(isReconnect = false) {
                 const data = JSON.parse(event.data);
                 console.log('Received Mercure Update:', data);
 
+                if (data.type === 'user_status_changed') {
+                    handleUserStatusChanged(data);
+                    return;
+                }
+
+                if (isCurrentUserBusy()) {
+                    console.log('User is busy. Ignoring Mercure update to prevent distractions.', data.type || 'message');
+                    return;
+                }
+
                 if (data.type === 'invitation_received') {
                     if (window.handleInvitationNotification) {
                         window.handleInvitationNotification(data);
@@ -365,8 +402,6 @@ export function connectMercure(isReconnect = false) {
                     handleMessageDeleted(data);
                 } else if (data.type === 'user_typing') {
                     handleUserTyping(data);
-                } else if (data.type === 'user_status_changed') {
-                    handleUserStatusChanged(data);
                 } else if (data.html) {
                     handleHtmlUpdate(data);
                 } else if (data.channelSlug) {
