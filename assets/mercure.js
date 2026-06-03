@@ -422,6 +422,12 @@ export function connectMercure(isReconnect = false) {
             if (isUnloading) return;
             console.error('Mercure EventSource error:', err);
 
+            // Close current event source to prevent browser's native automatic constant retry loop
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+
             // Verify if the session is still active
             fetch('/user/ping', {
                 method: 'GET',
@@ -449,27 +455,17 @@ export function connectMercure(isReconnect = false) {
                     }
                 }
 
-                // Session is still valid, handle reconnection normally
-                if (eventSource.readyState === EventSource.CLOSED) {
-                    updateMercureStatus(false, 'Connexion interrompue', 'disconnected');
-                    showOfflineBanner(true, 'Connexion au serveur perdue. Tentative de reconnexion...');
-                    handleReconnect();
-                } else {
-                    updateMercureStatus(false, 'Reconnexion en cours...', 'connecting');
-                    showOfflineBanner(true, 'Connexion au serveur instable. Reconnexion en cours...');
-                }
+                // Session is still valid, handle reconnection with exponential backoff
+                updateMercureStatus(false, 'Connexion interrompue', 'disconnected');
+                showOfflineBanner(true, 'Connexion au serveur perdue. Tentative de reconnexion...');
+                handleReconnect();
             })
             .catch(pingErr => {
                 // If it's a network error (user is offline), do not log out. Just reconnect.
                 console.warn('Network error checking session status, assuming offline:', pingErr);
-                if (eventSource.readyState === EventSource.CLOSED) {
-                    updateMercureStatus(false, 'Connexion interrompue', 'disconnected');
-                    showOfflineBanner(true, 'Connexion au serveur perdue. Tentative de reconnexion...');
-                    handleReconnect();
-                } else {
-                    updateMercureStatus(false, 'Reconnexion en cours...', 'connecting');
-                    showOfflineBanner(true, 'Connexion au serveur instable. Reconnexion en cours...');
-                }
+                updateMercureStatus(false, 'Connexion interrompue', 'disconnected');
+                showOfflineBanner(true, 'Connexion au serveur perdue. Tentative de reconnexion...');
+                handleReconnect();
             });
         };
 
