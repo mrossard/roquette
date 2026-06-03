@@ -80,6 +80,7 @@ final class InvitationController extends AbstractController
             'invitationId' => $invitation->getId(),
             'channelSlug' => $activeChannel->getSlug(),
             'channelName' => $activeChannel->getName(),
+            'senderName' => $currentUser->getDisplayName() ?: $currentUser->getUsername(),
             'html' => $sidebarHtml,
         ]);
 

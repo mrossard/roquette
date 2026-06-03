@@ -384,9 +384,10 @@ export function handleInvitationNotification(data) {
     }
 
     // Show desktop notification
+    const sender = data.senderName || 'Quelqu\'un';
     sendDesktopNotification(
         'Nouvelle invitation 🔒',
-        `Vous avez été invité à rejoindre le canal #${data.channelName}`,
+        `${sender} vous a invité à rejoindre le canal #${data.channelName}`,
         null,
         `invitation-${data.invitationId}`,
         `/channels/${data.channelSlug}`

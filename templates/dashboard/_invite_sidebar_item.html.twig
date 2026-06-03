@@ -1,8 +1,16 @@
 <div class="invite-item" id="invite-{{ invite.id }}" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); border-radius: 0.5rem; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; transition: var(--transition-smooth);">
-    <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
-        <span style="color: var(--accent-purple);">🔒</span>
-        {{ invite.channel.name }}
-    </span>
+    <div style="display: flex; flex-direction: column;">
+        <span
+            style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+            <span style="color: var(--accent-purple);">🔒</span>
+            {{ invite.channel.name }}
+        </span>
+        {% if invite.channel.creator %}
+            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; padding-left: 1.25rem;">
+                Invité par {{ invite.channel.creator.displayName|default(invite.channel.creator.username) }}
+            </span>
+        {% endif %}
+    </div>
     <div style="display: flex; gap: 0.5rem;">
         <button hx-post="{{ path('app_invite_accept', {id: invite.id}) }}" hx-target="#invite-{{ invite.id }}" hx-swap="outerHTML" style="background: var(--accent-green); color: #0f172a; border: none; border-radius: 0.25rem; padding: 0.35rem 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-grow: 1; transition: var(--transition-smooth);">Accepter</button>
         <button hx-post="{{ path('app_invite_reject', {id: invite.id}) }}" hx-target="#invite-{{ invite.id }}" hx-swap="outerHTML" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--accent-red); border-radius: 0.25rem; padding: 0.35rem 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-grow: 1; transition: var(--transition-smooth);">Refuser</button>
