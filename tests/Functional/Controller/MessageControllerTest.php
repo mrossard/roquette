@@ -117,4 +117,191 @@ class MessageControllerTest extends WebTestCase
         $this->assertCount(1, $messages);
         $this->assertSame('/me is typing a long message', $messages[0]->getContent());
     }
+
+    #[Test]
+    public function testPublishPollMessage(): void
+    {
+        $this->client->request(
+            'POST',
+            '/channels/test-msg-channel/publish',
+            [
+                'poll_question' => 'Quel est votre langage préféré ?',
+                'poll_options' => ['PHP', 'TypeScript', 'Rust'],
+            ]
+        );
+
+        $this->assertResponseIsSuccessful();
+
+        $messageRepository = $this->entityManager->getRepository(Message::class);
+        $messages = $messageRepository->findBy(['author' => $this->testUser]);
+        
+        // Find the message with the poll
+        $pollMessage = null;
+        foreach ($messages as $msg) {
+            if ($msg->isPoll()) {
+                $pollMessage = $msg;
+                break;
+            }
+        }
+
+        $this->assertNotNull($pollMessage);
+        $this->assertTrue($pollMessage->isPoll());
+        
+        $poll = $pollMessage->getPoll();
+        $this->assertNotNull($poll);
+        $this->assertSame('Quel est votre langage préféré ?', $poll->getQuestion());
+        $this->assertFalse($poll->isAllowMultiple());
+        $this->assertCount(3, $poll->getOptions());
+        $this->assertSame('PHP', $poll->getOptions()[0]->getText());
+        $this->assertSame('TypeScript', $poll->getOptions()[1]->getText());
+        $this->assertSame('Rust', $poll->getOptions()[2]->getText());
+    }
+
+    #[Test]
+    public function testPublishPollRequiresMinTwoOptions(): void
+    {
+        $this->client->request(
+            'POST',
+            '/channels/test-msg-channel/publish',
+            [
+                'poll_question' => 'Un seul choix ?',
+                'poll_options' => ['Option Unique'],
+            ]
+        );
+
+        $this->assertResponseStatusCodeSame(400);
+    }
+
+    #[Test]
+    public function testPublishPollWithAllowMultiple(): void
+    {
+        $this->client->request(
+            'POST',
+            '/channels/test-msg-channel/publish',
+            [
+                'poll_question' => 'Choix multiples ?',
+                'poll_options' => ['A', 'B', 'C'],
+                'allow_multiple' => '1',
+            ]
+        );
+
+        $this->assertResponseIsSuccessful();
+
+        $messageRepository = $this->entityManager->getRepository(Message::class);
+        $messages = $messageRepository->findBy(['author' => $this->testUser]);
+        
+        $pollMessage = null;
+        foreach ($messages as $msg) {
+            if ($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Choix multiples ?') {
+                $pollMessage = $msg;
+                break;
+            }
+        }
+
+        $this->assertNotNull($pollMessage);
+        $poll = $pollMessage->getPoll();
+        $this->assertNotNull($poll);
+        $this->assertTrue($poll->isAllowMultiple());
+    }
+
+    #[Test]
+    public function testEditPollMessage(): void
+    {
+        // 1. Create a poll message
+        $this->client->request(
+            'POST',
+            '/channels/test-msg-channel/publish',
+            [
+                'poll_question' => 'Original Question?',
+                'poll_options' => ['Opt1', 'Opt2'],
+            ]
+        );
+        $this->assertResponseIsSuccessful();
+
+        $messageRepository = $this->entityManager->getRepository(Message::class);
+        $messages = $messageRepository->findBy(['author' => $this->testUser]);
+        
+        $pollMessage = null;
+        foreach ($messages as $msg) {
+            if ($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Original Question?') {
+                $pollMessage = $msg;
+                break;
+            }
+        }
+        $this->assertNotNull($pollMessage);
+
+        // 2. Modify the poll
+        $this->client->request(
+            'POST',
+            sprintf('/messages/%d/edit', $pollMessage->getId()),
+            [
+                'poll_question' => 'Updated Question?',
+                'poll_options' => ['New Opt1', 'New Opt2', 'Added Opt3'],
+                'allow_multiple' => '1',
+            ]
+        );
+        $this->assertResponseIsSuccessful();
+
+        $this->entityManager->clear();
+        $updatedMessage = $messageRepository->find($pollMessage->getId());
+        $this->assertNotNull($updatedMessage);
+        $this->assertTrue($updatedMessage->isPoll());
+        
+        $poll = $updatedMessage->getPoll();
+        $this->assertSame('Updated Question?', $poll->getQuestion());
+        $this->assertTrue($poll->isAllowMultiple());
+        $this->assertCount(3, $poll->getOptions());
+        $this->assertSame('New Opt1', $poll->getOptions()[0]->getText());
+        $this->assertSame('New Opt2', $poll->getOptions()[1]->getText());
+        $this->assertSame('Added Opt3', $poll->getOptions()[2]->getText());
+    }
+
+    #[Test]
+    public function testEditPollWithVotesIsBlocked(): void
+    {
+        // 1. Create a poll message with multiple choice allowed
+        $this->client->request(
+            'POST',
+            '/channels/test-msg-channel/publish',
+            [
+                'poll_question' => 'Vote test?',
+                'poll_options' => ['Option A', 'Option B'],
+                'allow_multiple' => '1',
+            ]
+        );
+        $this->assertResponseIsSuccessful();
+
+        $messageRepository = $this->entityManager->getRepository(Message::class);
+        $messages = $messageRepository->findBy(['author' => $this->testUser]);
+        
+        $pollMessage = null;
+        foreach ($messages as $msg) {
+            if ($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Vote test?') {
+                $pollMessage = $msg;
+                break;
+            }
+        }
+        $this->assertNotNull($pollMessage);
+        $optionA = $pollMessage->getPoll()->getOptions()[0];
+
+        // 2. Vote on option A
+        $this->client->request('POST', sprintf('/poll/%d/vote', $optionA->getId()));
+        $this->assertResponseIsSuccessful();
+
+        // 3. Try to GET the edit form -> should return 400
+        $this->client->request('GET', sprintf('/messages/%d/edit', $pollMessage->getId()));
+        $this->assertResponseStatusCodeSame(400);
+
+        // 4. Try to POST edit -> should return 400
+        $this->client->request(
+            'POST',
+            sprintf('/messages/%d/edit', $pollMessage->getId()),
+            [
+                'poll_question' => 'Vote test?',
+                'poll_options' => ['Option A Modified', 'Option B'],
+                'allow_multiple' => '1',
+            ]
+        );
+        $this->assertResponseStatusCodeSame(400);
+    }
 }

@@ -25,13 +25,11 @@ function saveOfflineQueue() {
 // Check if we are offline or if the connection is down
 export function isOffline() {
     if (!navigator.onLine) return true;
-    
+
     // Also consider offline if the Mercure status indicates disconnected/offline banner is active
     const offlineBanner = document.getElementById('mercure-offline-banner');
-    if (offlineBanner && offlineBanner.style.display !== 'none') {
-        return true;
-    }
-    return false;
+    return offlineBanner && offlineBanner.style.display !== 'none';
+
 }
 
 // Function to handle queueing of a message
@@ -119,7 +117,7 @@ function renderOfflineMessage(msg) {
     feedItem.setAttribute('data-offline-id', msg.id);
     feedItem.style.opacity = '0.7';
     feedItem.style.borderLeft = '3px solid var(--accent-orange, #f59e0b)';
-    
+
     feedItem.innerHTML = `
         <div class="feed-item-header">
             <div class="feed-item-user-container">
@@ -173,7 +171,7 @@ export function syncOfflineMessages() {
         }
 
         const msg = offlineQueue[0];
-        
+
         // Update status in UI for current message
         const tempEl = document.querySelector(`[data-offline-id="${msg.id}"]`);
         if (tempEl) {
@@ -212,10 +210,15 @@ export function syncOfflineMessages() {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = html.trim();
                 const actualItem = tempDiv.firstChild;
-                
+
                 if (actualItem && tempEl.parentNode) {
-                    tempEl.parentNode.replaceChild(actualItem, tempEl);
-                    if (window.htmx) window.htmx.process(actualItem);
+                    if (window.Idiomorph) {
+                        window.Idiomorph.morph(tempEl, actualItem);
+                        if (window.htmx) window.htmx.process(tempEl);
+                    } else {
+                        tempEl.parentNode.replaceChild(actualItem, tempEl);
+                        if (window.htmx) window.htmx.process(actualItem);
+                    }
                 } else {
                     tempEl.remove();
                 }
@@ -227,7 +230,7 @@ export function syncOfflineMessages() {
         .catch(err => {
             console.error('Failed to sync offline message:', err);
             isSyncing = false;
-            
+
             // Revert status label back to waiting
             const tempEl = document.querySelector(`[data-offline-id="${msg.id}"]`);
             if (tempEl) {
@@ -304,7 +307,7 @@ export function initOfflineQueue() {
             // Check if we have files. Offline support for file uploads is skipped (needs network)
             const fileInput = form.querySelector('input[type="file"]');
             const hasFiles = fileInput && fileInput.files && fileInput.files.length > 0;
-            
+
             if (isOffline() && !hasFiles) {
                 evt.preventDefault();
                 evt.stopImmediatePropagation();

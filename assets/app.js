@@ -8,6 +8,32 @@ window.hljs = hljs;
 import { Idiomorph } from 'idiomorph';
 window.Idiomorph = Idiomorph;
 
+// Register Idiomorph as a custom swap extension for HTMX
+if (window.htmx && window.Idiomorph) {
+    function createMorphConfig(swapStyle) {
+        if (swapStyle === "morph" || swapStyle === "morph:outerHTML") {
+            return { morphStyle: "outerHTML" };
+        } else if (swapStyle === "morph:innerHTML") {
+            return { morphStyle: "innerHTML" };
+        } else if (swapStyle.startsWith("morph:")) {
+            return Function("return (" + swapStyle.slice(6) + ")")();
+        }
+    }
+
+    window.htmx.defineExtension("morph", {
+        isInlineSwap: function (swapStyle) {
+            let config = createMorphConfig(swapStyle);
+            return config?.morphStyle === "outerHTML" || config?.morphStyle == null;
+        },
+        handleSwap: function (swapStyle, target, fragment) {
+            let config = createMorphConfig(swapStyle);
+            if (config) {
+                return window.Idiomorph.morph(target, fragment.children, config);
+            }
+        },
+    });
+}
+
 if (document.querySelector('meta[name="frankenphp-hot-reload:url"]')) {
     import('frankenphp-hot-reload');
 }
@@ -21,6 +47,7 @@ import './autocomplete.js';
 import { buildEmojiPickerDOM } from './emoji.js';
 import './thread.js';
 import './offline.js';
+import './poll.js';
 
 console.log('Roquette application initialized! 🚀');
 
@@ -344,7 +371,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target && (target.id === 'global-search-results' || target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
             return;
         }
-        if (window.scrollToBottom) window.scrollToBottom(false);
+        const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
+        if (isChannelSwitch && window.scrollToBottom) {
+            window.scrollToBottom(false);
+        }
     });
 
     document.body.addEventListener('htmx:afterSettle', (evt) => {
@@ -367,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.cancelInlineEdit();
         }
         if (window.connectMercure) window.connectMercure();
-        if (window.scrollToBottom) window.scrollToBottom(false);
+        if (isChannelSwitch && window.scrollToBottom) window.scrollToBottom(false);
         if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
         if (window.highlightAllCodeBlocks) {
             window.highlightAllCodeBlocks();

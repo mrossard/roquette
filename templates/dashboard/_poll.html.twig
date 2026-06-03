@@ -1,0 +1,54 @@
+<div class="poll-container" data-poll-id="{{ poll.id }}" data-allow-multiple="{{ poll.allowMultiple ? '1' : '0' }}">
+    <div class="poll-header-meta">
+        <span class="poll-badge">📊 Sondage</span>
+        <span class="poll-type-text">• {{ poll.allowMultiple ? 'Choix multiples' : 'Choix unique' }}</span>
+    </div>
+    
+    <p class="poll-question">{{ poll.question }}</p>
+    {% set total_votes = poll.totalVotes %}
+    
+    {# Find the maximum vote count among options to identify the leader(s) #}
+    {% set max_votes = 0 %}
+    {% for option in poll.options %}
+        {% if option.voteCount > max_votes %}
+            {% set max_votes = option.voteCount %}
+        {% endif %}
+    {% endfor %}
+
+    {% for option in poll.options %}
+        {% set pct_bar = max_votes > 0 ? (option.voteCount / max_votes * 100)|round : 0 %}
+        {% set has_voted = app.user ? option.hasVotedBy(app.user) : false %}
+        {% set is_most_voted = max_votes > 0 and option.voteCount == max_votes %}
+        {% set voters = option.getVoters() %}
+        <button class="poll-option {% if has_voted %}voted{% endif %} {% if is_most_voted %}most-voted{% endif %}"
+                hx-post="{{ path('app_poll_vote', {optionId: option.id}) }}"
+                hx-target="closest .feed-item"
+                hx-swap="morph">
+            <div class="poll-option-row">
+                <div class="poll-option-left">
+                    <span class="poll-option-indicator"></span>
+                    <span class="poll-option-text">{{ option.text }}</span>
+                </div>
+                <div class="poll-option-right">
+                    {% if option.voteCount > 0 %}
+                        <div class="poll-voters">
+                            {% for voter in voters|slice(0, 5) %}
+                                <span class="poll-voter-avatar" style="--hue: {{ voter.hue }}" title="{{ voter.displayName|default(voter.username) }}">
+                                    {{ voter.displayName|default(voter.username)|first|upper }}
+                                </span>
+                            {% endfor %}
+                            {% if option.voteCount > 5 %}
+                                <span class="poll-voter-more">...</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <span class="poll-vote-count">({{ option.voteCount }})</span>
+                </div>
+            </div>
+            <div class="poll-bar-track">
+                <div class="poll-bar-fill" style="width: {{ pct_bar }}%"></div>
+            </div>
+        </button>
+    {% endfor %}
+    <p class="poll-total">{{ total_votes }} vote{{ total_votes > 1 ? 's' : '' }}</p>
+</div>
