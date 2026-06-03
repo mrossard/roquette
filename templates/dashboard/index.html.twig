@@ -81,14 +81,11 @@
                                     </button>
                                 {% endif %}
                             </h2>
-                            {% if isMember %}
-                                <span class="live-indicator">LIVE</span>
-                            {% endif %}
                         </div>
 
                         <!-- Toggle button (mobile only) -->
-                        <button type="button" 
-                                class="btn-channel-details-toggle" 
+                        <button type="button"
+                                class="btn-channel-details-toggle"
                                 id="btn-channel-details-toggle"
                                 onclick="toggleMobileChannelDetails()"
                                 title="Afficher les détails du canal"
@@ -119,7 +116,7 @@
 
                                 {% if not activeChannel.isDm %}
                                     <span class="status-pill" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass); font-size: 0.75rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: default;">
-                                        ⏱️ Rétention : 
+                                        ⏱️ Rétention :
                                         <span style="color: var(--text-primary);">
                                             {% if activeChannel.messageRetentionMonths is null %}
                                                 Sans limite
@@ -186,7 +183,7 @@
                                         <button type="submit" class="btn-delete-channel">🗑️ Supprimer</button>
                                     </form>
                                 {% endif %}
-                                
+
                                 {% if not activeChannel.isPrivate and activeChannel.slug != 'general' %}
                                     <form action="{{ path('app_channel_leave', {slug: activeChannel.slug}) }}" method="POST" data-confirm="Êtes-vous sûr de vouloir quitter ce canal ?" hx-boost="false">
                                         <button type="submit" class="btn-delete-channel" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text-muted);">🚪 Quitter</button>
@@ -197,7 +194,7 @@
                     </div>
                 </div>
             </div>
-            
+
             {% if isMember %}
                 <div class="card-body chat-body">
                     {% for label, messages in app.flashes %}
