@@ -20,7 +20,7 @@ security:
             provider: app_user_provider
             custom_authenticators:
                 - App\Security\OAuth2Authenticator
-            
+
             form_login:
                 login_path: app_login
                 check_path: app_login
@@ -34,6 +34,15 @@ security:
             logout:
                 path: app_logout
                 target: app_login
+
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 604800 # 7 days in seconds
+                path: /
+                domain: ~
+                secure: true
+                httponly: true
+                always_remember_me: true
 
     # Note: Only the *first* matching rule is applied
     access_control:
