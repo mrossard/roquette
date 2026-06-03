@@ -6237,4 +6237,11 @@ class EmojiMapping
         'regional_indicator_b' => '🇧',
         'regional_indicator_a' => '🇦',
     ];
+
+    public static function getShortcode(string $emoji): ?string
+    {
+        $shortcode = array_search($emoji, self::MAPPING, true);
+
+        return $shortcode ? (string)$shortcode : null;
+    }
 }

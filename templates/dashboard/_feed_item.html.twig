@@ -111,7 +111,7 @@
                                     hx-target="closest .feed-item"
                                     hx-swap="outerHTML"
                                     data-reactors="{{ info.reactorUsernames|join(',') }}"
-                                    title="Réactions : {{ info.usernames|join(', ') }}">
+                                    title="{{ info.usernames|reaction_tooltip(emoji) }}">
                                 <span class="reaction-emoji">{{ emoji }}</span>
                                 <span class="reaction-count">{{ info.count }}</span>
                             </button>
@@ -292,7 +292,7 @@
                                 hx-target="closest .feed-item"
                                 hx-swap="outerHTML"
                                 data-reactors="{{ info.reactorUsernames|join(',') }}"
-                                title="Réactions : {{ info.usernames|join(', ') }}">
+                                title="{{ info.usernames|reaction_tooltip(emoji) }}">
                             <span class="reaction-emoji">{{ emoji }}</span>
                             <span class="reaction-count">{{ info.count }}</span>
                         </button>

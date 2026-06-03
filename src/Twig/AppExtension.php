@@ -26,6 +26,7 @@ class AppExtension extends AbstractExtension
             new TwigFilter('format_message', [$this->formatter, 'format'], ['is_safe' => ['html']]),
             new TwigFilter('wrap_emojis', [$this->formatter, 'wrapUnicodeEmojis'], ['is_safe' => ['html']]),
             new TwigFilter('format_bytes', [$this, 'formatBytes']),
+            new TwigFilter('reaction_tooltip', [$this, 'formatReactionTooltip']),
         ];
     }
 
@@ -40,5 +41,25 @@ class AppExtension extends AbstractExtension
         $bytes /= 1 << (10 * $pow);
 
         return round($bytes, $precision) . ' ' . $units[$pow];
+    }
+
+    public function formatReactionTooltip(array $usernames, string $emoji): string
+    {
+        $shortcode = \App\Service\EmojiMapping::getShortcode($emoji);
+        $reactionName = $shortcode ? ':'.$shortcode.':' : $emoji;
+
+        if (empty($usernames)) {
+            return '';
+        }
+
+        $count = count($usernames);
+        if ($count === 1) {
+            return sprintf('%s a réagi avec %s', $usernames[0], $reactionName);
+        }
+
+        $lastUser = array_pop($usernames);
+        $usersString = implode(', ', $usernames).' et '.$lastUser;
+
+        return sprintf('%s ont réagi avec %s', $usersString, $reactionName);
     }
 }
