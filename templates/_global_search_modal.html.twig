@@ -5,10 +5,10 @@
               hx-swap="innerHTML transition:false"
               style="display: flex; gap: 0.75rem; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border-glass); background: rgba(0,0,0,0.2); width: 100%; margin: 0;">
             <button type="submit" style="background: transparent; border: none; font-size: 1.25rem; opacity: 0.8; cursor: pointer; padding: 0; display: flex; align-items: center;">🔍</button>
-            <input type="text" 
-                   id="global-search-input" 
+            <input type="text"
+                   id="global-search-input"
                    name="q"
-                   placeholder="Rechercher des messages, canaux ou pseudos... (ex: in:general from:jean)" 
+                   placeholder="Rechercher des messages, canaux ou pseudos... (ex: in:general from:jean)"
                    style="flex-grow: 1; background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 1.05rem;"
                    autocomplete="off">
             <button type="button" class="btn-close-global-search" onclick="closeGlobalSearch()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem; line-height: 1; padding: 0.25rem 0.5rem; transition: color 0.2s;">✕</button>
@@ -25,21 +25,45 @@
                 <!-- Filter by Author -->
                 <div style="flex: 1; min-width: 180px;">
                     <label for="builder-from" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">Auteur (from:)</label>
-                    <select id="builder-from" onchange="updateSearchQueryFromBuilder()" style="width: 100%; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: 0.375rem; color: var(--text-primary); outline: none;">
+                    <select id="builder-from" onchange="updateSearchQueryFromBuilder()" style="display: none;">
                         <option value="">Tous les utilisateurs</option>
                     </select>
+                    <div class="custom-dropdown-container" id="custom-dropdown-builder-from">
+                        <button type="button" class="custom-dropdown-trigger"
+                                onclick="toggleCustomDropdown(event, 'builder-from')">
+                            <span class="custom-dropdown-selected-label">Tous les utilisateurs</span>
+                            <span class="dropdown-chevron">▼</span>
+                        </button>
+                        <div class="custom-dropdown-menu">
+                            <button type="button" class="custom-dropdown-item active" data-value=""
+                                    onclick="selectCustomDropdownOption(event, 'builder-from')">Tous les utilisateurs
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <!-- Filter by Channel -->
                 <div style="flex: 1; min-width: 180px;">
                     <label for="builder-in" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">Canal (in:)</label>
-                    <select id="builder-in" onchange="updateSearchQueryFromBuilder()" style="width: 100%; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: 0.375rem; color: var(--text-primary); outline: none;">
+                    <select id="builder-in" onchange="updateSearchQueryFromBuilder()" style="display: none;">
                         <option value="">Tous les canaux</option>
                     </select>
+                    <div class="custom-dropdown-container" id="custom-dropdown-builder-in">
+                        <button type="button" class="custom-dropdown-trigger"
+                                onclick="toggleCustomDropdown(event, 'builder-in')">
+                            <span class="custom-dropdown-selected-label">Tous les canaux</span>
+                            <span class="dropdown-chevron">▼</span>
+                        </button>
+                        <div class="custom-dropdown-menu">
+                            <button type="button" class="custom-dropdown-item active" data-value=""
+                                    onclick="selectCustomDropdownOption(event, 'builder-in')">Tous les canaux
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <!-- Filter by attachment type -->
                 <div style="flex: 1; min-width: 180px;">
                     <label for="builder-has" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">Pièce jointe (has:)</label>
-                    <select id="builder-has" onchange="updateSearchQueryFromBuilder()" style="width: 100%; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: 0.375rem; color: var(--text-primary); outline: none;">
+                    <select id="builder-has" onchange="updateSearchQueryFromBuilder()" style="display: none;">
                         <option value="">Peu importe</option>
                         <option value="file">Tout fichier</option>
                         <option value="image">Image</option>
@@ -47,6 +71,33 @@
                         <option value="audio">Audio</option>
                         <option value="pdf">PDF</option>
                     </select>
+                    <div class="custom-dropdown-container" id="custom-dropdown-builder-has">
+                        <button type="button" class="custom-dropdown-trigger"
+                                onclick="toggleCustomDropdown(event, 'builder-has')">
+                            <span class="custom-dropdown-selected-label">Peu importe</span>
+                            <span class="dropdown-chevron">▼</span>
+                        </button>
+                        <div class="custom-dropdown-menu">
+                            <button type="button" class="custom-dropdown-item active" data-value=""
+                                    onclick="selectCustomDropdownOption(event, 'builder-has')">Peu importe
+                            </button>
+                            <button type="button" class="custom-dropdown-item" data-value="file"
+                                    onclick="selectCustomDropdownOption(event, 'builder-has')">Tout fichier
+                            </button>
+                            <button type="button" class="custom-dropdown-item" data-value="image"
+                                    onclick="selectCustomDropdownOption(event, 'builder-has')">Image
+                            </button>
+                            <button type="button" class="custom-dropdown-item" data-value="video"
+                                    onclick="selectCustomDropdownOption(event, 'builder-has')">Vidéo
+                            </button>
+                            <button type="button" class="custom-dropdown-item" data-value="audio"
+                                    onclick="selectCustomDropdownOption(event, 'builder-has')">Audio
+                            </button>
+                            <button type="button" class="custom-dropdown-item" data-value="pdf"
+                                    onclick="selectCustomDropdownOption(event, 'builder-has')">PDF
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- Simple Text Query -->
@@ -55,32 +106,32 @@
                 <input type="text" id="builder-text" oninput="updateSearchQueryFromBuilder()" placeholder="Tapez votre recherche de texte ici..." style="width: 100%; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: 0.375rem; color: var(--text-primary); outline: none; box-sizing: border-box;" autocomplete="off">
             </div>
         </div>
-        
+
         <div id="global-search-results" class="global-search-modal-body" style="overflow-y: auto; padding: 1rem; flex-grow: 1; min-height: 200px;">
             {# Initial state / tips #}
             <div class="global-search-tips">
                 <h4 class="tips-title" style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.75rem;">💡 Astuces pour affiner votre recherche :</h4>
                 <ul class="tips-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
                     <li style="display: flex; align-items: center; gap: 8px;">
-                        <kbd style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 0.8rem; color: var(--accent-cyan);">from:@pseudo</kbd> 
+                        <kbd style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 0.8rem; color: var(--accent-cyan);">from:@pseudo</kbd>
                         <span>Filtrer par auteur</span>
                     </li>
                     <li style="display: flex; align-items: center; gap: 8px;">
-                        <kbd style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 0.8rem; color: var(--accent-cyan);">in:#canal</kbd> 
+                        <kbd style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 0.8rem; color: var(--accent-cyan);">in:#canal</kbd>
                         <span>Filtrer par canal ou message direct</span>
                     </li>
                     <li style="display: flex; align-items: center; gap: 8px;">
-                        <kbd style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 0.8rem; color: var(--accent-cyan);">has:file</kbd> 
+                        <kbd style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 0.8rem; color: var(--accent-cyan);">has:file</kbd>
                         <span>Messages contenant un fichier joint</span>
                     </li>
                     <li style="display: flex; align-items: center; gap: 8px;">
-                        <kbd style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 0.8rem; color: var(--accent-cyan);">has:image</kbd> 
+                        <kbd style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 0.8rem; color: var(--accent-cyan);">has:image</kbd>
                         <span>Filtrer par type de fichier (image, video, pdf, etc.)</span>
                     </li>
                 </ul>
             </div>
         </div>
-        
+
         <div class="global-search-modal-footer" style="padding: 0.75rem 1rem; border-top: 1px solid var(--border-glass); font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.1); flex-shrink: 0;">
             <span>Saisissez des filtres ou recherchez du texte</span>
             <div>
@@ -98,7 +149,7 @@
             const panel = document.getElementById('search-builder-panel');
             const icon = document.querySelector('.builder-toggle-icon');
             if (!panel) return;
-            
+
             if (panel.style.display === 'none' || panel.style.display === '') {
                 panel.style.display = 'flex';
                 icon.textContent = '▼';
@@ -110,20 +161,110 @@
             }
         };
 
+        window.toggleCustomDropdown = function (event, selectId) {
+            event.stopPropagation();
+            const container = document.getElementById('custom-dropdown-' + selectId);
+            const isOpen = container.classList.contains('open');
+
+            // Close all other dropdowns
+            document.querySelectorAll('.custom-dropdown-container').forEach(c => {
+                c.classList.remove('open');
+                const menu = c.querySelector('.custom-dropdown-menu');
+                if (menu) menu.style.display = 'none';
+            });
+
+            if (!isOpen) {
+                container.classList.add('open');
+                container.querySelector('.custom-dropdown-menu').style.display = 'flex';
+            }
+        };
+
+        window.selectCustomDropdownOption = function (event, selectId) {
+            event.stopPropagation();
+            const item = event.currentTarget;
+            const val = item.getAttribute('data-value');
+            const select = document.getElementById(selectId);
+
+            select.value = val;
+
+            const changeEvent = new Event('change', {bubbles: true});
+            select.dispatchEvent(changeEvent);
+
+            updateCustomDropdownFromSelect(selectId);
+
+            const container = document.getElementById('custom-dropdown-' + selectId);
+            container.classList.remove('open');
+            container.querySelector('.custom-dropdown-menu').style.display = 'none';
+        };
+
+        window.updateCustomDropdownFromSelect = function (selectId) {
+            const select = document.getElementById(selectId);
+            const container = document.getElementById('custom-dropdown-' + selectId);
+            if (!select || !container) return;
+            const selectedOption = select.options[select.selectedIndex];
+
+            if (selectedOption) {
+                const labelEl = container.querySelector('.custom-dropdown-selected-label');
+                if (labelEl) {
+                    labelEl.textContent = selectedOption.textContent;
+                }
+            }
+
+            container.querySelectorAll('.custom-dropdown-item').forEach(item => {
+                if (item.getAttribute('data-value') === select.value) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        };
+
+        window.buildCustomDropdownMenu = function (selectId) {
+            const select = document.getElementById(selectId);
+            const container = document.getElementById('custom-dropdown-' + selectId);
+            if (!select || !container) return;
+            const menu = container.querySelector('.custom-dropdown-menu');
+            if (!menu) return;
+
+            menu.innerHTML = '';
+            Array.from(select.options).forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'custom-dropdown-item' + (select.value === opt.value ? ' active' : '');
+                btn.setAttribute('data-value', opt.value);
+                btn.textContent = opt.textContent;
+                btn.addEventListener('click', (e) => {
+                    selectCustomDropdownOption(e, selectId);
+                });
+                menu.appendChild(btn);
+            });
+
+            const labelEl = container.querySelector('.custom-dropdown-selected-label');
+            if (labelEl && select.selectedIndex >= 0) {
+                labelEl.textContent = select.options[select.selectedIndex].textContent;
+            }
+        };
+
+        // Close dropdowns on document click
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.custom-dropdown-container').forEach(c => {
+                c.classList.remove('open');
+                const menu = c.querySelector('.custom-dropdown-menu');
+                if (menu) menu.style.display = 'none';
+            });
+        });
+
         window.populateSearchBuilderDropdowns = function() {
             const selectFrom = document.getElementById('builder-from');
             const selectIn = document.getElementById('builder-in');
             if (!selectFrom || !selectIn) return;
 
-            // Preserve current values if populated already
             const currentFrom = selectFrom.value;
             const currentIn = selectIn.value;
 
-            // Clear existing options except first one
             selectFrom.innerHTML = '<option value="">Tous les utilisateurs</option>';
             selectIn.innerHTML = '<option value="">Tous les canaux</option>';
 
-            // 1. Populate channels from sidebar links
             const channelLinks = document.querySelectorAll('.channel-link');
             const addedChannels = new Set();
             channelLinks.forEach(link => {
@@ -133,7 +274,7 @@
                     const name = nameElt.textContent.trim();
                     const isDm = link.querySelector('.status-dot') !== null;
                     const prefix = isDm ? '@' : '#';
-                    
+
                     if (!addedChannels.has(slug)) {
                         addedChannels.add(slug);
                         const opt = document.createElement('option');
@@ -144,8 +285,8 @@
                 }
             });
             if (currentIn) selectIn.value = currentIn;
+            buildCustomDropdownMenu('builder-in');
 
-            // 2. Fetch users from API
             if (!usersLoaded) {
                 fetch('/api/users')
                     .then(res => res.json())
@@ -158,11 +299,12 @@
                         });
                         usersLoaded = true;
                         if (currentFrom) selectFrom.value = currentFrom;
+                        buildCustomDropdownMenu('builder-from');
                         parseQueryIntoBuilder();
                     })
                     .catch(err => console.error('Failed to load users for search builder:', err));
             } else {
-                // If already loaded in memory, we can just reload them from localStorage or simple caching if needed, but since usersLoaded is true, we just skip fetching
+                buildCustomDropdownMenu('builder-from');
             }
         };
 
@@ -207,6 +349,11 @@
 
             // Remaining is text
             builderText.value = query.replace(/\s+/g, ' ').trim();
+
+            // Sync with custom dropdowns
+            updateCustomDropdownFromSelect('builder-from');
+            updateCustomDropdownFromSelect('builder-in');
+            updateCustomDropdownFromSelect('builder-has');
         };
 
         window.updateSearchQueryFromBuilder = function() {

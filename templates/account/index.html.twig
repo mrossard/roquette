@@ -118,18 +118,23 @@
 
                         <div class="input-group">
                             <label for="statusOverride">{{ 'Statut de présence'|trans }}</label>
-                            <select name="statusOverride" id="statusOverride" class="form-control" style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: var(--font-sans); cursor: pointer; outline: none; margin-bottom: 0.5rem;" data-prev-value="{{ user.statusOverride|default('auto') }}" onchange="
+                            <select name="statusOverride" id="statusOverride" class="form-control"
+                                    style="display: none;" data-prev-value="{{ user.statusOverride|default('auto') }}"
+                                    onchange="
                                 if (this.value === 'busy') {
                                     const self = this;
                                     if (window.openBusyStatusModal) {
                                         window.openBusyStatusModal(function() {
                                             self.setAttribute('data-prev-value', 'busy');
+                                            updateCustomDropdownFromSelect('statusOverride');
                                         }, function() {
                                             self.value = self.getAttribute('data-prev-value') || 'auto';
+                                            updateCustomDropdownFromSelect('statusOverride');
                                         });
                                     }
                                 } else {
                                     this.setAttribute('data-prev-value', this.value);
+                                    updateCustomDropdownFromSelect('statusOverride');
                                 }
                             ">
                                 <option value="auto"
@@ -143,17 +148,85 @@
                                 <option value="offline"
                                         {% if user.statusOverride == 'offline' %}selected{% endif %}>{{ 'Hors ligne (Invisible)'|trans }}</option>
                             </select>
+
+                            <div class="custom-dropdown-container" id="custom-dropdown-statusOverride">
+                                <button type="button" class="custom-dropdown-trigger"
+                                        onclick="toggleCustomDropdown(event, 'statusOverride')">
+                                    <span class="custom-dropdown-selected-label">
+                                        {% if user.statusOverride == 'auto' or user.statusOverride is null %}{{ "Automatique (Basé sur l'activité)"|trans }}
+                                        {% elseif user.statusOverride == 'online' %}{{ 'En ligne'|trans }}
+                                        {% elseif user.statusOverride == 'away' %}{{ 'Absent'|trans }}
+                                        {% elseif user.statusOverride == 'busy' %}{{ 'Occupé'|trans }}
+                                        {% elseif user.statusOverride == 'offline' %}{{ 'Hors ligne (Invisible)'|trans }}
+                                        {% endif %}
+                                    </span>
+                                    <span class="dropdown-chevron">▼</span>
+                                </button>
+                                <div class="custom-dropdown-menu">
+                                    <button type="button"
+                                            class="custom-dropdown-item {% if user.statusOverride == 'auto' or user.statusOverride is null %}active{% endif %}"
+                                            data-value="auto"
+                                            onclick="selectCustomDropdownOption(event, 'statusOverride')">
+                                        {{ "Automatique (Basé sur l'activité)"|trans }}
+                                    </button>
+                                    <button type="button"
+                                            class="custom-dropdown-item {% if user.statusOverride == 'online' %}active{% endif %}"
+                                            data-value="online"
+                                            onclick="selectCustomDropdownOption(event, 'statusOverride')">
+                                        {{ 'En ligne'|trans }}
+                                    </button>
+                                    <button type="button"
+                                            class="custom-dropdown-item {% if user.statusOverride == 'away' %}active{% endif %}"
+                                            data-value="away"
+                                            onclick="selectCustomDropdownOption(event, 'statusOverride')">
+                                        {{ 'Absent'|trans }}
+                                    </button>
+                                    <button type="button"
+                                            class="custom-dropdown-item {% if user.statusOverride == 'busy' %}active{% endif %}"
+                                            data-value="busy"
+                                            onclick="selectCustomDropdownOption(event, 'statusOverride')">
+                                        {{ 'Occupé'|trans }}
+                                    </button>
+                                    <button type="button"
+                                            class="custom-dropdown-item {% if user.statusOverride == 'offline' %}active{% endif %}"
+                                            data-value="offline"
+                                            onclick="selectCustomDropdownOption(event, 'statusOverride')">
+                                        {{ 'Hors ligne (Invisible)'|trans }}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="input-group">
                             <label for="locale">{{ 'Langue'|trans }}</label>
-                            <select name="locale" id="locale" class="form-control"
-                                    style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: var(--font-sans); cursor: pointer; outline: none; margin-bottom: 0.5rem;">
+                            <select name="locale" id="locale" class="form-control" style="display: none;">
                                 <option value="fr"
                                         {% if user.locale == 'fr' %}selected{% endif %}>{{ 'Français'|trans }}</option>
                                 <option value="en"
                                         {% if user.locale == 'en' %}selected{% endif %}>{{ 'English'|trans }}</option>
                             </select>
+
+                            <div class="custom-dropdown-container" id="custom-dropdown-locale">
+                                <button type="button" class="custom-dropdown-trigger"
+                                        onclick="toggleCustomDropdown(event, 'locale')">
+                                    <span class="custom-dropdown-selected-label">
+                                        {% if user.locale == 'en' %}{{ 'English'|trans }}{% else %}{{ 'Français'|trans }}{% endif %}
+                                    </span>
+                                    <span class="dropdown-chevron">▼</span>
+                                </button>
+                                <div class="custom-dropdown-menu">
+                                    <button type="button"
+                                            class="custom-dropdown-item {% if user.locale == 'fr' or user.locale is null %}active{% endif %}"
+                                            data-value="fr" onclick="selectCustomDropdownOption(event, 'locale')">
+                                        {{ 'Français'|trans }}
+                                    </button>
+                                    <button type="button"
+                                            class="custom-dropdown-item {% if user.locale == 'en' %}active{% endif %}"
+                                            data-value="en" onclick="selectCustomDropdownOption(event, 'locale')">
+                                        {{ 'English'|trans }}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <button type="submit" class="btn-submit">{{ 'Sauvegarder le profil'|trans }}</button>
@@ -214,4 +287,80 @@
 
     {% include '_footer.html.twig' %}
 </div>
+
+    <script>
+        function toggleCustomDropdown(event, selectId) {
+            event.stopPropagation();
+            const container = document.getElementById('custom-dropdown-' + selectId);
+            const isOpen = container.classList.contains('open');
+
+            // Close all other dropdowns
+            document.querySelectorAll('.custom-dropdown-container').forEach(c => {
+                c.classList.remove('open');
+                const menu = c.querySelector('.custom-dropdown-menu');
+                if (menu) menu.style.display = 'none';
+            });
+
+            if (!isOpen) {
+                container.classList.add('open');
+                container.querySelector('.custom-dropdown-menu').style.display = 'flex';
+            }
+        }
+
+        function selectCustomDropdownOption(event, selectId) {
+            event.stopPropagation();
+            const item = event.currentTarget;
+            const val = item.getAttribute('data-value');
+            const select = document.getElementById(selectId);
+
+            // Update hidden select
+            select.value = val;
+
+            // Trigger change event to run any onchange handlers
+            const changeEvent = new Event('change', {bubbles: true});
+            select.dispatchEvent(changeEvent);
+
+            // Update labels and active states in custom dropdown UI
+            updateCustomDropdownFromSelect(selectId);
+
+            // Close menu
+            const container = document.getElementById('custom-dropdown-' + selectId);
+            container.classList.remove('open');
+            container.querySelector('.custom-dropdown-menu').style.display = 'none';
+        }
+
+        function updateCustomDropdownFromSelect(selectId) {
+            const select = document.getElementById(selectId);
+            const container = document.getElementById('custom-dropdown-' + selectId);
+            const selectedOption = select.options[select.selectedIndex];
+
+            // Update label
+            if (selectedOption && container) {
+                const labelEl = container.querySelector('.custom-dropdown-selected-label');
+                if (labelEl) {
+                    labelEl.textContent = selectedOption.textContent;
+                }
+            }
+
+            // Update active class
+            if (container) {
+                container.querySelectorAll('.custom-dropdown-item').forEach(item => {
+                    if (item.getAttribute('data-value') === select.value) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+            }
+        }
+
+        // Close dropdowns on document click
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.custom-dropdown-container').forEach(c => {
+                c.classList.remove('open');
+                const menu = c.querySelector('.custom-dropdown-menu');
+                if (menu) menu.style.display = 'none';
+            });
+        });
+    </script>
 {% endblock %}

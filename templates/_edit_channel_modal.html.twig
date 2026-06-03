@@ -15,7 +15,8 @@
             </div>
             <div class="input-group" style="margin-top: 0.5rem;">
                 <label for="edit-modal-retention">Rétention des messages</label>
-                <select id="edit-modal-retention" name="messageRetentionMonths" class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important; color: var(--text-primary); border: 1px solid var(--border-glass); border-radius: 0.5rem; padding: 0.5rem; width: 100%; cursor: pointer;">
+                <select id="edit-modal-retention" name="messageRetentionMonths" class="input-sidebar"
+                        style="width: 100%; cursor: pointer;">
                     <option value="1" {% if activeChannel.messageRetentionMonths == 1 %}selected{% endif %}>1 mois</option>
                     <option value="3" {% if activeChannel.messageRetentionMonths == 3 %}selected{% endif %}>3 mois</option>
                     <option value="6" {% if activeChannel.messageRetentionMonths == 6 %}selected{% endif %}>6 mois</option>
