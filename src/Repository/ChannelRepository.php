@@ -56,7 +56,7 @@ class ChannelRepository extends ServiceEntityRepository
             }
         }
 
-        $robotSlug = 'dm-robot-roquette-'.$user->getUsername();
+        $robotSlug = 'dm-robot-roquette-'.$user->getSlug();
         $hasRobotChannel = false;
         foreach ($joinedChannels as $channel) {
             if ($channel->getSlug() === $robotSlug) {

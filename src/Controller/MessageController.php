@@ -192,8 +192,8 @@ final class MessageController extends AbstractController
             $entityManager,
         );
 
-        if ($activeChannel->getSlug() === 'dm-robot-roquette-'.$currentUser->getUsername(
-            ) && !$isPoll && !$uploadedFile) {
+        if ($activeChannel->getSlug() === 'dm-robot-roquette-'.$currentUser->getSlug()
+            && !$isPoll && !$uploadedFile) {
             $helpMessageId = 'help-'.uniqid();
 
             // Dispatch message to Symfony Messenger to run LLM query asynchronously

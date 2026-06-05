@@ -14,6 +14,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_USERNAME', fields: ['username'])]
+#[ORM\UniqueConstraint(name: 'UNIQ_USER_SLUG', fields: ['slug'])]
 #[ORM\UniqueConstraint(name: 'UNIQ_USER_OAUTH', fields: ['oauthId', 'oauthProvider'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -24,6 +25,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 180)]
     private ?string $username = null;
+
+    #[ORM\Column(length: 180)]
+    private ?string $slug = null;
 
     /**
      * @var list<string> The user roles
@@ -224,6 +228,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUsername(string $username): static
     {
         $this->username = $username;
+        $this->slug = $this->generateSlug($username);
 
         return $this;
     }
@@ -423,5 +428,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->savedMessages->removeElement($message);
 
         return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): static
+    {
+        $this->slug = $slug;
+
+        return $this;
+    }
+
+    private function generateSlug(string $username): string
+    {
+        $slug = preg_replace('/[^a-z0-9]+/i', '-', $username);
+
+        return trim(strtolower($slug), '-');
     }
 }
