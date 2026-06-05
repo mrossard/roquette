@@ -136,9 +136,9 @@ function findMatchingCommands(query) {
 }
 
 export function initEmojiAutocomplete() {
-    const textareas = document.querySelectorAll('textarea:not([data-autocomplete-initialized])');
+    const targets = document.querySelectorAll('textarea:not([data-autocomplete-initialized]), input#global-search-input:not([data-autocomplete-initialized])');
 
-    if (textareas.length > 0) {
+    if (targets.length > 0) {
         if (appUsers.length === 0) {
             fetchUsersForAutocomplete();
         }
@@ -147,20 +147,20 @@ export function initEmojiAutocomplete() {
         }
     }
 
-    textareas.forEach(textarea => {
-        textarea.setAttribute('data-autocomplete-initialized', 'true');
+    targets.forEach(target => {
+        target.setAttribute('data-autocomplete-initialized', 'true');
 
-        textarea.addEventListener('input', () => {
-            handleTextareaInputForAutocomplete(textarea);
+        target.addEventListener('input', () => {
+            handleTextareaInputForAutocomplete(target);
         });
 
-        textarea.addEventListener('keydown', (e) => {
-            handleTextareaKeydownForAutocomplete(textarea, e);
+        target.addEventListener('keydown', (e) => {
+            handleTextareaKeydownForAutocomplete(target, e);
         });
 
-        textarea.addEventListener('blur', () => {
+        target.addEventListener('blur', () => {
             setTimeout(() => {
-                if (activeAutocomplete && activeAutocomplete.textarea === textarea) {
+                if (activeAutocomplete && activeAutocomplete.textarea === target) {
                     closeAutocomplete();
                 }
             }, 150);
@@ -174,9 +174,56 @@ function handleTextareaInputForAutocomplete(textarea) {
 
     const textBeforeCursor = text.substring(0, cursor);
     const matchEmoji = textBeforeCursor.match(/:([a-zA-Z0-9_à-ÿÀ-Ÿ]{1,})$/);
-    const matchMention = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_à-ÿÀ-Ÿ]{0,})$/);
-    const matchChannel = textBeforeCursor.match(/(?:^|\s)#([a-zA-Z0-9_à-ÿÀ-Ÿ-]{0,})$/);
+    const matchMention = textBeforeCursor.match(/(?:^|\s|:)@([a-zA-Z0-9_à-ÿÀ-Ÿ]{0,})$/);
+    const matchChannel = textBeforeCursor.match(/(?:^|\s|:)#([a-zA-Z0-9_à-ÿÀ-Ÿ-]{0,})$/);
     const matchCommand = textBeforeCursor.match(/^\/([a-zA-Z0-9_]*)$/);
+
+    if (textarea.id === 'global-search-input') {
+        if (matchMention) {
+            const query = matchMention[1].toLowerCase();
+            const queryStartIndex = textBeforeCursor.lastIndexOf('@');
+            const queryEndIndex = cursor;
+
+            if (appUsers.length === 0) {
+                fetchUsersForAutocomplete().then(() => {
+                    handleTextareaInputForAutocomplete(textarea);
+                });
+                return;
+            }
+
+            const matches = findMatchingUsersForQuery(query);
+
+            if (matches.length === 0) {
+                closeAutocomplete();
+                return;
+            }
+
+            showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches);
+        } else if (matchChannel) {
+            const query = matchChannel[1].toLowerCase();
+            const queryStartIndex = textBeforeCursor.lastIndexOf('#');
+            const queryEndIndex = cursor;
+
+            if (appChannels.length === 0) {
+                fetchChannelsForAutocomplete().then(() => {
+                    handleTextareaInputForAutocomplete(textarea);
+                });
+                return;
+            }
+
+            const matches = findMatchingChannelsForQuery(query);
+
+            if (matches.length === 0) {
+                closeAutocomplete();
+                return;
+            }
+
+            showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches);
+        } else {
+            closeAutocomplete();
+        }
+        return;
+    }
 
     if (matchCommand) {
         const query = matchCommand[1].toLowerCase();
@@ -269,6 +316,15 @@ function showAutocompleteDropdown(textarea, type, query, queryStartIndex, queryE
     const wrapper = textarea.closest('.message-input-wrapper');
     if (wrapper) {
         wrapper.appendChild(dropdown);
+    } else if (textarea.id === 'global-search-input') {
+        const form = textarea.closest('form');
+        if (form) {
+            form.style.position = 'relative';
+            form.appendChild(dropdown);
+            dropdown.style.top = '100%';
+            dropdown.style.bottom = 'auto';
+            dropdown.style.left = '3rem';
+        }
     } else {
         document.body.appendChild(dropdown);
         const rect = textarea.getBoundingClientRect();
