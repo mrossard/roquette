@@ -265,7 +265,7 @@ final class LlmQueryHandler
                     ->andWhere('m.parent IS NULL')
                     ->orderBy('m.createdAt', 'DESC')
                     ->setParameter('channel', $targetChannel)
-                    ->setMaxResults(20)
+                    ->setMaxResults(100)
                     ->getQuery()
                     ->getResult();
                 $unreadMessages = array_reverse($unreadMessages);
