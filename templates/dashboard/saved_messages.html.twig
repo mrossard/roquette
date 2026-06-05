@@ -10,7 +10,15 @@
 {% endblock %}
 
 {% block body %}
-<div class="app-container" hx-boost="true">
+    {% set mercureTopics = [
+        mercure_topic_prefix ~ '/users/' ~ app.user.username,
+        mercure_topic_prefix ~ '/users/status'
+    ] %}
+    {% for ch in channels %}
+        {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+    {% endfor %}
+    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
+    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
     <header class="app-header">
         <div class="logo-area">
             <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
@@ -24,23 +32,16 @@
                 <p class="subtitle">Symfony + HTMX + Mercure + AssetMapper</p>
             </div>
         </div>
-        
+
         <div class="header-controls">
-            {% set mercureTopics = [
-                mercure_topic_prefix ~ '/users/' ~ app.user.username,
-                mercure_topic_prefix ~ '/users/status'
-            ] %}
-            {% for ch in channels %}
-                {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
-            {% endfor %}
-            <div class="status-badge" id="mercure-status" 
+            <div class="status-badge" id="mercure-status"
                  data-active-channel-slug=""
                  data-current-username="{{ app.user.username }}"
-                 data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
+                 data-hub="{{ hubUrl }}">
                 <span class="status-dot disconnected"></span>
                 <span class="status-text">Connexion au Hub...</span>
             </div>
-            
+
             <button id="theme-toggle" class="btn-theme-toggle" aria-label="Changer de thème">🌓</button>
 
             {% include 'dashboard/_user_menu_dropdown.html.twig' %}
@@ -80,7 +81,7 @@
                             <div style="margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 1.5rem;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; background: rgba(255,255,255,0.02); padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.03);">
                                     <span style="font-size: 0.8rem; color: var(--text-muted);">
-                                        Provenance : 
+                                        Provenance :
                                         {% if msg.channel.isDm %}
                                             {% set partner = msg.channel.getDmPartner(app.user) %}
                                             <strong>💬 Conversation privée avec {{ partner ? partner.displayName|default(partner.username) : 'un utilisateur' }}</strong>

@@ -402,6 +402,8 @@ final class LlmQueryHandler
                 'html' => $html,
             ]),
             true,
+            null,
+            'help_stream_update',
         );
 
         $this->hub->publish($update);

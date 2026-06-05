@@ -315,12 +315,16 @@ final class MessageController extends AbstractController
 
         $renderedHtml = $this->renderFeedItem($message);
 
+        $renderedHtmlOob = $this->renderView(
+            'dashboard/_feed_item.html.twig',
+            array_merge(
+                $this->feedItemParams($message),
+                ['oob' => true],
+            ),
+        );
+
         $channel = $message->getChannel();
-        $mercurePublisher->publishToChannel($channel, [
-            'html' => $renderedHtml,
-            'user' => $currentUser->getUsername(),
-            'channelSlug' => $channel->getSlug(),
-        ]);
+        $mercurePublisher->publishToChannel($channel, $renderedHtmlOob, 'message_'.$channel->getSlug());
 
         return new Response($renderedHtml);
     }
@@ -353,11 +357,11 @@ final class MessageController extends AbstractController
 
         if ($channel->getPinnedMessage() === $message) {
             $channel->setPinnedMessage(null);
-            $mercurePublisher->publishToChannel($channel, [
-                'type' => 'pin_change',
-                'channelSlug' => $channel->getSlug(),
-                'bannerHtml' => '',
-            ]);
+            $mercurePublisher->publishToChannel(
+                $channel,
+                '<div id="pinned-banner-container" hx-swap-oob="true"></div>',
+                'message_'.$channel->getSlug(),
+            );
         }
 
         if ($message->getFilePath()) {
@@ -367,11 +371,8 @@ final class MessageController extends AbstractController
         $entityManager->remove($message);
         $entityManager->flush();
 
-        $mercurePublisher->publishToChannel($channel, [
-            'type' => 'message_deleted',
-            'messageId' => $id,
-            'channelSlug' => $channel->getSlug(),
-        ]);
+        $deleteOob = '<div id="feed-item-'.$id.'" hx-swap-oob="delete"></div>';
+        $mercurePublisher->publishToChannel($channel, $deleteOob, 'message_'.$channel->getSlug());
 
         return new Response('', 204);
     }

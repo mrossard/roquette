@@ -90,7 +90,7 @@ final class UserSettingsController extends AbstractController
                 'lastActive' => $currentUser->getLastActiveAt()
                     ? $currentUser->getLastActiveAt()->getTimestamp()
                     : null,
-            ], true);
+            ], true, 'user_status_changed');
 
             return new Response(null, 204);
         }
@@ -200,22 +200,19 @@ final class UserSettingsController extends AbstractController
             'pinnedMessage' => $message,
             'activeChannel' => $channel,
         ]);
-        $messageHtml = $this->renderMessageItem($message);
+        $bannerOob = '<div id="pinned-banner-container" hx-swap-oob="true">'.$bannerHtml.'</div>';
+        $messageHtml = $this->renderMessageItem($message, true);
 
-        $previousMessageHtml = null;
+        $previousMessageHtml = '';
         if ($previousPinnedMessage) {
-            $previousMessageHtml = $this->renderMessageItem($previousPinnedMessage);
+            $previousMessageHtml = $this->renderMessageItem($previousPinnedMessage, true);
         }
 
-        $mercurePublisher->publishToChannel($channel, [
-            'type' => 'pin_change',
-            'channelSlug' => $channel->getSlug(),
-            'bannerHtml' => $bannerHtml,
-            'messageId' => $message->getId(),
-            'messageHtml' => $messageHtml,
-            'previousMessageId' => $previousPinnedMessage ? $previousPinnedMessage->getId() : null,
-            'previousMessageHtml' => $previousMessageHtml,
-        ]);
+        $mercurePublisher->publishToChannel(
+            $channel,
+            $bannerOob.$messageHtml.$previousMessageHtml,
+            'message_'.$channel->getSlug(),
+        );
 
         return new Response($bannerHtml);
     }
@@ -244,15 +241,10 @@ final class UserSettingsController extends AbstractController
             $channel->setPinnedMessage(null);
             $entityManager->flush();
 
-            $messageHtml = $this->renderMessageItem($message);
+            $bannerOob = '<div id="pinned-banner-container" hx-swap-oob="true"></div>';
+            $messageHtml = $this->renderMessageItem($message, true);
 
-            $mercurePublisher->publishToChannel($channel, [
-                'type' => 'pin_change',
-                'channelSlug' => $channel->getSlug(),
-                'bannerHtml' => '',
-                'messageId' => $message->getId(),
-                'messageHtml' => $messageHtml,
-            ]);
+            $mercurePublisher->publishToChannel($channel, $bannerOob.$messageHtml, 'message_'.$channel->getSlug());
         }
 
         return new Response('');
@@ -262,7 +254,7 @@ final class UserSettingsController extends AbstractController
     // Private helper
     // -------------------------------------------------------------------------
 
-    private function renderMessageItem(\App\Entity\Message $message): string
+    private function renderMessageItem(\App\Entity\Message $message, bool $oob = false): string
     {
         return $this->renderView('dashboard/_feed_item.html.twig', [
             'author' => $message->getAuthor(),
@@ -275,6 +267,7 @@ final class UserSettingsController extends AbstractController
             'filePath' => $message->getFilePath(),
             'mimeType' => $message->getMimeType(),
             'messageObject' => $message,
+            'oob' => $oob,
         ]);
     }
 }

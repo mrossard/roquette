@@ -82,7 +82,7 @@ final class InvitationController extends AbstractController
             'channelName' => $activeChannel->getName(),
             'senderName' => $currentUser->getDisplayName() ?: $currentUser->getUsername(),
             'html' => $sidebarHtml,
-        ]);
+        ], 'invitation_received');
 
         $query = $request->request->get('q', '');
         $query = trim($query);

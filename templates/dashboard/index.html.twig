@@ -10,7 +10,15 @@
 {% endblock %}
 
 {% block body %}
-<div class="app-container" hx-boost="true">
+    {% set mercureTopics = [
+        mercure_topic_prefix ~ '/users/' ~ app.user.username,
+        mercure_topic_prefix ~ '/users/status'
+    ] %}
+    {% for ch in channels %}
+        {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+    {% endfor %}
+    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
+    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
     {% include 'dashboard/_header.html.twig' with {
         'channels': channels,
         'activeChannel': activeChannel
@@ -222,7 +230,8 @@
                             {% include 'dashboard/_pinned_banner.html.twig' with {'pinnedMessage': activeChannel.pinnedMessage, 'activeChannel': activeChannel} %}
                         {% endif %}
                     </div>
-                    <div id="live-feed" class="feed-container" role="log" aria-live="polite">
+                    <div id="live-feed" class="feed-container" role="log" aria-live="polite"
+                         sse-swap="message_{{ activeChannel.slug }}" hx-swap="beforeend">
                         {% include 'dashboard/_messages_feed.html.twig' with {
                             'messages': messages,
                             'activeChannel': activeChannel,

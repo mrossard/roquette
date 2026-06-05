@@ -22,17 +22,10 @@
     </div>
 
     <div class="header-controls">
-        {% set mercureTopics = [
-            mercure_topic_prefix ~ '/users/' ~ app.user.username,
-            mercure_topic_prefix ~ '/users/status'
-        ] %}
-        {% for ch in channels %}
-            {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
-        {% endfor %}
         <div class="status-badge" id="mercure-status"
              data-active-channel-slug="{{ activeChannel.slug }}"
              data-current-username="{{ app.user.username }}"
-             data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
+             data-hub="{{ hubUrl }}">
             <span class="status-dot disconnected"></span>
             <span class="status-text">{{ 'Connexion au Hub...'|trans }}</span>
         </div>

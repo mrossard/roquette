@@ -10,7 +10,15 @@
 {% endblock %}
 
 {% block body %}
-<div class="app-container" hx-boost="true">
+    {% set mercureTopics = [
+        mercure_topic_prefix ~ '/users/' ~ app.user.username,
+        mercure_topic_prefix ~ '/users/status'
+    ] %}
+    {% for ch in channels %}
+        {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+    {% endfor %}
+    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
+    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
     <header class="app-header">
         <div class="logo-area">
             <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
@@ -26,17 +34,10 @@
         </div>
 
         <div class="header-controls">
-            {% set mercureTopics = [
-                mercure_topic_prefix ~ '/users/' ~ app.user.username,
-                mercure_topic_prefix ~ '/users/status'
-            ] %}
-            {% for ch in channels %}
-                {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
-            {% endfor %}
             <div class="status-badge" id="mercure-status"
                  data-active-channel-slug=""
                  data-current-username="{{ app.user.username }}"
-                 data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
+                 data-hub="{{ hubUrl }}">
                 <span class="status-dot disconnected"></span>
                 <span class="status-text">Connexion au Hub...</span>
             </div>

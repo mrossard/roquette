@@ -634,35 +634,21 @@ export function initUnreadFilter() {
 }
 
 export function showCustomConfirm(message, callback) {
-    let confirmModal = document.getElementById('custom-confirm-modal');
-    if (!confirmModal) {
-        confirmModal = document.createElement('div');
-        confirmModal.id = 'custom-confirm-modal';
-        confirmModal.className = 'modal-backdrop confirmation-backdrop';
-        confirmModal.setAttribute('role', 'dialog');
-        confirmModal.setAttribute('aria-modal', 'true');
-        confirmModal.innerHTML = `
-            <div class="modal-content glass-panel confirmation-content" onclick="event.stopPropagation()">
-                <div class="confirmation-icon" id="confirm-modal-icon">⚠️</div>
-                <h3 class="confirmation-title" id="confirm-modal-title">Confirmation</h3>
-                <p class="confirmation-message" id="confirm-modal-message"></p>
-                <div class="confirmation-actions">
-                    <button type="button" class="btn-confirm-cancel" id="confirm-modal-cancel">Annuler</button>
-                    <button type="button" class="btn-confirm-action" id="confirm-modal-ok">Confirmer</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(confirmModal);
+    const dialog = document.getElementById('custom-confirm-dialog');
+    if (!dialog) {
+        if (confirm(message)) {
+            callback();
+        }
+        return;
     }
 
-    const iconEl = document.getElementById('confirm-modal-icon');
-    const titleEl = document.getElementById('confirm-modal-title');
-    const messageEl = document.getElementById('confirm-modal-message');
-    const cancelBtn = document.getElementById('confirm-modal-cancel');
-    const okBtn = document.getElementById('confirm-modal-ok');
+    const iconEl = document.getElementById('confirm-dialog-icon');
+    const titleEl = document.getElementById('confirm-dialog-title');
+    const messageEl = document.getElementById('confirm-dialog-message');
+    const cancelBtn = document.getElementById('confirm-dialog-cancel');
+    const okBtn = document.getElementById('confirm-dialog-ok');
 
     const lowerMsg = message.toLowerCase();
-
     titleEl.className = 'confirmation-title';
     okBtn.className = 'btn-confirm-action';
 
@@ -685,79 +671,31 @@ export function showCustomConfirm(message, callback) {
     }
 
     messageEl.textContent = message;
-    confirmModal.style.display = 'flex';
 
-    // Focus confirmation button
-    setTimeout(() => okBtn.focus(), 50);
+    dialog.showModal();
 
-    function closeConfirmModal() {
-        confirmModal.style.display = 'none';
-        okBtn.removeEventListener('click', onConfirm);
-        cancelBtn.removeEventListener('click', onCancel);
-        document.removeEventListener('keydown', onKeyDown);
-    }
-
-    function onConfirm() {
-        closeConfirmModal();
+    okBtn.onclick = () => {
+        dialog.close();
         callback();
-    }
-
-    function onCancel() {
-        closeConfirmModal();
-    }
-
-    function onKeyDown(e) {
-        if (e.key === 'Escape') {
-            onCancel();
-        } else if (e.key === 'Tab') {
-            const focusable = [cancelBtn, okBtn];
-            const index = focusable.indexOf(document.activeElement);
-            if (index === -1) {
-                okBtn.focus();
-                e.preventDefault();
-            } else if (e.shiftKey && index === 0) {
-                focusable[1].focus();
-                e.preventDefault();
-            } else if (!e.shiftKey && index === 1) {
-                focusable[0].focus();
-                e.preventDefault();
-            }
-        }
-    }
-
-    okBtn.addEventListener('click', onConfirm);
-    cancelBtn.addEventListener('click', onCancel);
-    confirmModal.onclick = (e) => {
-        if (e.target === confirmModal) onCancel();
     };
-    document.addEventListener('keydown', onKeyDown);
+
+    cancelBtn.onclick = () => {
+        dialog.close();
+    };
 }
 
 export function showCustomAlert(message, title = 'Attention', icon = '⚠️', onCloseCallback = null) {
-    let alertModal = document.getElementById('custom-alert-modal');
-    if (!alertModal) {
-        alertModal = document.createElement('div');
-        alertModal.id = 'custom-alert-modal';
-        alertModal.className = 'modal-backdrop confirmation-backdrop';
-        alertModal.setAttribute('role', 'dialog');
-        alertModal.setAttribute('aria-modal', 'true');
-        alertModal.innerHTML = `
-            <div class="modal-content glass-panel confirmation-content" onclick="event.stopPropagation()">
-                <div class="confirmation-icon" id="alert-modal-icon">⚠️</div>
-                <h3 class="confirmation-title" id="alert-modal-title">Attention</h3>
-                <p class="confirmation-message" id="alert-modal-message"></p>
-                <div class="confirmation-actions">
-                    <button type="button" class="btn-confirm-action" id="alert-modal-ok">OK</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(alertModal);
+    const dialog = document.getElementById('custom-alert-dialog');
+    if (!dialog) {
+        alert(message);
+        if (onCloseCallback) onCloseCallback();
+        return;
     }
 
-    const iconEl = document.getElementById('alert-modal-icon');
-    const titleEl = document.getElementById('alert-modal-title');
-    const messageEl = document.getElementById('alert-modal-message');
-    const okBtn = document.getElementById('alert-modal-ok');
+    const iconEl = document.getElementById('alert-dialog-icon');
+    const titleEl = document.getElementById('alert-dialog-title');
+    const messageEl = document.getElementById('alert-dialog-message');
+    const okBtn = document.getElementById('alert-dialog-ok');
 
     iconEl.textContent = icon;
     titleEl.textContent = title;
@@ -766,35 +704,14 @@ export function showCustomAlert(message, title = 'Attention', icon = '⚠️', o
     titleEl.className = 'confirmation-title info-type';
     okBtn.className = 'btn-confirm-action info-type';
 
-    alertModal.style.display = 'flex';
+    dialog.showModal();
 
-    setTimeout(() => okBtn.focus(), 50);
-
-    function closeAlertModal() {
-        alertModal.style.display = 'none';
-        okBtn.removeEventListener('click', onClose);
-        document.removeEventListener('keydown', onKeyDown);
+    okBtn.onclick = () => {
+        dialog.close();
         if (onCloseCallback) {
             onCloseCallback();
         }
-    }
-
-    function onClose() {
-        closeAlertModal();
-    }
-
-    function onKeyDown(e) {
-        if (e.key === 'Escape' || e.key === 'Enter') {
-            onClose();
-            e.preventDefault();
-        }
-    }
-
-    okBtn.addEventListener('click', onClose);
-    alertModal.onclick = (e) => {
-        if (e.target === alertModal) onClose();
     };
-    document.addEventListener('keydown', onKeyDown);
 }
 
 export function initConfirmModals() {
@@ -846,100 +763,7 @@ setInterval(() => {
     });
 }, 15000);
 
-export function initLinkPreviews(container = document) {
-    const links = container.querySelectorAll('.feed-item-body p a[href^="http://"], .feed-item-body p a[href^="https://"]');
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g, '&amp;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;')
-                  .replace(/"/g, '&quot;')
-                  .replace(/'/g, '&#039;');
-    }
-
-    links.forEach(link => {
-        if (link.dataset.unfurled || link.dataset.unfurling) return;
-
-        const url = link.getAttribute('href');
-        try {
-            const parsedUrl = new URL(url);
-            if (parsedUrl.origin === window.location.origin) return;
-        } catch (e) {
-            return;
-        }
-
-        link.dataset.unfurling = "true";
-
-        fetch(`/api/link-preview?url=${encodeURIComponent(url)}`)
-            .then(response => {
-                if (!response.ok) throw new Error();
-                return response.json();
-            })
-            .then(data => {
-                link.dataset.unfurled = "true";
-                delete link.dataset.unfurling;
-
-                if (data && (data.title || data.description)) {
-                    const feedBody = link.closest('.feed-item-body');
-                    if (feedBody) {
-                        // Check if card already exists for this URL to avoid duplicates
-                        if (feedBody.querySelector(`.link-preview-card[data-preview-url="${url}"]`)) {
-                            return;
-                        }
-
-                        const card = document.createElement('div');
-                        card.className = 'link-preview-card';
-                        card.setAttribute('data-preview-url', url);
-
-                        let imageHtml = '';
-                        if (data.image) {
-                            imageHtml = `
-                                <div class="link-preview-image-container">
-                                    <img src="${escapeHtml(data.image)}" class="link-preview-image" alt="Aperçu de l'image">
-                                </div>
-                            `;
-                        }
-
-                        const titleText = data.title || url;
-                        const descText = data.description || '';
-                        const siteText = data.siteName || new URL(url).hostname;
-
-                        card.innerHTML = `
-                            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="link-preview-wrapper">
-                                ${imageHtml}
-                                <div class="link-preview-content">
-                                    <div class="link-preview-site">${escapeHtml(siteText)}</div>
-                                    <div class="link-preview-title">${escapeHtml(titleText)}</div>
-                                    ${descText ? `<div class="link-preview-description">${escapeHtml(descText)}</div>` : ''}
-                                </div>
-                            </a>
-                        `;
-
-                        // Append before reactions or thread badges, or at the end
-                        const reactions = feedBody.querySelector('.message-reactions-container');
-                        const threadBadge = feedBody.querySelector('.message-thread-badge-container');
-
-                        if (reactions) {
-                            feedBody.insertBefore(card, reactions);
-                        } else if (threadBadge) {
-                            feedBody.insertBefore(card, threadBadge);
-                        } else {
-                            feedBody.appendChild(card);
-                        }
-
-                        if (window.scrollToBottom) {
-                            window.scrollToBottom(true);
-                        }
-                    }
-                }
-            })
-            .catch(() => {
-                link.dataset.unfurled = "true";
-                delete link.dataset.unfurling;
-            });
-    });
-}
 
 export function openGlobalSearch() {
     const modal = document.getElementById('global-search-modal');
@@ -1062,7 +886,7 @@ window.initUnreadFilter = initUnreadFilter;
 window.showCustomConfirm = showCustomConfirm;
 window.showCustomAlert = showCustomAlert;
 window.initConfirmModals = initConfirmModals;
-window.initLinkPreviews = initLinkPreviews;
+
 window.openGlobalSearch = openGlobalSearch;
 window.closeGlobalSearch = closeGlobalSearch;
 window.handleGlobalSearchBackdropClick = handleGlobalSearchBackdropClick;

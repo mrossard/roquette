@@ -185,9 +185,8 @@ final class ThreadController extends AbstractController
             '(Fil) ',
         );
 
-        return $this->render('dashboard/_thread_reply_response.html.twig', [
+        return $this->render('dashboard/_thread_input_form.html.twig', [
             'parentMessage' => $parentMessage,
-            'replies' => $parentMessage->getReplies(),
         ]);
     }
 }

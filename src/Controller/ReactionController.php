@@ -66,11 +66,15 @@ final class ReactionController extends AbstractController
 
         $renderedHtml = $this->renderFeedItem($message);
 
-        $mercurePublisher->publishToChannel($channel, [
-            'html' => $renderedHtml,
-            'user' => $currentUser->getUsername(),
-            'channelSlug' => $channel->getSlug(),
-        ]);
+        $renderedHtmlOob = $this->renderView(
+            'dashboard/_feed_item.html.twig',
+            array_merge(
+                $this->feedItemParams($message),
+                ['oob' => true],
+            ),
+        );
+
+        $mercurePublisher->publishToChannel($channel, $renderedHtmlOob, 'message_'.$channel->getSlug());
 
         return new Response($renderedHtml);
     }

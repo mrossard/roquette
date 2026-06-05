@@ -30,7 +30,23 @@ class AppExtension extends AbstractExtension
             new TwigFilter('wrap_emojis', [$this->formatter, 'wrapUnicodeEmojis'], ['is_safe' => ['html']]),
             new TwigFilter('format_bytes', [$this, 'formatBytes']),
             new TwigFilter('reaction_tooltip', [$this, 'formatReactionTooltip']),
+            new TwigFilter('extract_external_links', [$this, 'extractExternalLinks']),
         ];
+    }
+
+    public function extractExternalLinks(?string $content): array
+    {
+        if (!$content) {
+            return [];
+        }
+
+        // Match http/https URLs
+        preg_match_all('/https?:\/\/[^\s\)<>"]+/i', $content, $matches);
+        if (empty($matches[0])) {
+            return [];
+        }
+
+        return array_values(array_unique($matches[0]));
     }
 
     public function formatBytes(int $bytes, int $precision = 2): string

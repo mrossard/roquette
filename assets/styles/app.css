@@ -5699,6 +5699,29 @@ del {
     box-shadow: 0 0 8px var(--accent-purple-glow);
 }
 
+/* Native Dialog Modals Styling */
+dialog.confirmation-dialog {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.25rem;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+    background: linear-gradient(135deg, rgba(20, 30, 48, 0.95), rgba(36, 59, 85, 0.95));
+    color: var(--text-primary);
+    padding: 2.5rem 2rem;
+    max-width: 400px;
+    width: 90%;
+    outline: none;
+    box-sizing: border-box;
+    margin: auto;
+    align-items: center;
+    text-align: center;
+}
+
+dialog.confirmation-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    animation: fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 
 
 

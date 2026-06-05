@@ -1,6 +1,7 @@
 import './styles/app.css';
 import htmx from 'htmx.org';
 window.htmx = htmx;
+import 'htmx-ext-sse';
 
 import hljs from 'highlight.js';
 window.hljs = hljs;
@@ -73,17 +74,17 @@ window.toggleMessageReactionPicker = function(event, messageId) {
     event.stopPropagation();
     const picker = document.getElementById(`reaction-picker-${messageId}`);
     if (!picker) return;
-    
+
     // Close other open reaction pickers first
     document.querySelectorAll('.reaction-picker.show').forEach(p => {
         if (p !== picker) {
             p.classList.remove('show');
         }
     });
-    
+
     const isShowing = !picker.classList.contains('show');
     picker.classList.toggle('show');
-    
+
     if (isShowing) {
         // Dynamically move/initialize the full emoji picker inside this picker
         let emojiPickerContainer = document.getElementById('shared-reaction-emoji-picker');
@@ -108,14 +109,14 @@ window.toggleMessageReactionPicker = function(event, messageId) {
             });
             emojiPickerContainer = element;
             emojiPickerContainer.id = 'shared-reaction-emoji-picker';
-            
+
             // Store focusSearch function on the DOM element for subsequent clicks
             emojiPickerContainer.focusSearch = focusSearchFn;
         }
-        
+
         emojiPickerContainer.dataset.messageId = messageId;
         picker.appendChild(emojiPickerContainer);
-        
+
         // Reset positioning styles
         picker.style.left = '0';
         picker.style.right = 'auto';
@@ -123,14 +124,14 @@ window.toggleMessageReactionPicker = function(event, messageId) {
         picker.style.bottom = 'auto';
         picker.style.marginTop = '4px';
         picker.style.marginBottom = '0';
-        
+
         // Handle horizontal overflow (avoid going off screen to the right)
         let rect = picker.getBoundingClientRect();
         if (rect.right > window.innerWidth) {
             picker.style.left = 'auto';
             picker.style.right = '0';
         }
-        
+
         // Handle vertical overflow (avoid going off screen or under the message composer at the bottom)
         let bottomThreshold = window.innerHeight;
         const container = picker.closest('#live-feed, .thread-content');
@@ -140,14 +141,14 @@ window.toggleMessageReactionPicker = function(event, messageId) {
                 bottomThreshold = nextEl.getBoundingClientRect().top;
             }
         }
-        
+
         if (rect.bottom > bottomThreshold) {
             picker.style.top = 'auto';
             picker.style.bottom = '100%';
             picker.style.marginTop = '0';
             picker.style.marginBottom = '8px';
         }
-        
+
         if (emojiPickerContainer.focusSearch) {
             emojiPickerContainer.focusSearch();
         }
@@ -326,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.highlightAllCodeBlocks) {
         window.highlightAllCodeBlocks();
     }
-    if (window.initLinkPreviews) window.initLinkPreviews();
     if (window.initEmojiPickers) window.initEmojiPickers();
     if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
     initAutoResizeTextarea();
@@ -390,20 +390,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
-        console.log('[Diagnostic] HTMX settle target:', target, 'isChannelSwitch:', isChannelSwitch);
 
-        console.log('HTMX content settled. Checking Mercure connection...');
-        // Cancel any pending inline edit when switching channels
-        if (isChannelSwitch && window.cancelInlineEdit) {
-            window.cancelInlineEdit();
-        }
         if (window.connectMercure) window.connectMercure();
         if (isChannelSwitch && window.scrollToBottom) window.scrollToBottom(false);
         if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
         if (window.highlightAllCodeBlocks) {
             window.highlightAllCodeBlocks();
         }
-        if (window.initLinkPreviews) window.initLinkPreviews();
         if (window.initEmojiPickers) window.initEmojiPickers();
         if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
         initAutoResizeTextarea();

@@ -18,7 +18,8 @@
                 <!-- Poll Edit Form -->
                 <div>
                     <label for="edit_poll_question_{{ message.id }}" style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Question</label>
-                    <input type="text" id="edit_poll_question_{{ message.id }}" name="poll_question" value="{{ message.poll.question }}" required class="input-sidebar" />
+                    <input type="text" id="edit_poll_question_{{ message.id }}" name="poll_question"
+                           value="{{ message.poll.question }}" required autofocus class="input-sidebar"/>
                 </div>
 
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(0, 0, 0, 0.2); padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-glass);">
@@ -51,7 +52,10 @@
             {% else %}
                 <!-- Standard Message Edit Form -->
                 <div class="message-input-wrapper">
-                    <textarea name="content" class="edit-message-textarea" required aria-label="Modifier le message" style="width: 100%; min-height: 80px; padding: 0.6rem; padding-right: 2.5rem; border-radius: 0.5rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: inherit; font-size: 0.925rem; resize: vertical; outline: none; transition: var(--transition-smooth);" onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); } else if(event.key === 'Escape') { this.form.querySelector('.btn-cancel').click(); }">{{ message.content }}</textarea>
+                    <textarea name="content" class="edit-message-textarea" required autofocus
+                              aria-label="Modifier le message"
+                              style="width: 100%; min-height: 80px; padding: 0.6rem; padding-right: 2.5rem; border-radius: 0.5rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: inherit; font-size: 0.925rem; resize: vertical; outline: none; transition: var(--transition-smooth);"
+                              onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); } else if(event.key === 'Escape') { this.form.querySelector('.btn-cancel').click(); }">{{ message.content }}</textarea>
                     <button type="button" class="btn-emoji-toggle" data-emoji-target="textarea" title="Ajouter un émoji" aria-label="Ajouter un émoji">
                         {{ ux_icon('heroicons:face-smile', {'aria-hidden': 'true'}) }}
                     </button>

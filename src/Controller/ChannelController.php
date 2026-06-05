@@ -438,7 +438,7 @@ final class ChannelController extends AbstractController
         $this->mercurePublisher->publishToChannel($channel, [
             'type' => 'channel_deleted',
             'channelSlug' => $slug,
-        ]);
+        ], 'channel_deleted');
 
         $this->logger->info(sprintf(
             'Channel deleted: "%s" (slug: "%s") by user "%s"',

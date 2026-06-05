@@ -4,6 +4,13 @@
 {% set showReorder = showReorder|default(true) %}
 
 <section class="card glass-panel sidebar-panel" id="sidebar-panel">
+    {# Hidden elements to subscribe HTMX to global SSE events without triggering DOM swaps #}
+    <div style="display:none;" hx-trigger="sse:personal_notification"></div>
+    <div style="display:none;" hx-trigger="sse:user_typing"></div>
+    <div style="display:none;" hx-trigger="sse:user_status_changed"></div>
+    <div style="display:none;" hx-trigger="sse:help_stream_update"></div>
+    <div style="display:none;" hx-trigger="sse:invitation_received"></div>
+    <div style="display:none;" hx-trigger="sse:channel_deleted"></div>
     <div class="card-header" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
         <div class="sidebar-actions" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
             <button id="btn-filter-unread" class="btn-directory-trigger"

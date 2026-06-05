@@ -200,7 +200,7 @@ final class NotificationController extends AbstractController
             'displayName' => ($currentUser->getDisplayName() !== null && $currentUser->getDisplayName() !== '') ? $currentUser->getDisplayName() : $currentUser->getUsername(),
             'isTyping' => $isTyping,
             'channelSlug' => $activeChannel->getSlug(),
-        ]);
+        ], 'user_typing');
 
         return new Response('', 204);
     }

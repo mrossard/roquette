@@ -17,7 +17,7 @@ return [
         'entrypoint' => true,
     ],
     'htmx.org' => [
-        'version' => '2.0.10',
+        'version' => '2.0.7',
     ],
     'highlight.js' => [
         'version' => '11.11.1',
@@ -27,5 +27,8 @@ return [
     ],
     'frankenphp-hot-reload' => [
         'version' => '1.0.1',
+    ],
+    'htmx-ext-sse' => [
+        'version' => '2.2.4',
     ],
 ];
