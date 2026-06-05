@@ -11,6 +11,7 @@ use App\Repository\MessageRepository;
 use App\Repository\UserChannelReadRepository;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
@@ -31,6 +32,7 @@ final class LlmQueryHandler
         private readonly ParameterBagInterface $parameterBag,
         private readonly EntityManagerInterface $entityManager,
         private readonly string $mercureTopicPrefix,
+        private readonly LoggerInterface $logger,
     ) {}
 
     public function __invoke(LlmQueryMessage $message): void
@@ -55,6 +57,8 @@ final class LlmQueryHandler
         if (str_starts_with($channelSlug, 'dm-robot-roquette-')) {
             $channels = $this->channelRepository->findAllForUser($user);
             $classification = $this->classifyIntent($message->getQuestion(), $channels, $channelSlug);
+
+            $this->logger->info('Classification result:', ['classification' => $classification]);
 
             $intent = $classification['intent'] ?? 'help';
             $targetChannelSlug = $classification['channelSlug'] ?? null;
@@ -130,10 +134,10 @@ final class LlmQueryHandler
                 $formattedHtml,
             );
 
-            // Persist the message in the database so it is saved
+            // Persist the message in the database so it is saved only if it is a DM with the robot
             $robotUser = $this->userRepository->findOneBy(['username' => 'robot-roquette']);
             $channel = $this->channelRepository->findOneBy(['slug' => $message->getChannelSlug()]);
-            if ($robotUser && $channel) {
+            if ($robotUser && $channel && str_starts_with($channel->getSlug(), 'dm-robot-roquette-')) {
                 $dbMessage = new \App\Entity\Message();
                 $dbMessage->setAuthor($robotUser);
                 $dbMessage->setChannel($channel);
@@ -173,31 +177,36 @@ final class LlmQueryHandler
      */
     private function classifyIntent(string $question, array $channels, string $currentChannelSlug): ?array
     {
-        $channelListStr = '';
+        $accessibleChannels = [];
         foreach ($channels as $c) {
             if ($c->getSlug() !== $currentChannelSlug) {
-                $channelListStr .= sprintf(
-                    "- Nom: %s, Slug: %s, Description: %s\n",
-                    $c->getName(),
-                    $c->getSlug(),
-                    $c->getDescription(),
-                );
+                $accessibleChannels[] = [
+                    'name' => $c->getName(),
+                    'slug' => $c->getSlug(),
+                    'description' => $c->getDescription(),
+                ];
             }
         }
 
-        $classificationPrompt = "L'utilisateur a écrit au robot d'aide : \"".$question."\"\n\n"
-            ."Voici la liste des canaux auxquels l'utilisateur a accès :\n"
-            .$channelListStr."\n"
-            ."Tu dois déterminer l'intention de l'utilisateur. Les deux intentions possibles sont :\n"
-            ."1. 'resumer' : L'utilisateur demande explicitement un résumé des messages récents d'un canal (par exemple : 'résume le canal général', 'fais-moi une synthèse de htmx', 'qu'est-ce qui s'est dit sur mercure', etc.). Si l'utilisateur mentionne le nom ou le slug d'un des canaux ci-dessus pour en avoir un résumé ou des nouvelles, c'est l'intention 'resumer'.\n"
-            ."2. 'help' : L'utilisateur pose une question générale, demande de l'aide, ou veut savoir comment faire quelque chose dans l'application (par exemple: 'comment créer un canal', 'aide-moi', etc.).\n\n"
-            ."Réponds strictement sous format JSON avec la structure suivante, sans aucun autre texte :\n"
+        $promptData = [
+            'message' => $question,
+            'channels' => $accessibleChannels,
+        ];
+        $classificationPrompt = json_encode($promptData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        $classificationSystemPrompt = "Tu es un outil d'analyse d'intention d'utilisateur pour l'application Roquette. "
+            ."L'entrée qui te sera fournie sous forme de prompt est un objet JSON contenant :\n"
+            ."- \"message\" : Le message ou la question écrite par l'utilisateur.\n"
+            ."- \"channels\" : La liste des canaux auxquels l'utilisateur a accès, chaque canal ayant un \"name\", \"slug\", et \"description\".\n\n"
+            ."Ton rôle unique est de classifier le message pour déterminer l'intention de l'utilisateur et d'extraire le slug du canal cible si nécessaire.\n\n"
+            ."Les intentions possibles sont :\n"
+            ."1. \"resumer\" : L'utilisateur demande explicitement un résumé des messages récents d'un canal (ex. : 'résume le canal général', 'fais-moi une synthèse de htmx', 'qu'est-ce qui s'est dit sur mercure', etc.). Si l'utilisateur mentionne le nom ou le slug d'un des canaux fournis pour en obtenir un résumé ou avoir des nouvelles, c'est l'intention \"resumer\".\n"
+            ."2. \"help\" : L'utilisateur pose une question générale, demande de l'aide, ou veut savoir comment faire quelque chose dans l'application (ex. : 'comment créer un canal', 'aide-moi', etc.).\n\n"
+            ."Tu dois répondre STRICTEMENT sous format JSON avec la structure suivante, sans aucun autre texte (pas de markdown, pas de blocs de code) :\n"
             ."{\n"
             ."  \"intent\": \"resumer\" ou \"help\",\n"
-            ."  \"channelSlug\": \"le slug du canal à résumer\" ou null\n"
+            ."  \"channelSlug\": \"le slug du canal à résumer\" (ou null si l'intention est \"help\" ou si le canal n'a pas pu être identifié)\n"
             ."}";
-
-        $classificationSystemPrompt = "Tu es un outil d'analyse d'intention d'utilisateur. Ton unique rôle est de classifier le message et d'extraire le slug du canal cible sous forme de JSON strict, sans formuler de réponse à la question ou au message de l'utilisateur.";
 
         try {
             $classificationOutput = $this->llmService->generateText($classificationPrompt, $classificationSystemPrompt);

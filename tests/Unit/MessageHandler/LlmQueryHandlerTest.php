@@ -66,6 +66,7 @@ class LlmQueryHandlerTest extends TestCase
         $messageRepository = $this->createMock(\App\Repository\MessageRepository::class);
         $userChannelReadRepository = $this->createMock(\App\Repository\UserChannelReadRepository::class);
         $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
+        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
 
         $handler = new LlmQueryHandler(
             $userRepository,
@@ -78,6 +79,7 @@ class LlmQueryHandlerTest extends TestCase
             $parameterBag,
             $entityManager,
             'roquette',
+            $logger,
         );
 
         $message = new LlmQueryMessage('How does it work?', 42, 'general', 'help-123');

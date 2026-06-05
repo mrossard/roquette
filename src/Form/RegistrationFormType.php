@@ -24,8 +24,8 @@ class RegistrationFormType extends AbstractType
                 new NotBlank(message: 'Veuillez saisir un nom d\'utilisateur.'),
                 new Length(
                     min: 3,
-                    minMessage: 'Le nom d\'utilisateur doit faire au moins {{ limit }} caractères.',
                     max: 180,
+                    minMessage: 'Le nom d\'utilisateur doit faire au moins {{ limit }} caractères.',
                 ),
             ],
         ])->add('plainPassword', PasswordType::class, [
@@ -35,8 +35,8 @@ class RegistrationFormType extends AbstractType
                 new NotBlank(message: 'Veuillez saisir un mot de passe.'),
                 new Length(
                     min: 6,
-                    minMessage: 'Le mot de passe doit faire au moins {{ limit }} caractères.',
                     max: 4096,
+                    minMessage: 'Le mot de passe doit faire au moins {{ limit }} caractères.',
                 ),
                 new NotCompromisedPassword(
                     message: 'Ce mot de passe a été divulgué dans des fuites de données. Veuillez en choisir un autre.',

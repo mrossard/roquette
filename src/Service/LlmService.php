@@ -14,14 +14,14 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 /**
  * Service dedicated to querying an LLM using the Symfony AI components.
  */
-class LlmService
+readonly class LlmService
 {
     public function __construct(
-        private readonly PlatformInterface $platform,
+        private PlatformInterface $platform,
         #[Autowire(env: 'LLM_MODEL')]
-        private readonly string $model,
+        private string $model,
         #[Autowire(env: 'LLM_SYSTEM_PROMPT')]
-        private readonly ?string $defaultSystemPrompt = null,
+        private ?string $defaultSystemPrompt = null,
     ) {}
 
     /**
