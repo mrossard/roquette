@@ -3,6 +3,7 @@ import { EMOJI_PRIMARY_SHORTCODES } from './emoji-primary-shortcodes.js';
 
 let activeAutocomplete = null;
 let appUsers = [];
+let appChannels = [];
 
 // Slash commands available in the app
 const SLASH_COMMANDS = [
@@ -22,6 +23,50 @@ async function fetchUsersForAutocomplete() {
     } catch (e) {
         console.error('Failed to fetch users for autocomplete:', e);
     }
+}
+
+async function fetchChannelsForAutocomplete() {
+    try {
+        const response = await fetch('/api/channels');
+        if (response.ok) {
+            appChannels = await response.json();
+        }
+    } catch (e) {
+        console.error('Failed to fetch channels for autocomplete:', e);
+    }
+}
+
+function findMatchingChannelsForQuery(query) {
+    if (!query) {
+        return appChannels.slice(0, 6);
+    }
+
+    const matched = [];
+    appChannels.forEach(channel => {
+        const name = (channel.name || '').toLowerCase();
+        const slug = (channel.slug || '').toLowerCase();
+
+        let priority = 0;
+        if (name.startsWith(query)) {
+            priority = 3;
+        } else if (slug.startsWith(query)) {
+            priority = 2;
+        } else if (name.includes(query) || slug.includes(query)) {
+            priority = 1;
+        }
+
+        if (priority > 0) {
+            matched.push({
+                channel,
+                priority
+            });
+        }
+    });
+
+    return matched
+        .sort((a, b) => b.priority - a.priority)
+        .map(item => item.channel)
+        .slice(0, 6);
 }
 
 function findMatchingUsersForQuery(query) {
@@ -93,8 +138,13 @@ function findMatchingCommands(query) {
 export function initEmojiAutocomplete() {
     const textareas = document.querySelectorAll('textarea:not([data-autocomplete-initialized])');
 
-    if (textareas.length > 0 && appUsers.length === 0) {
-        fetchUsersForAutocomplete();
+    if (textareas.length > 0) {
+        if (appUsers.length === 0) {
+            fetchUsersForAutocomplete();
+        }
+        if (appChannels.length === 0) {
+            fetchChannelsForAutocomplete();
+        }
     }
 
     textareas.forEach(textarea => {
@@ -125,6 +175,7 @@ function handleTextareaInputForAutocomplete(textarea) {
     const textBeforeCursor = text.substring(0, cursor);
     const matchEmoji = textBeforeCursor.match(/:([a-zA-Z0-9_à-ÿÀ-Ÿ]{1,})$/);
     const matchMention = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_à-ÿÀ-Ÿ]{0,})$/);
+    const matchChannel = textBeforeCursor.match(/(?:^|\s)#([a-zA-Z0-9_à-ÿÀ-Ÿ-]{0,})$/);
     const matchCommand = textBeforeCursor.match(/^\/([a-zA-Z0-9_]*)$/);
 
     if (matchCommand) {
@@ -170,6 +221,26 @@ function handleTextareaInputForAutocomplete(textarea) {
         }
 
         showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches);
+    } else if (matchChannel) {
+        const query = matchChannel[1].toLowerCase();
+        const queryStartIndex = textBeforeCursor.lastIndexOf('#');
+        const queryEndIndex = cursor;
+
+        if (appChannels.length === 0) {
+            fetchChannelsForAutocomplete().then(() => {
+                handleTextareaInputForAutocomplete(textarea);
+            });
+            return;
+        }
+
+        const matches = findMatchingChannelsForQuery(query);
+
+        if (matches.length === 0) {
+            closeAutocomplete();
+            return;
+        }
+
+        showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches);
     } else {
         closeAutocomplete();
     }
@@ -291,6 +362,41 @@ function renderAutocompleteItems() {
 
             item.appendChild(avatar);
             item.appendChild(namesContainer);
+        } else if (type === 'channel') {
+            const hashSpan = document.createElement('div');
+            hashSpan.style.width = '20px';
+            hashSpan.style.height = '20px';
+            hashSpan.style.display = 'flex';
+            hashSpan.style.alignItems = 'center';
+            hashSpan.style.justifyContent = 'center';
+            hashSpan.style.fontWeight = '700';
+            hashSpan.style.color = 'var(--text-muted, #888)';
+            hashSpan.style.fontSize = '1.1rem';
+            hashSpan.style.flexShrink = '0';
+            hashSpan.textContent = '#';
+
+            const namesContainer = document.createElement('div');
+            namesContainer.style.display = 'flex';
+            namesContainer.style.alignItems = 'baseline';
+            namesContainer.style.gap = '6px';
+            namesContainer.style.overflow = 'hidden';
+
+            const channelNameSpan = document.createElement('span');
+            channelNameSpan.style.fontWeight = '600';
+            channelNameSpan.style.whiteSpace = 'nowrap';
+            channelNameSpan.style.textOverflow = 'ellipsis';
+            channelNameSpan.style.overflow = 'hidden';
+            channelNameSpan.textContent = match.name;
+
+            const slugSpan = document.createElement('span');
+            slugSpan.className = 'keyword';
+            slugSpan.textContent = `#${match.slug}`;
+
+            namesContainer.appendChild(channelNameSpan);
+            namesContainer.appendChild(slugSpan);
+
+            item.appendChild(hashSpan);
+            item.appendChild(namesContainer);
         } else if (type === 'command') {
             const iconSpan = document.createElement('span');
             iconSpan.className = 'command-icon';
@@ -319,6 +425,8 @@ function renderAutocompleteItems() {
                 selectAutocompleteEmoji(idx);
             } else if (type === 'mention') {
                 selectAutocompleteUser(idx);
+            } else if (type === 'channel') {
+                selectAutocompleteChannel(idx);
             } else if (type === 'command') {
                 selectAutocompleteCommand(idx);
             }
@@ -364,6 +472,27 @@ function selectAutocompleteUser(idx) {
     textarea.focus();
 
     const event = new Event('input', { bubbles: true });
+    textarea.dispatchEvent(event);
+
+    closeAutocomplete();
+}
+
+function selectAutocompleteChannel(idx) {
+    if (!activeAutocomplete) return;
+
+    const {textarea, startIndex, endIndex, matches} = activeAutocomplete;
+    const selectedChannel = matches[idx];
+    const insertText = '#' + selectedChannel.slug + ' ';
+
+    const text = textarea.value;
+    textarea.value = text.substring(0, startIndex) + insertText + text.substring(endIndex);
+
+    const newCursorPos = startIndex + insertText.length;
+    textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+
+    textarea.focus();
+
+    const event = new Event('input', {bubbles: true});
     textarea.dispatchEvent(event);
 
     closeAutocomplete();
@@ -415,6 +544,8 @@ function handleTextareaKeydownForAutocomplete(textarea, e) {
             selectAutocompleteEmoji(activeIndex);
         } else if (type === 'mention') {
             selectAutocompleteUser(activeIndex);
+        } else if (type === 'channel') {
+            selectAutocompleteChannel(activeIndex);
         } else if (type === 'command') {
             selectAutocompleteCommand(activeIndex);
         }

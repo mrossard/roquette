@@ -133,6 +133,42 @@ final class UserSettingsController extends AbstractController
     }
 
     // -------------------------------------------------------------------------
+    // API: list channels
+    // -------------------------------------------------------------------------
+
+    #[Route('/api/channels', name: 'app_api_channels', methods: ['GET'])]
+    public function apiChannels(EntityManagerInterface $entityManager): JsonResponse
+    {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+        if (!$currentUser) {
+            return new JsonResponse([], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $channels = $entityManager
+            ->getRepository(\App\Entity\Channel::class)->createQueryBuilder('c')
+            ->leftJoin('c.members', 'm')
+            ->where('c.isDm = false')
+            ->andWhere('c.isPrivate = false OR m.id = :userId')
+            ->setParameter('userId', $currentUser->getId())
+            ->orderBy('c.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $data = [];
+        foreach ($channels as $channel) {
+            $data[] = [
+                'id' => $channel->getId(),
+                'name' => $channel->getName(),
+                'slug' => $channel->getSlug(),
+                'description' => $channel->getDescription(),
+            ];
+        }
+
+        return new JsonResponse($data);
+    }
+
+    // -------------------------------------------------------------------------
     // Pin/Unpin message (moved from DashboardController, logically user/channel action)
     // -------------------------------------------------------------------------
 

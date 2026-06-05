@@ -58,6 +58,7 @@ class MessageFormatter
         private readonly string $projectDir,
         #[Autowire('%env(EMOJI_BASE_URL)%')]
         private readonly string $emojiBaseUrl,
+        private readonly \App\Repository\ChannelRepository $channelRepository,
     ) {
         $config = [
             'html_input' => 'escape', // Échappe tout HTML brut fourni par l'utilisateur
@@ -163,6 +164,33 @@ class MessageFormatter
                 $isMe = $currentUsername && strcasecmp($username, $currentUsername) === 0;
                 $class = $isMe ? 'mention mention-me' : 'mention';
                 return '<span class="' . $class . '">@' . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . '</span>';
+            },
+            $html,
+        );
+
+        // Gérer les références aux canaux #slug
+        $html = preg_replace_callback(
+            '/#([a-zA-Z0-9_-]+)/',
+            function ($matches) {
+                $slug = $matches[1];
+                $channel = $this->channelRepository->findOneBy(['slug' => $slug, 'isDm' => false]);
+                if ($channel) {
+                    $currentUser = $this->security->getUser();
+                    if ($channel->isPrivate()) {
+                        if (!$currentUser || !$channel->getMembers()->contains($currentUser)) {
+                            return '#'.htmlspecialchars($slug, ENT_QUOTES, 'UTF-8');
+                        }
+                    }
+                    $url = '/channels/'.$slug;
+
+                    return '<a href="'.$url.'" class="channel-ref">#'.htmlspecialchars(
+                            $channel->getName(),
+                            ENT_QUOTES,
+                            'UTF-8',
+                        ).'</a>';
+                }
+
+                return '#'.htmlspecialchars($slug, ENT_QUOTES, 'UTF-8');
             },
             $html,
         );

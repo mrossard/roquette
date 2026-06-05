@@ -16,6 +16,7 @@ class MessageFormatterTest extends TestCase
     private MessageFormatter $formatter;
     private Security $security;
     private HttpClientInterface $httpClient;
+    private \App\Repository\ChannelRepository $channelRepository;
     private string $testEmojisDir;
 
     protected function setUp(): void
@@ -23,6 +24,7 @@ class MessageFormatterTest extends TestCase
         $this->security = $this->createStub(Security::class);
         $this->security->method('getUser')->willReturn(null);
         $this->httpClient = $this->createMock(HttpClientInterface::class);
+        $this->channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
 
         $this->testEmojisDir = __DIR__ . '/../../../var/test_emojis';
 
@@ -30,7 +32,8 @@ class MessageFormatterTest extends TestCase
             $this->security,
             $this->httpClient,
             $this->testEmojisDir,
-            'http://example.com/emojis'
+            'http://example.com/emojis',
+            $this->channelRepository,
         );
     }
 
@@ -246,7 +249,8 @@ class MessageFormatterTest extends TestCase
             $security,
             $this->httpClient,
             $this->testEmojisDir,
-            'http://example.com/emojis'
+            'http://example.com/emojis',
+            $this->channelRepository,
         );
         $result = $formatter->format('Bonjour @alice !');
 
@@ -433,5 +437,21 @@ class MessageFormatterTest extends TestCase
             $result = $this->formatter->format("Hello $emoticon !");
             $this->assertStringContainsString($expectedEmoji, $result, "Failed replacing emoticon: $emoticon");
         }
+    }
+
+    #[Test]
+    public function formatRendersChannelReferenceAsLink(): void
+    {
+        $channel = $this->createMock(\App\Entity\Channel::class);
+        $channel->method('getName')->willReturn('Général');
+        $channel->method('isPrivate')->willReturn(false);
+
+        $this->channelRepository
+            ->method('findOneBy')
+            ->with(['slug' => 'general', 'isDm' => false])
+            ->willReturn($channel);
+
+        $result = $this->formatter->format('Rejoignez #general pour discuter !');
+        $this->assertStringContainsString('<a href="/channels/general" class="channel-ref">#Général</a>', $result);
     }
 }

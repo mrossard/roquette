@@ -3221,6 +3221,22 @@ del {
     border-left: 3px solid var(--accent-purple) !important;
 }
 
+/* Channel references styling */
+.channel-ref {
+    background: rgba(0, 229, 255, 0.08);
+    color: var(--accent-cyan);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: var(--transition-smooth);
+    text-decoration: none;
+}
+
+.channel-ref:hover {
+    background: rgba(0, 229, 255, 0.18);
+    text-decoration: underline;
+}
+
 /* Sidebar channel link mention notifications styling */
 .channel-link.has-mention .channel-name {
     color: var(--accent-purple) !important;
