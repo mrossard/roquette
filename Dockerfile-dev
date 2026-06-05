@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:1.12.3-php8.5
+FROM dunglas/frankenphp:1.12.4-php8.5
 
 #force non-https, TZ, ...
 ENV SERVER_NAME=":80" \
