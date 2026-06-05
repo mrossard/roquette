@@ -1,3 +1,9 @@
+{% set membersData = [] %}
+{% for member in activeChannel.members %}
+    {% if member != activeChannel.creator and member.username != 'robot-roquette' %}
+        {% set membersData = membersData|merge([{ id: member.id, name: member.displayName ?: member.username, username: member.username }]) %}
+    {% endif %}
+{% endfor %}
 <div id="edit-channel-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title" style="display: none;" onclick="if(event.target === this) closeEditChannelModal()">
     <div class="modal-content glass-panel" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -24,11 +30,48 @@
                     <option value="0" {% if activeChannel.messageRetentionMonths is null %}selected{% endif %}>Sans limite</option>
                 </select>
             </div>
+            <div class="input-group" style="margin-top: 0.75rem;">
+                <label>Administrateurs du canal</label>
+                <div id="admin-chips-container"
+                     style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; margin-top: 0.25rem;">
+                    <!-- Creator chip -->
+                    <div class="admin-chip creator"
+                         style="background: rgba(255, 255, 255, 0.1); border: 1px solid var(--border-glass); padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
+                        👤 {{ activeChannel.creator.displayName ?: activeChannel.creator.username }} <span
+                            style="font-size: 0.75rem; opacity: 0.75;">(Créateur)</span>
+                    </div>
+                    <!-- Other administrators -->
+                    {% for member in activeChannel.members %}
+                        {% if activeChannel.administrators.contains(member) and member != activeChannel.creator %}
+                            <div class="admin-chip" id="admin-chip-{{ member.id }}"
+                                 style="background: rgba(99, 102, 241, 0.2); border: 1px solid #6366f1; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary);">
+                                <span>{{ member.displayName ?: member.username }}</span>
+                                <button type="button" onclick="removeAdmin({{ member.id }})"
+                                        style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 1rem; line-height: 1; display: flex; align-items: center;">
+                                    &times;
+                                </button>
+                                <input type="hidden" name="administrators[]" value="{{ member.id }}">
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="input-group" style="margin-top: 0.5rem;">
+                <label for="admin-autocomplete-input">Ajouter un administrateur</label>
+                <div class="autocomplete-wrapper" style="position: relative; width: 100%;">
+                    <input type="text" id="admin-autocomplete-input" placeholder="Saisir le nom d'un membre..."
+                           class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;" autocomplete="off">
+                    <div id="admin-autocomplete-suggestions" class="emoji-autocomplete-dropdown"
+                         style="display: none; top: 100%; bottom: auto; left: 0; right: 0; min-width: 100%; max-width: 100%; margin-top: 4px;"></div>
+                </div>
+            </div>
             <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Enregistrer les modifications</button>
         </form>
+        {% if activeChannel.creator == app.user or is_granted('ROLE_ADMIN') %}
         <form action="{{ path('app_channel_delete', {slug: activeChannel.slug}) }}" method="POST" data-confirm="Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement." hx-boost="false" style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
             <button type="submit" class="btn-delete-channel" style="width: 100%; justify-content: center; cursor: pointer;">🗑️ Supprimer le canal</button>
         </form>
+        {% endif %}
     </div>
 </div>
 
@@ -41,6 +84,18 @@
             const modal = document.getElementById('edit-channel-modal');
             if (modal) {
                 modal.style.display = 'flex';
+                if (window.initAdminAutocomplete) {
+                    window.initAdminAutocomplete(
+                        {{ membersData|json_encode|raw }},
+                        [
+                            {% for member in activeChannel.members %}
+                            {% if activeChannel.administrators.contains(member) and member != activeChannel.creator %}
+                            {{ member.id }},
+                            {% endif %}
+                            {% endfor %}
+                        ]
+                    );
+                }
                 const firstInput = document.getElementById('edit-modal-name');
                 if (firstInput) {
                     setTimeout(() => firstInput.focus(), 50);

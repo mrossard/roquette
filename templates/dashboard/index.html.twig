@@ -176,7 +176,7 @@
                                     {% include 'dashboard/_invite_section.html.twig' with {'activeChannel': activeChannel, 'usersToInvite': usersToInvite} %}
                                 {% endif %}
 
-                                {% if activeChannel.creator and activeChannel.creator == app.user %}
+                                {% if activeChannel.isAdministrator(app.user) %}
                                     <button type="button" class="btn-delete-channel"
                                             style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;"
                                             onclick="openEditChannelModal(this)">⚙️ {{ 'Paramètres'|trans }}</button>

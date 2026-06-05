@@ -48,6 +48,7 @@ import { buildEmojiPickerDOM } from './emoji.js';
 import './thread.js';
 import './offline.js';
 import './poll.js';
+import './channel-admin.js';
 
 console.log('Roquette application initialized! 🚀');
 

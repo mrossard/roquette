@@ -136,7 +136,7 @@ function findMatchingCommands(query) {
 }
 
 export function initEmojiAutocomplete() {
-    const targets = document.querySelectorAll('textarea:not([data-autocomplete-initialized]), input#global-search-input:not([data-autocomplete-initialized])');
+    const targets = document.querySelectorAll('textarea:not([data-autocomplete-initialized]), input#global-search-input:not([data-autocomplete-initialized]), #admin-autocomplete-input:not([data-autocomplete-initialized])');
 
     if (targets.length > 0) {
         if (appUsers.length === 0) {
@@ -177,6 +177,34 @@ function handleTextareaInputForAutocomplete(textarea) {
     const matchMention = textBeforeCursor.match(/(?:^|\s|:)@([a-zA-Z0-9_à-ÿÀ-Ÿ]{0,})$/);
     const matchChannel = textBeforeCursor.match(/(?:^|\s|:)#([a-zA-Z0-9_à-ÿÀ-Ÿ-]{0,})$/);
     const matchCommand = textBeforeCursor.match(/^\/([a-zA-Z0-9_]*)$/);
+
+    if (textarea.id === 'admin-autocomplete-input') {
+        const query = text.trim().toLowerCase();
+        const queryStartIndex = 0;
+        const queryEndIndex = cursor;
+
+        if (query === '') {
+            closeAutocomplete();
+            return;
+        }
+
+        if (appUsers.length === 0) {
+            fetchUsersForAutocomplete().then(() => {
+                handleTextareaInputForAutocomplete(textarea);
+            });
+            return;
+        }
+
+        const matches = findMatchingUsersForQuery(query);
+
+        if (matches.length === 0) {
+            closeAutocomplete();
+            return;
+        }
+
+        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches);
+        return;
+    }
 
     if (textarea.id === 'global-search-input') {
         if (matchMention) {
@@ -316,14 +344,17 @@ function showAutocompleteDropdown(textarea, type, query, queryStartIndex, queryE
     const wrapper = textarea.closest('.message-input-wrapper');
     if (wrapper) {
         wrapper.appendChild(dropdown);
-    } else if (textarea.id === 'global-search-input') {
-        const form = textarea.closest('form');
+    } else if (textarea.id === 'global-search-input' || textarea.id === 'admin-autocomplete-input') {
+        const form = textarea.closest('form') || textarea.parentNode;
         if (form) {
             form.style.position = 'relative';
             form.appendChild(dropdown);
             dropdown.style.top = '100%';
             dropdown.style.bottom = 'auto';
-            dropdown.style.left = '3rem';
+            dropdown.style.left = textarea.id === 'global-search-input' ? '3rem' : '0';
+            dropdown.style.right = '0';
+            dropdown.style.minWidth = '100%';
+            dropdown.style.maxWidth = '100%';
         }
     } else {
         document.body.appendChild(dropdown);
@@ -517,6 +548,19 @@ function selectAutocompleteUser(idx) {
 
     const { textarea, startIndex, endIndex, matches } = activeAutocomplete;
     const selectedUser = matches[idx];
+
+    const customEvent = new CustomEvent('autocomplete-user-selected', {
+        bubbles: true,
+        detail: {user: selectedUser}
+    });
+    textarea.dispatchEvent(customEvent);
+
+    if (textarea.id === 'admin-autocomplete-input') {
+        closeAutocomplete();
+        textarea.value = '';
+        return;
+    }
+
     const insertText = '@' + selectedUser.username + ' ';
 
     const text = textarea.value;
@@ -615,3 +659,44 @@ function handleTextareaKeydownForAutocomplete(textarea, e) {
 // Global window binds
 window.initEmojiAutocomplete = initEmojiAutocomplete;
 window.closeAutocomplete = closeAutocomplete;
+
+window.setupGenericAutocomplete = function ({input, suggestions, onSearch, onSelect}) {
+    if (!input || !suggestions) return;
+
+    input.oninput = function () {
+        const query = this.value.trim();
+        if (query === '') {
+            suggestions.style.display = 'none';
+            return;
+        }
+
+        const matches = onSearch(query);
+
+        if (matches.length === 0) {
+            suggestions.innerHTML = '<div class="emoji-autocomplete-item" style="color: var(--text-muted); text-align: center; justify-content: center;">Aucun résultat</div>';
+        } else {
+            suggestions.innerHTML = '';
+            matches.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'emoji-autocomplete-item';
+                div.innerText = item.label || item.name || item;
+
+                div.addEventListener('click', () => {
+                    onSelect(item);
+                    input.value = '';
+                    suggestions.style.display = 'none';
+                });
+                suggestions.appendChild(div);
+            });
+        }
+        suggestions.style.display = 'block';
+    };
+
+    const closeHandler = function (e) {
+        if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+            suggestions.style.display = 'none';
+        }
+    };
+    document.removeEventListener('click', closeHandler);
+    document.addEventListener('click', closeHandler);
+};

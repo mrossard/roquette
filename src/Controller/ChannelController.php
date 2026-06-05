@@ -571,9 +571,9 @@ final class ChannelController extends AbstractController
         }
 
         $isAdmin = $this->isGranted('ROLE_ADMIN');
-        $isCreator = $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
+        $isCreatorOrAdmin = $channel->isAdministrator($currentUser);
 
-        if (!$isAdmin && !$isCreator) {
+        if (!$isAdmin && !$isCreatorOrAdmin) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à modifier la rétention de ce canal.');
         }
 
@@ -610,8 +610,9 @@ final class ChannelController extends AbstractController
             return $this->redirectToRoute('app_dashboard');
         }
 
-        $isCreator = $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
-        if (!$isCreator) {
+        $isAdmin = $this->isGranted('ROLE_ADMIN');
+        $isCreatorOrAdmin = $channel->isAdministrator($currentUser);
+        if (!$isAdmin && !$isCreatorOrAdmin) {
             throw $this->createAccessDeniedException(
                 'Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.',
             );
@@ -650,6 +651,26 @@ final class ChannelController extends AbstractController
             $channel->setMessageRetentionMonths($retentionVal === 0 ? null : $retentionVal);
         } else {
             $channel->setMessageRetentionMonths(6);
+        }
+
+        // Process administrators
+        $adminIds = $request->request->all('administrators');
+        $userRepository = $entityManager->getRepository(\App\Entity\User::class);
+
+        // Remove existing administrators that are not in the submitted list
+        foreach ($channel->getAdministrators() as $admin) {
+            if (!in_array((string)$admin->getId(), $adminIds, true)) {
+                $channel->removeAdministrator($admin);
+            }
+        }
+        // Add new administrators
+        foreach ($adminIds as $adminId) {
+            $adminUser = $userRepository->find((int)$adminId);
+            if ($adminUser && $adminUser !== $channel->getCreator()) {
+                if ($channel->getMembers()->contains($adminUser)) {
+                    $channel->addAdministrator($adminUser);
+                }
+            }
         }
 
         $entityManager->flush();
