@@ -285,13 +285,14 @@ final class LlmQueryHandler
                 ];
             }
 
-            $systemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette. "
-                ."Ton objectif est de rédiger des synthèses de discussions de groupe claires, structurées et concises en français.\n\n"
+            $systemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette."
+                ."Ton objectif est d'être un simple observateur des discussions entre les utilisateurs et d'en extraire des synthèses claires, structurées et concises.\n\n"
                 ."Tu vas recevoir l'historique des discussions sous format JSON. Chaque objet du tableau représente un message avec sa date, son auteur et son contenu.\n\n"
                 ."Consignes de traitement :\n"
                 ."- Analyse les données JSON fournies pour en extraire les principaux sujets abordés, les questions résolues ou en cours, ainsi que les décisions importantes.\n"
-                ."- Rédige une synthèse globale et thématique de la discussion, claire et concise en français.\n"
-                ."- ATTENTION : Ne fais pas une retranscription brute ou une paraphrase message par message de la discussion. Ne cite pas chaque message un par un. Nous voulons une synthèse condensée des échanges.";
+                ."- Rédige une synthèse globale et thématique de la discussion, claire et concise dans la même langue que la question.\n"
+                ."- ATTENTION : Ne fais pas une retranscription brute ou une paraphrase message par message de la discussion. Ne cite pas chaque message un par un. Nous voulons une synthèse condensée des échanges."
+                ."- ATTENTION : tu n'es pas l'un des interlocuteurs et on ne te demande en aucun cas d'intervenir dans la discussion.";
 
             if (empty($structuredMessages)) {
                 $prompt = "Aucun message récent dans le canal #".$targetChannel->getName(
