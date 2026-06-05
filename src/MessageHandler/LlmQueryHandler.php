@@ -12,6 +12,7 @@ use App\Repository\UserChannelReadRepository;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
@@ -33,6 +34,8 @@ final class LlmQueryHandler
         private readonly EntityManagerInterface $entityManager,
         private readonly string $mercureTopicPrefix,
         private readonly LoggerInterface $logger,
+        #[Autowire(env: 'int:LLM_MAX_SUMMARY_MESSAGES')]
+        private readonly int $maxSummaryMessages = 100,
     ) {}
 
     public function __invoke(LlmQueryMessage $message): void
@@ -265,10 +268,14 @@ final class LlmQueryHandler
                     ->andWhere('m.parent IS NULL')
                     ->orderBy('m.createdAt', 'DESC')
                     ->setParameter('channel', $targetChannel)
-                    ->setMaxResults(100)
+                    ->setMaxResults($this->maxSummaryMessages)
                     ->getQuery()
                     ->getResult();
                 $unreadMessages = array_reverse($unreadMessages);
+            } else {
+                if (count($unreadMessages) > $this->maxSummaryMessages) {
+                    $unreadMessages = array_slice($unreadMessages, -$this->maxSummaryMessages);
+                }
             }
 
             $structuredMessages = [];
