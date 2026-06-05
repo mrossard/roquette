@@ -20,6 +20,7 @@
     --accent-red: hsl(0, 84%, 60%);
     --accent-orange: hsl(35, 100%, 55%);
     --accent-orange-glow: rgba(255, 165, 0, 0.2);
+    --text-warning: #ffca28;
 
     --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -55,6 +56,7 @@
     --accent-cyan-glow: rgba(0, 120, 160, 0.2);
     --accent-purple: hsl(271, 75%, 45%);
     --accent-purple-glow: rgba(110, 30, 180, 0.2);
+    --text-warning: hsl(35, 90%, 40%);
 
     /* Theme-aware variables for user custom hues */
     --user-hue-lightness-text: 35%;
