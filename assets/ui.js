@@ -1,7 +1,23 @@
+const pendingScrollContainers = new Set();
+
 export function scrollToBottom(smooth = true, containerId = 'live-feed') {
     const feedContainer = document.getElementById(containerId);
     if (!feedContainer) return;
-    
+
+    const isPageActive = (document.visibilityState === 'visible' && document.hasFocus());
+
+    if (!isPageActive) {
+        // Queue a scroll when the page becomes active/focused
+        pendingScrollContainers.add(containerId);
+
+        // Also do an instant scroll now, as 'auto' behavior is more reliable in the background than 'smooth'
+        feedContainer.scrollTo({
+            top: feedContainer.scrollHeight,
+            behavior: 'auto'
+        });
+        return;
+    }
+
     feedContainer.scrollTo({
         top: feedContainer.scrollHeight,
         behavior: smooth ? 'smooth' : 'auto'
@@ -17,9 +33,10 @@ export function scrollToBottom(smooth = true, containerId = 'live-feed') {
                 const threshold = 150; // pixels
                 const isCloseToBottom = (feedContainer.scrollHeight - feedContainer.scrollTop - feedContainer.clientHeight) < threshold;
                 if (isCloseToBottom) {
+                    const currentActive = (document.visibilityState === 'visible' && document.hasFocus());
                     feedContainer.scrollTo({
                         top: feedContainer.scrollHeight,
-                        behavior: 'smooth'
+                        behavior: currentActive ? 'smooth' : 'auto'
                     });
                 }
             };
@@ -28,6 +45,31 @@ export function scrollToBottom(smooth = true, containerId = 'live-feed') {
         }
     });
 }
+
+function triggerPendingScrolls() {
+    if (document.visibilityState === 'visible' && document.hasFocus()) {
+        pendingScrollContainers.forEach(containerId => {
+            scrollToBottom(true, containerId);
+        });
+        pendingScrollContainers.clear();
+
+        // Remove unread separators after a small delay (e.g. 3 seconds) to let user see them first
+        setTimeout(() => {
+            if (document.visibilityState === 'visible' && document.hasFocus()) {
+                const separators = document.querySelectorAll('.unread-separator');
+                separators.forEach(sep => {
+                    sep.style.transition = 'opacity 0.5s ease-out';
+                    sep.style.opacity = '0';
+                    setTimeout(() => sep.remove(), 500);
+                });
+            }
+        }, 3000);
+    }
+}
+
+window.addEventListener('focus', triggerPendingScrolls);
+document.addEventListener('visibilitychange', triggerPendingScrolls);
+
 
 export function highlightAllCodeBlocks(container = document) {
     if (window.hljs) {
@@ -49,7 +91,7 @@ export function formatBytes(bytes, decimals = 2) {
 
 function setupDragAndDrop(chatPanel, dragOverlay) {
     if (!chatPanel || !dragOverlay || chatPanel.classList.contains('drag-drop-bound')) return;
-    
+
     chatPanel.classList.add('drag-drop-bound');
     let dragCounter = 0;
 
@@ -211,13 +253,13 @@ export function toggleStatusDropdown(event) {
         container.classList.add('open');
         menu.style.display = 'flex';
         trigger.setAttribute('aria-expanded', 'true');
-        
+
         // Focus the active or first option
         const activeOpt = menu.querySelector('.user-status-option.active') || menu.querySelector('.user-status-option');
         if (activeOpt) {
             setTimeout(() => activeOpt.focus(), 50);
         }
-        
+
         container.addEventListener('keydown', handleDropdownKeyDown);
     }
 }
@@ -274,7 +316,7 @@ export function updateElementStatus(element, status, label) {
             element.setAttribute('title', label);
         }
     }
-    
+
     // Find matching container
     const container = element.closest('.user-status-selector-container, .user-status-dropdown-container, .avatar-container, .member-card, .feed-item-user-link');
     if (container) {
@@ -288,7 +330,7 @@ export function updateElementStatus(element, status, label) {
                 overlay.setAttribute('title', label);
             }
         }
-        
+
         const dot = container.querySelector('.status-dot');
         if (dot && dot !== element) {
             const expectedDotClass = 'status-dot ' + status;
@@ -326,9 +368,9 @@ export function updateElementStatus(element, status, label) {
 export function handleBusyOptionClick(event) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     closeAllStatusDropdowns();
-    
+
     if (window.openBusyStatusModal) {
         window.openBusyStatusModal(function() {
             if (window.htmx) {
@@ -612,18 +654,18 @@ export function showCustomConfirm(message, callback) {
         `;
         document.body.appendChild(confirmModal);
     }
-    
+
     const iconEl = document.getElementById('confirm-modal-icon');
     const titleEl = document.getElementById('confirm-modal-title');
     const messageEl = document.getElementById('confirm-modal-message');
     const cancelBtn = document.getElementById('confirm-modal-cancel');
     const okBtn = document.getElementById('confirm-modal-ok');
-    
+
     const lowerMsg = message.toLowerCase();
-    
+
     titleEl.className = 'confirmation-title';
     okBtn.className = 'btn-confirm-action';
-    
+
     if (lowerMsg.includes('supprimer') || lowerMsg.includes('perdu')) {
         iconEl.textContent = '🗑️';
         titleEl.textContent = 'Supprimer ?';
@@ -641,29 +683,29 @@ export function showCustomConfirm(message, callback) {
         titleEl.classList.add('info-type');
         okBtn.classList.add('info-type');
     }
-    
+
     messageEl.textContent = message;
     confirmModal.style.display = 'flex';
-    
+
     // Focus confirmation button
     setTimeout(() => okBtn.focus(), 50);
-    
+
     function closeConfirmModal() {
         confirmModal.style.display = 'none';
         okBtn.removeEventListener('click', onConfirm);
         cancelBtn.removeEventListener('click', onCancel);
         document.removeEventListener('keydown', onKeyDown);
     }
-    
+
     function onConfirm() {
         closeConfirmModal();
         callback();
     }
-    
+
     function onCancel() {
         closeConfirmModal();
     }
-    
+
     function onKeyDown(e) {
         if (e.key === 'Escape') {
             onCancel();
@@ -682,7 +724,7 @@ export function showCustomConfirm(message, callback) {
             }
         }
     }
-    
+
     okBtn.addEventListener('click', onConfirm);
     cancelBtn.addEventListener('click', onCancel);
     confirmModal.onclick = (e) => {
@@ -711,23 +753,23 @@ export function showCustomAlert(message, title = 'Attention', icon = '⚠️', o
         `;
         document.body.appendChild(alertModal);
     }
-    
+
     const iconEl = document.getElementById('alert-modal-icon');
     const titleEl = document.getElementById('alert-modal-title');
     const messageEl = document.getElementById('alert-modal-message');
     const okBtn = document.getElementById('alert-modal-ok');
-    
+
     iconEl.textContent = icon;
     titleEl.textContent = title;
     messageEl.textContent = message;
-    
+
     titleEl.className = 'confirmation-title info-type';
     okBtn.className = 'btn-confirm-action info-type';
-    
+
     alertModal.style.display = 'flex';
-    
+
     setTimeout(() => okBtn.focus(), 50);
-    
+
     function closeAlertModal() {
         alertModal.style.display = 'none';
         okBtn.removeEventListener('click', onClose);
@@ -736,18 +778,18 @@ export function showCustomAlert(message, title = 'Attention', icon = '⚠️', o
             onCloseCallback();
         }
     }
-    
+
     function onClose() {
         closeAlertModal();
     }
-    
+
     function onKeyDown(e) {
         if (e.key === 'Escape' || e.key === 'Enter') {
             onClose();
             e.preventDefault();
         }
     }
-    
+
     okBtn.addEventListener('click', onClose);
     alertModal.onclick = (e) => {
         if (e.target === alertModal) onClose();
@@ -806,7 +848,7 @@ setInterval(() => {
 
 export function initLinkPreviews(container = document) {
     const links = container.querySelectorAll('.feed-item-body p a[href^="http://"], .feed-item-body p a[href^="https://"]');
-    
+
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/&/g, '&amp;')
@@ -818,7 +860,7 @@ export function initLinkPreviews(container = document) {
 
     links.forEach(link => {
         if (link.dataset.unfurled || link.dataset.unfurling) return;
-        
+
         const url = link.getAttribute('href');
         try {
             const parsedUrl = new URL(url);
@@ -826,9 +868,9 @@ export function initLinkPreviews(container = document) {
         } catch (e) {
             return;
         }
-        
+
         link.dataset.unfurling = "true";
-        
+
         fetch(`/api/link-preview?url=${encodeURIComponent(url)}`)
             .then(response => {
                 if (!response.ok) throw new Error();
@@ -837,7 +879,7 @@ export function initLinkPreviews(container = document) {
             .then(data => {
                 link.dataset.unfurled = "true";
                 delete link.dataset.unfurling;
-                
+
                 if (data && (data.title || data.description)) {
                     const feedBody = link.closest('.feed-item-body');
                     if (feedBody) {
@@ -849,7 +891,7 @@ export function initLinkPreviews(container = document) {
                         const card = document.createElement('div');
                         card.className = 'link-preview-card';
                         card.setAttribute('data-preview-url', url);
-                        
+
                         let imageHtml = '';
                         if (data.image) {
                             imageHtml = `
@@ -858,11 +900,11 @@ export function initLinkPreviews(container = document) {
                                 </div>
                             `;
                         }
-                        
+
                         const titleText = data.title || url;
                         const descText = data.description || '';
                         const siteText = data.siteName || new URL(url).hostname;
-                        
+
                         card.innerHTML = `
                             <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="link-preview-wrapper">
                                 ${imageHtml}
@@ -873,11 +915,11 @@ export function initLinkPreviews(container = document) {
                                 </div>
                             </a>
                         `;
-                        
+
                         // Append before reactions or thread badges, or at the end
                         const reactions = feedBody.querySelector('.message-reactions-container');
                         const threadBadge = feedBody.querySelector('.message-thread-badge-container');
-                        
+
                         if (reactions) {
                             feedBody.insertBefore(card, reactions);
                         } else if (threadBadge) {
@@ -885,7 +927,7 @@ export function initLinkPreviews(container = document) {
                         } else {
                             feedBody.appendChild(card);
                         }
-                        
+
                         if (window.scrollToBottom) {
                             window.scrollToBottom(true);
                         }
@@ -952,7 +994,7 @@ export function initGlobalSearch() {
                 return;
             }
         }
-        
+
         // If the target of the swap is the search results, do not close the modal
         if (evt.detail.target && (evt.detail.target.id === 'global-search-results' || evt.detail.target.closest('#global-search-modal'))) {
             return;
@@ -1043,14 +1085,14 @@ export function toggleMessageActions(button, event) {
     event.stopPropagation();
     const actionsList = button.nextElementSibling;
     if (!actionsList) return;
-    
+
     // Close other open message action lists first
     document.querySelectorAll('.feed-item-actions-list.show').forEach(list => {
         if (list !== actionsList) {
             list.classList.remove('show');
         }
     });
-    
+
     actionsList.classList.toggle('show');
 }
 window.toggleMessageActions = toggleMessageActions;

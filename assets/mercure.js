@@ -216,6 +216,24 @@ function handleFeedItemUpdateOrAppend(data, activeFeedContainer) {
             emptyState.remove();
         }
 
+        // Add an unread separator if the tab doesn't have focus and it's not our own message
+        const statusBadge = document.getElementById('mercure-status');
+        const currentUsername = statusBadge ? statusBadge.getAttribute('data-current-username') : null;
+        const isPageActive = (document.visibilityState === 'visible' && document.hasFocus());
+
+        if (!isPageActive && data.author && data.author !== currentUsername) {
+            if (!activeFeedContainer.querySelector('.unread-separator')) {
+                const separator = document.createElement('div');
+                separator.className = 'unread-separator';
+                separator.innerHTML = `
+                    <span class="unread-separator-line"></span>
+                    <span class="unread-separator-label">Nouveaux messages</span>
+                    <span class="unread-separator-line"></span>
+                `;
+                activeFeedContainer.appendChild(separator);
+            }
+        }
+
         // Append new feed item to the bottom of the feed (chronological)
         activeFeedContainer.appendChild(newFeedItem);
     }

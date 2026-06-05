@@ -5332,6 +5332,7 @@ del {
 
 /* /me messages styling */
 .feed-item.is-me-message {
+    position: relative !important;
     background: transparent !important;
     border: none !important;
     border-left: none !important;
@@ -5344,6 +5345,34 @@ del {
     justify-content: space-between !important;
     gap: 0.5rem !important;
     transform: none !important;
+}
+
+.feed-item.is-me-message .feed-item-header {
+    width: 100% !important;
+    position: relative !important;
+}
+
+@media (min-width: 768px) {
+    .feed-item.is-me-message .feed-item-actions {
+        position: absolute !important;
+        right: 0.75rem !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        background: var(--bg-base) !important;
+        padding-left: 0.5rem !important;
+        margin-left: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity 0.2s ease !important;
+        border-radius: 4px !important;
+    }
+
+    .feed-item.is-me-message:hover .feed-item-actions,
+    .feed-item.is-me-message:focus-within .feed-item-actions,
+    .feed-item.is-me-message:has(.feed-item-actions-list.show) .feed-item-actions {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
 }
 
 .feed-item.is-me-message:hover {
