@@ -56,6 +56,7 @@ final class LlmQueryHandler
         $channelSlug = $message->getChannelSlug();
         $intent = 'help';
         $channelName = null;
+        $batches = null;
 
         if (str_starts_with($channelSlug, 'dm-robot-roquette-')) {
             $channels = $this->channelRepository->findAllForUser($user);
@@ -89,7 +90,7 @@ final class LlmQueryHandler
                     }
                 }
                 $channelName = $targetChannel ? $targetChannel->getName() : $targetChannelSlug;
-                [$prompt, $systemPrompt] = $this->getSummaryPrompts($user, $channels, $targetChannelSlug);
+                [$prompt, $systemPrompt, $batches] = $this->getSummaryPrompts($user, $channels, $targetChannelSlug);
             }
         }
 
@@ -110,6 +111,54 @@ final class LlmQueryHandler
         );
 
         try {
+            if ($batches !== null && count($batches) > 1) {
+                $intermediateSummaries = [];
+                $totalBatches = count($batches);
+
+                $intermediateSystemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette.\n"
+                    ."Rédige une synthèse claire, structurée et concise du lot de messages fourni.\n"
+                    ."Consignes de traitement :\n"
+                    ."- Analyse les données JSON fournies pour en extraire les principaux sujets abordés, les questions résolues ou en cours, ainsi que les décisions importantes.\n"
+                    ."- Rédige une synthèse du lot de discussion, claire et concise.\n"
+                    ."- ATTENTION : Ne fais pas une retranscription brute ou une paraphrase message par message de la discussion. Ne cite pas chaque message un par un.";
+
+                foreach ($batches as $index => $batch) {
+                    $batchNum = $index + 1;
+                    $reformulation = "Analyse et résumé du lot {$batchNum}/{$totalBatches}... ⏳";
+                    $this->publishUpdate(
+                        $personalTopic,
+                        $message->getHelpMessageId(),
+                        $message->getChannelSlug(),
+                        $this->messageFormatter->format($reformulation),
+                    );
+
+                    $batchPrompt = json_encode($batch, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                    $intermediateSummaries[] = $this->llmService->generateText($batchPrompt, $intermediateSystemPrompt);
+                }
+
+                $reformulation = "Génération du résumé final combiné... ⏳";
+                $this->publishUpdate(
+                    $personalTopic,
+                    $message->getHelpMessageId(),
+                    $message->getChannelSlug(),
+                    $this->messageFormatter->format($reformulation),
+                );
+
+                // Prepare combining call
+                $prompt = "Voici les synthèses des différents lots de la discussion à combiner :\n\n";
+                foreach ($intermediateSummaries as $index => $subSummary) {
+                    $batchNum = $index + 1;
+                    $prompt .= "--- Résumé du Lot {$batchNum} ---\n{$subSummary}\n\n";
+                }
+
+                $systemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette.\n"
+                    ."Rédige une synthèse globale unique, claire, structurée et cohérente combinant les résumés des différents lots de discussion fournis ci-dessous.\n"
+                    ."Consignes de traitement :\n"
+                    ."- Fusionne les sujets redondants ou continus pour en faire une synthèse thématique unifiée.\n"
+                    ."- Rédige une synthèse claire et concise dans la même langue que les résumés fournis.\n"
+                    ."- Ne fais pas une simple juxtaposition des résumés. Fais-en une synthèse globale.";
+            }
+
             $accumulatedText = '';
             $generator = $this->llmService->generateTextStream($prompt, $systemPrompt);
 
@@ -227,7 +276,7 @@ final class LlmQueryHandler
 
     /**
      * @param \App\Entity\Channel[] $channels
-     * @return array{0: string, 1: string}
+     * @return array{0: string, 1: string, 2: array|null}
      */
     private function getSummaryPrompts(\App\Entity\User $user, array $channels, string $targetChannelSlug): array
     {
@@ -260,8 +309,11 @@ final class LlmQueryHandler
             ]);
             $lastReadMessageId = $activeRead?->getLastReadMessage()?->getId();
             $unreadMessages = $this->messageRepository->findUnreadInChannel($targetChannel, $user, $lastReadMessageId);
+            $isFallback = false;
+            $finalMessages = [];
 
             if (empty($unreadMessages)) {
+                $isFallback = true;
                 $unreadMessages = $this->messageRepository
                     ->createQueryBuilder('m')
                     ->where('m.channel = :channel')
@@ -272,14 +324,28 @@ final class LlmQueryHandler
                     ->getQuery()
                     ->getResult();
                 $unreadMessages = array_reverse($unreadMessages);
+                $finalMessages = $unreadMessages;
             } else {
-                if (count($unreadMessages) > $this->maxSummaryMessages) {
-                    $unreadMessages = array_slice($unreadMessages, -$this->maxSummaryMessages);
+                $readMessages = [];
+                if ($lastReadMessageId !== null) {
+                    $readMessages = $this->messageRepository
+                        ->createQueryBuilder('m')
+                        ->where('m.channel = :channel')
+                        ->andWhere('m.parent IS NULL')
+                        ->andWhere('m.id <= :lastReadId')
+                        ->orderBy('m.id', 'DESC')
+                        ->setParameter('channel', $targetChannel)
+                        ->setParameter('lastReadId', $lastReadMessageId)
+                        ->setMaxResults(5)
+                        ->getQuery()
+                        ->getResult();
+                    $readMessages = array_reverse($readMessages);
                 }
+                $finalMessages = array_merge($readMessages, $unreadMessages);
             }
 
             $structuredMessages = [];
-            foreach ($unreadMessages as $msg) {
+            foreach ($finalMessages as $msg) {
                 $authorName = $msg->getAuthor() ? $msg->getAuthor()->getUsername() : 'Robot';
                 $content = $msg->getContent() ?? '';
                 if ($msg->isPoll()) {
@@ -304,15 +370,25 @@ final class LlmQueryHandler
             if (empty($structuredMessages)) {
                 $prompt = "Aucun message récent dans le canal #".$targetChannel->getName(
                     ).". Indique poliment qu'il n'y a rien à résumer.";
-            } else {
-                $prompt = json_encode($structuredMessages, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+                return [$prompt, $systemPrompt, null];
             }
+
+            if (!$isFallback && count($structuredMessages) > $this->maxSummaryMessages) {
+                $batches = array_chunk($structuredMessages, $this->maxSummaryMessages);
+
+                return ['', $systemPrompt, $batches];
+            }
+
+            $prompt = json_encode($structuredMessages, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+            return [$prompt, $systemPrompt, null];
         } else {
             $prompt = "Explique poliment en français que tu n'as pas trouvé le canal '".$targetChannelSlug."' ou que l'utilisateur n'y est pas inscrit.";
             $systemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette. Réponds en français.";
-        }
 
-        return [$prompt, $systemPrompt];
+            return [$prompt, $systemPrompt, null];
+        }
     }
 
     private function publishUpdate(string $topic, string $helpMessageId, string $channelSlug, string $html): void

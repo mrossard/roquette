@@ -108,11 +108,17 @@ class LlmQueryHandlerTest extends TestCase
             ->with(42)
             ->willReturn($user);
 
-        // Classification output to return summary intent
+        // Classification output and intermediate summaries
         $llmService
-            ->expects($this->any())
+            ->expects($this->exactly(3))
             ->method('generateText')
-            ->willReturn(json_encode(['intent' => 'resumer', 'channelSlug' => 'general']));
+            ->willReturnCallback(function (string $prompt, ?string $systemPrompt = null) {
+                if (str_contains($prompt, 'résume le canal général')) {
+                    return json_encode(['intent' => 'resumer', 'channelSlug' => 'general']);
+                }
+
+                return 'Résumé intermédiaire';
+            });
 
         $channel = new \App\Entity\Channel();
         $channel->setName('general');
@@ -143,15 +149,13 @@ class LlmQueryHandlerTest extends TestCase
             ->method('findUnreadInChannel')
             ->willReturn($messages);
 
-        // We expect LLM to be called with a prompt containing only the last 3 messages (Message 3, Message 4, Message 5)
+        // We expect LLM to stream the final combination
         $llmService
             ->expects($this->once())
             ->method('generateTextStream')
             ->with(
                 $this->callback(function (string $prompt) {
-                    $data = json_decode($prompt, true);
-
-                    return is_array($data) && count($data) === 3 && $data[0]['contenu'] === 'Message 3';
+                    return str_contains($prompt, 'Résumé intermédiaire');
                 }),
             )
             ->willReturn(
@@ -173,6 +177,127 @@ class LlmQueryHandlerTest extends TestCase
             'roquette',
             $logger,
             3, // Limit to 3 messages
+        );
+
+        $message = new LlmQueryMessage('résume le canal général', 42, 'dm-robot-roquette-1', 'help-123');
+        $handler($message);
+    }
+
+    public function testSummaryPrependsLastReadMessages(): void
+    {
+        $userRepository = $this->createMock(UserRepository::class);
+        $llmService = $this->createMock(LlmService::class);
+        $messageFormatter = $this->createMock(MessageFormatter::class);
+        $hub = $this->createMock(HubInterface::class);
+        $parameterBag = $this->createMock(ParameterBagInterface::class);
+        $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
+        $messageRepository = $this->createMock(\App\Repository\MessageRepository::class);
+        $userChannelReadRepository = $this->createMock(\App\Repository\UserChannelReadRepository::class);
+        $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
+        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+
+        $user = new User();
+        $user->setUsername('test_user');
+
+        $userRepository
+            ->expects($this->once())
+            ->method('find')
+            ->with(42)
+            ->willReturn($user);
+
+        // Classification output
+        $llmService
+            ->expects($this->once())
+            ->method('generateText')
+            ->willReturn(json_encode(['intent' => 'resumer', 'channelSlug' => 'general']));
+
+        $channel = new \App\Entity\Channel();
+        $channel->setName('general');
+        $channel->setSlug('general');
+
+        $channelRepository
+            ->expects($this->once())
+            ->method('findAllForUser')
+            ->willReturn([$channel]);
+
+        $lastReadMsg = $this->createMock(\App\Entity\Message::class);
+        $lastReadMsg->method('getId')->willReturn(10);
+
+        $activeRead = $this->createMock(\App\Entity\UserChannelRead::class);
+        $activeRead->method('getLastReadMessage')->willReturn($lastReadMsg);
+
+        $userChannelReadRepository
+            ->expects($this->once())
+            ->method('findOneBy')
+            ->willReturn($activeRead);
+
+        // Unread messages (3 messages)
+        $unread = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $msg = new \App\Entity\Message();
+            $msg->setContent("Unread $i");
+            $msg->setAuthor($user);
+            $msg->setCreatedAt(new \DateTimeImmutable());
+            $unread[] = $msg;
+        }
+
+        $messageRepository
+            ->expects($this->once())
+            ->method('findUnreadInChannel')
+            ->willReturn($unread);
+
+        // Mock query builder for last 5 read messages
+        $readMsg = new \App\Entity\Message();
+        $readMsg->setContent("Read context");
+        $readMsg->setAuthor($user);
+        $readMsg->setCreatedAt(new \DateTimeImmutable());
+
+        $qb = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
+        $query = $this->createMock(\Doctrine\ORM\Query::class);
+
+        $messageRepository
+            ->expects($this->once())
+            ->method('createQueryBuilder')
+            ->willReturn($qb);
+
+        $qb->method('where')->willReturnSelf();
+        $qb->method('andWhere')->willReturnSelf();
+        $qb->method('orderBy')->willReturnSelf();
+        $qb->method('setParameter')->willReturnSelf();
+        $qb->method('setMaxResults')->willReturnSelf();
+        $qb->method('getQuery')->willReturn($query);
+        $query->method('getResult')->willReturn([$readMsg]);
+
+        // We expect LLM to receive both the read message and unread messages (total 4 messages)
+        $llmService
+            ->expects($this->once())
+            ->method('generateTextStream')
+            ->with(
+                $this->callback(function (string $prompt) {
+                    $data = json_decode($prompt, true);
+
+                    return is_array($data) && count($data) === 4 && $data[0]['contenu'] === 'Read context';
+                }),
+            )
+            ->willReturn(
+                (function () {
+                    yield 'Summary';
+                })(),
+            );
+
+        $handler = new LlmQueryHandler(
+            $userRepository,
+            $channelRepository,
+            $messageRepository,
+            $userChannelReadRepository,
+            $llmService,
+            $messageFormatter,
+            $hub,
+            $parameterBag,
+            $entityManager,
+            'roquette',
+            $logger,
+            10, // Large limit to avoid batching in this test
         );
 
         $message = new LlmQueryMessage('résume le canal général', 42, 'dm-robot-roquette-1', 'help-123');
