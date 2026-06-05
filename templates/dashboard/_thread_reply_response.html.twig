@@ -20,14 +20,6 @@
             {% set lastDate = currentDate %}
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
-            'author': existingReply.author,
-            'message': existingReply.content,
-            'timestamp': existingReply.createdAt,
-            'message_id': existingReply.id,
-            'fileName': existingReply.fileName,
-            'fileSize': existingReply.fileSize,
-            'filePath': existingReply.filePath,
-            'mimeType': existingReply.mimeType,
             'messageObject': existingReply
         } %}
     {% endfor %}

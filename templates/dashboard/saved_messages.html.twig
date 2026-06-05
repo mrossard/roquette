@@ -93,15 +93,6 @@
                                     </a>
                                 </div>
                                 {% include 'dashboard/_feed_item.html.twig' with {
-                                    'author': msg.author,
-                                    'message': msg.content,
-                                    'timestamp': msg.createdAt,
-                                    'message_id': msg.id,
-                                    'updated_at': msg.updatedAt,
-                                    'fileName': msg.fileName,
-                                    'fileSize': msg.fileSize,
-                                    'filePath': msg.filePath,
-                                    'mimeType': msg.mimeType,
                                     'messageObject': msg
                                 } %}
                             </div>

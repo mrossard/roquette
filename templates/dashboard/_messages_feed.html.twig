@@ -24,15 +24,6 @@
             {% set lastDate = currentDate %}
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
-            'author': message.author,
-            'message': message.content,
-            'timestamp': message.createdAt,
-            'message_id': message.id,
-            'updated_at': message.updatedAt,
-            'fileName': message.fileName,
-            'fileSize': message.fileSize,
-            'filePath': message.filePath,
-            'mimeType': message.mimeType,
             'messageObject': message
         } %}
     {% else %}
@@ -69,15 +60,6 @@
             {% set lastDate = currentDate %}
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
-            'author': message.author,
-            'message': message.content,
-            'timestamp': message.createdAt,
-            'message_id': message.id,
-            'updated_at': message.updatedAt,
-            'fileName': message.fileName,
-            'fileSize': message.fileSize,
-            'filePath': message.filePath,
-            'mimeType': message.mimeType,
             'messageObject': message
         } %}
     {% else %}
@@ -123,15 +105,6 @@
             {% set separatorShown = true %}
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
-            'author': message.author,
-            'message': message.content,
-            'timestamp': message.createdAt,
-            'message_id': message.id,
-            'updated_at': message.updatedAt,
-            'fileName': message.fileName,
-            'fileSize': message.fileSize,
-            'filePath': message.filePath,
-            'mimeType': message.mimeType,
             'messageObject': message
         } %}
     {% else %}

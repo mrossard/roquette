@@ -10,14 +10,6 @@
     <!-- Parent Message -->
     <div class="thread-parent-container">
         {% include 'dashboard/_feed_item.html.twig' with {
-            'author': parentMessage.author,
-            'message': parentMessage.content,
-            'timestamp': parentMessage.createdAt,
-            'message_id': parentMessage.id,
-            'fileName': parentMessage.fileName,
-            'fileSize': parentMessage.fileSize,
-            'filePath': parentMessage.filePath,
-            'mimeType': parentMessage.mimeType,
             'messageObject': parentMessage
         } %}
     </div>
@@ -49,14 +41,6 @@
                     {% set lastDate = currentDate %}
                 {% endif %}
                 {% include 'dashboard/_feed_item.html.twig' with {
-                    'author': reply.author,
-                    'message': reply.content,
-                    'timestamp': reply.createdAt,
-                    'message_id': reply.id,
-                    'fileName': reply.fileName,
-                    'fileSize': reply.fileSize,
-                    'filePath': reply.filePath,
-                    'mimeType': reply.mimeType,
                     'messageObject': reply
                 } %}
             {% else %}
