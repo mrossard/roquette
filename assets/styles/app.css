@@ -1019,6 +1019,32 @@ select option {
     box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
 }
 
+.day-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2.2rem 0;
+    position: relative;
+    animation: fade-in 0.3s ease-out;
+}
+
+.day-separator-line {
+    flex-grow: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+}
+
+.day-separator-label {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+}
+
 .btn-delete-channel {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.2);

@@ -5,7 +5,25 @@
     } %}
 {% endif %}
 
+{% set lastDate = null %}
 {% for message in messages %}
+    {% set currentDate = message.createdAt|date('Y-m-d') %}
+    {% if lastDate is null or currentDate != lastDate %}
+        <div class="day-separator">
+            <span class="day-separator-line"></span>
+            <span class="day-separator-label">
+                {% if currentDate == 'now'|date('Y-m-d') %}
+                    Aujourd'hui
+                {% elseif currentDate == 'yesterday'|date('Y-m-d') %}
+                    Hier
+                {% else %}
+                    {{ message.createdAt|date('d/m/Y') }}
+                {% endif %}
+            </span>
+            <span class="day-separator-line"></span>
+        </div>
+        {% set lastDate = currentDate %}
+    {% endif %}
     {% include 'dashboard/_feed_item.html.twig' with {
         'author': message.author,
         'message': message.content,

@@ -6,7 +6,8 @@
             <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
             <span class="feed-item-user">{{ username }}</span>
         </div>
-        <span class="feed-item-time">{{ message.createdAt|date('H:i:s') }}</span>
+        <span
+            class="feed-item-time">{% if message.createdAt|date('Y-m-d') != 'now'|date('Y-m-d') %}{{ message.createdAt|date('d/m/Y') }} {% endif %}{{ message.createdAt|date('H:i:s') }}</span>
         {% if message.updatedAt %}
             <span class="feed-item-edited-indicator" title="Modifié le {{ message.updatedAt|date('d/m/Y H:i:s') }}">(modifié)</span>
         {% endif %}
@@ -19,7 +20,7 @@
                     <label for="edit_poll_question_{{ message.id }}" style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Question</label>
                     <input type="text" id="edit_poll_question_{{ message.id }}" name="poll_question" value="{{ message.poll.question }}" required class="input-sidebar" />
                 </div>
-                
+
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(0, 0, 0, 0.2); padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-glass);">
                     <label for="edit_allow_multiple_{{ message.id }}" style="font-size: 0.85rem; color: var(--text-color); cursor: pointer; user-select: none; margin-bottom: 0; font-weight: 500;">Autoriser plusieurs réponses</label>
                     <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; margin-bottom: 0;">
@@ -28,7 +29,7 @@
                         <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: {% if message.poll.allowMultiple %}var(--accent-cyan){% else %}rgba(255, 255, 255, 0.1){% endif %}; transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
                     </label>
                 </div>
-                
+
                 <div>
                     <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Options de réponse</label>
                     <div id="edit-poll-options-container-{{ message.id }}" style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -56,7 +57,7 @@
                     </button>
                 </div>
             {% endif %}
-            
+
             <div class="edit-message-actions" style="display: flex; gap: 0.5rem; align-self: flex-start;">
                 <button type="submit" class="btn-publish" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 0.4rem; height: auto;">
                     {{ ux_icon('heroicons:check', {class: 'action-icon', style: 'width: 12px; height: 12px; margin-right: 0.25rem;'}) }}
