@@ -47,10 +47,24 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
 
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  ollama-pull-model:
+    image: curlimages/curl:latest
+    entrypoint: [ "sh", "-c", "until curl -s http://ollama:11434/api/tags > /dev/null; do sleep 1; done; curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"qwen2.5:3b\"}'" ]
+    depends_on:
+      - ollama
+
 volumes:
   caddy_data:
   caddy_config:
   db_data:
   clamav_data:
   minio_data:
-
+  ollama_data:

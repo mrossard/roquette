@@ -1,0 +1,30 @@
+{# Remplacement OOB pour ajouter la question et la réponse de robot roquette à la fin du live-feed #}
+<div hx-swap-oob="beforeend:#live-feed">
+    {% if question is defined and question is not empty %}
+        {% include 'dashboard/_feed_item.html.twig' with {
+            'message': '/me a demandé : "' ~ question ~ '"',
+            'author': app.user,
+            'timestamp': timestamp,
+            'messageObject': null
+        } %}
+    {% endif %}
+    <div id="{{ helpMessageId }}">
+        {% include 'dashboard/_feed_item.html.twig' with {
+            'message': answer|default('En attente de l\'Assistant Roquette... ⏳'),
+            'user': 'Assistant Roquette',
+            'timestamp': timestamp,
+            'messageObject': null
+        } %}
+    </div>
+    <script>
+        (function () {
+            const emptyState = document.getElementById('feed-empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            if (typeof window.scrollToBottom === 'function') {
+                window.scrollToBottom(true);
+            }
+        })();
+    </script>
+</div>

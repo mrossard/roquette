@@ -95,14 +95,14 @@ function handleUserStatusChanged(data) {
     const newStatus = data.status;
     const label = data.statusLabel;
     console.log(`Updating status for user ${username} to ${newStatus}`);
-    
+
     const statusBadge = document.getElementById('mercure-status');
     const currentUsername = statusBadge ? statusBadge.getAttribute('data-current-username') : null;
-    
+
     if (isCurrentUserBusy() && username !== currentUsername) {
         return;
     }
-    
+
     const wasBusy = (username === currentUsername) ? isCurrentUserBusy() : false;
 
     document.querySelectorAll(`[data-username="${username}"]`).forEach(el => {
@@ -403,6 +403,61 @@ export function connectMercure(isReconnect = false) {
 
                 if (data.type === 'user_status_changed') {
                     handleUserStatusChanged(data);
+                    return;
+                }
+
+                if (data.type === 'help_stream_update') {
+                    let helpElem = document.getElementById(data.helpMessageId);
+                    if (!helpElem) {
+                        const liveFeed = document.getElementById('live-feed');
+                        const statusBadge = document.getElementById('mercure-status');
+                        const activeChannelSlug = statusBadge ? statusBadge.getAttribute('data-active-channel-slug') : null;
+                        if (liveFeed && data.channelSlug === activeChannelSlug) {
+                            const emptyState = document.getElementById('feed-empty-state');
+                            if (emptyState) {
+                                emptyState.remove();
+                            }
+                            const tempDiv = document.createElement('div');
+                            tempDiv.id = data.helpMessageId;
+                            tempDiv.className = 'feed-item fade-in';
+                            tempDiv.style.setProperty('--user-hue', '200');
+
+                            const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                            tempDiv.innerHTML = `
+                                <div class="feed-item-header">
+                                    <div class="feed-item-user-container">
+                                        <div class="avatar-container">
+                                            <span class="feed-item-avatar">A</span>
+                                        </div>
+                                        <span class="feed-item-user">Assistant Roquette</span>
+                                    </div>
+                                    <span class="feed-item-time">${timeStr}</span>
+                                </div>
+                                <div class="feed-item-body">
+                                    ${data.html}
+                                </div>
+                            `;
+                            liveFeed.appendChild(tempDiv);
+                            helpElem = tempDiv;
+                            if (window.highlightAllCodeBlocks) {
+                                window.highlightAllCodeBlocks(helpElem);
+                            }
+                            if (window.scrollToBottom) {
+                                window.scrollToBottom(true);
+                            }
+                        }
+                    } else {
+                        const bodyElem = helpElem.querySelector('.feed-item-body');
+                        if (bodyElem) {
+                            bodyElem.innerHTML = data.html;
+                            if (window.highlightAllCodeBlocks) {
+                                window.highlightAllCodeBlocks(helpElem);
+                            }
+                            if (window.scrollToBottom) {
+                                window.scrollToBottom(true);
+                            }
+                        }
+                    }
                     return;
                 }
 

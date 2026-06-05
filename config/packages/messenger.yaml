@@ -12,6 +12,7 @@ framework:
         routing:
             # Route your messages to the transports
             'Symfony\Component\Mercure\Update': async
+            'App\Message\LlmQueryMessage': async
 
 # when@test:
 #    framework:

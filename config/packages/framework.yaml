@@ -6,6 +6,13 @@ framework:
     session:
         handler_id: Symfony\Component\HttpFoundation\Session\Storage\Handler\PdoSessionHandler
 
+    http_client:
+        scoped_clients:
+            llm.client:
+                base_uri: '%env(resolve:LLM_ENDPOINT)%'
+                timeout: 120.0
+                max_duration: 300.0
+
     #esi: true
     #fragments: true
 

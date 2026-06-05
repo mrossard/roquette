@@ -38,6 +38,72 @@ class ChannelRepository extends ServiceEntityRepository
             }
         }
 
+        $robotUser = $this->getEntityManager()->getRepository(\App\Entity\User::class)->findOneBy(
+            ['username' => 'robot-roquette'],
+        );
+        if (!$robotUser) {
+            $robotUser = new \App\Entity\User();
+            $robotUser->setUsername('robot-roquette');
+            $robotUser->setDisplayName('Assistant');
+            $robotUser->setPassword('robot-roquette-dummy-password');
+            $robotUser->setRoles(['ROLE_USER']);
+            $this->getEntityManager()->persist($robotUser);
+            $this->getEntityManager()->flush();
+        } else {
+            if ($robotUser->getDisplayName() !== 'Assistant') {
+                $robotUser->setDisplayName('Assistant');
+                $this->getEntityManager()->flush();
+            }
+        }
+
+        $robotSlug = 'dm-robot-roquette-'.$user->getUsername();
+        $hasRobotChannel = false;
+        foreach ($joinedChannels as $channel) {
+            if ($channel->getSlug() === $robotSlug) {
+                if ($channel->getName() !== 'Assistant') {
+                    $channel->setName('Assistant');
+                    $channel->setDescription('Discussion privée avec l\'Assistant');
+                    $this->getEntityManager()->flush();
+                }
+                $hasRobotChannel = true;
+                break;
+            }
+        }
+        if (!$hasRobotChannel) {
+            $robotChannel = $this->findOneBy(['slug' => $robotSlug]);
+            if (!$robotChannel) {
+                $robotChannel = new Channel();
+                $robotChannel->setName('Assistant');
+                $robotChannel->setSlug($robotSlug);
+                $robotChannel->setDescription('Discussion privée avec l\'Assistant');
+                $robotChannel->setIsPrivate(true);
+                $robotChannel->setIsDm(true);
+                $robotChannel->addMember($user);
+                $robotChannel->addMember($robotUser);
+                $this->getEntityManager()->persist($robotChannel);
+                $this->getEntityManager()->flush();
+            } else {
+                $flushed = false;
+                if ($robotChannel->getName() !== 'Assistant') {
+                    $robotChannel->setName('Assistant');
+                    $robotChannel->setDescription('Discussion privée avec l\'Assistant');
+                    $flushed = true;
+                }
+                if (!$robotChannel->getMembers()->contains($user)) {
+                    $robotChannel->addMember($user);
+                    $flushed = true;
+                }
+                if (!$robotChannel->getMembers()->contains($robotUser)) {
+                    $robotChannel->addMember($robotUser);
+                    $flushed = true;
+                }
+                if ($flushed) {
+                    $this->getEntityManager()->flush();
+                }
+            }
+            $joinedChannels[] = $robotChannel;
+        }
+
         // Apply custom channel ordering if it exists
         $order = $user->getChannelOrder();
         if ($order !== null && $order !== []) {

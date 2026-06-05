@@ -25,15 +25,33 @@
 
     <div class="card-body" style="display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto;">
         <div>
-            <div class="sidebar-saved-messages-link-wrapper" style="margin-bottom: 1.5rem;">
+            {% set robotChannel = null %}
+            {% for channel in channels %}
+                {% if channel.slug starts with 'dm-robot-roquette-' %}
+                    {% set robotChannel = channel %}
+                {% endif %}
+            {% endfor %}
+
+            <div class="sidebar-saved-messages-link-wrapper" style="margin-bottom: 0.75rem;">
                 <a href="{{ path('app_saved_messages') }}" class="btn-sidebar-item {% if app.request.attributes.get('_route') == 'app_saved_messages' %}active{% endif %}" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 0.5rem; text-decoration: none; color: var(--text-primary); transition: var(--transition-smooth); font-size: 0.9rem; font-weight: 500; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass);">
                     <span style="font-size: 1.1rem; line-height: 1;">⭐</span>
                     <span>{{ 'Messages enregistrés'|trans }}</span>
                 </a>
             </div>
+
+            {% if robotChannel %}
+                <div class="sidebar-robot-link-wrapper" style="margin-bottom: 1.5rem;">
+                    {% include 'dashboard/_channel_sidebar_item.html.twig' with {
+                        'channel': robotChannel,
+                        'unreadCounts': unreadCounts,
+                        'activeChannel': activeChannel
+                    } %}
+                </div>
+            {% endif %}
+
             {% set hasFavorites = false %}
             {% for channel in channels %}
-                {% if app.user.isChannelFavorite(channel) %}
+                {% if app.user.isChannelFavorite(channel) and not (channel.slug starts with 'dm-robot-roquette-') %}
                     {% set hasFavorites = true %}
                 {% endif %}
             {% endfor %}
@@ -48,7 +66,7 @@
                 </h3>
                 <div class="channel-list" id="section-favorites" data-list-type="favorites">
                     {% for channel in channels %}
-                        {% if app.user.isChannelFavorite(channel) %}
+                        {% if app.user.isChannelFavorite(channel) and not (channel.slug starts with 'dm-robot-roquette-') %}
                             {% include 'dashboard/_channel_sidebar_item.html.twig' with {
                                 'channel': channel,
                                 'unreadCounts': unreadCounts,
@@ -96,7 +114,7 @@
             <div class="channel-list" id="section-dms" data-list-type="dms">
                 {% set hasDms = false %}
                 {% for channel in channels %}
-                    {% if channel.isDm and not app.user.isChannelFavorite(channel) %}
+                    {% if channel.isDm and not app.user.isChannelFavorite(channel) and not (channel.slug starts with 'dm-robot-roquette-') %}
                         {% set hasDms = true %}
                         {% include 'dashboard/_channel_sidebar_item.html.twig' with {
                             'channel': channel,

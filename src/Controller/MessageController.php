@@ -10,6 +10,7 @@ use App\Controller\Trait\RequestValidationTrait;
 use App\Entity\Message;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
+use App\Message\LlmQueryMessage;
 use App\Service\FileUploadService;
 use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
@@ -19,6 +20,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -36,6 +38,7 @@ final class MessageController extends AbstractController
         #[Autowire(env: 'TENOR_API_KEY')]
         private string $tenorApiKey,
         private HttpClientInterface $httpClient,
+        private MessageBusInterface $messageBus,
     ) {}
 
     #[Route('/api/message/preview', name: 'app_api_message_preview', methods: ['POST'])]
@@ -188,6 +191,21 @@ final class MessageController extends AbstractController
             $renderedHtml,
             $entityManager,
         );
+
+        if ($activeChannel->getSlug() === 'dm-robot-roquette-'.$currentUser->getUsername(
+            ) && !$isPoll && !$uploadedFile) {
+            $helpMessageId = 'help-'.uniqid();
+
+            // Dispatch message to Symfony Messenger to run LLM query asynchronously
+            $this->messageBus->dispatch(
+                new LlmQueryMessage(
+                    $messageText,
+                    $currentUser->getId(),
+                    $activeChannel->getSlug(),
+                    $helpMessageId,
+                ),
+            );
+        }
 
         return $this->render('dashboard/_input_form.html.twig', [
             'activeChannel' => $activeChannel,
@@ -458,6 +476,43 @@ final class MessageController extends AbstractController
                     new Response('', 200, ['HX-Refresh' => 'true']),
                 );
             }
+        } elseif ($command === 'help') {
+            $helpMessageId = 'help-'.uniqid();
+
+            if ($args === '') {
+                $oobHtml = $this->renderView('dashboard/_help_message_oob.html.twig', [
+                    'answer' => "Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`",
+                    'question' => '',
+                    'helpMessageId' => $helpMessageId,
+                    'activeChannel' => $activeChannel,
+                    'timestamp' => new \DateTime(),
+                ]);
+            } else {
+                // Dispatch message to Symfony Messenger to run LLM query asynchronously
+                $this->messageBus->dispatch(
+                    new LlmQueryMessage(
+                        $args,
+                        $currentUser->getId(),
+                        $activeChannel->getSlug(),
+                        $helpMessageId,
+                    ),
+                );
+
+                // Render OOB with empty placeholder first (answer = null)
+                $oobHtml = $this->renderView('dashboard/_help_message_oob.html.twig', [
+                    'answer' => null,
+                    'question' => $args,
+                    'helpMessageId' => $helpMessageId,
+                    'activeChannel' => $activeChannel,
+                    'timestamp' => new \DateTime(),
+                ]);
+            }
+
+            $formHtml = $this->renderView('dashboard/_input_form.html.twig', [
+                'activeChannel' => $activeChannel,
+            ]);
+
+            return new Response($formHtml."\n".$oobHtml);
         } elseif ($command === 'shrug') {
             // Mutate messageText so the caller sends the formatted shrug text
             $messageText = ($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯';

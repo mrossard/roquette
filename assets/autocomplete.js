@@ -6,6 +6,7 @@ let appUsers = [];
 
 // Slash commands available in the app
 const SLASH_COMMANDS = [
+    {name: 'help', icon: '🤖', description: 'Poser une question à l\'Assistant Roquette', usage: '/help <question>'},
     { name: 'giphy',  icon: '🎞️',  description: 'Rechercher et envoyer un GIF animé',   usage: '/giphy <recherche>' },
     { name: 'shrug',  icon: '🤷',  description: 'Envoyer le shrug ¯\\_(ツ)_/¯',         usage: '/shrug [texte]' },
     { name: 'me',     icon: '💬',  description: 'Action',                                usage: '/me <message>' },

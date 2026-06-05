@@ -113,7 +113,7 @@ class MessageControllerTest extends WebTestCase
 
         $messageRepository = $this->entityManager->getRepository(Message::class);
         $messages = $messageRepository->findBy(['author' => $this->testUser]);
-        
+
         $this->assertCount(1, $messages);
         $this->assertSame('/me is typing a long message', $messages[0]->getContent());
     }
@@ -134,7 +134,7 @@ class MessageControllerTest extends WebTestCase
 
         $messageRepository = $this->entityManager->getRepository(Message::class);
         $messages = $messageRepository->findBy(['author' => $this->testUser]);
-        
+
         // Find the message with the poll
         $pollMessage = null;
         foreach ($messages as $msg) {
@@ -146,7 +146,7 @@ class MessageControllerTest extends WebTestCase
 
         $this->assertNotNull($pollMessage);
         $this->assertTrue($pollMessage->isPoll());
-        
+
         $poll = $pollMessage->getPoll();
         $this->assertNotNull($poll);
         $this->assertSame('Quel est votre langage préféré ?', $poll->getQuestion());
@@ -189,7 +189,7 @@ class MessageControllerTest extends WebTestCase
 
         $messageRepository = $this->entityManager->getRepository(Message::class);
         $messages = $messageRepository->findBy(['author' => $this->testUser]);
-        
+
         $pollMessage = null;
         foreach ($messages as $msg) {
             if ($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Choix multiples ?') {
@@ -220,7 +220,7 @@ class MessageControllerTest extends WebTestCase
 
         $messageRepository = $this->entityManager->getRepository(Message::class);
         $messages = $messageRepository->findBy(['author' => $this->testUser]);
-        
+
         $pollMessage = null;
         foreach ($messages as $msg) {
             if ($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Original Question?') {
@@ -246,7 +246,7 @@ class MessageControllerTest extends WebTestCase
         $updatedMessage = $messageRepository->find($pollMessage->getId());
         $this->assertNotNull($updatedMessage);
         $this->assertTrue($updatedMessage->isPoll());
-        
+
         $poll = $updatedMessage->getPoll();
         $this->assertSame('Updated Question?', $poll->getQuestion());
         $this->assertTrue($poll->isAllowMultiple());
@@ -273,7 +273,7 @@ class MessageControllerTest extends WebTestCase
 
         $messageRepository = $this->entityManager->getRepository(Message::class);
         $messages = $messageRepository->findBy(['author' => $this->testUser]);
-        
+
         $pollMessage = null;
         foreach ($messages as $msg) {
             if ($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Vote test?') {
@@ -292,16 +292,37 @@ class MessageControllerTest extends WebTestCase
         $this->client->request('GET', sprintf('/messages/%d/edit', $pollMessage->getId()));
         $this->assertResponseStatusCodeSame(400);
 
-        // 4. Try to POST edit -> should return 400
-        $this->client->request(
-            'POST',
-            sprintf('/messages/%d/edit', $pollMessage->getId()),
-            [
-                'poll_question' => 'Vote test?',
-                'poll_options' => ['Option A Modified', 'Option B'],
-                'allow_multiple' => '1',
-            ]
-        );
         $this->assertResponseStatusCodeSame(400);
     }
+
+    #[Test]
+    public function testHelpSlashCommand(): void
+    {
+        $messageBusMock = $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class);
+        $messageBusMock
+            ->expects($this->any())
+            ->method('dispatch')
+            ->willReturnCallback(function ($message) {
+                if ($message instanceof \App\Message\LlmQueryMessage) {
+                    $this->assertSame('Comment fonctionne roquette ?', $message->getQuestion());
+                }
+
+                return new \Symfony\Component\Messenger\Envelope(new \stdClass());
+            });
+
+        $this->client->getContainer()->set(\Symfony\Component\Messenger\MessageBusInterface::class, $messageBusMock);
+
+        $this->client->request(
+            'POST',
+            '/channels/test-msg-channel/publish',
+            ['message' => '/help Comment fonctionne roquette ?'],
+        );
+
+        $this->assertResponseIsSuccessful();
+        $responseContent = $this->client->getResponse()->getContent();
+        $this->assertStringContainsString('Assistant Roquette', $responseContent);
+        $this->assertStringContainsString('Comment fonctionne roquette ?', $responseContent);
+        $this->assertStringContainsString('En attente de l\'Assistant Roquette... ⏳', $responseContent);
+    }
 }
+

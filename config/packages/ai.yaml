@@ -1,0 +1,6 @@
+ai:
+    platform:
+        ollama:
+            endpoint: '%env(resolve:LLM_ENDPOINT)%'
+            http_client: 'llm.client'
+
