@@ -5,8 +5,14 @@ Roquette est une application de messagerie et de collaboration en temps réel (a
 ## Fonctionnalités
 
 - **Messagerie en temps réel** : Envoi de messages, fils de discussion (threads), et notifications instantanées grâce à Symfony Mercure.
+- **Assistant virtuel & Synthèse (IA)** : Intégration de l'**Assistant Roquette** propulsé par un modèle LLM (via
+  Ollama). Vous pouvez lui poser des questions privées avec la commande `/help` ou dialoguer directement dans un canal
+  privé dédié (DM) pour lui demander de résumer n'importe quel canal auquel vous avez accès.
+- **Messages enregistrés** : Marquez des messages importants avec une étoile pour les retrouver instantanément dans la
+  section "Messages enregistrés" en haut de la barre latérale.
 - **Canaux de discussion** : Création, gestion et favoris pour les canaux.
-- **Réactions** : Ajout et gestion de réactions (emojis) sur les messages.
+- **Réactions** : Ajout et gestion de réactions (emojis) sur les messages avec affichage au survol des utilisateurs
+  ayant réagi.
 - **Gestion de fichiers** : Importation de fichiers avec analyse antivirus intégrée via ClamAV.
 - **Aperçus de liens** : Génération automatique de prévisualisations riches pour les URLs partagées.
 - **Authentification** : Authentification classique et support OAuth2.
@@ -32,15 +38,18 @@ Roquette est une application de messagerie et de collaboration en temps réel (a
    ```
 
 3. **Configurer les variables d'environnement** :
-   Copier le fichier `.env` en `.env.local` et ajuster les variables nécessaires (identifiants de base de données, clés d'API, etc.) :
+   Copier le fichier `.env` en `.env.local` et ajuster les variables nécessaires (identifiants de base de données, clés
+   d'API, configurations LLM, etc.) :
    ```bash
    cp .env .env.local
    ```
 
-4. **Démarrer les services Docker** (PostgreSQL, Mercure Hub, ClamAV) :
+4. **Démarrer les services Docker** (PostgreSQL, Mercure Hub, ClamAV, MinIO, Ollama) :
    ```bash
    docker compose up -d
    ```
+   *Note : Au premier démarrage, le conteneur `ollama-pull-model` télécharge automatiquement le modèle de langage
+   configuré (par défaut `qwen2.5:3b`) dans le conteneur Ollama.*
 
 5. **Exécuter les migrations** de base de données :
    ```bash
@@ -57,6 +66,17 @@ Roquette est une application de messagerie et de collaboration en temps réel (a
    symfony server:start -d
    ```
    Ou accédez-y directement sur le port exposé par Docker (configuré par défaut sur le port 80 dans `compose.override.yaml`).
+
+## Configuration de l'Assistant LLM (Ollama)
+
+L'assistant virtuel utilise le bundle Symfony AI. Vous pouvez personnaliser la configuration dans votre fichier
+`.env.local` :
+
+```env
+LLM_MODEL=qwen2.5:3b
+LLM_ENDPOINT=http://ollama:11434
+LLM_SYSTEM_PROMPT="Tu es l'Assistant Roquette, un assistant virtuel d'aide pour l'application Roquette."
+```
 
 ## Tests
 

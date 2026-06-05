@@ -15,6 +15,8 @@ quotidien.
 5. [Sondages, fichiers et aperçus](#5-sondages-fichiers-et-aperçus)
 6. [Commandes de chat intégrées (Slash Commands)](#6-commandes-de-chat-intégrées-slash-commands)
 7. [Notifications et recherche](#7-notifications-et-recherche)
+8. [Assistant virtuel & Synthèse (IA)](#8-assistant-virtuel--synthèse-ia)
+9. [Messages enregistrés](#9-messages-enregistrés)
 
 ---
 
@@ -25,8 +27,8 @@ Pour commencer à utiliser Roquette :
 * **Connexion / Inscription** : Connectez-vous avec vos identifiants ou créez un compte. Si activé par votre
   administrateur, vous pouvez également vous connecter via un compte externe (OAuth2).
 * **Interface générale** : L'écran se divise en deux zones principales :
-    * La **barre latérale (Sidebar)** à gauche : elle regroupe votre profil, la liste des canaux, les messages directs
-      et vos invitations.
+    * La **barre latérale (Sidebar)** à gauche : elle regroupe vos messages enregistrés, l'accès direct à l'Assistant,
+      la liste des canaux, les messages directs et vos invitations.
     * La **fenêtre de discussion** au centre : elle affiche les messages du canal actif, le champ de saisie et les
       options de partage.
 
@@ -67,6 +69,8 @@ Les discussions sont organisées en canaux de communication :
   créateur du canal.
 * **Messages directs (DM)** : Discussions privées en tête-à-tête avec un collaborateur spécifique. Pour démarrer un DM,
   cliquez sur le nom d'un utilisateur ou utilisez le bouton de message direct dans la barre latérale.
+* **Canal Assistant** : Un canal de discussion privé avec l'**Assistant** (indiqué par un emoji 🤖 dans la barre
+  latérale) est disponible pour chaque utilisateur afin de poser des questions ou demander des résumés.
 
 ### Actions sur les canaux :
 
@@ -90,6 +94,9 @@ Saisissez votre texte dans la barre de message en bas et appuyez sur **Entrée**
   et en sélectionnant l'action appropriée.
 * **Indicateur de saisie** : Lorsqu'un utilisateur commence à écrire, un indicateur discret apparaît en bas du chat pour
   vous informer qu'un message arrive.
+* **Séparateur de dates** : Les messages d'un canal sont regroupés et séparés par des en-têtes de date clairs. Pour les
+  messages des jours précédents, la date et l'heure de publication sont affichées afin d'améliorer la lisibilité
+  temporelle de vos échanges.
 
 ### Fils de discussion (Threads)
 
@@ -105,6 +112,8 @@ Exprimez-vous rapidement sans écrire de message :
 
 * Survolez un message et cliquez sur le sélecteur d'émojis.
 * Cliquez sur un émoji existant sous le message pour ajouter votre vote (+1).
+* **Info-bulles de réactions** : Survolez une réaction existante sous un message pour afficher la liste des
+  collaborateurs ayant ajouté cette réaction.
 
 ---
 
@@ -144,6 +153,9 @@ Saisissez ces commandes directement au début de votre champ de saisie de messag
 * `/giphy [recherche]` : Recherche un GIF animé sur Tenor et affiche des suggestions. Cliquez sur le GIF de votre choix
   pour l'envoyer.
 * `/shrug [texte]` : Ajoute automatiquement le célèbre émoji haussant les épaules `¯\_(ツ)_/¯` à la fin de votre texte.
+* `/help [votre question]` : Interroge en temps réel l'Assistant virtuel à propos de l'utilisation de l'application. La
+  réponse est générée de manière asynchrone et affichée **uniquement pour vous** (de façon privée) directement dans le
+  canal en cours.
 
 ---
 
@@ -163,4 +175,47 @@ Retrouvez facilement vos anciens échanges :
 
 * **Recherche locale** : Filtrez les messages du canal en cours à l'aide de la barre de recherche du canal.
 * **Recherche globale** : Utilisez la barre de recherche principale en haut de l'interface pour chercher des mots-clés
+  dans l'ensemble des canaux auxquels vous avez accès.
+
+---
+
+## 8. Assistant virtuel & Synthèse (IA)
+
+Roquette intègre un **Assistant virtuel** propulsé par l'intelligence artificielle pour vous accompagner au quotidien.
+Cet assistant est accessible de deux manières :
+
+### A. La commande `/help`
+
+Depuis n'importe quel canal, saisissez `/help <votre question>` (ex: `/help comment créer un sondage ?`). L'Assistant
+analysera la documentation et vous renverra une réponse explicative privée visible uniquement par vous.
+
+### B. Le canal privé "Assistant" (DM)
+
+Dans la barre latérale, vous disposez d'un canal de discussion privé avec l'Assistant (indiqué par `🤖 Assistant`). Vous
+pouvez dialoguer librement avec lui :
+
+1. **Questions sur l'application** : Posez-lui vos questions sur le fonctionnement de Roquette. Il répondra en se basant
+   sur ce guide d'utilisation.
+2. **Résumé de canal** : L'Assistant est capable de synthétiser les échanges récents d'un canal. Demandez-lui par
+   exemple :
+    * *"Résume le canal général"*
+    * *"Qu'est-ce qui s'est dit sur le canal #projet-x ?"*
+    * *"Fais-moi un résumé de la discussion dans le canal technique"*
+
+*Note : Lors d'une demande, l'Assistant affiche des étapes de feedback en temps réel ("Analyse de la demande... 🔍",
+puis "Recherche dans la documentation... ⏳" ou "Résumé du canal... ⏳") avant d'afficher sa réponse définitive.*
+
+---
+
+## 9. Messages enregistrés
+
+Vous pouvez sauvegarder des messages importants pour les retrouver à tout moment :
+
+* **Enregistrer un message** : Survolez un message dans le fil de discussion et cliquez sur le bouton **Enregistrer** (
+  représenté par une étoile ⭐). Le message affichera le statut "Enregistré".
+* **Consulter vos messages sauvegardés** : Cliquez sur le lien **Messages enregistrés** (situé tout en haut de votre
+  barre latérale). Vous y retrouverez la liste ordonnée de tous les messages que vous avez marqués.
+* **Retirer un message enregistré** : Survolez le message et cliquez à nouveau sur le bouton **Enregistré** (ou l'étoile
+  ⭐) pour le retirer de votre liste.obale** : Utilisez la barre de recherche principale en haut de l'interface pour
+  chercher des mots-clés
   dans l'ensemble des canaux auxquels vous avez accès.
