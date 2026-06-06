@@ -401,46 +401,6 @@ document.addEventListener('click', () => {
     closeAllStatusDropdowns();
 });
 
-export function clearChannelSearch() {
-    const input = document.getElementById('channel-search-input');
-    if (input) {
-        input.value = '';
-        const statusBadge = document.getElementById('mercure-status');
-        if (statusBadge) {
-            statusBadge.removeAttribute('data-search-active');
-        }
-        // Trigger htmx request to restore feed
-        if (window.htmx) window.htmx.trigger(input, 'input');
-    }
-}
-
-export function toggleUnreadFilter(btn, event) {
-    const isActive = btn.classList.contains('active');
-    if (isActive) {
-        // Already active: clear the filter, cancel HTMX request
-        if (event) { event.preventDefault(); event.stopPropagation(); }
-        clearUnreadFilter();
-        return false;
-    }
-    btn.classList.add('active');
-    // Clear the search input to avoid conflicts
-    const input = document.getElementById('channel-search-input');
-    if (input) { input.value = ''; }
-}
-
-export function clearUnreadFilter() {
-    const btn = document.getElementById('btn-unread-filter');
-    if (btn) { btn.classList.remove('active'); }
-    // Use htmx.ajax directly to bypass the 'changed' modifier on the search input
-    const input = document.getElementById('channel-search-input');
-    if (input && window.htmx) {
-        input.value = '';
-        const searchUrl = input.getAttribute('hx-get') || input.getAttribute('data-hx-get');
-        if (searchUrl) {
-            window.htmx.ajax('GET', searchUrl, { target: '#live-feed', swap: 'innerHTML' });
-        }
-    }
-}
 
 export function scrollToMessage(messageId) {
     const el = document.querySelector(`[data-message-id="${messageId}"]`);
@@ -917,9 +877,7 @@ window.formatBytes = formatBytes;
 window.initFileUpload = initFileUpload;
 window.toggleStatusDropdown = toggleStatusDropdown;
 window.updateElementStatus = updateElementStatus;
-window.clearChannelSearch = clearChannelSearch;
-window.toggleUnreadFilter = toggleUnreadFilter;
-window.clearUnreadFilter = clearUnreadFilter;
+
 window.scrollToMessage = scrollToMessage;
 window.updateChannelLastMessageDate = updateChannelLastMessageDate;
 window.initChannelReordering = initChannelReordering;

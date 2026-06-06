@@ -83,14 +83,8 @@
             {% include '_global_search_modal.html.twig' %}
             {% include '_busy_status_modal.html.twig' %}
             {% include '_confirmation_dialogs.html.twig' %}
-            {% if activeChannel is defined and activeChannel and not activeChannel.isDm and activeChannel.isAdministrator(app.user) %}
-                {% include '_edit_channel_modal.html.twig' %}
-            {% endif %}
-            {% if activeChannel is defined and activeChannel and activeChannel.isPrivate and activeChannel.creator == app.user %}
-                {% include '_invite_member_modal.html.twig' %}
-            {% endif %}
             {% if activeChannel is defined and activeChannel %}
-                {% include '_channel_members_modal.html.twig' %}
+            <div id="modal-container" hx-target="this" hx-swap="innerHTML"></div>
             {% endif %}
 
             <script>

@@ -3119,7 +3119,8 @@ del {
     box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
 }
 
-.btn-unread-filter.active {
+.btn-unread-filter.active,
+.btn-unread-filter-wrapper input[type="checkbox"]:checked + .btn-unread-filter {
     background: rgba(168, 85, 247, 0.25);
     border-color: #a855f7;
     color: #a855f7;
@@ -4127,7 +4128,7 @@ del {
 
 /* When thread panel is open, update grid layout */
 @media (min-width: 768px) {
-    .dashboard-grid.thread-open {
+    .dashboard-grid:has(#thread-panel:not(:empty)) {
         grid-template-columns: 280px 1fr 380px;
     }
 }
@@ -4142,7 +4143,11 @@ del {
     border-left: 1px solid var(--border-glass);
 }
 
-.dashboard-grid.thread-open .thread-panel {
+.thread-panel:not(:empty) {
+    display: flex;
+}
+
+.dashboard-grid:has(#thread-panel:not(:empty)) .thread-panel {
     animation: threadSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -4943,7 +4948,11 @@ del {
         display: flex !important;
     }
 
-    .dashboard-grid.thread-open .thread-panel {
+    .thread-panel:empty {
+        display: none !important;
+    }
+
+    .dashboard-grid:has(#thread-panel:not(:empty)) .thread-panel {
         right: 0 !important;
     }
 

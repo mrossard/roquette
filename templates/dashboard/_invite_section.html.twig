@@ -1,3 +1,8 @@
 <div id="invite-section">
-    <button type="button" class="btn-delete-channel" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;" onclick="openInviteMemberModal(this)">✉️ Inviter un membre</button>
+    <button type="button" class="btn-delete-channel"
+            style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;"
+            hx-get="{{ path('app_channel_invite_modal', {slug: activeChannel.slug}) }}"
+            hx-target="#modal-container"
+            hx-trigger="click">✉️ Inviter un membre
+    </button>
 </div>

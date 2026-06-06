@@ -77,24 +77,18 @@
 
 <script>
     (function() {
-        window.openEditChannelModal = function(trigger) {
-            openModal('edit-channel-modal', trigger);
-            if (window.initAdminAutocomplete) {
-                window.initAdminAutocomplete(
-                    {{ membersData|json_encode|raw }},
-                    [
-                        {% for member in activeChannel.members %}
-                        {% if activeChannel.administrators.contains(member) and member != activeChannel.creator %}
-                        {{ member.id }},
-                        {% endif %}
-                        {% endfor %}
-                    ]
-                );
-            }
-        };
-
-        window.closeEditChannelModal = function() {
-            closeModal('edit-channel-modal');
-        };
+        if (window.initAdminAutocomplete) {
+            window.initAdminAutocomplete(
+                {{ membersData|json_encode|raw }},
+                [
+                    {% for member in activeChannel.members %}
+                    {% if activeChannel.administrators.contains(member) and member != activeChannel.creator %}
+                    {{ member.id }},
+                    {% endif %}
+                    {% endfor %}
+                ]
+            );
+        }
+        openModal('edit-channel-modal');
     })();
 </script>

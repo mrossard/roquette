@@ -12,7 +12,10 @@
             </button>
         {% endif %}
         {% if messageObject is defined and messageObject and messageObject.parent is null and message_id|default(0) > 0 %}
-            <button class="btn-reply-subtle btn-thread-subtle" onclick="openThread({{ message_id }})"
+            <button class="btn-reply-subtle btn-thread-subtle"
+                    hx-get="{{ path('app_message_thread', {id: message_id}) }}"
+                    hx-target="#thread-panel"
+                    hx-swap="innerHTML"
                     title="{{ 'Fil de discussion'|trans }}">
                 {{ ux_icon('heroicons:chat-bubble-left-right', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
                 <span>{{ 'Fil'|trans }}</span>

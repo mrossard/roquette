@@ -47,12 +47,14 @@ final class NotificationController extends AbstractController
     }
 
     // -------------------------------------------------------------------------
-    // Unread messages feed
+    // -------------------------------------------------------------------------
+    // Search and filter in channel
     // -------------------------------------------------------------------------
 
-    #[Route('/channels/{slug}/unread', name: 'app_channel_unread', methods: ['GET'])]
-    public function unreadMessages(
+    #[Route('/channels/{slug}/search', name: 'app_channel_search', methods: ['GET'])]
+    public function search(
         string $slug,
+        Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
@@ -66,42 +68,34 @@ final class NotificationController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
-        /** @var \App\Entity\UserChannelRead|null $activeRead */
-        $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $activeChannel]);
-        $lastReadMessageId = $activeRead?->getLastReadMessage()?->getId();
-
-        $messages = $messageRepository->findUnreadInChannel($activeChannel, $currentUser, $lastReadMessageId);
-
-        return $this->render('dashboard/_messages_feed.html.twig', [
-            'messages' => $messages,
-            'activeChannel' => $activeChannel,
-            'firstUnreadMessageId' => null,
-            'unreadFilterActive' => true,
-        ]);
-    }
-
-    // -------------------------------------------------------------------------
-    // Search in channel
-    // -------------------------------------------------------------------------
-
-    #[Route('/channels/{slug}/search', name: 'app_channel_search', methods: ['GET'])]
-    public function search(
-        string $slug,
-        Request $request,
-        ChannelRepository $channelRepository,
-        MessageRepository $messageRepository,
-    ): Response {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
-        try {
-            $activeChannel = $this->findAndAuthorizeChannel($slug, $channelRepository);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
-
         $query = trim($request->query->get('q', ''));
+        $unread = $request->query->getBoolean('unread', false);
+
+        if ($unread) {
+            $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
+            /** @var \App\Entity\UserChannelRead|null $activeRead */
+            $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $activeChannel]);
+            $lastReadMessageId = $activeRead?->getLastReadMessage()?->getId();
+
+            $messages = $messageRepository->findUnreadInChannel($activeChannel, $currentUser, $lastReadMessageId);
+
+            if ($query !== '') {
+                $messages = array_filter($messages, function ($m) use ($query) {
+                    return mb_strpos(
+                            mb_strtolower($m->getContent(), 'UTF-8'),
+                            mb_strtolower($query, 'UTF-8'),
+                        ) !== false;
+                });
+            }
+
+            return $this->render('dashboard/_messages_feed.html.twig', [
+                'messages' => $messages,
+                'activeChannel' => $activeChannel,
+                'firstUnreadMessageId' => null,
+                'unreadFilterActive' => true,
+                'searchQuery' => $query !== '' ? $query : null,
+            ]);
+        }
 
         if ($query === '') {
             $messages = $messageRepository->findBy(
