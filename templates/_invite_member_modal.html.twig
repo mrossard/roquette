@@ -1,56 +1,33 @@
-<dialog id="invite-member-modal" class="modal-backdrop-dialog" role="dialog" aria-modal="true"
-        aria-labelledby="invite-modal-title">
-    <div class="modal-content glass-panel" style="max-width: 480px !important;">
-        <div class="modal-header">
-            <h3 id="invite-modal-title">
-                Inviter un membre dans #{{ activeChannel.name }}
-            </h3>
-            <button type="button" onclick="closeInviteMemberModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
-        </div>
-
+{% embed '_modal_layout.html.twig' with {
+    id: 'invite-member-modal',
+    title: 'Inviter un membre dans #' ~ activeChannel.name,
+    content_style: 'max-width: 480px !important;'
+} %}
+    {% block modal_body %}
         <div id="invite-modal-body">
             {% include 'dashboard/_invite_modal_list.html.twig' with {'activeChannel': activeChannel, 'usersToInvite': usersToInvite} %}
         </div>
-    </div>
-</dialog>
+    {% endblock %}
+{% endembed %}
 
 <script>
     (function() {
-        let lastFocusedElement = null;
-
         window.openInviteMemberModal = function(trigger) {
             console.log('[Diagnostic] openInviteMemberModal called');
-            lastFocusedElement = trigger;
-            const modal = document.getElementById('invite-member-modal');
-            if (modal) {
-                modal.showModal();
-                const searchInput = document.getElementById('invite-member-search-input');
-                if (searchInput) {
-                    searchInput.value = '';
-                    const listContainer = document.getElementById('modal-invite-members-list');
-                    if (listContainer) {
-                        listContainer.innerHTML = '<span style="font-size: 0.85rem; color: var(--text-muted); text-align: center; display: block; padding: 1rem 0;">Saisissez un nom pour rechercher un membre.</span>';
-                    }
-                    setTimeout(() => searchInput.focus(), 50);
+            const searchInput = document.getElementById('invite-member-search-input');
+            if (searchInput) {
+                searchInput.value = '';
+                const listContainer = document.getElementById('modal-invite-members-list');
+                if (listContainer) {
+                    listContainer.innerHTML = '<span style="font-size: 0.85rem; color: var(--text-muted); text-align: center; display: block; padding: 1rem 0;">Saisissez un nom pour rechercher un membre.</span>';
                 }
             }
+            openModal('invite-member-modal', trigger);
         };
 
         window.closeInviteMemberModal = function() {
             console.log('[Diagnostic] closeInviteMemberModal called');
-            const modal = document.getElementById('invite-member-modal');
-            if (modal) {
-                modal.close();
-                if (lastFocusedElement) {
-                    lastFocusedElement.focus();
-                }
-            }
+            closeModal('invite-member-modal');
         };
-
-        document.getElementById('invite-member-modal')?.addEventListener('click', (e) => {
-            if (e.target.id === 'invite-member-modal') {
-                closeInviteMemberModal();
-            }
-        });
     })();
 </script>

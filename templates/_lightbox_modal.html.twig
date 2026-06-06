@@ -13,33 +13,23 @@
 
 <script>
     (function() {
-        window.openLightbox = function(src, filename) {
-            const lightbox = document.getElementById('image-lightbox');
+        window.openLightbox = function (src, filename, trigger = null) {
             const img = document.getElementById('lightbox-img');
             const caption = document.getElementById('lightbox-filename');
             const download = document.getElementById('lightbox-download');
-            if (lightbox && img) {
+            if (img) {
                 img.src = src;
                 if (caption) caption.textContent = filename;
                 if (download) {
                     download.href = src;
                     download.download = filename;
                 }
-                lightbox.showModal();
+                openModal('image-lightbox', trigger);
             }
         };
 
         window.closeLightbox = function() {
-            const lightbox = document.getElementById('image-lightbox');
-            if (lightbox) {
-                lightbox.close();
-            }
+            closeModal('image-lightbox');
         };
-
-        document.getElementById('image-lightbox')?.addEventListener('click', (e) => {
-            if (e.target.id === 'image-lightbox') {
-                closeLightbox();
-            }
-        });
     })();
 </script>

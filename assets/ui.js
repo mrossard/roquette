@@ -767,6 +767,44 @@ setInterval(() => {
 }, 15000);
 
 
+export function openModal(modalId, trigger = null) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal._triggerElement = trigger || document.activeElement;
+        modal.showModal();
+
+        // Auto-focus first input or button inside the modal
+        const focusEl = modal.querySelector('input[type="text"], input[type="search"], select, textarea, [autofocus]');
+        if (focusEl) {
+            setTimeout(() => focusEl.focus(), 50);
+        }
+    }
+}
+
+export function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal && modal.open) {
+        modal.close();
+    }
+}
+
+// Global delegated click handler for modal backdrop closing
+document.addEventListener('click', (e) => {
+    if (e.target.tagName === 'DIALOG' && e.target.classList.contains('modal-backdrop-dialog')) {
+        closeModal(e.target.id);
+    }
+});
+
+// Global close listener to restore focus on dialog close
+document.addEventListener('close', (e) => {
+    if (e.target.tagName === 'DIALOG') {
+        const modal = e.target;
+        if (modal._triggerElement && typeof modal._triggerElement.focus === 'function') {
+            modal._triggerElement.focus();
+            modal._triggerElement = null;
+        }
+    }
+}, true); // Capture phase is required because the close event does not bubble
 
 export function openGlobalSearch() {
     const modal = document.getElementById('global-search-modal');
@@ -889,6 +927,9 @@ window.initUnreadFilter = initUnreadFilter;
 window.showCustomConfirm = showCustomConfirm;
 window.showCustomAlert = showCustomAlert;
 window.initConfirmModals = initConfirmModals;
+
+window.openModal = openModal;
+window.closeModal = closeModal;
 
 window.openGlobalSearch = openGlobalSearch;
 window.closeGlobalSearch = closeGlobalSearch;

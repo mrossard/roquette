@@ -1,10 +1,8 @@
-<dialog id="create-channel-modal" class="modal-backdrop-dialog" role="dialog" aria-modal="true"
-        aria-labelledby="modal-title">
-    <div class="modal-content glass-panel">
-        <div class="modal-header">
-            <h3 id="modal-title">Créer un nouveau canal</h3>
-            <button type="button" onclick="closeChannelModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
-        </div>
+{% embed '_modal_layout.html.twig' with {
+    id: 'create-channel-modal',
+    title: 'Créer un nouveau canal'
+} %}
+    {% block modal_body %}
         <form action="{{ path('app_channel_create') }}" method="POST" class="add-channel-form" hx-boost="false">
             <div class="input-group">
                 <label for="modal-name">Nom du canal</label>
@@ -31,39 +29,17 @@
             </div>
             <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Créer le canal</button>
         </form>
-    </div>
-</dialog>
+    {% endblock %}
+{% endembed %}
 
 <script>
     (function() {
-        let lastFocusedElement = null;
-
         window.openChannelModal = function(trigger) {
-            lastFocusedElement = trigger;
-            const modal = document.getElementById('create-channel-modal');
-            if (modal) {
-                modal.showModal();
-                const firstInput = document.getElementById('modal-name');
-                if (firstInput) {
-                    setTimeout(() => firstInput.focus(), 50);
-                }
-            }
+            openModal('create-channel-modal', trigger);
         };
 
         window.closeChannelModal = function() {
-            const modal = document.getElementById('create-channel-modal');
-            if (modal) {
-                modal.close();
-                if (lastFocusedElement) {
-                    lastFocusedElement.focus();
-                }
-            }
+            closeModal('create-channel-modal');
         };
-
-        document.getElementById('create-channel-modal')?.addEventListener('click', (e) => {
-            if (e.target.id === 'create-channel-modal') {
-                closeChannelModal();
-            }
-        });
     })();
 </script>

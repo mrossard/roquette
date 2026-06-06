@@ -1,10 +1,12 @@
-<dialog id="busy-status-modal" class="modal-backdrop-dialog" role="dialog" aria-modal="true"
-        aria-labelledby="busy-modal-title">
-    <div class="modal-content glass-panel" style="max-width: 440px !important;">
-        <div class="modal-header">
-            <h3 id="busy-modal-title" style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">⚠️ Activer le statut Occupé ?</h3>
-            <button type="button" onclick="closeBusyStatusModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
-        </div>
+{% embed '_modal_layout.html.twig' with {
+    id: 'busy-status-modal',
+    content_style: 'max-width: 440px !important;'
+} %}
+    {% block modal_title %}
+        <span style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; margin: 0;">⚠️ Activer le statut Occupé ?</span>
+    {% endblock %}
+
+    {% block modal_body %}
         <div class="modal-body" style="color: var(--text-primary); font-size: 0.95rem; line-height: 1.5; margin: 1rem 0 1.5rem 0; display: flex; flex-direction: column; gap: 0.75rem;">
             <p>En passant votre statut en <strong>"Occupé"</strong> :</p>
             <ul style="margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
@@ -16,54 +18,50 @@
             </p>
         </div>
         <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-            <button type="button" class="btn-cancel" onclick="closeBusyStatusModal()" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s;">Annuler</button>
+            <button type="button" class="btn-cancel" onclick="closeModal('busy-status-modal')"
+                    style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s;">
+                Annuler
+            </button>
             <button type="button" id="btn-confirm-busy" class="btn-publish" style="margin-top: 0; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; background: #ffab00; border: none; color: #000; font-weight: bold; transition: opacity 0.2s;">Confirmer</button>
         </div>
-    </div>
-</dialog>
+    {% endblock %}
+{% endembed %}
 
 <script>
     (function() {
         let currentOnConfirm = null;
         let currentOnCancel = null;
+        let confirmed = false;
 
         window.openBusyStatusModal = function(onConfirm, onCancel) {
-            const modal = document.getElementById('busy-status-modal');
-            if (modal) {
-                currentOnConfirm = onConfirm;
-                currentOnCancel = onCancel;
-                modal.showModal();
-
-                const confirmBtn = document.getElementById('btn-confirm-busy');
-                if (confirmBtn) {
-                    confirmBtn.focus();
-                }
+            currentOnConfirm = onConfirm;
+            currentOnCancel = onCancel;
+            confirmed = false;
+            openModal('busy-status-modal');
+            const confirmBtn = document.getElementById('btn-confirm-busy');
+            if (confirmBtn) {
+                confirmBtn.focus();
             }
         };
 
-        window.closeBusyStatusModal = function(confirmed = false) {
-            const modal = document.getElementById('busy-status-modal');
-            if (modal) {
-                modal.close();
-
-                if (confirmed) {
-                    if (typeof currentOnConfirm === 'function') {
-                        currentOnConfirm();
-                    }
-                } else {
-                    if (typeof currentOnCancel === 'function') {
-                        currentOnCancel();
-                    }
-                }
-                currentOnConfirm = null;
-                currentOnCancel = null;
-            }
+        window.closeBusyStatusModal = function (isConfirm = false) {
+            confirmed = isConfirm;
+            closeModal('busy-status-modal');
         };
 
-        document.getElementById('busy-status-modal')?.addEventListener('click', (e) => {
-            if (e.target.id === 'busy-status-modal') {
-                closeBusyStatusModal(false);
+        const modal = document.getElementById('busy-status-modal');
+        modal?.addEventListener('close', () => {
+            if (confirmed) {
+                if (typeof currentOnConfirm === 'function') {
+                    currentOnConfirm();
+                }
+            } else {
+                if (typeof currentOnCancel === 'function') {
+                    currentOnCancel();
+                }
             }
+            currentOnConfirm = null;
+            currentOnCancel = null;
         });
 
         const confirmBtn = document.getElementById('btn-confirm-busy');
