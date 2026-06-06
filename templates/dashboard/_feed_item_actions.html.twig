@@ -33,7 +33,7 @@
                             <button class="reaction-picker-btn"
                                     hx-post="{{ path('app_message_react', {id: message_id, emoji: picker_emoji}) }}"
                                     hx-target="closest .feed-item"
-                                    hx-swap="outerHTML">
+                                    hx-swap="morph transition:false">
                                 {{ picker_emoji }}
                             </button>
                         {% endfor %}
@@ -44,7 +44,7 @@
         {% if message_id|default(0) > 0 %}
             <button class="btn-reply-subtle btn-edit-subtle"
                     hx-get="{{ path('app_message_edit_form', {id: message_id}) }}"
-                    hx-target="closest .feed-item" hx-swap="outerHTML" title="{{ 'Modifier'|trans }}"
+                    hx-target="closest .feed-item" hx-swap="morph transition:false" title="{{ 'Modifier'|trans }}"
                     style="display: {% if app.user and author and author.id == app.user.id and not pollHasVotes %}inline-flex{% else %}none{% endif %};">
                 {{ ux_icon('heroicons:pencil-square', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
                 <span>{{ 'Modifier'|trans }}</span>
@@ -64,7 +64,7 @@
             <button class="btn-reply-subtle btn-pin-subtle"
                     hx-post="{{ isThisMessagePinned ? path('app_message_unpin', {id: message_id}) : path('app_message_pin', {id: message_id}) }}"
                     hx-target="#pinned-banner-container"
-                    hx-swap="innerHTML"
+                    hx-swap="innerHTML transition:false"
                     title="{{ isThisMessagePinned ? 'Désépingler'|trans : 'Épingler'|trans }}">
                 <span class="action-icon"
                       style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">📌</span>
@@ -76,7 +76,7 @@
             <button class="btn-reply-subtle btn-save-subtle {{ isSaved ? 'is-saved' : '' }}"
                     hx-post="{{ path('app_message_save_toggle', {id: message_id}) }}"
                     hx-target="closest .feed-item"
-                    hx-swap="outerHTML"
+                    hx-swap="morph transition:false"
                     title="{{ isSaved ? 'Retirer des favoris'|trans : 'Enregistrer dans les favoris'|trans }}">
                 <span class="action-icon"
                       style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">⭐</span>

@@ -330,7 +330,10 @@ export function updateEditButtonsVisibility() {
     const currentUsername = statusBadge.getAttribute('data-current-username');
     if (!currentUsername) return;
 
-    document.querySelectorAll('.feed-item').forEach(item => {
+    const uninitializedItems = document.querySelectorAll('.feed-item:not([data-visibility-initialized])');
+    if (uninitializedItems.length === 0) return;
+
+    uninitializedItems.forEach(item => {
         const authorUsername = item.getAttribute('data-author-username');
         const editBtn = item.querySelector('.btn-edit-subtle');
         if (editBtn) {
@@ -341,18 +344,8 @@ export function updateEditButtonsVisibility() {
                 editBtn.style.display = 'none';
             }
         }
-    });
 
-    // Also update DM links for usernames in the feed
-    updateUserLinks(currentUsername);
-
-    // Dynamic reaction badge active class status
-    updateReactionBadges(currentUsername);
-}
-
-export function updateUserLinks(currentUsername) {
-    document.querySelectorAll('.feed-item').forEach(item => {
-        const authorUsername = item.getAttribute('data-author-username');
+        // Also update DM links for usernames in the feed
         const userLink = item.querySelector('.feed-item-user-link');
         if (userLink && authorUsername) {
             if (authorUsername === currentUsername) {
@@ -373,7 +366,24 @@ export function updateUserLinks(currentUsername) {
                 userLink.classList.remove('self-link');
             }
         }
+
+        // Dynamic reaction badge active class status
+        item.querySelectorAll('.reaction-badge').forEach(badge => {
+            const reactorsStr = badge.getAttribute('data-reactors') || '';
+            const reactors = reactorsStr.split(',').filter(r => r !== '');
+            if (reactors.includes(currentUsername)) {
+                badge.classList.add('active');
+            } else {
+                badge.classList.remove('active');
+            }
+        });
+
+        item.setAttribute('data-visibility-initialized', 'true');
     });
+}
+
+export function updateUserLinks(currentUsername) {
+    // Deprecated: Handled inline within optimized updateEditButtonsVisibility()
 }
 
 export function switchInputTab(textareaId, mode) {

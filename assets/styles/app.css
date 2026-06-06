@@ -509,7 +509,6 @@ select option {
     }
 }
 
-/* Feed Item Card */
 .feed-item {
     position: relative;
     background: rgba(255, 255, 255, 0.015);
@@ -521,7 +520,6 @@ select option {
     flex-direction: column;
     gap: 0.2rem;
     transition: var(--transition-smooth);
-    animation: feedItemEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .feed-item:hover {
@@ -3445,13 +3443,13 @@ del {
     flex-grow: 1;
 }
 
-/* Show skeleton during HTMX requests */
-.htmx-request .chat-skeleton {
+/* Show skeleton during channel/page switches */
+.chat-panel.channel-loading .chat-skeleton {
     display: flex !important;
 }
 
-/* Hide other content in the chat panel while HTMX request is in flight */
-.htmx-request .chat-panel > *:not(.chat-skeleton):not(.drag-drop-overlay) {
+/* Hide other content in the chat panel only during channel/page switches */
+.chat-panel.channel-loading > *:not(.chat-skeleton):not(.drag-drop-overlay) {
     display: none !important;
 }
 
@@ -3562,13 +3560,13 @@ del {
     flex-grow: 1;
 }
 
-/* Show skeleton during HTMX requests */
-.htmx-request .settings-skeleton {
+/* Show skeleton during page/settings switches */
+.settings-panel.settings-loading .settings-skeleton {
     display: flex !important;
 }
 
-/* Hide other content in settings panel while HTMX request is in flight */
-.htmx-request .settings-panel > *:not(.settings-skeleton) {
+/* Hide other content in settings panel only during page/settings switches */
+.settings-panel.settings-loading > *:not(.settings-skeleton) {
     display: none !important;
 }
 

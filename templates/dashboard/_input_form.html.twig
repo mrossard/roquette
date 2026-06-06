@@ -1,5 +1,5 @@
 <form hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
-      hx-swap="outerHTML"
+      hx-swap="morph transition:false"
       enctype="multipart/form-data"
       class="input-form chat-message-form">
     {% for label, messages in app.flashes %}
@@ -17,7 +17,7 @@
                         hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
                         hx-vals='{"message": ""}'
                         hx-target="closest form"
-                        hx-swap="outerHTML"
+                        hx-swap="morph transition:false"
                         title="Annuler">
                     Annuler
                 </button>
@@ -28,7 +28,7 @@
                          hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
                          hx-vals='{"message": "![giphy {{ giphyQuery|escape('js') }}]({{ gif.url }})"}'
                          hx-target="closest form"
-                         hx-swap="outerHTML">
+                         hx-swap="morph transition:false">
                         <img src="{{ gif.preview }}" alt="GIF Preview" class="giphy-preview-img">
                         <div class="giphy-preview-overlay">
                             <span class="giphy-send-icon">📤</span>
@@ -44,7 +44,7 @@
                     hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
                     hx-vals='{"message": ""}'
                     hx-target="closest form"
-                    hx-swap="outerHTML"
+                    hx-swap="morph transition:false"
                     title="Fermer">
                 Fermer
             </button>
@@ -139,7 +139,7 @@
                     hx-post="{{ path('app_api_message_preview') }}"
                     hx-include="#message"
                     hx-target="#message-preview"
-                    hx-swap="innerHTML"
+                    hx-swap="innerHTML transition:false"
                     onclick="switchInputTab('message', 'preview')"
                     title="{{ 'Aperçu'|trans }}">{{ 'Aperçu'|trans }}</button>
         </div>

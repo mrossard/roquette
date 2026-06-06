@@ -25,8 +25,8 @@
 {% set isThisMessagePinned = messageChannel and messageChannel.pinnedMessage == messageObject %}
 {% set isMeMessage = message is not null and (message starts with '/me ' or message == '/me') %}
 {% set pollHasVotes = messageObject and messageObject.poll and messageObject.poll.totalVotes > 0 %}
-<div class="feed-item fade-in {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isMeMessage ? 'is-me-message' : '' }}"
-     id="feed-item-{{ message_id|default('') }}" {% if oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}
+<div class="feed-item {{ oob|default(false) ? '' : 'fade-in' }} {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isMeMessage ? 'is-me-message' : '' }}"
+     id="feed-item-{{ message_id|default('') }}" {% if oob|default(false) %}hx-swap-oob="morph"{% endif %}
      style="--user-hue: {{ user_hue }};" data-message-id="{{ message_id|default('') }}"
      data-author-username="{{ author ? author.username : '' }}" data-raw-content="{{ message|default('') }}"
      data-file-name="{{ fileName|default('') }}" data-file-size="{{ fileSize|default('') }}"
@@ -102,7 +102,7 @@
                 {% for link in links %}
                     <div hx-get="{{ path('app_api_link_preview', {url: link}) }}"
                          hx-trigger="intersect once"
-                         hx-swap="outerHTML"
+                         hx-swap="outerHTML transition:false"
                          class="link-preview-placeholder">
                     </div>
                 {% endfor %}

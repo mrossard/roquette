@@ -194,6 +194,19 @@ document.addEventListener('htmx:configRequest', (evt) => {
 
 // Handle file upload loading indicator and progress updates
 document.body.addEventListener('htmx:beforeRequest', (evt) => {
+    // Show skeletons during page/channel navigation (when target is app-container or BODY)
+    const target = evt.detail.target;
+    if (target && (target.classList.contains('app-container') || target.tagName === 'BODY')) {
+        const chatPanel = document.querySelector('.chat-panel');
+        if (chatPanel) {
+            chatPanel.classList.add('channel-loading');
+        }
+        const settingsPanel = document.querySelector('.settings-panel');
+        if (settingsPanel) {
+            settingsPanel.classList.add('settings-loading');
+        }
+    }
+
     const elt = evt.detail.elt;
     if (!elt) return;
 
@@ -268,6 +281,16 @@ document.body.addEventListener('htmx:xhr:progress', (evt) => {
 });
 
 document.body.addEventListener('htmx:afterRequest', (evt) => {
+    // Remove loading skeletons classes
+    const chatPanel = document.querySelector('.chat-panel');
+    if (chatPanel) {
+        chatPanel.classList.remove('channel-loading');
+    }
+    const settingsPanel = document.querySelector('.settings-panel');
+    if (settingsPanel) {
+        settingsPanel.classList.remove('settings-loading');
+    }
+
     const progressWrapper = document.getElementById('file-upload-progress');
     if (progressWrapper) progressWrapper.style.display = 'none';
     const threadProgressWrapper = document.getElementById('thread-file-upload-progress');
@@ -380,23 +403,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.body.addEventListener('htmx:afterSettle', (evt) => {
         const target = evt.detail.target;
-        if (target && (target.id === 'global-search-results' || target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
-            if (target.id === 'global-search-results') {
-                return;
-            }
-            // For load more, just initialize infinite scroll and return without refocusing
+
+        // ── Skip / early-return cases ──────────────────────────────────────────
+        if (target && target.id === 'global-search-results') {
+            return;
+        }
+        if (target && (target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
             initInfiniteScroll();
             return;
         }
 
+        // ── SSE message appended to #live-feed ────────────────────────────────
+        // Only run lightweight per-item initialisation; scrolling is already
+        // handled by the htmx:sseMessage listener in mercure.js (+50ms delay).
+        if (target && target.id === 'live-feed') {
+            if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
+            if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
+            if (window.initEmojiPickers) window.initEmojiPickers();
+            return;
+        }
+
+        // ── Form morph after sending a message ───────────────────────────────
+        // The textarea was cleared by idiomorph. Only re-init the form itself;
+        // avoid expensive full-page operations that cause visible repaints.
+        if (target && target.classList.contains('chat-message-form')) {
+            initAutoResizeTextarea();
+            if (window.initFileUpload) window.initFileUpload();
+            if (window.initTypingIndicator) window.initTypingIndicator();
+            if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
+
+            const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            if (!isMobileDevice) {
+                const threadPanel = document.getElementById('thread-panel');
+                const threadTextarea = document.getElementById('thread-message');
+                if (threadPanel && threadPanel.style.display !== 'none' && threadTextarea) {
+                    threadTextarea.focus();
+                } else {
+                    const messageInputAfterSettle = document.getElementById('message');
+                    if (messageInputAfterSettle) messageInputAfterSettle.focus();
+                }
+            }
+            return;
+        }
+
+        // ── Single feed-item swap (edit/view/reaction) ───────────────────────
+        if (target && target.classList.contains('feed-item')) {
+            if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
+            if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
+            if (window.initEmojiPickers) window.initEmojiPickers();
+            return;
+        }
+
+        // ── Channel switch or other major full-page swap ──────────────────────
         const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
 
         if (window.connectMercure) window.connectMercure();
         if (isChannelSwitch && window.scrollToBottom) window.scrollToBottom(false);
         if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
-        if (window.highlightAllCodeBlocks) {
-            window.highlightAllCodeBlocks();
-        }
+        if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
         if (window.initEmojiPickers) window.initEmojiPickers();
         if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
         initAutoResizeTextarea();
@@ -411,26 +475,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
         initInfiniteScroll();
 
-        // Scroll thread replies to bottom if thread panel is open (handles OOB-injected replies)
-        if (window.scrollToBottom) {
+        // Scroll thread panel only when it is actually open
+        const threadPanelEl = document.getElementById('thread-panel');
+        if (window.scrollToBottom && threadPanelEl && threadPanelEl.style.display !== 'none') {
             window.scrollToBottom(true, 'thread-replies-feed');
         }
 
-        // Refocus appropriate input after content swap/settle (ONLY when switching channels, i.e. target is BODY or .app-container)
+        // Refocus appropriate input after channel switches
         const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (isChannelSwitch && !isMobileDevice) {
-            // If the thread panel is open, keep focus on the thread input
             const threadPanel = document.getElementById('thread-panel');
             const threadTextarea = document.getElementById('thread-message');
             if (threadPanel && threadPanel.style.display !== 'none' && threadTextarea) {
-                console.log('[Diagnostic] Focusing thread input');
                 threadTextarea.focus();
             } else {
                 const messageInputAfterSettle = document.getElementById('message');
-                if (messageInputAfterSettle) {
-                    console.log('[Diagnostic] Focusing message input');
-                    messageInputAfterSettle.focus();
-                }
+                if (messageInputAfterSettle) messageInputAfterSettle.focus();
             }
         }
         checkJumpToMessage();

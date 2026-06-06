@@ -1,5 +1,5 @@
 <form hx-post="{{ path('app_message_thread_reply', {id: parentMessage.id}) }}"
-      hx-swap="outerHTML"
+      hx-swap="morph transition:false"
       enctype="multipart/form-data"
       class="input-form chat-message-form thread-message-form">
     {% for label, messages in app.flashes %}
@@ -39,7 +39,7 @@
                     hx-post="{{ path('app_api_message_preview') }}"
                     hx-include="#thread-message"
                     hx-target="#thread-message-preview"
-                    hx-swap="innerHTML"
+                    hx-swap="innerHTML transition:false"
                     onclick="switchInputTab('thread-message', 'preview')"
                     title="Aperçu">Aperçu</button>
         </div>

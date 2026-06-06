@@ -5,7 +5,7 @@
             <button class="reaction-badge {% if info.hasReacted %}active{% endif %}"
                     hx-post="{{ path('app_message_react', {id: message_id, emoji: emoji}) }}"
                     hx-target="closest .feed-item"
-                    hx-swap="outerHTML"
+                    hx-swap="morph transition:false"
                     data-reactors="{{ info.reactorUsernames|join(',') }}"
                     title="{{ info.usernames|reaction_tooltip(emoji) }}">
                 <span class="reaction-emoji">{{ emoji }}</span>
@@ -16,7 +16,7 @@
 {% endif %}
 {% set reply_count = messageObject is defined and messageObject and messageObject.parent is null ? messageObject.replies|length : 0 %}
 <div class="message-thread-badge-container" id="message-thread-badge-{{ message_id|default('') }}"
-     {% if oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}
+     {% if oob|default(false) %}hx-swap-oob="morph"{% endif %}
      style="display: {{ reply_count > 0 ? 'block' : 'none' }}; margin-top: {{ isMeMessage|default(false) ? '0.25rem' : '0.5rem' }};">
     <button class="btn-thread-badge" onclick="openThread({{ message_id|default(0) }})"
             style="font-size: 0.8rem; font-weight: 600; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.2); color: var(--accent-cyan); border-radius: 0.5rem; padding: 0.25rem 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; transition: all 0.2s ease;">

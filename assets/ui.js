@@ -172,6 +172,9 @@ export function initFileUpload() {
 
     if (!fileInput || !textarea || !previewContainer || !previewName) return;
 
+    if (fileInput.dataset.initialized === 'true') return;
+    fileInput.dataset.initialized = 'true';
+
     // Paste event handler
     textarea.addEventListener('paste', (event) => {
         handlePasteUpload(event, fileInput);

@@ -23,7 +23,7 @@
         <button class="poll-option {% if has_voted %}voted{% endif %} {% if is_most_voted %}most-voted{% endif %}"
                 hx-post="{{ path('app_poll_vote', {optionId: option.id}) }}"
                 hx-target="closest .feed-item"
-                hx-swap="morph">
+                hx-swap="morph transition:false">
             <div class="poll-option-row">
                 <div class="poll-option-left">
                     <span class="poll-option-indicator"></span>

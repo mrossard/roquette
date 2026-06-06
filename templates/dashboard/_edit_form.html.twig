@@ -1,6 +1,6 @@
 {% set user_hue = message.author ? message.author.hue : 200 %}
 {% set username = message.author ? (message.author.displayName|default(message.author.username)) : 'Utilisateur' %}
-<div class="feed-item fade-in editing" style="--user-hue: {{ user_hue }};" data-message-id="{{ message.id }}" data-author-username="{{ message.author ? message.author.username : '' }}">
+<div class="feed-item editing" style="--user-hue: {{ user_hue }};" data-message-id="{{ message.id }}" data-author-username="{{ message.author ? message.author.username : '' }}">
     <div class="feed-item-header">
         <div class="feed-item-user-container">
             <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
@@ -13,7 +13,7 @@
         {% endif %}
     </div>
     <div class="feed-item-body" style="padding-left: 2.2rem; width: 100%;">
-        <form hx-post="{{ path('app_message_edit', {id: message.id}) }}" hx-target="closest .feed-item" hx-swap="outerHTML" class="edit-message-form" style="width: 100%; display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.25rem;">
+        <form hx-post="{{ path('app_message_edit', {id: message.id}) }}" hx-target="closest .feed-item" hx-swap="morph transition:false" class="edit-message-form" style="width: 100%; display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.25rem;">
             {% if message.poll %}
                 <!-- Poll Edit Form -->
                 <div>
@@ -67,7 +67,7 @@
                     {{ ux_icon('heroicons:check', {class: 'action-icon', style: 'width: 12px; height: 12px; margin-right: 0.25rem;'}) }}
                     <span>Enregistrer</span>
                 </button>
-                <button type="button" class="btn-reply-subtle btn-cancel" hx-get="{{ path('app_message_view', {id: message.id}) }}" hx-target="closest .feed-item" hx-swap="outerHTML" style="opacity: 1; padding: 0.4rem 0.8rem; border: 1px solid var(--border-glass); font-size: 0.8rem; border-radius: 0.4rem; display: inline-flex; align-items: center; justify-content: center; margin-left: 0;">
+                <button type="button" class="btn-reply-subtle btn-cancel" hx-get="{{ path('app_message_view', {id: message.id}) }}" hx-target="closest .feed-item" hx-swap="morph transition:false" style="opacity: 1; padding: 0.4rem 0.8rem; border: 1px solid var(--border-glass); font-size: 0.8rem; border-radius: 0.4rem; display: inline-flex; align-items: center; justify-content: center; margin-left: 0;">
                     {{ ux_icon('heroicons:x-mark', {class: 'action-icon', style: 'width: 12px; height: 12px; margin-right: 0.25rem;'}) }}
                     <span>Annuler</span>
                 </button>

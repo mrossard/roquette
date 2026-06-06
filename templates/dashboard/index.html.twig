@@ -161,7 +161,7 @@
                                         class="btn-unread-filter"
                                         hx-get="{{ path('app_channel_unread', {slug: activeChannel.slug}) }}"
                                         hx-target="#live-feed"
-                                        hx-swap="innerHTML"
+                                        hx-swap="innerHTML transition:false"
                                         onclick="toggleUnreadFilter(this, event)"
                                         title="{{ 'Afficher uniquement les messages non lus'|trans }}"
                                         aria-label="{{ 'Filtrer les messages non lus'|trans }}">
@@ -231,7 +231,7 @@
                         {% endif %}
                     </div>
                     <div id="live-feed" class="feed-container" role="log" aria-live="polite"
-                         sse-swap="message_{{ activeChannel.slug }}" hx-swap="beforeend">
+                         sse-swap="message_{{ activeChannel.slug }}" hx-swap="beforeend transition:false">
                         {% include 'dashboard/_messages_feed.html.twig' with {
                             'messages': messages,
                             'activeChannel': activeChannel,
