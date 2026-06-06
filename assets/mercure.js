@@ -201,9 +201,7 @@ export function handleHelpStreamUpdate(data) {
             if (window.highlightAllCodeBlocks) {
                 window.highlightAllCodeBlocks(helpElem);
             }
-            if (window.scrollToBottom) {
-                window.scrollToBottom(true);
-            }
+
         }
     } else {
         const bodyElem = helpElem.querySelector('.feed-item-body');
@@ -212,11 +210,9 @@ export function handleHelpStreamUpdate(data) {
             if (window.highlightAllCodeBlocks) {
                 window.highlightAllCodeBlocks(helpElem);
             }
-            if (window.scrollToBottom) {
-                window.scrollToBottom(true);
             }
         }
-    }
+
 }
 
 export function showOfflineBanner(show, text = 'Connexion avec le serveur perdue. Tentative de reconnexion...') {
@@ -352,16 +348,6 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
     }
 });
 
-// Scroll to bottom smoothly on new message received
-document.body.addEventListener('htmx:sseMessage', (event) => {
-    if (event.detail.type.startsWith('message_')) {
-        setTimeout(() => {
-            if (window.scrollToBottom) {
-                window.scrollToBottom(true);
-            }
-        }, 50);
-    }
-});
 
 // Global window binds
 window.connectMercure = () => {

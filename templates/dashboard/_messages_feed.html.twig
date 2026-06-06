@@ -135,7 +135,8 @@
             {% set separatorShown = true %}
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
-            'messageObject': message
+            'messageObject': message,
+            'isLast': loop.last
         } %}
     {% else %}
         <div id="feed-empty-state" class="empty-state">

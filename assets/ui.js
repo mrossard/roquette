@@ -1,76 +1,3 @@
-const pendingScrollContainers = new Set();
-
-export function scrollToBottom(smooth = true, containerId = 'live-feed') {
-    const feedContainer = document.getElementById(containerId);
-    if (!feedContainer) return;
-
-    const isPageActive = (document.visibilityState === 'visible' && document.hasFocus());
-
-    if (!isPageActive) {
-        // Queue a scroll when the page becomes active/focused
-        pendingScrollContainers.add(containerId);
-
-        // Also do an instant scroll now, as 'auto' behavior is more reliable in the background than 'smooth'
-        feedContainer.scrollTo({
-            top: feedContainer.scrollHeight,
-            behavior: 'auto'
-        });
-        return;
-    }
-
-    feedContainer.scrollTo({
-        top: feedContainer.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto'
-    });
-
-    // Handle images that are not loaded yet to prevent layout shifts from breaking scroll-to-bottom
-    const images = feedContainer.querySelectorAll('img');
-    images.forEach(img => {
-        if (!img.complete && !img.dataset.scrollListener) {
-            img.dataset.scrollListener = 'true';
-            const handleImageLoad = () => {
-                // If user is close to the bottom, scroll to the new bottom
-                const threshold = 150; // pixels
-                const isCloseToBottom = (feedContainer.scrollHeight - feedContainer.scrollTop - feedContainer.clientHeight) < threshold;
-                if (isCloseToBottom) {
-                    const currentActive = (document.visibilityState === 'visible' && document.hasFocus());
-                    feedContainer.scrollTo({
-                        top: feedContainer.scrollHeight,
-                        behavior: currentActive ? 'smooth' : 'auto'
-                    });
-                }
-            };
-            img.addEventListener('load', handleImageLoad, { once: true });
-            img.addEventListener('error', handleImageLoad, { once: true });
-        }
-    });
-}
-
-function triggerPendingScrolls() {
-    if (document.visibilityState === 'visible' && document.hasFocus()) {
-        pendingScrollContainers.forEach(containerId => {
-            scrollToBottom(true, containerId);
-        });
-        pendingScrollContainers.clear();
-
-        // Remove unread separators after a small delay (e.g. 3 seconds) to let user see them first
-        setTimeout(() => {
-            if (document.visibilityState === 'visible' && document.hasFocus()) {
-                const separators = document.querySelectorAll('.unread-separator');
-                separators.forEach(sep => {
-                    sep.style.transition = 'opacity 0.5s ease-out';
-                    sep.style.opacity = '0';
-                    setTimeout(() => sep.remove(), 500);
-                });
-            }
-        }, 3000);
-    }
-}
-
-window.addEventListener('focus', triggerPendingScrolls);
-document.addEventListener('visibilitychange', triggerPendingScrolls);
-
-
 export function highlightAllCodeBlocks(container = document) {
     if (window.hljs) {
         const blocks = container.querySelectorAll('pre code');
@@ -871,7 +798,6 @@ export function initMobileSidebar() {
 }
 
 // Global window binds
-window.scrollToBottom = scrollToBottom;
 window.highlightAllCodeBlocks = highlightAllCodeBlocks;
 window.formatBytes = formatBytes;
 window.initFileUpload = initFileUpload;
@@ -921,5 +847,7 @@ export function toggleMessageActions(button, event) {
     actionsList.classList.toggle('show');
 }
 window.toggleMessageActions = toggleMessageActions;
+
+
 
 

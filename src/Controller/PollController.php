@@ -113,7 +113,7 @@ final class PollController extends AbstractController
         // Refresh the message association to avoid cache issues
         $entityManager->refresh($message);
 
-        $renderedHtml = $this->renderFeedItem($message);
+        $renderedHtml = $this->renderFeedItem($message, ['no_fade' => true]);
 
         $renderedHtmlOob = $this->renderView(
             'dashboard/_feed_item.html.twig',

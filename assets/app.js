@@ -2,6 +2,7 @@ import './styles/app.css';
 import htmx from 'htmx.org';
 window.htmx = htmx;
 import 'htmx-ext-sse';
+import {initializeChannelScroll, adjustScrollForLinkPreview, initInfiniteScroll} from './scroll.js';
 
 import hljs from 'highlight.js';
 window.hljs = hljs;
@@ -300,6 +301,25 @@ document.body.addEventListener('htmx:afterRequest', (evt) => {
     if (elt) {
         const submitBtn = elt.querySelector('button[type="submit"]');
         if (submitBtn) submitBtn.disabled = false;
+
+        // Reset the file input if the form submission was successful
+        if (evt.detail.successful) {
+            const isMainForm = elt.classList.contains('chat-message-form') && !elt.classList.contains('thread-message-form');
+            const isThreadForm = elt.classList.contains('thread-message-form');
+            if (isMainForm) {
+                const fileInput = document.getElementById('file-upload');
+                if (fileInput) {
+                    fileInput.value = '';
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            } else if (isThreadForm) {
+                const fileInput = document.getElementById('thread-file-upload');
+                if (fileInput) {
+                    fileInput.value = '';
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            }
+        }
     }
     const clearBtn = document.getElementById('btn-clear-file');
     if (clearBtn) clearBtn.style.display = '';
@@ -307,44 +327,17 @@ document.body.addEventListener('htmx:afterRequest', (evt) => {
     if (threadClearBtn) threadClearBtn.style.display = '';
 });
 
-// Preserve scroll position when loading older messages (prepending to top of #live-feed)
-let loadMoreScrollTracker = null;
-
 document.body.addEventListener('htmx:beforeSwap', (evt) => {
     // Allow swapping for validation/rate limit errors (400, 422, 429)
     if (evt.detail.xhr.status === 400 || evt.detail.xhr.status === 422 || evt.detail.xhr.status === 429) {
         evt.detail.shouldSwap = true;
         evt.detail.isError = false;
     }
-
-    const target = evt.detail.target;
-    if (target && (target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
-        const feed = document.getElementById('live-feed');
-        if (feed) {
-            loadMoreScrollTracker = {
-                scrollHeight: feed.scrollHeight,
-                scrollTop: feed.scrollTop
-            };
-        }
-    }
-});
-
-document.body.addEventListener('htmx:afterSwap', (evt) => {
-    const target = evt.detail.target;
-    if (target && (target.id === 'load-more-trigger' || target.classList.contains('load-more-container')) && loadMoreScrollTracker) {
-        const feed = document.getElementById('live-feed');
-        if (feed) {
-            const heightDifference = feed.scrollHeight - loadMoreScrollTracker.scrollHeight;
-            feed.scrollTop = loadMoreScrollTracker.scrollTop + heightDifference;
-        }
-        loadMoreScrollTracker = null;
-    }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initial connection
     if (window.connectMercure) window.connectMercure();
-    if (window.scrollToBottom) window.scrollToBottom(false);
     if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
     if (window.highlightAllCodeBlocks) {
         window.highlightAllCodeBlocks();
@@ -387,21 +380,12 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.focus();
     }
     checkJumpToMessage();
+    initializeChannelScroll();
 
-    // Reconnect and scroll when HTMX swaps content (e.g. switching channels)
-    document.body.addEventListener('htmx:afterSwap', (evt) => {
-        const target = evt.detail.target;
-        if (target && (target.id === 'global-search-results' || target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
-            return;
-        }
-        const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
-        if (isChannelSwitch && window.scrollToBottom) {
-            window.scrollToBottom(false);
-        }
-    });
 
     document.body.addEventListener('htmx:afterSettle', (evt) => {
         const target = evt.detail.target;
+        const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
 
         // ── Skip / early-return cases ──────────────────────────────────────────
         if (target && target.id === 'global-search-results') {
@@ -430,6 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.initFileUpload) window.initFileUpload();
             if (window.initTypingIndicator) window.initTypingIndicator();
             if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
+
 
             const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             if (!isMobileDevice) {
@@ -463,11 +448,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ── Channel switch or other major full-page swap ──────────────────────
-        const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
+        // ── Link preview swap ──────────────────────────────────────────────────
+        if (target && (target.classList.contains('link-preview-card') || target.querySelector('.link-preview-card'))) {
+            const previewCard = target.classList.contains('link-preview-card') ? target : target.querySelector('.link-preview-card');
+            adjustScrollForLinkPreview(previewCard);
+            return;
+        }
 
-        if (window.connectMercure) window.connectMercure();
-        if (isChannelSwitch && window.scrollToBottom) window.scrollToBottom(false);
         if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
         if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
         if (window.initEmojiPickers) window.initEmojiPickers();
@@ -484,12 +471,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
         initInfiniteScroll();
 
-        // Scroll thread panel only when it is actually open
-        const threadPanelEl = document.getElementById('thread-panel');
-        if (window.scrollToBottom && threadPanelEl && threadPanelEl.style.display !== 'none') {
-            window.scrollToBottom(true, 'thread-replies-feed');
-        }
-
         // Refocus appropriate input after channel switches
         const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (isChannelSwitch && !isMobileDevice) {
@@ -501,6 +482,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const messageInputAfterSettle = document.getElementById('message');
                 if (messageInputAfterSettle) messageInputAfterSettle.focus();
             }
+        }
+        if (isChannelSwitch) {
+            initializeChannelScroll();
         }
         checkJumpToMessage();
     });
@@ -541,42 +525,13 @@ function checkJumpToMessage() {
     }
 }
 
-function initInfiniteScroll() {
-    const feed = document.getElementById('live-feed');
-    if (!feed) return;
-
-    if (!feed.dataset.infiniteScrollBound) {
-        feed.addEventListener('scroll', () => {
-            if (window.triggerInfiniteScrollCheck) {
-                window.triggerInfiniteScrollCheck();
-            }
-        });
-        feed.dataset.infiniteScrollBound = 'true';
+// Prevent view transitions for non-boosted requests (like typing indicators, SSE messages, reactions, etc.)
+// to avoid page-wide flickering/blinking. Only allow them for boosted page/channel transitions.
+document.body.addEventListener('htmx:beforeTransition', (event) => {
+    if (!event.detail.boosted) {
+        event.preventDefault();
     }
+});
 
-    // Always schedule a check to see if we need to load more immediately (e.g. if not scrollable or already near top)
-    setTimeout(() => {
-        if (window.triggerInfiniteScrollCheck) {
-            window.triggerInfiniteScrollCheck();
-        }
-    }, 100);
-}
-
-window.triggerInfiniteScrollCheck = function() {
-    const feed = document.getElementById('live-feed');
-    if (!feed) return;
-
-    const trigger = document.getElementById('load-more-trigger');
-    if (trigger && !trigger.classList.contains('htmx-request')) {
-        const isNearTop = feed.scrollTop < 30;
-        const isNotScrollable = feed.scrollHeight <= feed.clientHeight;
-        if (isNearTop || isNotScrollable) {
-            const btn = trigger.querySelector('.btn-load-more');
-            if (btn) {
-                btn.click();
-            }
-        }
-    }
-};
 
 

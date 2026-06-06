@@ -313,7 +313,7 @@ final class MessageController extends AbstractController
             $entityManager->flush();
         }
 
-        $renderedHtml = $this->renderFeedItem($message);
+        $renderedHtml = $this->renderFeedItem($message, ['no_fade' => true]);
 
         $renderedHtmlOob = $this->renderView(
             'dashboard/_feed_item.html.twig',

@@ -70,9 +70,7 @@
         if (window.highlightAllCodeBlocks) {
             window.highlightAllCodeBlocks(threadPanel);
         }
-        if (window.scrollToBottom) {
-            window.scrollToBottom(false, 'thread-replies-feed');
-        }
+
         const threadTextarea = document.getElementById('thread-message');
         const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (threadTextarea && !isMobile) {

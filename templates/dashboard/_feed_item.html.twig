@@ -25,12 +25,14 @@
 {% set isThisMessagePinned = messageChannel and messageChannel.pinnedMessage == messageObject %}
 {% set isMeMessage = message is not null and (message starts with '/me ' or message == '/me') %}
 {% set pollHasVotes = messageObject and messageObject.poll and messageObject.poll.totalVotes > 0 %}
-<div class="feed-item {{ oob|default(false) ? '' : 'fade-in' }} {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isMeMessage ? 'is-me-message' : '' }}"
+<div
+    class="feed-item {{ (oob|default(false) or no_fade|default(false)) ? '' : 'fade-in' }} {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isMeMessage ? 'is-me-message' : '' }}"
      id="feed-item-{{ message_id|default('') }}" {% if oob|default(false) %}hx-swap-oob="morph"{% endif %}
      style="--user-hue: {{ user_hue }};" data-message-id="{{ message_id|default('') }}"
      data-author-username="{{ author ? author.username : '' }}" data-raw-content="{{ message|default('') }}"
      data-file-name="{{ fileName|default('') }}" data-file-size="{{ fileSize|default('') }}"
-     data-poll-has-votes="{{ pollHasVotes ? '1' : '0' }}">
+    data-poll-has-votes="{{ pollHasVotes ? '1' : '0' }}"
+    {% if isLast|default(false) %}data-last-message="true"{% endif %}>
     {% if isMeMessage %}
         <div class="feed-item-header">
             <div class="feed-item-me-content">
