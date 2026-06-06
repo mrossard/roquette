@@ -149,14 +149,13 @@
                         </a>
                     </div>
                 {% elseif isText %}
-                    <div class="attachment-preview text-preview-container">
-                        <button type="button" class="btn-preview-link text-preview-toggle" onclick="toggleTextPreview(this, '{{ path('app_file_preview', {id: message_id}) }}', '{{ message_id }}')">
+                    <div class="attachment-preview text-preview-container" id="text-preview-wrapper-{{ message_id }}">
+                        <button type="button" class="btn-preview-link text-preview-toggle"
+                                hx-get="{{ path('app_file_text_preview', {id: message_id}) }}"
+                                hx-target="#text-preview-wrapper-{{ message_id }}"
+                                hx-swap="outerHTML">
                             <span class="btn-preview-icon">👁️</span> {{ 'Prévisualiser le texte'|trans }}
                         </button>
-                        <div class="text-preview-content" style="display: none; " id="text-preview-{{ message_id }}">
-                            <pre><code
-                                    class="text-preview-code language-{{ fileExt }}">{{ 'Chargement...'|trans }}</code></pre>
-                        </div>
                     </div>
                 {% endif %}
             {% endif %}

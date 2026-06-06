@@ -1,17 +1,18 @@
-<div id="invite-member-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="invite-modal-title" style="display: none;" onclick="if(event.target === this) closeInviteMemberModal()">
-    <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width: 480px !important;">
+<dialog id="invite-member-modal" class="modal-backdrop-dialog" role="dialog" aria-modal="true"
+        aria-labelledby="invite-modal-title">
+    <div class="modal-content glass-panel" style="max-width: 480px !important;">
         <div class="modal-header">
             <h3 id="invite-modal-title">
                 Inviter un membre dans #{{ activeChannel.name }}
             </h3>
             <button type="button" onclick="closeInviteMemberModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
         </div>
-        
+
         <div id="invite-modal-body">
             {% include 'dashboard/_invite_modal_list.html.twig' with {'activeChannel': activeChannel, 'usersToInvite': usersToInvite} %}
         </div>
     </div>
-</div>
+</dialog>
 
 <script>
     (function() {
@@ -22,7 +23,7 @@
             lastFocusedElement = trigger;
             const modal = document.getElementById('invite-member-modal');
             if (modal) {
-                modal.style.display = 'flex';
+                modal.showModal();
                 const searchInput = document.getElementById('invite-member-search-input');
                 if (searchInput) {
                     searchInput.value = '';
@@ -32,7 +33,6 @@
                     }
                     setTimeout(() => searchInput.focus(), 50);
                 }
-                document.addEventListener('keydown', handleInviteModalKeyDown);
             }
         };
 
@@ -40,39 +40,17 @@
             console.log('[Diagnostic] closeInviteMemberModal called');
             const modal = document.getElementById('invite-member-modal');
             if (modal) {
-                modal.style.display = 'none';
-                document.removeEventListener('keydown', handleInviteModalKeyDown);
+                modal.close();
                 if (lastFocusedElement) {
                     lastFocusedElement.focus();
                 }
             }
         };
 
-        function handleInviteModalKeyDown(e) {
-            if (e.key === 'Escape') {
+        document.getElementById('invite-member-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'invite-member-modal') {
                 closeInviteMemberModal();
-                return;
             }
-            if (e.key === 'Tab') {
-                const modal = document.getElementById('invite-member-modal');
-                if (!modal) return;
-                const focusableElements = modal.querySelectorAll('button, input, textarea, select, a, [tabindex="0"]');
-                if (focusableElements.length === 0) return;
-                const firstFocusable = focusableElements[0];
-                const lastFocusable = focusableElements[focusableElements.length - 1];
-
-                if (e.shiftKey) {
-                    if (document.activeElement === firstFocusable) {
-                        lastFocusable.focus();
-                        e.preventDefault();
-                    }
-                } else {
-                    if (document.activeElement === lastFocusable) {
-                        firstFocusable.focus();
-                        e.preventDefault();
-                    }
-                }
-            }
-        }
+        });
     })();
 </script>

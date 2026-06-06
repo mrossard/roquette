@@ -1,5 +1,6 @@
-<div id="channel-members-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="members-modal-title" style="display: none;" onclick="if(event.target === this) closeChannelMembersModal()">
-    <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width: 480px !important;">
+<dialog id="channel-members-modal" class="modal-backdrop-dialog" role="dialog" aria-modal="true"
+        aria-labelledby="members-modal-title">
+    <div class="modal-content glass-panel" style="max-width: 480px !important;">
         <div class="modal-header">
             <h3 id="members-modal-title">
                 {% if activeChannel.isDm %}
@@ -10,7 +11,7 @@
             </h3>
             <button type="button" onclick="closeChannelMembersModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
         </div>
-        
+
         <div class="input-group" style="margin-bottom: 0.5rem;">
             <input type="text" id="member-search-input" placeholder="Rechercher un membre..." class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;">
         </div>
@@ -44,7 +45,7 @@
             {% endfor %}
         </div>
     </div>
-</div>
+</dialog>
 
 <script>
     (function() {
@@ -54,7 +55,7 @@
             lastFocusedElement = trigger;
             const modal = document.getElementById('channel-members-modal');
             if (modal) {
-                modal.style.display = 'flex';
+                modal.showModal();
                 const searchInput = document.getElementById('member-search-input');
                 if (searchInput) {
                     searchInput.value = '';
@@ -63,47 +64,24 @@
                     items.forEach(item => item.style.display = 'flex');
                     setTimeout(() => searchInput.focus(), 50);
                 }
-                document.addEventListener('keydown', handleMembersModalKeyDown);
             }
         };
 
         window.closeChannelMembersModal = function() {
             const modal = document.getElementById('channel-members-modal');
             if (modal) {
-                modal.style.display = 'none';
-                document.removeEventListener('keydown', handleMembersModalKeyDown);
+                modal.close();
                 if (lastFocusedElement) {
                     lastFocusedElement.focus();
                 }
             }
         };
 
-        function handleMembersModalKeyDown(e) {
-            if (e.key === 'Escape') {
+        document.getElementById('channel-members-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'channel-members-modal') {
                 closeChannelMembersModal();
-                return;
             }
-            if (e.key === 'Tab') {
-                const modal = document.getElementById('channel-members-modal');
-                if (!modal) return;
-                const focusableElements = modal.querySelectorAll('button, input, textarea, select, a, [tabindex="0"]');
-                if (focusableElements.length === 0) return;
-                const firstFocusable = focusableElements[0];
-                const lastFocusable = focusableElements[focusableElements.length - 1];
-
-                if (e.shiftKey) {
-                    if (document.activeElement === firstFocusable) {
-                        lastFocusable.focus();
-                        e.preventDefault();
-                    }
-                } else {
-                    if (document.activeElement === lastFocusable) {
-                        firstFocusable.focus();
-                        e.preventDefault();
-                    }
-                }
-            }
-        }
+        });
 
         // Live filtering
         document.addEventListener('DOMContentLoaded', () => {

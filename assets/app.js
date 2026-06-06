@@ -454,6 +454,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // ── Text preview swap ─────────────────────────────────────────────────
+        if (target && (target.classList.contains('text-preview-container') || target.querySelector('.text-preview-code'))) {
+            const activeTarget = target.id ? (document.getElementById(target.id) || target) : target;
+            if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks(activeTarget);
+            setTimeout(() => {
+                activeTarget.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+            }, 80);
+            return;
+        }
+
         // ── Channel switch or other major full-page swap ──────────────────────
         const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
 

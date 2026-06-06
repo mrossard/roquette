@@ -1,5 +1,6 @@
-<div id="create-channel-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="display: none;" onclick="if(event.target === this) closeChannelModal()">
-    <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+<dialog id="create-channel-modal" class="modal-backdrop-dialog" role="dialog" aria-modal="true"
+        aria-labelledby="modal-title">
+    <div class="modal-content glass-panel">
         <div class="modal-header">
             <h3 id="modal-title">Créer un nouveau canal</h3>
             <button type="button" onclick="closeChannelModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
@@ -31,7 +32,7 @@
             <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Créer le canal</button>
         </form>
     </div>
-</div>
+</dialog>
 
 <script>
     (function() {
@@ -41,51 +42,28 @@
             lastFocusedElement = trigger;
             const modal = document.getElementById('create-channel-modal');
             if (modal) {
-                modal.style.display = 'flex';
+                modal.showModal();
                 const firstInput = document.getElementById('modal-name');
                 if (firstInput) {
                     setTimeout(() => firstInput.focus(), 50);
                 }
-                document.addEventListener('keydown', handleModalKeyDown);
             }
         };
 
         window.closeChannelModal = function() {
             const modal = document.getElementById('create-channel-modal');
             if (modal) {
-                modal.style.display = 'none';
-                document.removeEventListener('keydown', handleModalKeyDown);
+                modal.close();
                 if (lastFocusedElement) {
                     lastFocusedElement.focus();
                 }
             }
         };
 
-        function handleModalKeyDown(e) {
-            if (e.key === 'Escape') {
+        document.getElementById('create-channel-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'create-channel-modal') {
                 closeChannelModal();
-                return;
             }
-            if (e.key === 'Tab') {
-                const modal = document.getElementById('create-channel-modal');
-                if (!modal) return;
-                const focusableElements = modal.querySelectorAll('button, input, textarea, select, a, [tabindex="0"]');
-                if (focusableElements.length === 0) return;
-                const firstFocusable = focusableElements[0];
-                const lastFocusable = focusableElements[focusableElements.length - 1];
-
-                if (e.shiftKey) {
-                    if (document.activeElement === firstFocusable) {
-                        lastFocusable.focus();
-                        e.preventDefault();
-                    }
-                } else {
-                    if (document.activeElement === lastFocusable) {
-                        firstFocusable.focus();
-                        e.preventDefault();
-                    }
-                }
-            }
-        }
+        });
     })();
 </script>

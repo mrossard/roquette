@@ -772,7 +772,7 @@ export function openGlobalSearch() {
     const modal = document.getElementById('global-search-modal');
     const input = document.getElementById('global-search-input');
     if (modal && input) {
-        modal.style.display = 'flex';
+        modal.showModal();
         input.focus();
         input.select();
     }
@@ -780,29 +780,29 @@ export function openGlobalSearch() {
 
 export function closeGlobalSearch() {
     const modal = document.getElementById('global-search-modal');
-    if (modal && modal.style.display !== 'none' && modal.style.display !== '') {
-        modal.style.display = 'none';
+    if (modal && modal.open) {
+        modal.close();
         const messageInput = document.getElementById('message');
         const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (messageInput && !isMobile) messageInput.focus();
     }
 }
 
-export function handleGlobalSearchBackdropClick(event) {
-    if (event.target.id === 'global-search-modal') {
-        closeGlobalSearch();
-    }
-}
-
 export function initGlobalSearch() {
+    const modal = document.getElementById('global-search-modal');
+    modal?.addEventListener('click', (e) => {
+        if (e.target.id === 'global-search-modal') {
+            closeGlobalSearch();
+        }
+    });
+
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
             e.preventDefault();
             openGlobalSearch();
         }
         if (e.key === 'Escape') {
-            const modal = document.getElementById('global-search-modal');
-            if (modal && modal.style.display === 'flex') {
+            if (modal && modal.open) {
                 closeGlobalSearch();
             }
         }
@@ -892,7 +892,6 @@ window.initConfirmModals = initConfirmModals;
 
 window.openGlobalSearch = openGlobalSearch;
 window.closeGlobalSearch = closeGlobalSearch;
-window.handleGlobalSearchBackdropClick = handleGlobalSearchBackdropClick;
 window.initGlobalSearch = initGlobalSearch;
 window.initMobileSidebar = initMobileSidebar;
 
