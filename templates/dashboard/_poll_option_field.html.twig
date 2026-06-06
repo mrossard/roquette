@@ -1,0 +1,13 @@
+<div style="display: flex; gap: 0.5rem; align-items: center;">
+    <input type="text"
+           name="poll_options[]"
+           placeholder="Option {{ count + 1 }}"
+           class="{{ inputClass }} input-sidebar"
+           {% if isRequired %}required{% endif %}
+           style="flex: 1;"/>
+    <button type="button"
+            onclick="const parent = this.closest('.poll-options-list'); this.closest('div').remove(); if (parent) { parent.querySelectorAll('input').forEach((inp, i) => inp.placeholder = 'Option ' + (i + 1)); }"
+            style="width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(239, 68, 68, 0.2); color: var(--accent-red, #ff5b5b); cursor: pointer; display: flex; align-items: center; justify-content: center;">
+        ✕
+    </button>
+</div>

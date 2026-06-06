@@ -251,7 +251,8 @@
                         {% endif %}
                     </div>
                     <div id="live-feed" class="feed-container" role="log" aria-live="polite"
-                         sse-swap="message_{{ activeChannel.slug }}" hx-swap="beforeend transition:false">
+                         sse-swap="message_{{ activeChannel.slug }}" hx-swap="beforeend transition:false"
+                         {% if activeChannel.creator == app.user or is_granted('ROLE_ADMIN') %}data-is-channel-creator="true"{% endif %}>
                         {% include 'dashboard/_messages_feed.html.twig' with {
                             'messages': messages,
                             'activeChannel': activeChannel,
@@ -260,7 +261,7 @@
                     </div>
 
                     <div class="chat-input-area">
-                        <div id="typing-indicator" class="typing-indicator" style="visibility: hidden;">&nbsp;</div>
+                        {% include 'dashboard/_typing_indicator.html.twig' with {'typingUsers': typingUsers|default([]), 'activeChannel': activeChannel} %}
                         {% include 'dashboard/_input_form.html.twig' with {'activeChannel': activeChannel} %}
                     </div>
                 </div>

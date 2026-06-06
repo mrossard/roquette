@@ -9,7 +9,7 @@
             </div>
         {% endfor %}
     {% endfor %}
-    
+
     <div class="formatting-toolbar">
         <button type="button" class="btn-format" onclick="insertThreadMarkdown('bold')" title="Gras (**)">
             <span class="icon">B</span>
@@ -32,15 +32,18 @@
         <button type="button" class="btn-format" onclick="insertThreadMarkdown('link')" title="Lien [texte](url)">
             <span class="icon">🔗</span>
         </button>
-        
+
         <div class="toolbar-tabs" style="margin-left: auto; display: flex; gap: 4px;">
-            <button type="button" class="btn-format active" id="thread-message-btn-edit-tab" onclick="switchInputTab('thread-message', 'edit')" title="Écrire">Écrire</button>
+            <button type="button" class="btn-format active" id="thread-message-btn-edit-tab"
+                    hx-on:click="this.closest('.chat-message-form').classList.remove('show-preview')"
+                    title="Écrire">Écrire
+            </button>
             <button type="button" class="btn-format" id="thread-message-btn-preview-tab"
                     hx-post="{{ path('app_api_message_preview') }}"
                     hx-include="#thread-message"
                     hx-target="#thread-message-preview"
                     hx-swap="innerHTML transition:false"
-                    onclick="switchInputTab('thread-message', 'preview')"
+                    hx-on:click="this.closest('.chat-message-form').classList.add('show-preview')"
                     title="Aperçu">Aperçu</button>
         </div>
     </div>
@@ -71,7 +74,7 @@
             <textarea id="thread-message" name="message" required placeholder="Répondre au fil..." rows="1"></textarea>
             <div id="thread-message-preview" class="message-preview-box" style="display: none;"></div>
 
-            
+
             <div class="input-actions-wrapper">
                 <button type="button" class="btn-file-toggle" onclick="document.getElementById('thread-file-upload').click()" title="Joindre un fichier" aria-label="Joindre un fichier">
                     {{ ux_icon('heroicons:paper-clip', {class: 'btn-icon', 'aria-hidden': 'true'}) }}

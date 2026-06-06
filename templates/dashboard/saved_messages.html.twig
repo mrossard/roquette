@@ -33,19 +33,7 @@
             </div>
         </div>
 
-        <div class="header-controls">
-            <div class="status-badge" id="mercure-status"
-                 data-active-channel-slug=""
-                 data-current-username="{{ app.user.username }}"
-                 data-hub="{{ hubUrl }}">
-                <span class="status-dot disconnected"></span>
-                <span class="status-text">Connexion au Hub...</span>
-            </div>
-
-            <button id="theme-toggle" class="btn-theme-toggle" aria-label="Changer de thème">🌓</button>
-
-            {% include 'dashboard/_user_menu_dropdown.html.twig' %}
-        </div>
+        {% include 'dashboard/_header_controls.html.twig' %}
     </header>
 
     <main class="dashboard-grid">

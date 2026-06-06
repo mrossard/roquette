@@ -21,17 +21,5 @@
         </button>
     </div>
 
-    <div class="header-controls">
-        <div class="status-badge" id="mercure-status"
-             data-active-channel-slug="{{ activeChannel.slug }}"
-             data-current-username="{{ app.user.username }}"
-             data-hub="{{ hubUrl }}">
-            <span class="status-dot disconnected"></span>
-            <span class="status-text">{{ 'Connexion au Hub...'|trans }}</span>
-        </div>
-
-        <button id="theme-toggle" class="btn-theme-toggle" aria-label="{{ 'Changer de thème'|trans }}">🌓</button>
-
-        {% include 'dashboard/_user_menu_dropdown.html.twig' %}
-    </div>
+    {% include 'dashboard/_header_controls.html.twig' with {'activeChannel': activeChannel} %}
 </header>

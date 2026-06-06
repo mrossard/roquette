@@ -1,0 +1,25 @@
+<div class="header-controls">
+    <div class="status-badge" id="mercure-status"
+         data-active-channel-slug="{{ activeChannel is defined and activeChannel ? activeChannel.slug : '' }}"
+         data-current-username="{{ app.user.username }}"
+         data-hub="{{ hubUrl }}">
+        <span class="status-dot disconnected"></span>
+        <span class="status-text">{{ 'Connexion au Hub...'|trans }}</span>
+    </div>
+
+    {% if show_back_button|default(false) %}
+        {% if channels is defined and channels is not empty %}
+            <a href="{{ path('app_channel', {slug: channels[0].slug}) }}"
+               class="btn-back">💬 {{ 'Retour au Chat'|trans }}</a>
+        {% else %}
+            <a href="{{ path('app_dashboard') }}" class="btn-back">💬 {{ 'Retour au Chat'|trans }}</a>
+        {% endif %}
+    {% endif %}
+
+    <button id="theme-toggle" class="btn-theme-toggle" aria-label="{{ 'Changer de thème'|trans }}">🌓</button>
+
+    <button id="header-notification-btn" class="btn-account"
+            style="display: none; align-items: center; gap: 0.35rem; cursor: pointer;"></button>
+
+    {% include 'dashboard/_user_menu_dropdown.html.twig' %}
+</div>

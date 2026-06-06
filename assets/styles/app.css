@@ -5760,6 +5760,30 @@ dialog.modal-backdrop-dialog#image-lightbox::backdrop {
     backdrop-filter: blur(12px);
 }
 
+/* Markdown Tab Preview System */
+.chat-message-form.show-preview textarea,
+.chat-message-form.show-preview .input-actions-wrapper {
+    display: none !important;
+}
+
+.chat-message-form.show-preview .message-preview-box {
+    display: block !important;
+}
+
+.chat-message-form.show-preview button[id$="-btn-edit-tab"] {
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.chat-message-form:not(.show-preview) button[id$="-btn-preview-tab"] {
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
 
 
 

@@ -1,10 +1,3 @@
-{% set membersData = [] %}
-{% for member in activeChannel.members %}
-    {% if member != activeChannel.creator and member.username != 'robot-roquette' %}
-        {% set membersData = membersData|merge([{ id: member.id, name: member.displayName ?: member.username, username: member.username }]) %}
-    {% endif %}
-{% endfor %}
-
 {% embed '_modal_layout.html.twig' with {
     id: 'edit-channel-modal',
     title: 'Modifier le canal'
@@ -46,7 +39,7 @@
                             <div class="admin-chip" id="admin-chip-{{ member.id }}"
                                  style="background: rgba(99, 102, 241, 0.2); border: 1px solid #6366f1; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary);">
                                 <span>{{ member.displayName ?: member.username }}</span>
-                                <button type="button" onclick="removeAdmin({{ member.id }})"
+                                <button type="button" onclick="this.closest('.admin-chip').remove()"
                                         style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 1rem; line-height: 1; display: flex; align-items: center;">
                                     &times;
                                 </button>
@@ -60,7 +53,14 @@
                 <label for="admin-autocomplete-input">Ajouter un administrateur</label>
                 <div class="autocomplete-wrapper" style="position: relative; width: 100%;">
                     <input type="text" id="admin-autocomplete-input" placeholder="Saisir le nom d'un membre..."
-                           class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;" autocomplete="off">
+                           class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;" autocomplete="off"
+                           hx-post="{{ path('app_channel_admin_chip_add', {slug: activeChannel.slug}) }}"
+                           hx-trigger="autocomplete-user-selected"
+                           hx-vals="js:{userId: event.detail.user.id}"
+                           hx-include="[name='administrators[]']"
+                           hx-target="#admin-chips-container"
+                           hx-swap="beforeend"
+                           onkeydown="if(event.key === 'Enter') event.preventDefault();">
                     <div id="admin-autocomplete-suggestions" class="emoji-autocomplete-dropdown"
                          style="display: none; top: 100%; bottom: auto; left: 0; right: 0; min-width: 100%; max-width: 100%; margin-top: 4px;"></div>
                 </div>
@@ -77,17 +77,8 @@
 
 <script>
     (function() {
-        if (window.initAdminAutocomplete) {
-            window.initAdminAutocomplete(
-                {{ membersData|json_encode|raw }},
-                [
-                    {% for member in activeChannel.members %}
-                    {% if activeChannel.administrators.contains(member) and member != activeChannel.creator %}
-                    {{ member.id }},
-                    {% endif %}
-                    {% endfor %}
-                ]
-            );
+        if (window.initEmojiAutocomplete) {
+            window.initEmojiAutocomplete();
         }
         openModal('edit-channel-modal');
     })();

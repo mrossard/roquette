@@ -20,6 +20,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Cache\CacheInterface;
 
 #[IsGranted('ROLE_USER')]
 final class ChannelController extends AbstractController
@@ -30,6 +31,7 @@ final class ChannelController extends AbstractController
         private MercurePublisher $mercurePublisher,
         private ReadTrackingService $readTrackingService,
         private LoggerInterface $logger,
+        private CacheInterface $cache,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -196,6 +198,36 @@ final class ChannelController extends AbstractController
             $notificationsEnabled = $activeChannel->isDm();
         }
 
+        $typingUsers = [];
+        if ($isMember && $activeChannel) {
+            $cacheKey = 'channel_typing_'.$activeChannel->getSlug();
+            $typingUsersFromCache = $this->cache->get($cacheKey, function () {
+                return [];
+            });
+
+            $now = time();
+            $changed = false;
+            foreach ($typingUsersFromCache as $username => $info) {
+                if ($info['expires_at'] < $now) {
+                    unset($typingUsersFromCache[$username]);
+                    $changed = true;
+                }
+            }
+
+            if ($changed) {
+                $this->cache->delete($cacheKey);
+                $this->cache->get($cacheKey, function () use ($typingUsersFromCache) {
+                    return $typingUsersFromCache;
+                });
+            }
+
+            if ($currentUser) {
+                unset($typingUsersFromCache[$currentUser->getUsername()]);
+            }
+
+            $typingUsers = array_map(fn($info) => $info['name'], array_values($typingUsersFromCache));
+        }
+
         return $this->render('dashboard/index.html.twig', [
             'channels' => $channels,
             'activeChannel' => $activeChannel,
@@ -207,6 +239,7 @@ final class ChannelController extends AbstractController
             'pendingInvitations' => $pendingInvitations,
             'isMember' => $isMember,
             'notificationsEnabled' => $notificationsEnabled,
+            'typingUsers' => $typingUsers,
         ]);
     }
 
@@ -678,6 +711,33 @@ final class ChannelController extends AbstractController
         $this->addFlash('success', 'Les paramètres du canal ont été modifiés.');
 
         return $this->redirectToRoute('app_channel', ['slug' => $channel->getSlug()]);
+    }
+
+    #[Route('/channels/{slug}/admin-chip-add', name: 'app_channel_admin_chip_add', methods: ['POST'])]
+    public function addAdminChip(
+        string $slug,
+        Request $request,
+        UserRepository $userRepository,
+        ChannelRepository $channelRepository,
+    ): Response {
+        $userId = $request->request->get('userId');
+        $user = $userRepository->find((int)$userId);
+        if (!$user) {
+            return new Response('', 400);
+        }
+
+        $channel = $channelRepository->findOneBy(['slug' => $slug]);
+        if (!$channel) {
+            return new Response('', 404);
+        }
+
+        if (!$channel->getMembers()->contains($user)) {
+            return new Response('<script>alert("Cet utilisateur n\'est pas membre de ce canal.");</script>', 200);
+        }
+
+        return $this->render('dashboard/_admin_chip.html.twig', [
+            'member' => $user,
+        ]);
     }
 
     // -------------------------------------------------------------------------

@@ -6,7 +6,7 @@
                     hx-post="{{ path('app_message_react', {id: message_id, emoji: emoji}) }}"
                     hx-target="closest .feed-item"
                     hx-swap="morph transition:false"
-                    data-reactors="{{ info.reactorUsernames|join(',') }}"
+                    data-reactors="{{ info.reactorUsernames|join(' ') }}"
                     title="{{ info.usernames|reaction_tooltip(emoji) }}">
                 <span class="reaction-emoji">{{ emoji }}</span>
                 <span class="reaction-count">{{ info.count }}</span>

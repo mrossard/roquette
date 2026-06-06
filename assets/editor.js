@@ -313,116 +313,15 @@ export function saveMessageToHistory(text) {
 
 
 export function updateReactionBadges(currentUsername) {
-    document.querySelectorAll('.reaction-badge').forEach(badge => {
-        const reactorsStr = badge.getAttribute('data-reactors') || '';
-        const reactors = reactorsStr.split(',').filter(r => r !== '');
-        if (reactors.includes(currentUsername)) {
-            badge.classList.add('active');
-        } else {
-            badge.classList.remove('active');
-        }
-    });
+    // Handled via pure CSS selectors
 }
 
 export function updateEditButtonsVisibility() {
-    const statusBadge = document.getElementById('mercure-status');
-    if (!statusBadge) return;
-    const currentUsername = statusBadge.getAttribute('data-current-username');
-    if (!currentUsername) return;
-
-    const uninitializedItems = document.querySelectorAll('.feed-item:not([data-visibility-initialized])');
-    if (uninitializedItems.length === 0) return;
-
-    uninitializedItems.forEach(item => {
-        const authorUsername = item.getAttribute('data-author-username');
-        const editBtn = item.querySelector('.btn-edit-subtle');
-        if (editBtn) {
-            const hasVotes = item.getAttribute('data-poll-has-votes') === '1';
-            if (authorUsername === currentUsername && !hasVotes) {
-                editBtn.style.display = 'inline-flex';
-            } else {
-                editBtn.style.display = 'none';
-            }
-        }
-
-        // Also update DM links for usernames in the feed
-        const userLink = item.querySelector('.feed-item-user-link');
-        if (userLink && authorUsername) {
-            if (authorUsername === currentUsername) {
-                // It's the current user, disable link behavior/styling
-                userLink.removeAttribute('href');
-                userLink.style.pointerEvents = 'none';
-                userLink.style.cursor = 'default';
-                userLink.removeAttribute('title');
-                userLink.classList.add('self-link');
-            } else {
-                // Ensure it is active
-                userLink.setAttribute('href', `/dm/${authorUsername}`);
-                userLink.style.pointerEvents = 'auto';
-                userLink.style.cursor = 'pointer';
-                const nameSpan = item.querySelector('.feed-item-user');
-                const displayName = nameSpan ? nameSpan.textContent : authorUsername;
-                userLink.setAttribute('title', `Discuter en privé avec ${displayName}`);
-                userLink.classList.remove('self-link');
-            }
-        }
-
-        // Dynamic reaction badge active class status
-        item.querySelectorAll('.reaction-badge').forEach(badge => {
-            const reactorsStr = badge.getAttribute('data-reactors') || '';
-            const reactors = reactorsStr.split(',').filter(r => r !== '');
-            if (reactors.includes(currentUsername)) {
-                badge.classList.add('active');
-            } else {
-                badge.classList.remove('active');
-            }
-        });
-
-        item.setAttribute('data-visibility-initialized', 'true');
-    });
+    // Handled via pure CSS selectors
 }
 
 export function updateUserLinks(currentUsername) {
-    // Deprecated: Handled inline within optimized updateEditButtonsVisibility()
-}
-
-export function switchInputTab(textareaId, mode) {
-    const textarea = document.getElementById(textareaId);
-    const previewContainer = document.getElementById(textareaId + '-preview');
-    const editBtn = document.getElementById(textareaId + '-btn-edit-tab');
-    const previewBtn = document.getElementById(textareaId + '-btn-preview-tab');
-    const actionsWrapper = textarea?.parentElement?.querySelector('.input-actions-wrapper');
-
-    if (!textarea || !previewContainer || !editBtn || !previewBtn) return;
-
-    if (mode === 'preview') {
-        // Toggle active class on buttons
-        editBtn.classList.remove('active');
-        previewBtn.classList.add('active');
-
-        // Hide textarea and actions, show preview container
-        textarea.style.display = 'none';
-        if (actionsWrapper) actionsWrapper.style.display = 'none';
-        previewContainer.style.display = 'block';
-
-        const content = textarea.value;
-        if (!content.trim()) {
-            previewContainer.innerHTML = '<span class="preview-empty">Rien à prévisualiser</span>';
-        } else {
-            previewContainer.innerHTML = '<span class="preview-loading">Chargement de l\'aperçu...</span>';
-        }
-    } else {
-        // Edit mode
-        editBtn.classList.add('active');
-        previewBtn.classList.remove('active');
-
-        textarea.style.display = 'block';
-        if (actionsWrapper) actionsWrapper.style.display = 'flex';
-        previewContainer.style.display = 'none';
-        if (!isMobile()) {
-            textarea.focus();
-        }
-    }
+    // Handled via pure CSS selectors
 }
 
 // Global window binds
@@ -433,5 +332,4 @@ window.updateEditButtonsVisibility = updateEditButtonsVisibility;
 window.updateUserLinks = updateUserLinks;
 window.updateReactionBadges = updateReactionBadges;
 window.getOwnFeedItems = getOwnFeedItems;
-window.switchInputTab = switchInputTab;
 

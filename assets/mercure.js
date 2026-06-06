@@ -25,8 +25,6 @@ function safeRedirectToLogin(reason = '') {
     }, 5000);
 }
 
-let typingUsers = new Map();
-let typingUserTimeouts = new Map();
 let typingTimeout = null;
 let isCurrentlyTyping = false;
 let currentInitializedChannelSlug = null;
@@ -101,11 +99,6 @@ export function initTypingIndicator() {
 
     if (currentInitializedChannelSlug !== channelSlug) {
         currentInitializedChannelSlug = channelSlug;
-        // Reset typing states on channel initialization/switch
-        typingUsers.clear();
-        typingUserTimeouts.forEach(timeout => clearTimeout(timeout));
-        typingUserTimeouts.clear();
-        updateTypingIndicatorUI();
     }
 
     messageInput.dataset.typingInitialized = 'true';
@@ -170,74 +163,6 @@ export function sendTypingStatus(channelSlug, isTyping) {
         },
         body: JSON.stringify({ isTyping: isTyping })
     }).catch(err => console.error('Error sending typing status:', err));
-}
-
-export function handleUserTyping(data) {
-    const statusBadge = document.getElementById('mercure-status');
-    const activeChannelSlug = statusBadge ? statusBadge.getAttribute('data-active-channel-slug') : null;
-    const currentUsername = statusBadge ? statusBadge.getAttribute('data-current-username') : null;
-
-    if (data.channelSlug !== activeChannelSlug || data.username === currentUsername) {
-        return;
-    }
-
-    if (typingUserTimeouts.has(data.username)) {
-        clearTimeout(typingUserTimeouts.get(data.username));
-        typingUserTimeouts.delete(data.username);
-    }
-
-    if (data.isTyping) {
-        typingUsers.set(data.username, data.displayName);
-
-        const timeout = setTimeout(() => {
-            typingUsers.delete(data.username);
-            typingUserTimeouts.delete(data.username);
-            updateTypingIndicatorUI();
-        }, 6000);
-
-        typingUserTimeouts.set(data.username, timeout);
-    } else {
-        typingUsers.delete(data.username);
-    }
-
-    updateTypingIndicatorUI();
-}
-
-export function updateTypingIndicatorUI() {
-    const indicator = document.getElementById('typing-indicator');
-    if (!indicator) return;
-
-    if (typingUsers.size === 0) {
-        indicator.style.visibility = 'hidden';
-        indicator.innerHTML = '&nbsp;';
-        return;
-    }
-
-    const names = Array.from(typingUsers.values());
-    let text = '';
-    if (names.length === 1) {
-        text = `<strong>${escapeHtml(names[0])}</strong> est en train d'écrire...`;
-    } else if (names.length === 2) {
-        text = `<strong>${escapeHtml(names[0])}</strong> et <strong>${escapeHtml(names[1])}</strong> sont en train d'écrire...`;
-    } else if (names.length > 2) {
-        text = `Plusieurs personnes sont en train d'écrire...`;
-    }
-
-    indicator.innerHTML = `
-        <div class="typing-dots-container">
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-        </div>
-        <span class="typing-text">${text}</span>
-    `;
-    indicator.style.visibility = 'visible';
-}
-
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
 }
 
 export function handleHelpStreamUpdate(data) {
@@ -399,11 +324,10 @@ document.body.addEventListener('htmx:sseError', () => {
 
 document.body.addEventListener('htmx:sseMessage', (event) => {
     const type = event.detail.type;
+
     try {
         const data = JSON.parse(event.detail.data);
-        if (type === 'user_typing') {
-            handleUserTyping(data);
-        } else if (type === 'user_status_changed') {
+        if (type === 'user_status_changed') {
             handleUserStatusChanged(data);
         } else if (type === 'personal_notification') {
             if (window.handleGlobalNotification) {
@@ -443,7 +367,6 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
 window.connectMercure = () => {
 }; // No-op, managed by HTMX
 window.initTypingIndicator = initTypingIndicator;
-window.handleUserTyping = handleUserTyping;
 window.handlePinChange = () => {
 }; // No-op, managed by HTMX OOB
 window.showOfflineBanner = showOfflineBanner;

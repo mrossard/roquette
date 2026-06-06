@@ -47,18 +47,15 @@
         {% if message_id|default(0) > 0 %}
             <button class="btn-reply-subtle btn-edit-subtle"
                     hx-get="{{ path('app_message_edit_form', {id: message_id}) }}"
-                    hx-target="closest .feed-item" hx-swap="morph transition:false" title="{{ 'Modifier'|trans }}"
-                    style="display: {% if app.user and author and author.id == app.user.id and not pollHasVotes %}inline-flex{% else %}none{% endif %};">
+                    hx-target="closest .feed-item" hx-swap="morph transition:false" title="{{ 'Modifier'|trans }}">
                 {{ ux_icon('heroicons:pencil-square', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
                 <span>{{ 'Modifier'|trans }}</span>
             </button>
-            {% set canDelete = app.user and (author and author.id == app.user.id or messageChannel and messageChannel.creator == app.user) %}
             <button class="btn-reply-subtle btn-delete-subtle"
                     hx-post="{{ path('app_message_delete', {id: message_id}) }}"
                     hx-confirm="{{ 'Voulez-vous vraiment supprimer ce message ?'|trans }}"
                     hx-swap="none"
-                    title="{{ 'Supprimer'|trans }}"
-                    style="display: {% if canDelete %}inline-flex{% else %}none{% endif %};">
+                    title="{{ 'Supprimer'|trans }}">
                 {{ ux_icon('heroicons:trash', {class: 'action-icon', style: 'width: 11px; height: 11px; color: var(--accent-red, #ff5b5b);'}) }}
                 <span style="color: var(--accent-red, #ff5b5b);">{{ 'Supprimer'|trans }}</span>
             </button>
