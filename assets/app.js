@@ -521,5 +521,12 @@ document.body.addEventListener('htmx:beforeTransition', (event) => {
     }
 });
 
+// Run syntax highlighting on code blocks swapped via OOB
+document.body.addEventListener('htmx:oobAfterSwap', (evt) => {
+    if (window.highlightAllCodeBlocks && evt.detail.target) {
+        window.highlightAllCodeBlocks(evt.detail.target);
+    }
+});
+
 
 

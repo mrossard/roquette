@@ -67,6 +67,8 @@ class LlmQueryHandlerTest extends TestCase
         $userChannelReadRepository = $this->createMock(\App\Repository\UserChannelReadRepository::class);
         $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
         $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+        $twig = $this->createMock(\Twig\Environment::class);
+        $twig->method('render')->willReturn('<div>test</div>');
 
         $handler = new LlmQueryHandler(
             $userRepository,
@@ -80,6 +82,7 @@ class LlmQueryHandlerTest extends TestCase
             $entityManager,
             'roquette',
             $logger,
+            $twig,
         );
 
         $message = new LlmQueryMessage('How does it work?', 42, 'general', 'help-123');
@@ -164,6 +167,9 @@ class LlmQueryHandlerTest extends TestCase
                 })(),
             );
 
+        $twig = $this->createMock(\Twig\Environment::class);
+        $twig->method('render')->willReturn('<div>test</div>');
+
         $handler = new LlmQueryHandler(
             $userRepository,
             $channelRepository,
@@ -176,6 +182,7 @@ class LlmQueryHandlerTest extends TestCase
             $entityManager,
             'roquette',
             $logger,
+            $twig,
             3, // Limit to 3 messages
         );
 
@@ -285,6 +292,9 @@ class LlmQueryHandlerTest extends TestCase
                 })(),
             );
 
+        $twig = $this->createMock(\Twig\Environment::class);
+        $twig->method('render')->willReturn('<div>test</div>');
+
         $handler = new LlmQueryHandler(
             $userRepository,
             $channelRepository,
@@ -297,6 +307,7 @@ class LlmQueryHandlerTest extends TestCase
             $entityManager,
             'roquette',
             $logger,
+            $twig,
             10, // Large limit to avoid batching in this test
         );
 

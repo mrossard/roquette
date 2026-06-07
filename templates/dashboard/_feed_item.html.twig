@@ -99,7 +99,11 @@
             {% if messageObject is defined and messageObject and messageObject.poll %}
                 {% include 'dashboard/_poll.html.twig' with { poll: messageObject.poll } %}
             {% elseif message is defined and message is not empty and message != '' %}
-                <p>{{ message|format_message }}</p>
+                {% if is_html|default(false) %}
+                    {{ message|raw }}
+                {% else %}
+                    <p>{{ message|format_message }}</p>
+                {% endif %}
                 {% set links = message|extract_external_links %}
                 {% for link in links %}
                     {% set cachedResult = get_cached_link_preview(link) %}

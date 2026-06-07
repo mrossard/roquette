@@ -165,55 +165,6 @@ export function sendTypingStatus(channelSlug, isTyping) {
     }).catch(err => console.error('Error sending typing status:', err));
 }
 
-export function handleHelpStreamUpdate(data) {
-    let helpElem = document.getElementById(data.helpMessageId);
-    if (!helpElem) {
-        const liveFeed = document.getElementById('live-feed');
-        const statusBadge = document.getElementById('mercure-status');
-        const activeChannelSlug = statusBadge ? statusBadge.getAttribute('data-active-channel-slug') : null;
-        if (liveFeed && data.channelSlug === activeChannelSlug) {
-            const emptyState = document.getElementById('feed-empty-state');
-            if (emptyState) {
-                emptyState.remove();
-            }
-            const tempDiv = document.createElement('div');
-            tempDiv.id = data.helpMessageId;
-            tempDiv.className = 'feed-item fade-in';
-            tempDiv.style.setProperty('--user-hue', '200');
-
-            const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-            tempDiv.innerHTML = `
-                <div class="feed-item-header">
-                    <div class="feed-item-user-container">
-                        <div class="avatar-container">
-                            <span class="feed-item-avatar">A</span>
-                        </div>
-                        <span class="feed-item-user">Assistant Roquette</span>
-                    </div>
-                    <span class="feed-item-time">${timeStr}</span>
-                </div>
-                <div class="feed-item-body">
-                    ${data.html}
-                </div>
-            `;
-            liveFeed.appendChild(tempDiv);
-            helpElem = tempDiv;
-            if (window.highlightAllCodeBlocks) {
-                window.highlightAllCodeBlocks(helpElem);
-            }
-
-        }
-    } else {
-        const bodyElem = helpElem.querySelector('.feed-item-body');
-        if (bodyElem) {
-            bodyElem.innerHTML = data.html;
-            if (window.highlightAllCodeBlocks) {
-                window.highlightAllCodeBlocks(helpElem);
-            }
-            }
-        }
-
-}
 
 export function showOfflineBanner(show, text = 'Connexion avec le serveur perdue. Tentative de reconnexion...') {
     let banner = document.getElementById('mercure-offline-banner');
@@ -321,6 +272,40 @@ document.body.addEventListener('htmx:sseError', () => {
 document.body.addEventListener('htmx:sseMessage', (event) => {
     const type = event.detail.type;
 
+    if (type === 'help_stream_update') {
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(event.detail.data, 'text/html');
+            const oobElem = doc.querySelector('[hx-swap-oob]');
+            if (oobElem) {
+                const id = oobElem.id;
+                const existing = document.getElementById(id);
+                if (existing) {
+                    existing.replaceWith(oobElem);
+                    if (window.highlightAllCodeBlocks) {
+                        window.highlightAllCodeBlocks(oobElem);
+                    }
+                } else {
+                    const liveFeed = document.getElementById('live-feed');
+                    if (liveFeed) {
+                        const emptyState = document.getElementById('feed-empty-state');
+                        if (emptyState) {
+                            emptyState.remove();
+                        }
+                        oobElem.removeAttribute('hx-swap-oob');
+                        liveFeed.appendChild(oobElem);
+                        if (window.highlightAllCodeBlocks) {
+                            window.highlightAllCodeBlocks(oobElem);
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error handling help stream update:', err);
+        }
+        return;
+    }
+
     try {
         const data = JSON.parse(event.detail.data);
         if (type === 'user_status_changed') {
@@ -332,8 +317,7 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
             if (window.updateChannelLastMessageDate) {
                 window.updateChannelLastMessageDate(data.channelSlug);
             }
-        } else if (type === 'help_stream_update') {
-            handleHelpStreamUpdate(data);
+
         } else if (type === 'invitation_received') {
             if (window.handleInvitationNotification) {
                 window.handleInvitationNotification(data);
