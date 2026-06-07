@@ -315,33 +315,7 @@ export function updateElementStatus(element, status, label) {
     }
 }
 
-export function handleBusyOptionClick(event) {
-    event.preventDefault();
-    event.stopPropagation();
 
-    closeAllStatusDropdowns();
-
-    if (window.openBusyStatusModal) {
-        window.openBusyStatusModal(function() {
-            if (window.htmx) {
-                window.htmx.ajax('POST', '/user/update-status', {
-                    values: { status: 'busy' },
-                    swap: 'none'
-                });
-            } else {
-                fetch('/user/update-status', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: 'status=busy'
-                });
-            }
-        });
-    }
-}
-window.handleBusyOptionClick = handleBusyOptionClick;
 
 
 
@@ -539,6 +513,28 @@ export function initUnreadFilter() {
         localStorage.setItem('filterUnreadOnly', active ? 'true' : 'false');
     });
 }
+
+export function initSidebarToggles() {
+    // Restore sidebar details state on load
+    document.querySelectorAll('details.sidebar-section-details').forEach(details => {
+        const sectionName = details.getAttribute('data-section');
+        const isCollapsed = localStorage.getItem(`roquette-section-${sectionName}-collapsed`) === 'true';
+        if (isCollapsed) {
+            details.removeAttribute('open');
+        } else {
+            details.setAttribute('open', '');
+        }
+    });
+}
+
+// Watch details toggle events to save state in localStorage
+document.addEventListener('toggle', (e) => {
+    if (e.target.tagName === 'DETAILS' && e.target.classList.contains('sidebar-section-details')) {
+        const sectionName = e.target.getAttribute('data-section');
+        localStorage.setItem(`roquette-section-${sectionName}-collapsed`, !e.target.open ? 'true' : 'false');
+    }
+}, true); // Capture phase is required because toggle event does not bubble
+
 
 export function showCustomConfirm(message, callback) {
     const dialog = document.getElementById('custom-confirm-dialog');
@@ -848,6 +844,7 @@ window.scrollToMessage = scrollToMessage;
 window.updateChannelLastMessageDate = updateChannelLastMessageDate;
 window.initChannelReordering = initChannelReordering;
 window.initUnreadFilter = initUnreadFilter;
+window.initSidebarToggles = initSidebarToggles;
 window.showCustomConfirm = showCustomConfirm;
 window.showCustomAlert = showCustomAlert;
 window.initConfirmModals = initConfirmModals;

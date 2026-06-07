@@ -338,6 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initTypingIndicator) window.initTypingIndicator();
     if (window.initChannelReordering) window.initChannelReordering();
     if (window.initUnreadFilter) window.initUnreadFilter();
+    if (window.initSidebarToggles) window.initSidebarToggles();
     if (window.initConfirmModals) window.initConfirmModals();
     if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
     if (window.initOfflineQueue) window.initOfflineQueue();
@@ -453,6 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initTypingIndicator) window.initTypingIndicator();
         if (window.initChannelReordering) window.initChannelReordering();
         if (window.initUnreadFilter) window.initUnreadFilter();
+        if (window.initSidebarToggles) window.initSidebarToggles();
         if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
         if (window.renderChannelOfflineMessages) window.renderChannelOfflineMessages();
         if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();

@@ -4855,12 +4855,16 @@ del {
     display: inline-block;
 }
 
-.sidebar-section-header.collapsed .sidebar-section-toggle-icon {
-    transform: rotate(-90deg);
+details.sidebar-section-details summary::-webkit-details-marker {
+    display: none;
 }
 
-.channel-list.collapsed {
-    display: none !important;
+details.sidebar-section-details summary {
+    list-style: none;
+}
+
+details.sidebar-section-details:not([open]) .sidebar-section-toggle-icon {
+    transform: rotate(-90deg);
 }
 
 .sidebar-favorite-toggle {

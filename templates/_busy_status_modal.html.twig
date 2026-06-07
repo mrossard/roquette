@@ -18,57 +18,19 @@
             </p>
         </div>
         <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-            <button type="button" class="btn-cancel" onclick="closeModal('busy-status-modal')"
+            <button type="button" class="btn-cancel" onclick="this.closest('dialog').close()"
                     style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s;">
                 Annuler
             </button>
-            <button type="button" id="btn-confirm-busy" class="btn-publish" style="margin-top: 0; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; background: #ffab00; border: none; color: #000; font-weight: bold; transition: opacity 0.2s;">Confirmer</button>
+            <button type="button"
+                    class="btn-publish"
+                    hx-post="{{ path('app_user_update_status') }}"
+                    hx-vals='{"status": "busy"}'
+                    hx-swap="none"
+                    onclick="this.closest('dialog').close()"
+                    style="margin-top: 0; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; background: #ffab00; border: none; color: #000; font-weight: bold; transition: opacity 0.2s;">
+                Confirmer
+            </button>
         </div>
     {% endblock %}
 {% endembed %}
-
-<script>
-    (function() {
-        let currentOnConfirm = null;
-        let currentOnCancel = null;
-        let confirmed = false;
-
-        window.openBusyStatusModal = function(onConfirm, onCancel) {
-            currentOnConfirm = onConfirm;
-            currentOnCancel = onCancel;
-            confirmed = false;
-            openModal('busy-status-modal');
-            const confirmBtn = document.getElementById('btn-confirm-busy');
-            if (confirmBtn) {
-                confirmBtn.focus();
-            }
-        };
-
-        window.closeBusyStatusModal = function (isConfirm = false) {
-            confirmed = isConfirm;
-            closeModal('busy-status-modal');
-        };
-
-        const modal = document.getElementById('busy-status-modal');
-        modal?.addEventListener('close', () => {
-            if (confirmed) {
-                if (typeof currentOnConfirm === 'function') {
-                    currentOnConfirm();
-                }
-            } else {
-                if (typeof currentOnCancel === 'function') {
-                    currentOnCancel();
-                }
-            }
-            currentOnConfirm = null;
-            currentOnCancel = null;
-        });
-
-        const confirmBtn = document.getElementById('btn-confirm-busy');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', function() {
-                closeBusyStatusModal(true);
-            });
-        }
-    })();
-</script>

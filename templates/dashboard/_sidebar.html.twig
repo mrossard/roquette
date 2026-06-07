@@ -67,13 +67,14 @@
             {% endfor %}
 
             {% if hasFavorites %}
-            <div style="margin-bottom: 1.5rem;">
-                <h3 class="sidebar-section-header" data-section="favorites" onclick="toggleSidebarSection('favorites')">
+                <details class="sidebar-section-details" data-section="favorites" open
+                         style="margin-bottom: 1.5rem; display: block;">
+                    <summary class="sidebar-section-header">
                     <span>
                         <span class="sidebar-section-toggle-icon">▼</span>
                         {{ 'Favoris'|trans }}
                     </span>
-                </h3>
+                    </summary>
                 <div class="channel-list" id="section-favorites" data-list-type="favorites">
                     {% for channel in channels %}
                         {% if app.user.isChannelFavorite(channel) and not (channel.slug starts with 'dm-robot-roquette-') %}
@@ -85,16 +86,17 @@
                         {% endif %}
                     {% endfor %}
                 </div>
-            </div>
+                </details>
             {% endif %}
 
-            <div style="margin-bottom: 1.5rem;">
-                <h3 class="sidebar-section-header" data-section="channels" onclick="toggleSidebarSection('channels')">
+            <details class="sidebar-section-details" data-section="channels" open
+                     style="margin-bottom: 1.5rem; display: block;">
+                <summary class="sidebar-section-header">
                     <span>
                         <span class="sidebar-section-toggle-icon">▼</span>
                         {{ 'Canaux'|trans }}
                     </span>
-                </h3>
+                </summary>
                 <div class="channel-list" id="section-channels" data-list-type="channels">
                     {% set hasChannels = false %}
                     {% for channel in channels %}
@@ -111,16 +113,16 @@
                         <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 0.25rem 0.5rem;">{{ 'Aucun canal'|trans }}</p>
                     {% endif %}
                 </div>
-            </div>
+            </details>
         </div>
 
-        <div>
-            <h3 class="sidebar-section-header" data-section="dms" onclick="toggleSidebarSection('dms')">
+        <details class="sidebar-section-details" data-section="dms" open style="display: block;">
+            <summary class="sidebar-section-header">
                 <span>
                     <span class="sidebar-section-toggle-icon">▼</span>
                     {{ 'Messages Directs'|trans }}
                 </span>
-            </h3>
+            </summary>
             <div class="channel-list" id="section-dms" data-list-type="dms">
                 {% set hasDms = false %}
                 {% for channel in channels %}
@@ -137,7 +139,7 @@
                     <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 0.25rem 0.5rem;">{{ 'Aucun message direct'|trans }}</p>
                 {% endif %}
             </div>
-        </div>
+        </details>
 
         <div class="invitations-section" id="invitations-section" {% if pendingInvitations is empty %}style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1.25rem;"{% else %}style="margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1.25rem;"{% endif %}>
             <h3 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem;">{{ 'Invitations'|trans }}</h3>
@@ -151,39 +153,3 @@
 </section>
 <div id="mobile-sidebar-backdrop" class="mobile-sidebar-backdrop"></div>
 
-<script>
-    (function() {
-        // Toggle function
-        window.toggleSidebarSection = function(sectionName) {
-            const header = document.querySelector(`.sidebar-section-header[data-section="${sectionName}"]`);
-            const list = document.getElementById(`section-${sectionName}`);
-            if (!header || !list) return;
-
-            const isCollapsed = list.classList.toggle('collapsed');
-            header.classList.toggle('collapsed', isCollapsed);
-
-            localStorage.setItem(`roquette-section-${sectionName}-collapsed`, isCollapsed ? 'true' : 'false');
-        };
-
-        // Initialize state from localStorage
-        const sections = ['favorites', 'channels', 'dms'];
-        sections.forEach(function(sectionName) {
-            const isCollapsed = localStorage.getItem(`roquette-section-${sectionName}-collapsed`) === 'true';
-            if (isCollapsed) {
-                const applyState = () => {
-                    const header = document.querySelector(`.sidebar-section-header[data-section="${sectionName}"]`);
-                    const list = document.getElementById(`section-${sectionName}`);
-                    if (header && list) {
-                        header.classList.add('collapsed');
-                        list.classList.add('collapsed');
-                    }
-                };
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', applyState);
-                } else {
-                    applyState();
-                }
-            }
-        });
-    })();
-</script>
