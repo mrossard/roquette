@@ -106,27 +106,7 @@ export function adjustScrollForLinkPreview(previewCard) {
     adjustScrollForFeedContent();
 }
 
-export function initInfiniteScroll() {
-    const trigger = document.getElementById('load-more-trigger');
-    const feed = document.getElementById('live-feed');
-    if (!trigger || !feed) return;
 
-    if (trigger.dataset.observerBound === 'true') return;
-    trigger.dataset.observerBound = 'true';
-
-    const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !trigger.classList.contains('htmx-request')) {
-            if (window.htmx) {
-                window.htmx.trigger(trigger, 'load-more');
-            }
-        }
-    }, {
-        root: feed,
-        threshold: 0.1
-    });
-
-    observer.observe(trigger);
-}
 
 // Scroll and maintain data-last-message attribute on new SSE messages
 document.body.addEventListener('htmx:sseMessage', (event) => {

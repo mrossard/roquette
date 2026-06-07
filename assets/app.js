@@ -2,7 +2,7 @@ import './styles/app.css';
 import htmx from 'htmx.org';
 window.htmx = htmx;
 import 'htmx-ext-sse';
-import {initializeChannelScroll, adjustScrollForLinkPreview, initInfiniteScroll} from './scroll.js';
+import {initializeChannelScroll, adjustScrollForLinkPreview} from './scroll.js';
 
 import hljs from 'highlight.js';
 window.hljs = hljs;
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initGlobalSearch) window.initGlobalSearch();
     if (window.initMobileSidebar) window.initMobileSidebar();
     if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
-    initInfiniteScroll();
+
 
     // Heartbeat to keep user status online
     if (document.getElementById('mercure-status')) {
@@ -380,7 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (target && (target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
-            initInfiniteScroll();
             return;
         }
 
@@ -458,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
         if (window.renderChannelOfflineMessages) window.renderChannelOfflineMessages();
         if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
-        initInfiniteScroll();
+
 
         // Refocus appropriate input after channel switches
         const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
