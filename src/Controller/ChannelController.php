@@ -502,6 +502,15 @@ final class ChannelController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
         $order = $data['order'] ?? null;
+        if (!is_array($order)) {
+            $order = $request->request->all('order');
+            if (empty($order)) {
+                $order = $request->request->all();
+                if (isset($order['order'])) {
+                    $order = $order['order'];
+                }
+            }
+        }
 
         if (is_array($order)) {
             $order = array_map('intval', $order);

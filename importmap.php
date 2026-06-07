@@ -31,4 +31,7 @@ return [
     'htmx-ext-sse' => [
         'version' => '2.2.4',
     ],
+    'sortablejs' => [
+        'version' => '1.15.7',
+    ],
 ];

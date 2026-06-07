@@ -1,4 +1,6 @@
 import {adjustScrollForFeedContent} from './scroll.js';
+import Sortable from 'sortablejs';
+
 
 export function highlightAllCodeBlocks(container = document) {
     if (window.hljs) {
@@ -363,7 +365,7 @@ export function updateChannelLastMessageDate(channelSlug) {
     dateSpan.title = `Dernier message : ${fullDateTime}`;
 }
 
-let draggedItem = null;
+let sortableInstances = [];
 
 function preventNavigation(e) {
     e.preventDefault();
@@ -376,6 +378,24 @@ export function initChannelReordering() {
     const lists = document.querySelectorAll('.channel-list[data-list-type]');
 
     if (!sidebarPanel || !toggleBtn || !lists.length) return;
+
+    // Clean up any existing instances
+    sortableInstances.forEach(inst => inst.destroy());
+    sortableInstances = [];
+
+    // Initialize Sortable on each channel list
+    lists.forEach(list => {
+        const sortable = new Sortable(list, {
+            animation: 150,
+            draggable: '.channel-link',
+            disabled: !sidebarPanel.classList.contains('reorder-active'),
+            ghostClass: 'dragging-ghost',
+            onEnd: () => {
+                saveChannelOrder();
+            }
+        });
+        sortableInstances.push(sortable);
+    });
 
     // Remove any existing click listener by cloning the button (to avoid multiple registrations)
     const newToggleBtn = toggleBtn.cloneNode(true);
@@ -397,69 +417,19 @@ export function initChannelReordering() {
         const currentLinks = document.querySelectorAll('.channel-link');
         if (isActive) {
             currentLinks.forEach(link => {
-                link.draggable = true;
                 link.addEventListener('click', preventNavigation, true);
             });
         } else {
             currentLinks.forEach(link => {
-                link.draggable = false;
                 link.removeEventListener('click', preventNavigation, true);
             });
-            saveChannelOrder();
         }
-    });
 
-    lists.forEach(list => {
-        list.addEventListener('dragstart', (e) => {
-            if (!sidebarPanel.classList.contains('reorder-active')) {
-                e.preventDefault();
-                return;
-            }
-            const channelLink = e.target.closest('.channel-link');
-            if (!channelLink) return;
-            draggedItem = channelLink;
-            channelLink.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', channelLink.getAttribute('data-channel-id'));
-        });
-
-        list.addEventListener('dragend', (e) => {
-            const channelLink = e.target.closest('.channel-link');
-            if (channelLink) {
-                channelLink.classList.remove('dragging');
-            }
-            draggedItem = null;
-        });
-
-        list.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            if (!sidebarPanel.classList.contains('reorder-active') || !draggedItem) return;
-
-            const targetList = e.currentTarget;
-            const sourceListType = draggedItem.parentElement.getAttribute('data-list-type');
-            const targetListType = targetList.getAttribute('data-list-type');
-            if (sourceListType !== targetListType) return;
-
-            const afterElement = getDragAfterElement(targetList, e.clientY);
-            if (afterElement == null) {
-                targetList.appendChild(draggedItem);
-            } else {
-                targetList.insertBefore(draggedItem, afterElement);
-            }
+        // Toggle Sortable instances disabled state
+        sortableInstances.forEach(inst => {
+            inst.option('disabled', !isActive);
         });
     });
-}
-
-function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll('.channel-link:not(.dragging)')];
-    return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 function saveChannelOrder() {
@@ -476,9 +446,7 @@ function saveChannelOrder() {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            console.log('Channel order updated successfully!');
-        } else {
+        if (!data.success) {
             console.error('Failed to update channel order:', data.error);
         }
     })
