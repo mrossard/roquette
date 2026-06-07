@@ -118,8 +118,8 @@ final class UserSettingsController extends AbstractController
         $qb = $entityManager->getRepository(\App\Entity\User::class)->createQueryBuilder('u');
         if ($q !== '') {
             $qb
-                ->where('u.username LIKE :q OR u.displayName LIKE :q')
-                ->setParameter('q', '%'.$q.'%');
+                ->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')
+                ->setParameter('q', '%'.mb_strtolower($q).'%');
         }
         $users = $qb->getQuery()->getResult();
 
@@ -159,8 +159,8 @@ final class UserSettingsController extends AbstractController
 
         if ($q !== '') {
             $qb
-                ->andWhere('c.name LIKE :q OR c.slug LIKE :q')
-                ->setParameter('q', '%'.$q.'%');
+                ->andWhere('LOWER(c.name) LIKE :q OR LOWER(c.slug) LIKE :q')
+                ->setParameter('q', '%'.mb_strtolower($q).'%');
         }
 
         $channels = $qb

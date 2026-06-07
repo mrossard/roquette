@@ -145,6 +145,13 @@ class UserSettingsControllerTest extends WebTestCase
 
         $usernames = array_column($data, 'username');
         static::assertContains('test_settings_user', $usernames);
+
+        // Test case-insensitive search
+        $this->client->request('GET', '/api/users?q=TEST_settings');
+        $this->assertResponseIsSuccessful();
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $usernames = array_column($data, 'username');
+        static::assertContains('test_settings_user', $usernames);
     }
 
     #[Test]
