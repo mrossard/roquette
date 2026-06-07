@@ -27,24 +27,11 @@ document.body.addEventListener('htmx:afterSwap', (evt) => {
     if (evt.detail.target && evt.detail.target.classList && evt.detail.target.classList.contains('thread-message-form')) {
         if (window.initEmojiPickers) window.initEmojiPickers();
         initThreadFileUpload();
-        initThreadTextareaResize();
         const threadTextarea = document.getElementById('thread-message');
         const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (threadTextarea && !isMobile) threadTextarea.focus();
     }
 });
-
-export function initThreadTextareaResize() {
-    const textarea = document.getElementById('thread-message');
-    if (!textarea || textarea.dataset.threadResizeInitialized) return;
-    textarea.dataset.threadResizeInitialized = 'true';
-
-    function resize() {
-        textarea.style.height = 'auto';
-        textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
-    }
-    textarea.addEventListener('input', resize);
-}
 
 export function initThreadFileUpload() {
     const fileInput = document.getElementById('thread-file-upload');
@@ -105,5 +92,4 @@ export function initThreadFileUpload() {
     }
 }
 
-window.initThreadTextareaResize = initThreadTextareaResize;
 window.initThreadFileUpload = initThreadFileUpload;
