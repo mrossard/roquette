@@ -127,4 +127,41 @@ final class PollController extends AbstractController
 
         return new Response($renderedHtml);
     }
+
+    #[Route('/channel/{slug}/composer/toggle', name: 'app_composer_toggle', methods: ['GET', 'POST'])]
+    public function toggleComposer(
+        string $slug,
+        Request $request,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        $channel = $entityManager->getRepository(\App\Entity\Channel::class)->findOneBy(['slug' => $slug]);
+        if (!$channel) {
+            throw $this->createNotFoundException('Canal non trouvé.');
+        }
+
+        $open = (bool)($request->query->get('open') ?? $request->request->get('open', false));
+        $messageValue = $request->query->get('message') ?? $request->request->get('message', '');
+        $pollQuestion = $request->query->get('poll_question') ?? $request->request->get('poll_question', '');
+        $pollOptions = $request->query->all('poll_options') ?: $request->request->all('poll_options') ?: [];
+        $allowMultiple = (bool)($request->query->get('allow_multiple') ?? $request->request->get(
+            'allow_multiple',
+            false,
+        ));
+
+        // If we are closing, clear the poll fields
+        if (!$open) {
+            $pollQuestion = '';
+            $pollOptions = [];
+            $allowMultiple = false;
+        }
+
+        return $this->render('dashboard/_input_form.html.twig', [
+            'activeChannel' => $channel,
+            'pollComposerOpen' => $open,
+            'messageValue' => $messageValue,
+            'pollQuestion' => $pollQuestion,
+            'pollOptions' => $pollOptions,
+            'allowMultiple' => $allowMultiple,
+        ]);
+    }
 }
