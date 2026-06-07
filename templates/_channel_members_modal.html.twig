@@ -53,35 +53,3 @@
         </div>
     {% endblock %}
 {% endembed %}
-
-<script>
-    (function() {
-        const searchInput = document.getElementById('member-search-input');
-        if (searchInput) {
-            searchInput.value = '';
-            // Reset filter
-            const items = document.querySelectorAll('.modal-member-item');
-            items.forEach(item => item.style.display = 'flex');
-        }
-        openModal('channel-members-modal');
-
-        // Live filtering
-        const input = document.getElementById('member-search-input');
-        if (input && !input.dataset.filterBound) {
-            input.dataset.filterBound = 'true';
-            input.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase().trim();
-                const items = document.querySelectorAll('.modal-member-item');
-                items.forEach(item => {
-                    const username = item.getAttribute('data-username') || '';
-                    const name = item.getAttribute('data-name') || '';
-                    if (username.includes(query) || name.includes(query)) {
-                        item.style.display = 'flex';
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-            });
-        }
-    })();
-</script>

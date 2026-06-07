@@ -106,29 +106,29 @@
 
     <!-- Formatting Toolbar -->
     <div class="formatting-toolbar">
-        <button type="button" class="btn-format" onclick="insertMarkdown('bold')" title="{{ 'Gras (**)'|trans }}">
+        <button type="button" class="btn-format" data-markdown="bold" title="{{ 'Gras (**)'|trans }}">
             <span class="icon">B</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('italic')" title="{{ 'Italique (*)'|trans }}">
+        <button type="button" class="btn-format" data-markdown="italic" title="{{ 'Italique (*)'|trans }}">
             <span class="icon">I</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('strikethrough')"
+        <button type="button" class="btn-format" data-markdown="strikethrough"
                 title="{{ 'Barré (~~)'|trans }}">
             <span class="icon">S</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('quote')"
+        <button type="button" class="btn-format" data-markdown="quote"
                 title="{{ 'Citation (&gt;)'|trans }}">
             <span class="icon">”</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('code')"
+        <button type="button" class="btn-format" data-markdown="code"
                 title="{{ 'Code en ligne (`)'|trans }}">
             <span class="icon">&lt;/&gt;</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('codeblock')"
+        <button type="button" class="btn-format" data-markdown="codeblock"
                 title="{{ 'Bloc de code (```)'|trans }}">
             <span class="icon">code</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('link')"
+        <button type="button" class="btn-format" data-markdown="link"
                 title="{{ 'Lien [texte](url)'|trans }}">
             <span class="icon">🔗</span>
         </button>

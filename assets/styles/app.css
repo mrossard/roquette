@@ -2516,8 +2516,18 @@ select option {
     transition: transform 0.2s ease;
 }
 
-.user-status-dropdown-container.open .user-status-trigger .dropdown-chevron {
+.user-status-dropdown-container[open] .user-status-trigger .dropdown-chevron {
     transform: rotate(180deg);
+}
+
+/* Hide native details summary marker */
+.user-status-dropdown-container::-webkit-details-marker,
+.user-status-dropdown-container summary::-webkit-details-marker {
+    display: none;
+}
+
+.user-status-dropdown-container summary {
+    list-style: none;
 }
 
 .user-status-dropdown-menu {

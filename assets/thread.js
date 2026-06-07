@@ -1,66 +1,4 @@
 
-export function insertThreadMarkdown(formattingType) {
-    const textarea = document.getElementById('thread-message');
-    if (!textarea) return;
-
-    textarea.focus();
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    const selectedText = text.substring(start, end);
-
-    let replacement = '';
-
-    switch (formattingType) {
-        case 'bold':
-            replacement = `**${selectedText || 'texte'}**`;
-            break;
-        case 'italic':
-            replacement = `*${selectedText || 'texte'}*`;
-            break;
-        case 'strikethrough':
-            replacement = `~~${selectedText || 'texte'}~~`;
-            break;
-        case 'quote':
-            replacement = `> ${selectedText || 'citation'}`;
-            break;
-        case 'code':
-            replacement = `\`${selectedText || 'code'}\``;
-            break;
-        case 'codeblock':
-            replacement = `\`\`\`\n${selectedText || 'code'}\n\`\`\``;
-            break;
-        case 'link':
-            replacement = `[${selectedText || 'lien'}](https://)`;
-            break;
-    }
-
-    textarea.setRangeText(replacement, start, end, 'select');
-
-    if (!selectedText) {
-        if (formattingType === 'bold') {
-            textarea.setSelectionRange(start + 2, start + 7);
-        } else if (formattingType === 'italic') {
-            textarea.setSelectionRange(start + 1, start + 6);
-        } else if (formattingType === 'strikethrough') {
-            textarea.setSelectionRange(start + 2, start + 7);
-        } else if (formattingType === 'quote') {
-            textarea.setSelectionRange(start + 2, start + 10);
-        } else if (formattingType === 'code') {
-            textarea.setSelectionRange(start + 1, start + 5);
-        } else if (formattingType === 'codeblock') {
-            textarea.setSelectionRange(start + 4, start + 8);
-        } else if (formattingType === 'link') {
-            textarea.setSelectionRange(start + 1, start + 5);
-        }
-    } else {
-        const newCursorPos = start + replacement.length;
-        textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }
-
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-}
 
 // Send thread reply on Enter (without Shift/Alt)
 document.addEventListener('keydown', (event) => {
@@ -130,6 +68,10 @@ export function initThreadFileUpload() {
                 if (textarea.value.trim() === '') {
                     textarea.setAttribute('required', 'required');
                 }
+                setTimeout(() => {
+                    const threadFeed = document.getElementById('thread-replies-feed');
+                    if (threadFeed) threadFeed.scrollTop = threadFeed.scrollHeight;
+                }, 50);
                 return;
             }
             const sizeFormatted = typeof window.formatBytes === 'function' ? window.formatBytes(file.size) : `${file.size} B`;
@@ -142,6 +84,10 @@ export function initThreadFileUpload() {
                 textarea.setAttribute('required', 'required');
             }
         }
+        setTimeout(() => {
+            const threadFeed = document.getElementById('thread-replies-feed');
+            if (threadFeed) threadFeed.scrollTop = threadFeed.scrollHeight;
+        }, 50);
     });
 
     if (clearBtn) {
@@ -151,12 +97,13 @@ export function initThreadFileUpload() {
             if (textarea.value.trim() === '') {
                 textarea.setAttribute('required', 'required');
             }
+            setTimeout(() => {
+                const threadFeed = document.getElementById('thread-replies-feed');
+                if (threadFeed) threadFeed.scrollTop = threadFeed.scrollHeight;
+            }, 50);
         });
     }
 }
 
-// Global window binds
-
-window.insertThreadMarkdown = insertThreadMarkdown;
 window.initThreadTextareaResize = initThreadTextareaResize;
 window.initThreadFileUpload = initThreadFileUpload;

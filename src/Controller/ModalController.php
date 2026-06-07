@@ -73,4 +73,10 @@ final class ModalController extends AbstractController
             'activeChannel' => $channel,
         ]);
     }
+
+    #[Route('/channels/create-modal', name: 'app_channel_create_modal', methods: ['GET'])]
+    public function createModal(): Response
+    {
+        return $this->render('_create_channel_modal.html.twig');
+    }
 }

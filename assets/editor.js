@@ -7,73 +7,7 @@ let historyDraft = ''; // save current draft when entering history mode
 
 const isMobile = () => window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-export function insertMarkdown(formattingType) {
-    const textarea = document.getElementById('message');
-    if (!textarea) return;
 
-    if (!isMobile()) {
-        textarea.focus();
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    const selectedText = text.substring(start, end);
-
-    let replacement = '';
-
-    switch (formattingType) {
-        case 'bold':
-            replacement = `**${selectedText || 'texte'}**`;
-            break;
-        case 'italic':
-            replacement = `*${selectedText || 'texte'}*`;
-            break;
-        case 'strikethrough':
-            replacement = `~~${selectedText || 'texte'}~~`;
-            break;
-        case 'quote':
-            replacement = `> ${selectedText || 'citation'}`;
-            break;
-        case 'code':
-            replacement = `\`${selectedText || 'code'}\``;
-            break;
-        case 'codeblock':
-            replacement = `\`\`\`\n${selectedText || 'code'}\n\`\`\``;
-            break;
-        case 'link':
-            replacement = `[${selectedText || 'lien'}](https://)`;
-            break;
-    }
-
-    textarea.setRangeText(replacement, start, end, 'select');
-
-    // adjust selection/cursor if dummy text was used
-    if (!selectedText) {
-        if (formattingType === 'bold') {
-            textarea.setSelectionRange(start + 2, start + 7);
-        } else if (formattingType === 'italic') {
-            textarea.setSelectionRange(start + 1, start + 6);
-        } else if (formattingType === 'strikethrough') {
-            textarea.setSelectionRange(start + 2, start + 7);
-        } else if (formattingType === 'quote') {
-            textarea.setSelectionRange(start + 2, start + 10);
-        } else if (formattingType === 'code') {
-            textarea.setSelectionRange(start + 1, start + 5);
-        } else if (formattingType === 'codeblock') {
-            textarea.setSelectionRange(start + 4, start + 8);
-        } else if (formattingType === 'link') {
-            textarea.setSelectionRange(start + 1, start + 5);
-        }
-    } else {
-        // focus at the end of the insertion
-        const newCursorPos = start + replacement.length;
-        textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }
-
-    // Trigger any auto-resize listeners
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-}
 
 export function replyToMessage(author, content) {
     const textarea = document.getElementById('message');
@@ -324,8 +258,6 @@ export function updateUserLinks(currentUsername) {
     // Handled via pure CSS selectors
 }
 
-// Global window binds
-window.insertMarkdown = insertMarkdown;
 window.replyToMessage = replyToMessage;
 
 window.updateEditButtonsVisibility = updateEditButtonsVisibility;

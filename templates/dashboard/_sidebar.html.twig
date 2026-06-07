@@ -24,7 +24,10 @@
             {% endif %}
             <a href="{{ path('app_channels_directory') }}" class="btn-directory-trigger" style="text-decoration: none;"
                title="{{ 'Parcourir les canaux'|trans }}" aria-label="{{ 'Parcourir les canaux'|trans }}">🔍</a>
-            <button onclick="openChannelModal(this)" class="btn-add-channel-trigger"
+            <button hx-get="{{ path('app_channel_create_modal') }}"
+                    hx-target="#modal-container"
+                    hx-trigger="click"
+                    class="btn-add-channel-trigger"
                     title="{{ 'Créer un canal'|trans }}" aria-label="{{ 'Créer un canal'|trans }}">＋
             </button>
         </div>

@@ -23,6 +23,16 @@ class AppExtension extends AbstractExtension
         private readonly TranslatorInterface $translator,
     ) {}
 
+    public function getFunctions(): array
+    {
+        return [
+            new \Twig\TwigFunction(
+                'get_cached_link_preview',
+                [\App\Twig\AppExtensionRuntime::class, 'getCachedLinkPreview'],
+            ),
+        ];
+    }
+
     public function getFilters(): array
     {
         return [

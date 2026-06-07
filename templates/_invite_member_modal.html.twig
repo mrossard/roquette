@@ -9,17 +9,3 @@
         </div>
     {% endblock %}
 {% endembed %}
-
-<script>
-    (function() {
-        const searchInput = document.getElementById('invite-member-search-input');
-        if (searchInput) {
-            searchInput.value = '';
-            const listContainer = document.getElementById('modal-invite-members-list');
-            if (listContainer) {
-                listContainer.innerHTML = '<span style="font-size: 0.85rem; color: var(--text-muted); text-align: center; display: block; padding: 1rem 0;">Saisissez un nom pour rechercher un membre.</span>';
-            }
-        }
-        openModal('invite-member-modal');
-    })();
-</script>

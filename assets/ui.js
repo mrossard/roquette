@@ -1,3 +1,5 @@
+import {adjustScrollForFeedContent} from './scroll.js';
+
 export function highlightAllCodeBlocks(container = document) {
     if (window.hljs) {
         const blocks = container.querySelectorAll('pre code');
@@ -47,7 +49,10 @@ function setupDragAndDrop(chatPanel, dragOverlay) {
         if (!isDragSourceFiles(e)) return;
         dragCounter++;
         if (dragCounter === 1) {
-            dragOverlay.classList.add('active');
+            const currentOverlay = document.getElementById('drag-drop-overlay') || dragOverlay;
+            if (currentOverlay) {
+                currentOverlay.classList.add('active');
+            }
         }
     }, false);
 
@@ -55,14 +60,20 @@ function setupDragAndDrop(chatPanel, dragOverlay) {
         if (!isDragSourceFiles(e)) return;
         dragCounter--;
         if (dragCounter === 0) {
-            dragOverlay.classList.remove('active');
+            const currentOverlay = document.getElementById('drag-drop-overlay') || dragOverlay;
+            if (currentOverlay) {
+                currentOverlay.classList.remove('active');
+            }
         }
     }, false);
 
     chatPanel.addEventListener('drop', (e) => {
         if (!isDragSourceFiles(e)) return;
         dragCounter = 0;
-        dragOverlay.classList.remove('active');
+        const currentOverlay = document.getElementById('drag-drop-overlay') || dragOverlay;
+        if (currentOverlay) {
+            currentOverlay.classList.remove('active');
+        }
 
         const files = e.dataTransfer.files;
         if (files && files.length > 0) {
@@ -99,6 +110,21 @@ export function initFileUpload() {
 
     if (!fileInput || !textarea || !previewContainer || !previewName) return;
 
+    // Drag & drop handlers - setup on chat panel even if fileInput was already initialized
+    const chatPanel = document.querySelector('.chat-panel');
+    const dragOverlay = document.getElementById('drag-drop-overlay');
+    setupDragAndDrop(chatPanel, dragOverlay);
+
+    // Prevent default drag/drop behaviors globally to avoid browser page navigation on stray drops
+    if (!window.dragAndDropGlobalBound) {
+        window.dragAndDropGlobalBound = true;
+        ['dragover', 'drop'].forEach(eventName => {
+            window.addEventListener(eventName, (e) => {
+                e.preventDefault();
+            }, false);
+        });
+    }
+
     if (fileInput.dataset.initialized === 'true') return;
     fileInput.dataset.initialized = 'true';
 
@@ -119,6 +145,9 @@ export function initFileUpload() {
                 if (textarea.value.trim() === '') {
                     textarea.setAttribute('required', 'required');
                 }
+                setTimeout(() => {
+                    adjustScrollForFeedContent();
+                }, 50);
                 return;
             }
             previewName.textContent = `${file.name} (${formatBytes(file.size)})`;
@@ -131,6 +160,9 @@ export function initFileUpload() {
                 textarea.setAttribute('required', 'required');
             }
         }
+        setTimeout(() => {
+            adjustScrollForFeedContent();
+        }, 50);
     });
 
     // Clear button event handler
@@ -151,61 +183,49 @@ export function initFileUpload() {
             }
         }
     });
-
-    // Drag & drop handlers
-    const chatPanel = document.querySelector('.chat-panel');
-    const dragOverlay = document.getElementById('drag-drop-overlay');
-    setupDragAndDrop(chatPanel, dragOverlay);
-
-    // Prevent default drag/drop behaviors globally to avoid browser page navigation on stray drops
-    if (!window.dragAndDropGlobalBound) {
-        window.dragAndDropGlobalBound = true;
-        ['dragover', 'drop'].forEach(eventName => {
-            window.addEventListener(eventName, (e) => {
-                e.preventDefault();
-            }, false);
-        });
-    }
-}
-
-export function toggleStatusDropdown(event) {
-    event.stopPropagation();
-    const trigger = event.currentTarget;
-    const container = trigger.closest('.user-status-dropdown-container');
-    if (!container) return;
-    const menu = container.querySelector('.user-status-dropdown-menu');
-    if (!menu) return;
-
-    const isOpen = container.classList.contains('open');
-    closeAllStatusDropdowns();
-
-    if (!isOpen) {
-        container.classList.add('open');
-        menu.style.display = 'flex';
-        trigger.setAttribute('aria-expanded', 'true');
-
-        // Focus the active or first option
-        const activeOpt = menu.querySelector('.user-status-option.active') || menu.querySelector('.user-status-option');
-        if (activeOpt) {
-            setTimeout(() => activeOpt.focus(), 50);
-        }
-
-        container.addEventListener('keydown', handleDropdownKeyDown);
-    }
 }
 
 export function closeAllStatusDropdowns() {
-    document.querySelectorAll('.user-status-dropdown-container').forEach(c => {
-        c.classList.remove('open');
-        const m = c.querySelector('.user-status-dropdown-menu');
-        if (m) m.style.display = 'none';
-        const trigger = c.querySelector('.user-status-trigger');
-        if (trigger) {
-            trigger.setAttribute('aria-expanded', 'false');
-        }
-        c.removeEventListener('keydown', handleDropdownKeyDown);
+    document.querySelectorAll('details.user-status-dropdown-container').forEach(c => {
+        c.removeAttribute('open');
     });
 }
+
+// Automatically close details dropdowns when clicking outside or when selecting an option
+document.addEventListener('click', (e) => {
+    const details = e.target.closest('details.user-status-dropdown-container');
+    if (!details || e.target.closest('.user-status-option')) {
+        closeAllStatusDropdowns();
+    }
+});
+
+// Handle details elements toggle event to auto-focus active option and register key bindings
+document.addEventListener('toggle', (e) => {
+    if (e.target.tagName === 'DETAILS' && e.target.classList.contains('user-status-dropdown-container')) {
+        if (e.target.open) {
+            // Close other details dropdowns
+            document.querySelectorAll('details.user-status-dropdown-container').forEach(other => {
+                if (other !== e.target) {
+                    other.removeAttribute('open');
+                }
+            });
+
+            // Focus the active or first option
+            const menu = e.target.querySelector('.user-status-dropdown-menu');
+            if (menu) {
+                const activeOpt = menu.querySelector('.user-status-option.active') || menu.querySelector('.user-status-option');
+                if (activeOpt) {
+                    setTimeout(() => activeOpt.focus(), 50);
+                }
+            }
+
+            e.target.addEventListener('keydown', handleDropdownKeyDown);
+        } else {
+            e.target.removeEventListener('keydown', handleDropdownKeyDown);
+        }
+    }
+}, true); // Capture phase is required because toggle event does not bubble
+
 
 function handleDropdownKeyDown(e) {
     const container = e.currentTarget;
@@ -323,10 +343,7 @@ export function handleBusyOptionClick(event) {
 }
 window.handleBusyOptionClick = handleBusyOptionClick;
 
-// Close dropdowns on document click
-document.addEventListener('click', () => {
-    closeAllStatusDropdowns();
-});
+
 
 
 export function scrollToMessage(messageId) {
@@ -675,6 +692,30 @@ export function closeModal(modalId) {
     }
 }
 
+// Automatically show modal dialogs when loaded dynamically via HTMX
+document.addEventListener('htmx:afterSwap', (e) => {
+    if (e.detail.target && e.detail.target.id === 'modal-container') {
+        const dialog = e.detail.target.querySelector('dialog');
+        if (dialog) {
+            dialog.showModal();
+            const focusEl = dialog.querySelector('input[type="text"], input[type="search"], select, textarea, [autofocus]');
+            if (focusEl) {
+                setTimeout(() => focusEl.focus(), 50);
+            }
+        }
+    }
+});
+
+// Auto-clean modal-container on close event
+document.addEventListener('close', (e) => {
+    if (e.target.tagName === 'DIALOG' && e.target.closest('#modal-container')) {
+        setTimeout(() => {
+            const container = document.getElementById('modal-container');
+            if (container) container.innerHTML = '';
+        }, 100);
+    }
+}, true); // Capture phase is required because the close event does not bubble
+
 // Global delegated click handler for modal backdrop closing
 document.addEventListener('click', (e) => {
     if (e.target.tagName === 'DIALOG' && e.target.classList.contains('modal-backdrop-dialog')) {
@@ -801,7 +842,6 @@ export function initMobileSidebar() {
 window.highlightAllCodeBlocks = highlightAllCodeBlocks;
 window.formatBytes = formatBytes;
 window.initFileUpload = initFileUpload;
-window.toggleStatusDropdown = toggleStatusDropdown;
 window.updateElementStatus = updateElementStatus;
 
 window.scrollToMessage = scrollToMessage;
@@ -843,10 +883,95 @@ export function toggleMessageActions(button, event) {
             list.classList.remove('show');
         }
     });
-
     actionsList.classList.toggle('show');
 }
 window.toggleMessageActions = toggleMessageActions;
+
+// Delegated member search filtering inside the channel members modal
+document.addEventListener('input', (e) => {
+    if (e.target.id === 'member-search-input') {
+        const query = e.target.value.toLowerCase().trim();
+        const items = document.querySelectorAll('.modal-member-item');
+        items.forEach(item => {
+            const username = item.getAttribute('data-username') || '';
+            const name = item.getAttribute('data-name') || '';
+            if (username.includes(query) || name.includes(query)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+});
+
+// Delegated markdown formatting toolbar listener for both main and thread inputs
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-format[data-markdown]');
+    if (!btn) return;
+
+    // Find the textarea in the same form
+    const form = btn.closest('form');
+    if (!form) return;
+    const textarea = form.querySelector('textarea');
+    if (!textarea) return;
+
+    const formattingType = btn.getAttribute('data-markdown');
+
+    // Core insertion logic
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+
+    let replacement = '';
+    switch (formattingType) {
+        case 'bold':
+            replacement = `**${selectedText || 'texte'}**`;
+            break;
+        case 'italic':
+            replacement = `*${selectedText || 'texte'}*`;
+            break;
+        case 'strikethrough':
+            replacement = `~~${selectedText || 'texte'}~~`;
+            break;
+        case 'quote':
+            replacement = `> ${selectedText || 'citation'}`;
+            break;
+        case 'code':
+            replacement = `\`${selectedText || 'code'}\``;
+            break;
+        case 'codeblock':
+            replacement = `\`\`\`\n${selectedText || 'code'}\n\`\`\``;
+            break;
+        case 'link':
+            replacement = `[${selectedText || 'lien'}](https://)`;
+            break;
+    }
+
+    textarea.focus();
+    textarea.setRangeText(replacement, start, end, 'select');
+
+    if (!selectedText) {
+        const offsets = {
+            bold: [2, 7],
+            italic: [1, 6],
+            strikethrough: [2, 7],
+            quote: [2, 10],
+            code: [1, 5],
+            codeblock: [4, 8],
+            link: [1, 5]
+        };
+        const offset = offsets[formattingType];
+        if (offset) {
+            textarea.setSelectionRange(start + offset[0], start + offset[1]);
+        }
+    } else {
+        const newCursorPos = start + replacement.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }
+
+    textarea.dispatchEvent(new Event('input', {bubbles: true}));
+});
 
 
 

@@ -102,7 +102,7 @@ final class ChannelController extends AbstractController
     // Main channel page
     // -------------------------------------------------------------------------
 
-    #[Route('/channels/{slug}', name: 'app_channel', requirements: ['slug' => '^(?!directory$|reorder$|create$)[^/]+$'])]
+    #[Route('/channels/{slug}', name: 'app_channel', requirements: ['slug' => '^(?!directory$|reorder$|create$|create-modal$)[^/]+$'])]
     public function channel(
         string $slug,
         Request $request,
