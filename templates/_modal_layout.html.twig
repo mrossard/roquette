@@ -5,9 +5,9 @@
             <h3 id="{{ id }}-title" style="{{ title_style|default('') }}">
                 {% block modal_title %}{{ title|default('') }}{% endblock %}
             </h3>
-            <button type="button" onclick="closeModal('{{ id }}')" class="btn-close-modal"
-                    aria-label="Fermer la boîte de dialogue">&times;
-            </button>
+            <form method="dialog">
+                <button class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
+            </form>
         </div>
         {% block modal_body %}{% endblock %}
     </div>
