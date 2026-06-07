@@ -19,9 +19,12 @@ trait MessageRendererTrait
      * Renders the _feed_item.html.twig partial for a given Message and returns
      * the resulting HTML string (for embedding in Mercure payloads or HTMX responses).
      */
-    private function renderFeedItem(Message $message): string
+    private function renderFeedItem(Message $message, array $extraParams = []): string
     {
-        return $this->renderView('dashboard/_feed_item.html.twig', $this->feedItemParams($message));
+        return $this->renderView(
+            'dashboard/_feed_item.html.twig',
+            array_merge($this->feedItemParams($message), $extraParams),
+        );
     }
 
     /**

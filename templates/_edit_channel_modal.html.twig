@@ -1,15 +1,8 @@
-{% set membersData = [] %}
-{% for member in activeChannel.members %}
-    {% if member != activeChannel.creator and member.username != 'robot-roquette' %}
-        {% set membersData = membersData|merge([{ id: member.id, name: member.displayName ?: member.username, username: member.username }]) %}
-    {% endif %}
-{% endfor %}
-<div id="edit-channel-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title" style="display: none;" onclick="if(event.target === this) closeEditChannelModal()">
-    <div class="modal-content glass-panel" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <h3 id="edit-modal-title">Modifier le canal</h3>
-            <button type="button" onclick="closeEditChannelModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
-        </div>
+{% embed '_modal_layout.html.twig' with {
+    id: 'edit-channel-modal',
+    title: 'Modifier le canal'
+} %}
+    {% block modal_body %}
         <form action="{{ path('app_channel_edit', {slug: activeChannel.slug}) }}" method="POST" class="add-channel-form" hx-boost="false">
             <div class="input-group">
                 <label for="edit-modal-name">Nom du canal</label>
@@ -46,7 +39,7 @@
                             <div class="admin-chip" id="admin-chip-{{ member.id }}"
                                  style="background: rgba(99, 102, 241, 0.2); border: 1px solid #6366f1; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary);">
                                 <span>{{ member.displayName ?: member.username }}</span>
-                                <button type="button" onclick="removeAdmin({{ member.id }})"
+                                <button type="button" onclick="this.closest('.admin-chip').remove()"
                                         style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 1rem; line-height: 1; display: flex; align-items: center;">
                                     &times;
                                 </button>
@@ -59,8 +52,14 @@
             <div class="input-group" style="margin-top: 0.5rem;">
                 <label for="admin-autocomplete-input">Ajouter un administrateur</label>
                 <div class="autocomplete-wrapper" style="position: relative; width: 100%;">
-                    <input type="text" id="admin-autocomplete-input" placeholder="Saisir le nom d'un membre..."
-                           class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;" autocomplete="off">
+                    <input type="text" id="admin-autocomplete-input" name="search"
+                           placeholder="Saisir le nom d'un membre..."
+                           class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;" autocomplete="off"
+                           hx-get="{{ path('app_channel_admin_autocomplete', {slug: activeChannel.slug}) }}"
+                           hx-trigger="keyup changed delay:300ms"
+                           hx-target="#admin-autocomplete-suggestions"
+                           hx-swap="outerHTML"
+                           onkeydown="if(event.key === 'Enter') event.preventDefault();">
                     <div id="admin-autocomplete-suggestions" class="emoji-autocomplete-dropdown"
                          style="display: none; top: 100%; bottom: auto; left: 0; right: 0; min-width: 100%; max-width: 100%; margin-top: 4px;"></div>
                 </div>
@@ -72,74 +71,5 @@
             <button type="submit" class="btn-delete-channel" style="width: 100%; justify-content: center; cursor: pointer;">🗑️ Supprimer le canal</button>
         </form>
         {% endif %}
-    </div>
-</div>
-
-<script>
-    (function() {
-        let lastFocusedElement = null;
-
-        window.openEditChannelModal = function(trigger) {
-            lastFocusedElement = trigger;
-            const modal = document.getElementById('edit-channel-modal');
-            if (modal) {
-                modal.style.display = 'flex';
-                if (window.initAdminAutocomplete) {
-                    window.initAdminAutocomplete(
-                        {{ membersData|json_encode|raw }},
-                        [
-                            {% for member in activeChannel.members %}
-                            {% if activeChannel.administrators.contains(member) and member != activeChannel.creator %}
-                            {{ member.id }},
-                            {% endif %}
-                            {% endfor %}
-                        ]
-                    );
-                }
-                const firstInput = document.getElementById('edit-modal-name');
-                if (firstInput) {
-                    setTimeout(() => firstInput.focus(), 50);
-                }
-                document.addEventListener('keydown', handleEditModalKeyDown);
-            }
-        };
-
-        window.closeEditChannelModal = function() {
-            const modal = document.getElementById('edit-channel-modal');
-            if (modal) {
-                modal.style.display = 'none';
-                document.removeEventListener('keydown', handleEditModalKeyDown);
-                if (lastFocusedElement) {
-                    lastFocusedElement.focus();
-                }
-            }
-        };
-
-        function handleEditModalKeyDown(e) {
-            if (e.key === 'Escape') {
-                closeEditChannelModal();
-                return;
-            }
-            if (e.key === 'Tab') {
-                const modal = document.getElementById('edit-channel-modal');
-                if (!modal) return;
-                const focusableElements = modal.querySelectorAll('button, input, textarea, select, a, [tabindex="0"]');
-                if (focusableElements.length === 0) return;
-                const firstFocusable = focusableElements[0];
-                const lastFocusable = focusableElements[focusableElements.length - 1];
-
-                if (e.shiftKey) {
-                    if (document.activeElement === firstFocusable) {
-                        lastFocusable.focus();
-                        e.preventDefault();
-                    }
-                } else {
-                    if (document.activeElement === lastFocusable) {
-                        firstFocusable.focus();
-                        e.preventDefault();
-                    }
-                }
-            }
-        }
-    })();
-</script>
+    {% endblock %}
+{% endembed %}

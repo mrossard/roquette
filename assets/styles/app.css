@@ -509,7 +509,6 @@ select option {
     }
 }
 
-/* Feed Item Card */
 .feed-item {
     position: relative;
     background: rgba(255, 255, 255, 0.015);
@@ -521,7 +520,6 @@ select option {
     flex-direction: column;
     gap: 0.2rem;
     transition: var(--transition-smooth);
-    animation: feedItemEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .feed-item:hover {
@@ -1607,7 +1605,7 @@ select option {
 .chat-input-container textarea {
     width: 100%;
     min-height: 46px;
-    height: 46px;
+    field-sizing: content;
     max-height: 150px;
     resize: none;
     padding: 0.75rem 4.5rem 0.75rem 1.25rem !important;
@@ -2518,8 +2516,18 @@ select option {
     transition: transform 0.2s ease;
 }
 
-.user-status-dropdown-container.open .user-status-trigger .dropdown-chevron {
+.user-status-dropdown-container[open] .user-status-trigger .dropdown-chevron {
     transform: rotate(180deg);
+}
+
+/* Hide native details summary marker */
+.user-status-dropdown-container::-webkit-details-marker,
+.user-status-dropdown-container summary::-webkit-details-marker {
+    display: none;
+}
+
+.user-status-dropdown-container summary {
+    list-style: none;
 }
 
 .user-status-dropdown-menu {
@@ -2852,7 +2860,6 @@ select option {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    animation: fadeIn 0.2s ease-out;
 }
 
 .typing-dots-container {
@@ -3121,7 +3128,8 @@ del {
     box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
 }
 
-.btn-unread-filter.active {
+.btn-unread-filter.active,
+.btn-unread-filter-wrapper input[type="checkbox"]:checked + .btn-unread-filter {
     background: rgba(168, 85, 247, 0.25);
     border-color: #a855f7;
     color: #a855f7;
@@ -3445,13 +3453,13 @@ del {
     flex-grow: 1;
 }
 
-/* Show skeleton during HTMX requests */
-.htmx-request .chat-skeleton {
+/* Show skeleton during channel/page switches */
+.chat-panel.channel-loading .chat-skeleton {
     display: flex !important;
 }
 
-/* Hide other content in the chat panel while HTMX request is in flight */
-.htmx-request .chat-panel > *:not(.chat-skeleton):not(.drag-drop-overlay) {
+/* Hide other content in the chat panel only during channel/page switches */
+.chat-panel.channel-loading > *:not(.chat-skeleton):not(.drag-drop-overlay) {
     display: none !important;
 }
 
@@ -3562,13 +3570,13 @@ del {
     flex-grow: 1;
 }
 
-/* Show skeleton during HTMX requests */
-.htmx-request .settings-skeleton {
+/* Show skeleton during page/settings switches */
+.settings-panel.settings-loading .settings-skeleton {
     display: flex !important;
 }
 
-/* Hide other content in settings panel while HTMX request is in flight */
-.htmx-request .settings-panel > *:not(.settings-skeleton) {
+/* Hide other content in settings panel only during page/settings switches */
+.settings-panel.settings-loading > *:not(.settings-skeleton) {
     display: none !important;
 }
 
@@ -4129,7 +4137,7 @@ del {
 
 /* When thread panel is open, update grid layout */
 @media (min-width: 768px) {
-    .dashboard-grid.thread-open {
+    .dashboard-grid:has(#thread-panel:not(:empty)) {
         grid-template-columns: 280px 1fr 380px;
     }
 }
@@ -4144,7 +4152,11 @@ del {
     border-left: 1px solid var(--border-glass);
 }
 
-.dashboard-grid.thread-open .thread-panel {
+.thread-panel:not(:empty) {
+    display: flex;
+}
+
+.dashboard-grid:has(#thread-panel:not(:empty)) .thread-panel {
     animation: threadSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -4406,6 +4418,44 @@ del {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+/* Link Preview Placeholder */
+.link-preview-placeholder {
+    margin-top: 0.75rem;
+    margin-bottom: 0.5rem;
+    max-width: 520px;
+    height: 100px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: block;
+    position: relative;
+    overflow: hidden;
+}
+
+.link-preview-placeholder::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.03) 20%,
+        rgba(255, 255, 255, 0.05) 60%,
+        rgba(255, 255, 255, 0)
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
     }
 }
 
@@ -4805,12 +4855,16 @@ del {
     display: inline-block;
 }
 
-.sidebar-section-header.collapsed .sidebar-section-toggle-icon {
-    transform: rotate(-90deg);
+details.sidebar-section-details summary::-webkit-details-marker {
+    display: none;
 }
 
-.channel-list.collapsed {
-    display: none !important;
+details.sidebar-section-details summary {
+    list-style: none;
+}
+
+details.sidebar-section-details:not([open]) .sidebar-section-toggle-icon {
+    transform: rotate(-90deg);
 }
 
 .sidebar-favorite-toggle {
@@ -4945,7 +4999,11 @@ del {
         display: flex !important;
     }
 
-    .dashboard-grid.thread-open .thread-panel {
+    .thread-panel:empty {
+        display: none !important;
+    }
+
+    .dashboard-grid:has(#thread-panel:not(:empty)) .thread-panel {
         right: 0 !important;
     }
 
@@ -5697,6 +5755,84 @@ del {
     border-color: var(--accent-purple);
     background: rgba(168, 85, 247, 0.05);
     box-shadow: 0 0 8px var(--accent-purple-glow);
+}
+
+/* Native Dialog Modals Styling */
+dialog.confirmation-dialog {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.25rem;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+    background: linear-gradient(135deg, rgba(20, 30, 48, 0.95), rgba(36, 59, 85, 0.95));
+    color: var(--text-primary);
+    padding: 2.5rem 2rem;
+    max-width: 400px;
+    width: 90%;
+    outline: none;
+    box-sizing: border-box;
+    margin: auto;
+    align-items: center;
+    text-align: center;
+}
+
+dialog.confirmation-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    animation: fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+dialog.modal-backdrop-dialog {
+    border: none;
+    background: transparent;
+    padding: 0;
+    max-width: 100%;
+    max-height: 100%;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    outline: none;
+    margin: 0;
+}
+
+dialog.modal-backdrop-dialog[open] {
+    display: flex;
+}
+
+dialog.modal-backdrop-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+    animation: fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+dialog.modal-backdrop-dialog#image-lightbox::backdrop {
+    background: rgba(10, 15, 30, 0.92);
+    backdrop-filter: blur(12px);
+}
+
+/* Markdown Tab Preview System */
+.chat-message-form.show-preview textarea,
+.chat-message-form.show-preview .input-actions-wrapper {
+    display: none !important;
+}
+
+.chat-message-form.show-preview .message-preview-box {
+    display: block !important;
+}
+
+.chat-message-form.show-preview button[id$="-btn-edit-tab"] {
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.chat-message-form:not(.show-preview) button[id$="-btn-preview-tab"] {
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
 }
 
 

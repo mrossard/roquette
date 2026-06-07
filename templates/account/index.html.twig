@@ -10,7 +10,15 @@
 {% endblock %}
 
 {% block body %}
-<div class="app-container" hx-boost="true">
+    {% set mercureTopics = [
+        mercure_topic_prefix ~ '/users/' ~ app.user.username,
+        mercure_topic_prefix ~ '/users/status'
+    ] %}
+    {% for ch in channels %}
+        {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+    {% endfor %}
+    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
+    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
     <header class="app-header">
         <div class="logo-area">
             <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
@@ -25,31 +33,7 @@
             </div>
         </div>
 
-        <div class="header-controls">
-            {% set mercureTopics = [
-                mercure_topic_prefix ~ '/users/' ~ app.user.username,
-                mercure_topic_prefix ~ '/users/status'
-            ] %}
-            {% for ch in channels %}
-                {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
-            {% endfor %}
-            <div class="status-badge" id="mercure-status"
-                 data-active-channel-slug=""
-                 data-current-username="{{ app.user.username }}"
-                 data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
-                <span class="status-dot disconnected"></span>
-                <span class="status-text">Connexion au Hub...</span>
-            </div>
-            {% if channels is not empty %}
-                <a href="{{ path('app_channel', {slug: channels[0].slug}) }}" class="btn-back">💬 Retour au Chat</a>
-            {% else %}
-                <a href="{{ path('app_dashboard') }}" class="btn-back">💬 Retour au Chat</a>
-            {% endif %}
-
-            <button id="theme-toggle" class="btn-theme-toggle" aria-label="Changer de thème">🌓</button>
-
-            {% include 'dashboard/_user_menu_dropdown.html.twig' %}
-        </div>
+        {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
     </header>
 
     <main class="dashboard-grid">

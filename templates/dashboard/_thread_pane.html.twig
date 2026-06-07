@@ -3,7 +3,12 @@
         <h3>Fil de discussion</h3>
         <span class="thread-header-subtitle">dans #{{ parentMessage.channel.name }}</span>
     </div>
-    <button type="button" class="btn-close-thread" onclick="closeThread()" title="Fermer le fil">✕</button>
+    <button type="button" class="btn-close-thread"
+            hx-post="{{ path('app_thread_mark_read', {id: parentMessage.id}) }}"
+            hx-target="#thread-panel"
+            hx-swap="innerHTML"
+            title="Fermer le fil">✕
+    </button>
 </div>
 
 <div class="thread-content" data-parent-id="{{ parentMessage.id }}">
@@ -55,3 +60,21 @@
 <div class="thread-input-area">
     {% include 'dashboard/_thread_input_form.html.twig' with {'parentMessage': parentMessage} %}
 </div>
+
+<script>
+    (function () {
+        const threadPanel = document.getElementById('thread-panel');
+        if (window.initEmojiPickers) window.initEmojiPickers();
+        if (window.initThreadFileUpload) window.initThreadFileUpload();
+        if (window.initThreadTextareaResize) window.initThreadTextareaResize();
+        if (window.highlightAllCodeBlocks) {
+            window.highlightAllCodeBlocks(threadPanel);
+        }
+
+        const threadTextarea = document.getElementById('thread-message');
+        const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (threadTextarea && !isMobile) {
+            threadTextarea.focus();
+        }
+    })();
+</script>

@@ -1,78 +1,11 @@
-<div id="invite-member-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="invite-modal-title" style="display: none;" onclick="if(event.target === this) closeInviteMemberModal()">
-    <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width: 480px !important;">
-        <div class="modal-header">
-            <h3 id="invite-modal-title">
-                Inviter un membre dans #{{ activeChannel.name }}
-            </h3>
-            <button type="button" onclick="closeInviteMemberModal()" class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
-        </div>
-        
+{% embed '_modal_layout.html.twig' with {
+    id: 'invite-member-modal',
+    title: 'Inviter un membre dans #' ~ activeChannel.name,
+    content_style: 'max-width: 480px !important;'
+} %}
+    {% block modal_body %}
         <div id="invite-modal-body">
             {% include 'dashboard/_invite_modal_list.html.twig' with {'activeChannel': activeChannel, 'usersToInvite': usersToInvite} %}
         </div>
-    </div>
-</div>
-
-<script>
-    (function() {
-        let lastFocusedElement = null;
-
-        window.openInviteMemberModal = function(trigger) {
-            console.log('[Diagnostic] openInviteMemberModal called');
-            lastFocusedElement = trigger;
-            const modal = document.getElementById('invite-member-modal');
-            if (modal) {
-                modal.style.display = 'flex';
-                const searchInput = document.getElementById('invite-member-search-input');
-                if (searchInput) {
-                    searchInput.value = '';
-                    const listContainer = document.getElementById('modal-invite-members-list');
-                    if (listContainer) {
-                        listContainer.innerHTML = '<span style="font-size: 0.85rem; color: var(--text-muted); text-align: center; display: block; padding: 1rem 0;">Saisissez un nom pour rechercher un membre.</span>';
-                    }
-                    setTimeout(() => searchInput.focus(), 50);
-                }
-                document.addEventListener('keydown', handleInviteModalKeyDown);
-            }
-        };
-
-        window.closeInviteMemberModal = function() {
-            console.log('[Diagnostic] closeInviteMemberModal called');
-            const modal = document.getElementById('invite-member-modal');
-            if (modal) {
-                modal.style.display = 'none';
-                document.removeEventListener('keydown', handleInviteModalKeyDown);
-                if (lastFocusedElement) {
-                    lastFocusedElement.focus();
-                }
-            }
-        };
-
-        function handleInviteModalKeyDown(e) {
-            if (e.key === 'Escape') {
-                closeInviteMemberModal();
-                return;
-            }
-            if (e.key === 'Tab') {
-                const modal = document.getElementById('invite-member-modal');
-                if (!modal) return;
-                const focusableElements = modal.querySelectorAll('button, input, textarea, select, a, [tabindex="0"]');
-                if (focusableElements.length === 0) return;
-                const firstFocusable = focusableElements[0];
-                const lastFocusable = focusableElements[focusableElements.length - 1];
-
-                if (e.shiftKey) {
-                    if (document.activeElement === firstFocusable) {
-                        lastFocusable.focus();
-                        e.preventDefault();
-                    }
-                } else {
-                    if (document.activeElement === lastFocusable) {
-                        firstFocusable.focus();
-                        e.preventDefault();
-                    }
-                }
-            }
-        }
-    })();
-</script>
+    {% endblock %}
+{% endembed %}

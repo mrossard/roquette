@@ -34,15 +34,15 @@
                 const hljsLink = document.createElement('link');
                 hljsLink.id = 'hljs-theme';
                 hljsLink.rel = 'stylesheet';
-                hljsLink.href = theme === 'dark' 
-                    ? '{{ asset('styles/highlight/atom-one-dark.min.css') }}' 
+                hljsLink.href = theme === 'dark'
+                    ? '{{ asset('styles/highlight/atom-one-dark.min.css') }}'
                     : '{{ asset('styles/highlight/atom-one-light.min.css') }}';
                 document.head.appendChild(hljsLink);
             })();
         </script>
         <title>{% block title %}Welcome!{% endblock %}</title>
         <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-        
+
         {% if app.user %}
         <style>
             :root {
@@ -58,6 +58,41 @@
                 --accent-cyan-glow: hsla(var(--user-hue-primary), 100%, 30%, 0.15);
                 --accent-purple: hsl(calc((var(--user-hue-primary) + 84) % 360), 75%, 45%);
                 --accent-purple-glow: hsla(calc((var(--user-hue-primary) + 84) % 360), 75%, 45%, 0.15);
+            }
+
+            /* Declarative visibility states based on current user session */
+            .feed-item .btn-edit-subtle,
+            .feed-item .btn-delete-subtle {
+                display: none !important;
+            }
+
+            .feed-item[data-author-username="{{ app.user.username }}"]:not([data-poll-has-votes="1"]) .btn-edit-subtle {
+                display: inline-flex !important;
+            }
+
+            .feed-item[data-author-username="{{ app.user.username }}"] .btn-delete-subtle {
+                display: inline-flex !important;
+            }
+
+            #live-feed[data-is-channel-creator="true"] .btn-delete-subtle {
+                display: inline-flex !important;
+            }
+
+            .feed-item[data-author-username="{{ app.user.username }}"] .feed-item-user-link {
+                pointer-events: none !important;
+                cursor: default !important;
+            }
+
+            .reaction-badge[data-reactors~="{{ app.user.username }}"] {
+                background: rgba(0, 229, 255, 0.08) !important;
+                border-color: var(--accent-cyan) !important;
+                color: var(--accent-cyan) !important;
+                box-shadow: 0 0 8px rgba(0, 229, 255, 0.15) !important;
+            }
+
+            .reaction-badge[data-reactors~="{{ app.user.username }}"]:hover {
+                background: rgba(0, 229, 255, 0.12) !important;
+                border-color: var(--accent-cyan) !important;
             }
         </style>
         {% endif %}
@@ -78,52 +113,11 @@
         {% block body %}{% endblock %}
 
         {% if app.user %}
-            {% include '_create_channel_modal.html.twig' %}
             {% include '_lightbox_modal.html.twig' %}
             {% include '_global_search_modal.html.twig' %}
             {% include '_busy_status_modal.html.twig' %}
-            {% if activeChannel is defined and activeChannel and not activeChannel.isDm and activeChannel.isAdministrator(app.user) %}
-                {% include '_edit_channel_modal.html.twig' %}
-            {% endif %}
-            {% if activeChannel is defined and activeChannel and activeChannel.isPrivate and activeChannel.creator == app.user %}
-                {% include '_invite_member_modal.html.twig' %}
-            {% endif %}
-            {% if activeChannel is defined and activeChannel %}
-                {% include '_channel_members_modal.html.twig' %}
-            {% endif %}
-
-            <script>
-                (function() {
-                    if (!window.themeToggleInitialized) {
-                        window.themeToggleInitialized = true;
-                        document.addEventListener('click', function(e) {
-                            const toggle = e.target.closest('#theme-toggle');
-                            if (toggle) {
-                                const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-                                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                                document.documentElement.setAttribute('data-theme', newTheme);
-                                localStorage.setItem('theme', newTheme);
-
-                                const hljsLink = document.getElementById('hljs-theme');
-                                if (hljsLink) {
-                                    hljsLink.href = newTheme === 'dark' 
-                                        ? '{{ asset('styles/highlight/atom-one-dark.min.css') }}' 
-                                        : '{{ asset('styles/highlight/atom-one-light.min.css') }}';
-                                }
-
-                                // Update database state asynchronously
-                                fetch('{{ path('app_user_update_theme') }}', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/x-www-form-urlencoded',
-                                    },
-                                    body: 'theme=' + encodeURIComponent(newTheme)
-                                }).catch(err => console.error('Failed to sync theme preference:', err));
-                            }
-                        });
-                    }
-                })();
-            </script>
+            {% include '_confirmation_dialogs.html.twig' %}
+            <div id="modal-container" hx-target="this" hx-swap="innerHTML"></div>
         {% endif %}
     </body>
 </html>

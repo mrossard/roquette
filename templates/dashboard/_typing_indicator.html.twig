@@ -1,0 +1,24 @@
+<div id="typing-indicator" class="typing-indicator"
+     hx-trigger="sse:typing_{{ activeChannel.slug }}"
+     hx-get="{{ path('app_channel_typing_indicator', {'slug': activeChannel.slug}) }}"
+     hx-swap="outerHTML"
+     {% if typingUsers|length == 0 %}style="visibility: hidden;"{% endif %}>
+    {% if typingUsers|length > 0 %}
+        <div class="typing-dots-container">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+        </div>
+        <span class="typing-text">
+            {% if typingUsers|length == 1 %}
+                <strong>{{ typingUsers[0] }}</strong> est en train d'écrire...
+            {% elseif typingUsers|length == 2 %}
+                <strong>{{ typingUsers[0] }}</strong> et <strong>{{ typingUsers[1] }}</strong> sont en train d'écrire...
+            {% else %}
+                Plusieurs personnes sont en train d'écrire...
+            {% endif %}
+        </span>
+    {% else %}
+        &nbsp;
+    {% endif %}
+</div>

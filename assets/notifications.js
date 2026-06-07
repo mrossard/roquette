@@ -48,28 +48,15 @@ export function sendDesktopNotification(title, body, icon = null, tag = null, ur
 }
 
 export function setupNotificationHeaderButton() {
-    if (!('Notification' in window)) return;
-
-    const headerControls = document.querySelector('.header-controls');
-    if (!headerControls) return;
-
     let btn = document.getElementById('header-notification-btn');
-    if (btn) return;
+    if (!btn) return;
 
-    btn = document.createElement('button');
-    btn.id = 'header-notification-btn';
-    btn.className = 'btn-account';
-    btn.style.display = 'inline-flex';
-    btn.style.alignItems = 'center';
-    btn.style.gap = '0.35rem';
-    btn.style.cursor = 'pointer';
-
-    const accountBtn = headerControls.querySelector('.btn-account, .btn-back');
-    if (accountBtn) {
-        headerControls.insertBefore(btn, accountBtn);
-    } else {
-        headerControls.appendChild(btn);
+    if (!('Notification' in window)) {
+        btn.style.display = 'none';
+        return;
     }
+
+    btn.style.display = 'inline-flex';
 
     function updateButtonUI() {
         const permission = Notification.permission;

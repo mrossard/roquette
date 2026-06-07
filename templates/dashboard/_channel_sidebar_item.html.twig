@@ -5,6 +5,7 @@
 {% set channelName = partner ? partner.displayName|default(partner.username) : channel.name %}
 {% set isRobotDm = channel.slug starts with 'dm-robot-roquette-' %}
 <a href="{{ path('app_channel', {slug: channel.slug}) }}"
+   id="sidebar-channel-{{ channel.slug }}"
    class="channel-link {% if activeChannel and channel.id == activeChannel.id %}active{% endif %} {% if count > 0 and (not activeChannel or channel.id != activeChannel.id) %}unread{% endif %} {% if hasMention and (not activeChannel or channel.id != activeChannel.id) %}has-mention{% endif %} {% if isRobotDm %}assistant-dm{% endif %}"
    data-channel-slug="{{ channel.slug }}"
    data-channel-id="{{ channel.id }}"

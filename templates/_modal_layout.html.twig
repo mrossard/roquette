@@ -1,0 +1,14 @@
+<dialog id="{{ id }}" class="modal-backdrop-dialog {{ dialog_class|default('') }}" role="dialog" aria-modal="true"
+        aria-labelledby="{{ id }}-title" {% block dialog_attrs %}{% endblock %}>
+    <div class="modal-content glass-panel {{ content_class|default('') }}" style="{{ content_style|default('') }}">
+        <div class="modal-header">
+            <h3 id="{{ id }}-title" style="{{ title_style|default('') }}">
+                {% block modal_title %}{{ title|default('') }}{% endblock %}
+            </h3>
+            <form method="dialog">
+                <button class="btn-close-modal" aria-label="Fermer la boîte de dialogue">&times;</button>
+            </form>
+        </div>
+        {% block modal_body %}{% endblock %}
+    </div>
+</dialog>

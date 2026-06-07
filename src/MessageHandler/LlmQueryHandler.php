@@ -34,6 +34,7 @@ final class LlmQueryHandler
         private readonly EntityManagerInterface $entityManager,
         private readonly string $mercureTopicPrefix,
         private readonly LoggerInterface $logger,
+        private readonly \Twig\Environment $twig,
         #[Autowire(env: 'int:LLM_MAX_SUMMARY_MESSAGES')]
         private readonly int $maxSummaryMessages = 100,
     ) {}
@@ -49,7 +50,7 @@ final class LlmQueryHandler
 
         // 1. Immediately upon receipt: show "Analyse de la demande... 🔍"
         $initialHtml = $this->messageFormatter->format('Analyse de la demande... 🔍');
-        $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $message->getChannelSlug(), $initialHtml);
+        $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $initialHtml);
 
         [$prompt, $systemPrompt] = $this->getDefaultHelpPrompts($message->getQuestion());
 
@@ -106,7 +107,6 @@ final class LlmQueryHandler
         $this->publishUpdate(
             $personalTopic,
             $message->getHelpMessageId(),
-            $message->getChannelSlug(),
             $this->messageFormatter->format($reformulation),
         );
 
@@ -128,7 +128,6 @@ final class LlmQueryHandler
                     $this->publishUpdate(
                         $personalTopic,
                         $message->getHelpMessageId(),
-                        $message->getChannelSlug(),
                         $this->messageFormatter->format($reformulation),
                     );
 
@@ -140,7 +139,6 @@ final class LlmQueryHandler
                 $this->publishUpdate(
                     $personalTopic,
                     $message->getHelpMessageId(),
-                    $message->getChannelSlug(),
                     $this->messageFormatter->format($reformulation),
                 );
 
@@ -172,7 +170,6 @@ final class LlmQueryHandler
                     $this->publishUpdate(
                         $personalTopic,
                         $message->getHelpMessageId(),
-                        $message->getChannelSlug(),
                         $formattedHtml,
                     );
                 }
@@ -182,7 +179,6 @@ final class LlmQueryHandler
             $this->publishUpdate(
                 $personalTopic,
                 $message->getHelpMessageId(),
-                $message->getChannelSlug(),
                 $formattedHtml,
             );
 
@@ -202,7 +198,7 @@ final class LlmQueryHandler
             $errorHtml = '<p style="color: var(--accent-red, #ff5b5b);">Désolé, une erreur est survenue lors de la communication avec le robot d\'aide : '.htmlspecialchars(
                     $e->getMessage(),
                 ).'</p>';
-            $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $message->getChannelSlug(), $errorHtml);
+            $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $errorHtml);
         }
     }
 
@@ -391,17 +387,20 @@ final class LlmQueryHandler
         }
     }
 
-    private function publishUpdate(string $topic, string $helpMessageId, string $channelSlug, string $html): void
+    private function publishUpdate(string $topic, string $helpMessageId, string $html): void
     {
+        $renderedHtml = $this->twig->render('dashboard/_help_message_update.html.twig', [
+            'helpMessageId' => $helpMessageId,
+            'html' => $html,
+            'timestamp' => new \DateTime(),
+        ]);
+
         $update = new Update(
             $topic,
-            json_encode([
-                'type' => 'help_stream_update',
-                'helpMessageId' => $helpMessageId,
-                'channelSlug' => $channelSlug,
-                'html' => $html,
-            ]),
+            $renderedHtml,
             true,
+            null,
+            'help_stream_update',
         );
 
         $this->hub->publish($update);

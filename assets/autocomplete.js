@@ -14,92 +14,28 @@ const SLASH_COMMANDS = [
     { name: 'color',  icon: '🎨',  description: 'Changer la couleur de votre pseudo',    usage: '/color [0-360]' },
 ];
 
-async function fetchUsersForAutocomplete() {
+async function fetchUsersForAutocomplete(query = '') {
     try {
-        const response = await fetch('/api/users');
+        const response = await fetch('/api/users?q=' + encodeURIComponent(query));
         if (response.ok) {
-            appUsers = await response.json();
+            return await response.json();
         }
     } catch (e) {
         console.error('Failed to fetch users for autocomplete:', e);
     }
+    return [];
 }
 
-async function fetchChannelsForAutocomplete() {
+async function fetchChannelsForAutocomplete(query = '') {
     try {
-        const response = await fetch('/api/channels');
+        const response = await fetch('/api/channels?q=' + encodeURIComponent(query));
         if (response.ok) {
-            appChannels = await response.json();
+            return await response.json();
         }
     } catch (e) {
         console.error('Failed to fetch channels for autocomplete:', e);
     }
-}
-
-function findMatchingChannelsForQuery(query) {
-    if (!query) {
-        return appChannels.slice(0, 6);
-    }
-
-    const matched = [];
-    appChannels.forEach(channel => {
-        const name = (channel.name || '').toLowerCase();
-        const slug = (channel.slug || '').toLowerCase();
-
-        let priority = 0;
-        if (name.startsWith(query)) {
-            priority = 3;
-        } else if (slug.startsWith(query)) {
-            priority = 2;
-        } else if (name.includes(query) || slug.includes(query)) {
-            priority = 1;
-        }
-
-        if (priority > 0) {
-            matched.push({
-                channel,
-                priority
-            });
-        }
-    });
-
-    return matched
-        .sort((a, b) => b.priority - a.priority)
-        .map(item => item.channel)
-        .slice(0, 6);
-}
-
-function findMatchingUsersForQuery(query) {
-    if (!query) {
-        return appUsers.slice(0, 6);
-    }
-
-    const matched = [];
-    appUsers.forEach(user => {
-        const username = (user.username || '').toLowerCase();
-        const displayName = (user.displayName || '').toLowerCase();
-
-        let priority = 0;
-        if (username.startsWith(query)) {
-            priority = 3;
-        } else if (displayName.startsWith(query)) {
-            priority = 2;
-        } else if (username.includes(query) || displayName.includes(query)) {
-            priority = 1;
-        }
-
-        if (priority > 0) {
-            matched.push({
-                user,
-                priority
-            });
-        }
-    });
-
-    return matched
-        .sort((a, b) => b.priority - a.priority)
-        .map(item => item.user)
-        .slice(0, 6);
+    return [];
 }
 
 function findMatchingEmojisForQuery(query) {
@@ -136,16 +72,7 @@ function findMatchingCommands(query) {
 }
 
 export function initEmojiAutocomplete() {
-    const targets = document.querySelectorAll('textarea:not([data-autocomplete-initialized]), input#global-search-input:not([data-autocomplete-initialized]), #admin-autocomplete-input:not([data-autocomplete-initialized])');
-
-    if (targets.length > 0) {
-        if (appUsers.length === 0) {
-            fetchUsersForAutocomplete();
-        }
-        if (appChannels.length === 0) {
-            fetchChannelsForAutocomplete();
-        }
-    }
+    const targets = document.querySelectorAll('textarea:not([data-autocomplete-initialized]), input#global-search-input:not([data-autocomplete-initialized])');
 
     targets.forEach(target => {
         target.setAttribute('data-autocomplete-initialized', 'true');
@@ -168,7 +95,7 @@ export function initEmojiAutocomplete() {
     });
 }
 
-function handleTextareaInputForAutocomplete(textarea) {
+async function handleTextareaInputForAutocomplete(textarea) {
     const cursor = textarea.selectionStart;
     const text = textarea.value;
 
@@ -188,21 +115,14 @@ function handleTextareaInputForAutocomplete(textarea) {
             return;
         }
 
-        if (appUsers.length === 0) {
-            fetchUsersForAutocomplete().then(() => {
-                handleTextareaInputForAutocomplete(textarea);
-            });
-            return;
-        }
-
-        const matches = findMatchingUsersForQuery(query);
+        const matches = await fetchUsersForAutocomplete(query);
 
         if (matches.length === 0) {
             closeAutocomplete();
             return;
         }
 
-        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches);
+        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
         return;
     }
 
@@ -212,41 +132,27 @@ function handleTextareaInputForAutocomplete(textarea) {
             const queryStartIndex = textBeforeCursor.lastIndexOf('@');
             const queryEndIndex = cursor;
 
-            if (appUsers.length === 0) {
-                fetchUsersForAutocomplete().then(() => {
-                    handleTextareaInputForAutocomplete(textarea);
-                });
-                return;
-            }
-
-            const matches = findMatchingUsersForQuery(query);
+            const matches = await fetchUsersForAutocomplete(query);
 
             if (matches.length === 0) {
                 closeAutocomplete();
                 return;
             }
 
-            showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches);
+            showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
         } else if (matchChannel) {
             const query = matchChannel[1].toLowerCase();
             const queryStartIndex = textBeforeCursor.lastIndexOf('#');
             const queryEndIndex = cursor;
 
-            if (appChannels.length === 0) {
-                fetchChannelsForAutocomplete().then(() => {
-                    handleTextareaInputForAutocomplete(textarea);
-                });
-                return;
-            }
-
-            const matches = findMatchingChannelsForQuery(query);
+            const matches = await fetchChannelsForAutocomplete(query);
 
             if (matches.length === 0) {
                 closeAutocomplete();
                 return;
             }
 
-            showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches);
+            showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
         } else {
             closeAutocomplete();
         }
@@ -281,41 +187,27 @@ function handleTextareaInputForAutocomplete(textarea) {
         const queryStartIndex = textBeforeCursor.lastIndexOf('@');
         const queryEndIndex = cursor;
 
-        if (appUsers.length === 0) {
-            fetchUsersForAutocomplete().then(() => {
-                handleTextareaInputForAutocomplete(textarea);
-            });
-            return;
-        }
-
-        const matches = findMatchingUsersForQuery(query);
+        const matches = await fetchUsersForAutocomplete(query);
 
         if (matches.length === 0) {
             closeAutocomplete();
             return;
         }
 
-        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches);
+        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
     } else if (matchChannel) {
         const query = matchChannel[1].toLowerCase();
         const queryStartIndex = textBeforeCursor.lastIndexOf('#');
         const queryEndIndex = cursor;
 
-        if (appChannels.length === 0) {
-            fetchChannelsForAutocomplete().then(() => {
-                handleTextareaInputForAutocomplete(textarea);
-            });
-            return;
-        }
-
-        const matches = findMatchingChannelsForQuery(query);
+        const matches = await fetchChannelsForAutocomplete(query);
 
         if (matches.length === 0) {
             closeAutocomplete();
             return;
         }
 
-        showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches);
+        showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
     } else {
         closeAutocomplete();
     }

@@ -249,4 +249,35 @@ class LinkPreviewService
             'siteName' => $siteName,
         ];
     }
+
+    /**
+     * Gets the cached preview without making any HTTP request.
+     * Returns:
+     * - ['status' => 'success', 'preview' => array] if cached and valid
+     * - ['status' => 'negative'] if cached as invalid/null
+     * - null if not in cache (cache miss)
+     */
+    public function getCachedPreview(string $url): ?array
+    {
+        $url = trim($url);
+        $cacheKey = 'link_preview_'.md5($url);
+
+        if (method_exists($this->cache, 'getItem')) {
+            try {
+                $item = $this->cache->getItem($cacheKey);
+                if ($item->isHit()) {
+                    $value = $item->get();
+                    if ($value === null) {
+                        return ['status' => 'negative'];
+                    }
+
+                    return ['status' => 'success', 'preview' => $value];
+                }
+            } catch (\Exception) {
+                return null;
+            }
+        }
+
+        return null;
+    }
 }

@@ -17,6 +17,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Cache\CacheInterface;
 
 #[IsGranted('ROLE_USER')]
 final class NotificationController extends AbstractController
@@ -47,12 +48,14 @@ final class NotificationController extends AbstractController
     }
 
     // -------------------------------------------------------------------------
-    // Unread messages feed
+    // -------------------------------------------------------------------------
+    // Search and filter in channel
     // -------------------------------------------------------------------------
 
-    #[Route('/channels/{slug}/unread', name: 'app_channel_unread', methods: ['GET'])]
-    public function unreadMessages(
+    #[Route('/channels/{slug}/search', name: 'app_channel_search', methods: ['GET'])]
+    public function search(
         string $slug,
+        Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
@@ -66,42 +69,34 @@ final class NotificationController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
-        /** @var \App\Entity\UserChannelRead|null $activeRead */
-        $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $activeChannel]);
-        $lastReadMessageId = $activeRead?->getLastReadMessage()?->getId();
-
-        $messages = $messageRepository->findUnreadInChannel($activeChannel, $currentUser, $lastReadMessageId);
-
-        return $this->render('dashboard/_messages_feed.html.twig', [
-            'messages' => $messages,
-            'activeChannel' => $activeChannel,
-            'firstUnreadMessageId' => null,
-            'unreadFilterActive' => true,
-        ]);
-    }
-
-    // -------------------------------------------------------------------------
-    // Search in channel
-    // -------------------------------------------------------------------------
-
-    #[Route('/channels/{slug}/search', name: 'app_channel_search', methods: ['GET'])]
-    public function search(
-        string $slug,
-        Request $request,
-        ChannelRepository $channelRepository,
-        MessageRepository $messageRepository,
-    ): Response {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
-        try {
-            $activeChannel = $this->findAndAuthorizeChannel($slug, $channelRepository);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
-
         $query = trim($request->query->get('q', ''));
+        $unread = $request->query->getBoolean('unread', false);
+
+        if ($unread) {
+            $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
+            /** @var \App\Entity\UserChannelRead|null $activeRead */
+            $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $activeChannel]);
+            $lastReadMessageId = $activeRead?->getLastReadMessage()?->getId();
+
+            $messages = $messageRepository->findUnreadInChannel($activeChannel, $currentUser, $lastReadMessageId);
+
+            if ($query !== '') {
+                $messages = array_filter($messages, function ($m) use ($query) {
+                    return mb_strpos(
+                            mb_strtolower($m->getContent(), 'UTF-8'),
+                            mb_strtolower($query, 'UTF-8'),
+                        ) !== false;
+                });
+            }
+
+            return $this->render('dashboard/_messages_feed.html.twig', [
+                'messages' => $messages,
+                'activeChannel' => $activeChannel,
+                'firstUnreadMessageId' => null,
+                'unreadFilterActive' => true,
+                'searchQuery' => $query !== '' ? $query : null,
+            ]);
+        }
 
         if ($query === '') {
             $messages = $messageRepository->findBy(
@@ -181,6 +176,7 @@ final class NotificationController extends AbstractController
         Request $request,
         ChannelRepository $channelRepository,
         MercurePublisher $mercurePublisher,
+        CacheInterface $cache,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -194,15 +190,88 @@ final class NotificationController extends AbstractController
         $data = json_decode($request->getContent(), true);
         $isTyping = filter_var($data['isTyping'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        $mercurePublisher->publishToChannel($activeChannel, [
-            'type' => 'user_typing',
-            'username' => $currentUser->getUsername(),
-            'displayName' => ($currentUser->getDisplayName() !== null && $currentUser->getDisplayName() !== '') ? $currentUser->getDisplayName() : $currentUser->getUsername(),
-            'isTyping' => $isTyping,
-            'channelSlug' => $activeChannel->getSlug(),
-        ]);
+        $cacheKey = 'channel_typing_'.$activeChannel->getSlug();
+
+        $typingUsers = $cache->get($cacheKey, function () {
+            return [];
+        });
+
+        $now = time();
+        $displayName = ($currentUser->getDisplayName() !== null && $currentUser->getDisplayName(
+            ) !== '') ? $currentUser->getDisplayName() : $currentUser->getUsername();
+
+        if ($isTyping) {
+            $typingUsers[$currentUser->getUsername()] = [
+                'name' => $displayName,
+                'expires_at' => $now + 5,
+            ];
+        } else {
+            unset($typingUsers[$currentUser->getUsername()]);
+        }
+
+        foreach ($typingUsers as $username => $info) {
+            if ($info['expires_at'] < $now) {
+                unset($typingUsers[$username]);
+            }
+        }
+
+        $cache->delete($cacheKey);
+        $cache->get($cacheKey, function () use ($typingUsers) {
+            return $typingUsers;
+        });
+
+        $mercurePublisher->publishToChannel($activeChannel, 'ping', 'typing_'.$activeChannel->getSlug());
 
         return new Response('', 204);
+    }
+
+    #[Route('/channel/{slug}/typing-indicator', name: 'app_channel_typing_indicator', methods: ['GET'])]
+    public function typingIndicator(
+        string $slug,
+        ChannelRepository $channelRepository,
+        CacheInterface $cache,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        try {
+            $activeChannel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            return new Response($e->getMessage(), $e->getStatusCode());
+        }
+
+        $cacheKey = 'channel_typing_'.$activeChannel->getSlug();
+
+        $typingUsers = $cache->get($cacheKey, function () {
+            return [];
+        });
+
+        $now = time();
+        $changed = false;
+        foreach ($typingUsers as $username => $info) {
+            if ($info['expires_at'] < $now) {
+                unset($typingUsers[$username]);
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            $cache->delete($cacheKey);
+            $cache->get($cacheKey, function () use ($typingUsers) {
+                return $typingUsers;
+            });
+        }
+
+        if ($currentUser) {
+            unset($typingUsers[$currentUser->getUsername()]);
+        }
+
+        $names = array_map(fn($info) => $info['name'], array_values($typingUsers));
+
+        return $this->render('dashboard/_typing_indicator.html.twig', [
+            'typingUsers' => $names,
+            'activeChannel' => $activeChannel,
+        ]);
     }
 
     #[Route('/search', name: 'app_global_search', methods: ['GET'])]

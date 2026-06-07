@@ -52,7 +52,7 @@ class ActivitySubscriber implements EventSubscriberInterface
                 'statusLabel' => $user->getStatusLabel(),
                 'statusOverride' => $user->getStatusOverride() ?? 'auto',
                 'lastActive' => $now->getTimestamp(),
-            ]), true);
+            ]), true, null, 'user_status_changed');
             $this->bus->dispatch($update);
         }
     }

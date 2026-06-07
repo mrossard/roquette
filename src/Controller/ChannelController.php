@@ -20,6 +20,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Cache\CacheInterface;
 
 #[IsGranted('ROLE_USER')]
 final class ChannelController extends AbstractController
@@ -30,6 +31,7 @@ final class ChannelController extends AbstractController
         private MercurePublisher $mercurePublisher,
         private ReadTrackingService $readTrackingService,
         private LoggerInterface $logger,
+        private CacheInterface $cache,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -100,13 +102,12 @@ final class ChannelController extends AbstractController
     // Main channel page
     // -------------------------------------------------------------------------
 
-    #[Route('/channels/{slug}', name: 'app_channel', requirements: ['slug' => '^(?!directory$|reorder$|create$)[^/]+$'])]
+    #[Route('/channels/{slug}', name: 'app_channel', requirements: ['slug' => '^(?!directory$|reorder$|create$|create-modal$)[^/]+$'])]
     public function channel(
         string $slug,
         Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
-        UserRepository $userRepository,
         InvitationRepository $invitationRepository,
         EntityManagerInterface $entityManager,
     ): Response {
@@ -196,6 +197,36 @@ final class ChannelController extends AbstractController
             $notificationsEnabled = $activeChannel->isDm();
         }
 
+        $typingUsers = [];
+        if ($isMember && $activeChannel) {
+            $cacheKey = 'channel_typing_'.$activeChannel->getSlug();
+            $typingUsersFromCache = $this->cache->get($cacheKey, function () {
+                return [];
+            });
+
+            $now = time();
+            $changed = false;
+            foreach ($typingUsersFromCache as $username => $info) {
+                if ($info['expires_at'] < $now) {
+                    unset($typingUsersFromCache[$username]);
+                    $changed = true;
+                }
+            }
+
+            if ($changed) {
+                $this->cache->delete($cacheKey);
+                $this->cache->get($cacheKey, function () use ($typingUsersFromCache) {
+                    return $typingUsersFromCache;
+                });
+            }
+
+            if ($currentUser) {
+                unset($typingUsersFromCache[$currentUser->getUsername()]);
+            }
+
+            $typingUsers = array_map(fn($info) => $info['name'], array_values($typingUsersFromCache));
+        }
+
         return $this->render('dashboard/index.html.twig', [
             'channels' => $channels,
             'activeChannel' => $activeChannel,
@@ -207,6 +238,7 @@ final class ChannelController extends AbstractController
             'pendingInvitations' => $pendingInvitations,
             'isMember' => $isMember,
             'notificationsEnabled' => $notificationsEnabled,
+            'typingUsers' => $typingUsers,
         ]);
     }
 
@@ -435,10 +467,13 @@ final class ChannelController extends AbstractController
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à supprimer ce canal.');
         }
 
-        $this->mercurePublisher->publishToChannel($channel, [
-            'type' => 'channel_deleted',
-            'channelSlug' => $slug,
-        ]);
+        $oobHtml = sprintf(
+            '<a id="sidebar-channel-%s" hx-swap-oob="delete"></a>'.
+            '<script>if(window.location.pathname === "/channels/%s"){ window.location.href = "/"; }</script>',
+            $slug,
+            $slug,
+        );
+        $this->mercurePublisher->publishToChannel($channel, $oobHtml, 'channel_deleted');
 
         $this->logger->info(sprintf(
             'Channel deleted: "%s" (slug: "%s") by user "%s"',
@@ -467,6 +502,15 @@ final class ChannelController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
         $order = $data['order'] ?? null;
+        if (!is_array($order)) {
+            $order = $request->request->all('order');
+            if (empty($order)) {
+                $order = $request->request->all();
+                if (isset($order['order'])) {
+                    $order = $order['order'];
+                }
+            }
+        }
 
         if (is_array($order)) {
             $order = array_map('intval', $order);
@@ -678,6 +722,73 @@ final class ChannelController extends AbstractController
         $this->addFlash('success', 'Les paramètres du canal ont été modifiés.');
 
         return $this->redirectToRoute('app_channel', ['slug' => $channel->getSlug()]);
+    }
+
+    #[Route('/channels/{slug}/admin-chip-add', name: 'app_channel_admin_chip_add', methods: ['POST'])]
+    public function addAdminChip(
+        string $slug,
+        Request $request,
+        UserRepository $userRepository,
+        ChannelRepository $channelRepository,
+    ): Response {
+        $userId = $request->request->get('userId');
+        $user = $userRepository->find((int)$userId);
+        if (!$user) {
+            return new Response('', 400);
+        }
+
+        $channel = $channelRepository->findOneBy(['slug' => $slug]);
+        if (!$channel) {
+            return new Response('', 404);
+        }
+
+        if (!$channel->getMembers()->contains($user)) {
+            return new Response('<script>alert("Cet utilisateur n\'est pas membre de ce canal.");</script>', 200);
+        }
+
+        return $this->render('dashboard/_admin_chip.html.twig', [
+            'member' => $user,
+        ]);
+    }
+
+    #[Route('/channels/{slug}/admin-autocomplete', name: 'app_channel_admin_autocomplete', methods: ['GET'])]
+    public function adminAutocomplete(
+        string $slug,
+        Request $request,
+        ChannelRepository $channelRepository,
+    ): Response {
+        $channel = $channelRepository->findOneBy(['slug' => $slug]);
+        if (!$channel) {
+            return new Response('', 404);
+        }
+
+        $query = trim($request->query->get('search', ''));
+        if ($query === '') {
+            return new Response(
+                '<div id="admin-autocomplete-suggestions" class="emoji-autocomplete-dropdown" style="display: none;"></div>',
+            );
+        }
+
+        // Find channel members matching the query who are not already administrators (including creator)
+        $matches = [];
+        foreach ($channel->getMembers() as $member) {
+            if ($channel->getAdministrators()->contains($member) || $member === $channel->getCreator()) {
+                continue;
+            }
+
+            $username = strtolower($member->getUsername());
+            $displayName = strtolower($member->getDisplayName() ?? '');
+            $q = strtolower($query);
+
+            if (str_contains($username, $q) || str_contains($displayName, $q)) {
+                $matches[] = $member;
+            }
+        }
+
+        return $this->render('dashboard/_admin_autocomplete_suggestions.html.twig', [
+            'matches' => array_slice($matches, 0, 6),
+            'channel' => $channel,
+        ]);
     }
 
     // -------------------------------------------------------------------------

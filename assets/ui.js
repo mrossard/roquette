@@ -1,74 +1,5 @@
-const pendingScrollContainers = new Set();
-
-export function scrollToBottom(smooth = true, containerId = 'live-feed') {
-    const feedContainer = document.getElementById(containerId);
-    if (!feedContainer) return;
-
-    const isPageActive = (document.visibilityState === 'visible' && document.hasFocus());
-
-    if (!isPageActive) {
-        // Queue a scroll when the page becomes active/focused
-        pendingScrollContainers.add(containerId);
-
-        // Also do an instant scroll now, as 'auto' behavior is more reliable in the background than 'smooth'
-        feedContainer.scrollTo({
-            top: feedContainer.scrollHeight,
-            behavior: 'auto'
-        });
-        return;
-    }
-
-    feedContainer.scrollTo({
-        top: feedContainer.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto'
-    });
-
-    // Handle images that are not loaded yet to prevent layout shifts from breaking scroll-to-bottom
-    const images = feedContainer.querySelectorAll('img');
-    images.forEach(img => {
-        if (!img.complete && !img.dataset.scrollListener) {
-            img.dataset.scrollListener = 'true';
-            const handleImageLoad = () => {
-                // If user is close to the bottom, scroll to the new bottom
-                const threshold = 150; // pixels
-                const isCloseToBottom = (feedContainer.scrollHeight - feedContainer.scrollTop - feedContainer.clientHeight) < threshold;
-                if (isCloseToBottom) {
-                    const currentActive = (document.visibilityState === 'visible' && document.hasFocus());
-                    feedContainer.scrollTo({
-                        top: feedContainer.scrollHeight,
-                        behavior: currentActive ? 'smooth' : 'auto'
-                    });
-                }
-            };
-            img.addEventListener('load', handleImageLoad, { once: true });
-            img.addEventListener('error', handleImageLoad, { once: true });
-        }
-    });
-}
-
-function triggerPendingScrolls() {
-    if (document.visibilityState === 'visible' && document.hasFocus()) {
-        pendingScrollContainers.forEach(containerId => {
-            scrollToBottom(true, containerId);
-        });
-        pendingScrollContainers.clear();
-
-        // Remove unread separators after a small delay (e.g. 3 seconds) to let user see them first
-        setTimeout(() => {
-            if (document.visibilityState === 'visible' && document.hasFocus()) {
-                const separators = document.querySelectorAll('.unread-separator');
-                separators.forEach(sep => {
-                    sep.style.transition = 'opacity 0.5s ease-out';
-                    sep.style.opacity = '0';
-                    setTimeout(() => sep.remove(), 500);
-                });
-            }
-        }, 3000);
-    }
-}
-
-window.addEventListener('focus', triggerPendingScrolls);
-document.addEventListener('visibilitychange', triggerPendingScrolls);
+import {adjustScrollForFeedContent} from './scroll.js';
+import Sortable from 'sortablejs';
 
 
 export function highlightAllCodeBlocks(container = document) {
@@ -120,7 +51,10 @@ function setupDragAndDrop(chatPanel, dragOverlay) {
         if (!isDragSourceFiles(e)) return;
         dragCounter++;
         if (dragCounter === 1) {
-            dragOverlay.classList.add('active');
+            const currentOverlay = document.getElementById('drag-drop-overlay') || dragOverlay;
+            if (currentOverlay) {
+                currentOverlay.classList.add('active');
+            }
         }
     }, false);
 
@@ -128,14 +62,20 @@ function setupDragAndDrop(chatPanel, dragOverlay) {
         if (!isDragSourceFiles(e)) return;
         dragCounter--;
         if (dragCounter === 0) {
-            dragOverlay.classList.remove('active');
+            const currentOverlay = document.getElementById('drag-drop-overlay') || dragOverlay;
+            if (currentOverlay) {
+                currentOverlay.classList.remove('active');
+            }
         }
     }, false);
 
     chatPanel.addEventListener('drop', (e) => {
         if (!isDragSourceFiles(e)) return;
         dragCounter = 0;
-        dragOverlay.classList.remove('active');
+        const currentOverlay = document.getElementById('drag-drop-overlay') || dragOverlay;
+        if (currentOverlay) {
+            currentOverlay.classList.remove('active');
+        }
 
         const files = e.dataTransfer.files;
         if (files && files.length > 0) {
@@ -172,6 +112,24 @@ export function initFileUpload() {
 
     if (!fileInput || !textarea || !previewContainer || !previewName) return;
 
+    // Drag & drop handlers - setup on chat panel even if fileInput was already initialized
+    const chatPanel = document.querySelector('.chat-panel');
+    const dragOverlay = document.getElementById('drag-drop-overlay');
+    setupDragAndDrop(chatPanel, dragOverlay);
+
+    // Prevent default drag/drop behaviors globally to avoid browser page navigation on stray drops
+    if (!window.dragAndDropGlobalBound) {
+        window.dragAndDropGlobalBound = true;
+        ['dragover', 'drop'].forEach(eventName => {
+            window.addEventListener(eventName, (e) => {
+                e.preventDefault();
+            }, false);
+        });
+    }
+
+    if (fileInput.dataset.initialized === 'true') return;
+    fileInput.dataset.initialized = 'true';
+
     // Paste event handler
     textarea.addEventListener('paste', (event) => {
         handlePasteUpload(event, fileInput);
@@ -189,6 +147,9 @@ export function initFileUpload() {
                 if (textarea.value.trim() === '') {
                     textarea.setAttribute('required', 'required');
                 }
+                setTimeout(() => {
+                    adjustScrollForFeedContent();
+                }, 50);
                 return;
             }
             previewName.textContent = `${file.name} (${formatBytes(file.size)})`;
@@ -201,6 +162,9 @@ export function initFileUpload() {
                 textarea.setAttribute('required', 'required');
             }
         }
+        setTimeout(() => {
+            adjustScrollForFeedContent();
+        }, 50);
     });
 
     // Clear button event handler
@@ -221,61 +185,49 @@ export function initFileUpload() {
             }
         }
     });
-
-    // Drag & drop handlers
-    const chatPanel = document.querySelector('.chat-panel');
-    const dragOverlay = document.getElementById('drag-drop-overlay');
-    setupDragAndDrop(chatPanel, dragOverlay);
-
-    // Prevent default drag/drop behaviors globally to avoid browser page navigation on stray drops
-    if (!window.dragAndDropGlobalBound) {
-        window.dragAndDropGlobalBound = true;
-        ['dragover', 'drop'].forEach(eventName => {
-            window.addEventListener(eventName, (e) => {
-                e.preventDefault();
-            }, false);
-        });
-    }
-}
-
-export function toggleStatusDropdown(event) {
-    event.stopPropagation();
-    const trigger = event.currentTarget;
-    const container = trigger.closest('.user-status-dropdown-container');
-    if (!container) return;
-    const menu = container.querySelector('.user-status-dropdown-menu');
-    if (!menu) return;
-
-    const isOpen = container.classList.contains('open');
-    closeAllStatusDropdowns();
-
-    if (!isOpen) {
-        container.classList.add('open');
-        menu.style.display = 'flex';
-        trigger.setAttribute('aria-expanded', 'true');
-
-        // Focus the active or first option
-        const activeOpt = menu.querySelector('.user-status-option.active') || menu.querySelector('.user-status-option');
-        if (activeOpt) {
-            setTimeout(() => activeOpt.focus(), 50);
-        }
-
-        container.addEventListener('keydown', handleDropdownKeyDown);
-    }
 }
 
 export function closeAllStatusDropdowns() {
-    document.querySelectorAll('.user-status-dropdown-container').forEach(c => {
-        c.classList.remove('open');
-        const m = c.querySelector('.user-status-dropdown-menu');
-        if (m) m.style.display = 'none';
-        const trigger = c.querySelector('.user-status-trigger');
-        if (trigger) {
-            trigger.setAttribute('aria-expanded', 'false');
-        }
-        c.removeEventListener('keydown', handleDropdownKeyDown);
+    document.querySelectorAll('details.user-status-dropdown-container').forEach(c => {
+        c.removeAttribute('open');
     });
 }
+
+// Automatically close details dropdowns when clicking outside or when selecting an option
+document.addEventListener('click', (e) => {
+    const details = e.target.closest('details.user-status-dropdown-container');
+    if (!details || e.target.closest('.user-status-option')) {
+        closeAllStatusDropdowns();
+    }
+});
+
+// Handle details elements toggle event to auto-focus active option and register key bindings
+document.addEventListener('toggle', (e) => {
+    if (e.target.tagName === 'DETAILS' && e.target.classList.contains('user-status-dropdown-container')) {
+        if (e.target.open) {
+            // Close other details dropdowns
+            document.querySelectorAll('details.user-status-dropdown-container').forEach(other => {
+                if (other !== e.target) {
+                    other.removeAttribute('open');
+                }
+            });
+
+            // Focus the active or first option
+            const menu = e.target.querySelector('.user-status-dropdown-menu');
+            if (menu) {
+                const activeOpt = menu.querySelector('.user-status-option.active') || menu.querySelector('.user-status-option');
+                if (activeOpt) {
+                    setTimeout(() => activeOpt.focus(), 50);
+                }
+            }
+
+            e.target.addEventListener('keydown', handleDropdownKeyDown);
+        } else {
+            e.target.removeEventListener('keydown', handleDropdownKeyDown);
+        }
+    }
+}, true); // Capture phase is required because toggle event does not bubble
+
 
 function handleDropdownKeyDown(e) {
     const container = e.currentTarget;
@@ -365,79 +317,10 @@ export function updateElementStatus(element, status, label) {
     }
 }
 
-export function handleBusyOptionClick(event) {
-    event.preventDefault();
-    event.stopPropagation();
 
-    closeAllStatusDropdowns();
 
-    if (window.openBusyStatusModal) {
-        window.openBusyStatusModal(function() {
-            if (window.htmx) {
-                window.htmx.ajax('POST', '/user/update-status', {
-                    values: { status: 'busy' },
-                    swap: 'none'
-                });
-            } else {
-                fetch('/user/update-status', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: 'status=busy'
-                });
-            }
-        });
-    }
-}
-window.handleBusyOptionClick = handleBusyOptionClick;
 
-// Close dropdowns on document click
-document.addEventListener('click', () => {
-    closeAllStatusDropdowns();
-});
 
-export function clearChannelSearch() {
-    const input = document.getElementById('channel-search-input');
-    if (input) {
-        input.value = '';
-        const statusBadge = document.getElementById('mercure-status');
-        if (statusBadge) {
-            statusBadge.removeAttribute('data-search-active');
-        }
-        // Trigger htmx request to restore feed
-        if (window.htmx) window.htmx.trigger(input, 'input');
-    }
-}
-
-export function toggleUnreadFilter(btn, event) {
-    const isActive = btn.classList.contains('active');
-    if (isActive) {
-        // Already active: clear the filter, cancel HTMX request
-        if (event) { event.preventDefault(); event.stopPropagation(); }
-        clearUnreadFilter();
-        return false;
-    }
-    btn.classList.add('active');
-    // Clear the search input to avoid conflicts
-    const input = document.getElementById('channel-search-input');
-    if (input) { input.value = ''; }
-}
-
-export function clearUnreadFilter() {
-    const btn = document.getElementById('btn-unread-filter');
-    if (btn) { btn.classList.remove('active'); }
-    // Use htmx.ajax directly to bypass the 'changed' modifier on the search input
-    const input = document.getElementById('channel-search-input');
-    if (input && window.htmx) {
-        input.value = '';
-        const searchUrl = input.getAttribute('hx-get') || input.getAttribute('data-hx-get');
-        if (searchUrl) {
-            window.htmx.ajax('GET', searchUrl, { target: '#live-feed', swap: 'innerHTML' });
-        }
-    }
-}
 
 export function scrollToMessage(messageId) {
     const el = document.querySelector(`[data-message-id="${messageId}"]`);
@@ -482,7 +365,7 @@ export function updateChannelLastMessageDate(channelSlug) {
     dateSpan.title = `Dernier message : ${fullDateTime}`;
 }
 
-let draggedItem = null;
+let sortableInstances = [];
 
 function preventNavigation(e) {
     e.preventDefault();
@@ -495,6 +378,24 @@ export function initChannelReordering() {
     const lists = document.querySelectorAll('.channel-list[data-list-type]');
 
     if (!sidebarPanel || !toggleBtn || !lists.length) return;
+
+    // Clean up any existing instances
+    sortableInstances.forEach(inst => inst.destroy());
+    sortableInstances = [];
+
+    // Initialize Sortable on each channel list
+    lists.forEach(list => {
+        const sortable = new Sortable(list, {
+            animation: 150,
+            draggable: '.channel-link',
+            disabled: !sidebarPanel.classList.contains('reorder-active'),
+            ghostClass: 'dragging-ghost',
+            onEnd: () => {
+                saveChannelOrder();
+            }
+        });
+        sortableInstances.push(sortable);
+    });
 
     // Remove any existing click listener by cloning the button (to avoid multiple registrations)
     const newToggleBtn = toggleBtn.cloneNode(true);
@@ -516,69 +417,19 @@ export function initChannelReordering() {
         const currentLinks = document.querySelectorAll('.channel-link');
         if (isActive) {
             currentLinks.forEach(link => {
-                link.draggable = true;
                 link.addEventListener('click', preventNavigation, true);
             });
         } else {
             currentLinks.forEach(link => {
-                link.draggable = false;
                 link.removeEventListener('click', preventNavigation, true);
             });
-            saveChannelOrder();
         }
-    });
 
-    lists.forEach(list => {
-        list.addEventListener('dragstart', (e) => {
-            if (!sidebarPanel.classList.contains('reorder-active')) {
-                e.preventDefault();
-                return;
-            }
-            const channelLink = e.target.closest('.channel-link');
-            if (!channelLink) return;
-            draggedItem = channelLink;
-            channelLink.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', channelLink.getAttribute('data-channel-id'));
-        });
-
-        list.addEventListener('dragend', (e) => {
-            const channelLink = e.target.closest('.channel-link');
-            if (channelLink) {
-                channelLink.classList.remove('dragging');
-            }
-            draggedItem = null;
-        });
-
-        list.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            if (!sidebarPanel.classList.contains('reorder-active') || !draggedItem) return;
-
-            const targetList = e.currentTarget;
-            const sourceListType = draggedItem.parentElement.getAttribute('data-list-type');
-            const targetListType = targetList.getAttribute('data-list-type');
-            if (sourceListType !== targetListType) return;
-
-            const afterElement = getDragAfterElement(targetList, e.clientY);
-            if (afterElement == null) {
-                targetList.appendChild(draggedItem);
-            } else {
-                targetList.insertBefore(draggedItem, afterElement);
-            }
+        // Toggle Sortable instances disabled state
+        sortableInstances.forEach(inst => {
+            inst.option('disabled', !isActive);
         });
     });
-}
-
-function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll('.channel-link:not(.dragging)')];
-    return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 function saveChannelOrder() {
@@ -595,9 +446,7 @@ function saveChannelOrder() {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            console.log('Channel order updated successfully!');
-        } else {
+        if (!data.success) {
             console.error('Failed to update channel order:', data.error);
         }
     })
@@ -633,36 +482,44 @@ export function initUnreadFilter() {
     });
 }
 
+export function initSidebarToggles() {
+    // Restore sidebar details state on load
+    document.querySelectorAll('details.sidebar-section-details').forEach(details => {
+        const sectionName = details.getAttribute('data-section');
+        const isCollapsed = localStorage.getItem(`roquette-section-${sectionName}-collapsed`) === 'true';
+        if (isCollapsed) {
+            details.removeAttribute('open');
+        } else {
+            details.setAttribute('open', '');
+        }
+    });
+}
+
+// Watch details toggle events to save state in localStorage
+document.addEventListener('toggle', (e) => {
+    if (e.target.tagName === 'DETAILS' && e.target.classList.contains('sidebar-section-details')) {
+        const sectionName = e.target.getAttribute('data-section');
+        localStorage.setItem(`roquette-section-${sectionName}-collapsed`, !e.target.open ? 'true' : 'false');
+    }
+}, true); // Capture phase is required because toggle event does not bubble
+
+
 export function showCustomConfirm(message, callback) {
-    let confirmModal = document.getElementById('custom-confirm-modal');
-    if (!confirmModal) {
-        confirmModal = document.createElement('div');
-        confirmModal.id = 'custom-confirm-modal';
-        confirmModal.className = 'modal-backdrop confirmation-backdrop';
-        confirmModal.setAttribute('role', 'dialog');
-        confirmModal.setAttribute('aria-modal', 'true');
-        confirmModal.innerHTML = `
-            <div class="modal-content glass-panel confirmation-content" onclick="event.stopPropagation()">
-                <div class="confirmation-icon" id="confirm-modal-icon">⚠️</div>
-                <h3 class="confirmation-title" id="confirm-modal-title">Confirmation</h3>
-                <p class="confirmation-message" id="confirm-modal-message"></p>
-                <div class="confirmation-actions">
-                    <button type="button" class="btn-confirm-cancel" id="confirm-modal-cancel">Annuler</button>
-                    <button type="button" class="btn-confirm-action" id="confirm-modal-ok">Confirmer</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(confirmModal);
+    const dialog = document.getElementById('custom-confirm-dialog');
+    if (!dialog) {
+        if (confirm(message)) {
+            callback();
+        }
+        return;
     }
 
-    const iconEl = document.getElementById('confirm-modal-icon');
-    const titleEl = document.getElementById('confirm-modal-title');
-    const messageEl = document.getElementById('confirm-modal-message');
-    const cancelBtn = document.getElementById('confirm-modal-cancel');
-    const okBtn = document.getElementById('confirm-modal-ok');
+    const iconEl = document.getElementById('confirm-dialog-icon');
+    const titleEl = document.getElementById('confirm-dialog-title');
+    const messageEl = document.getElementById('confirm-dialog-message');
+    const cancelBtn = document.getElementById('confirm-dialog-cancel');
+    const okBtn = document.getElementById('confirm-dialog-ok');
 
     const lowerMsg = message.toLowerCase();
-
     titleEl.className = 'confirmation-title';
     okBtn.className = 'btn-confirm-action';
 
@@ -685,79 +542,31 @@ export function showCustomConfirm(message, callback) {
     }
 
     messageEl.textContent = message;
-    confirmModal.style.display = 'flex';
 
-    // Focus confirmation button
-    setTimeout(() => okBtn.focus(), 50);
+    dialog.showModal();
 
-    function closeConfirmModal() {
-        confirmModal.style.display = 'none';
-        okBtn.removeEventListener('click', onConfirm);
-        cancelBtn.removeEventListener('click', onCancel);
-        document.removeEventListener('keydown', onKeyDown);
-    }
-
-    function onConfirm() {
-        closeConfirmModal();
+    okBtn.onclick = () => {
+        dialog.close();
         callback();
-    }
-
-    function onCancel() {
-        closeConfirmModal();
-    }
-
-    function onKeyDown(e) {
-        if (e.key === 'Escape') {
-            onCancel();
-        } else if (e.key === 'Tab') {
-            const focusable = [cancelBtn, okBtn];
-            const index = focusable.indexOf(document.activeElement);
-            if (index === -1) {
-                okBtn.focus();
-                e.preventDefault();
-            } else if (e.shiftKey && index === 0) {
-                focusable[1].focus();
-                e.preventDefault();
-            } else if (!e.shiftKey && index === 1) {
-                focusable[0].focus();
-                e.preventDefault();
-            }
-        }
-    }
-
-    okBtn.addEventListener('click', onConfirm);
-    cancelBtn.addEventListener('click', onCancel);
-    confirmModal.onclick = (e) => {
-        if (e.target === confirmModal) onCancel();
     };
-    document.addEventListener('keydown', onKeyDown);
+
+    cancelBtn.onclick = () => {
+        dialog.close();
+    };
 }
 
 export function showCustomAlert(message, title = 'Attention', icon = '⚠️', onCloseCallback = null) {
-    let alertModal = document.getElementById('custom-alert-modal');
-    if (!alertModal) {
-        alertModal = document.createElement('div');
-        alertModal.id = 'custom-alert-modal';
-        alertModal.className = 'modal-backdrop confirmation-backdrop';
-        alertModal.setAttribute('role', 'dialog');
-        alertModal.setAttribute('aria-modal', 'true');
-        alertModal.innerHTML = `
-            <div class="modal-content glass-panel confirmation-content" onclick="event.stopPropagation()">
-                <div class="confirmation-icon" id="alert-modal-icon">⚠️</div>
-                <h3 class="confirmation-title" id="alert-modal-title">Attention</h3>
-                <p class="confirmation-message" id="alert-modal-message"></p>
-                <div class="confirmation-actions">
-                    <button type="button" class="btn-confirm-action" id="alert-modal-ok">OK</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(alertModal);
+    const dialog = document.getElementById('custom-alert-dialog');
+    if (!dialog) {
+        alert(message);
+        if (onCloseCallback) onCloseCallback();
+        return;
     }
 
-    const iconEl = document.getElementById('alert-modal-icon');
-    const titleEl = document.getElementById('alert-modal-title');
-    const messageEl = document.getElementById('alert-modal-message');
-    const okBtn = document.getElementById('alert-modal-ok');
+    const iconEl = document.getElementById('alert-dialog-icon');
+    const titleEl = document.getElementById('alert-dialog-title');
+    const messageEl = document.getElementById('alert-dialog-message');
+    const okBtn = document.getElementById('alert-dialog-ok');
 
     iconEl.textContent = icon;
     titleEl.textContent = title;
@@ -766,35 +575,14 @@ export function showCustomAlert(message, title = 'Attention', icon = '⚠️', o
     titleEl.className = 'confirmation-title info-type';
     okBtn.className = 'btn-confirm-action info-type';
 
-    alertModal.style.display = 'flex';
+    dialog.showModal();
 
-    setTimeout(() => okBtn.focus(), 50);
-
-    function closeAlertModal() {
-        alertModal.style.display = 'none';
-        okBtn.removeEventListener('click', onClose);
-        document.removeEventListener('keydown', onKeyDown);
+    okBtn.onclick = () => {
+        dialog.close();
         if (onCloseCallback) {
             onCloseCallback();
         }
-    }
-
-    function onClose() {
-        closeAlertModal();
-    }
-
-    function onKeyDown(e) {
-        if (e.key === 'Escape' || e.key === 'Enter') {
-            onClose();
-            e.preventDefault();
-        }
-    }
-
-    okBtn.addEventListener('click', onClose);
-    alertModal.onclick = (e) => {
-        if (e.target === alertModal) onClose();
     };
-    document.addEventListener('keydown', onKeyDown);
 }
 
 export function initConfirmModals() {
@@ -846,106 +634,75 @@ setInterval(() => {
     });
 }, 15000);
 
-export function initLinkPreviews(container = document) {
-    const links = container.querySelectorAll('.feed-item-body p a[href^="http://"], .feed-item-body p a[href^="https://"]');
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g, '&amp;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;')
-                  .replace(/"/g, '&quot;')
-                  .replace(/'/g, '&#039;');
-    }
+export function openModal(modalId, trigger = null) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal._triggerElement = trigger || document.activeElement;
+        modal.showModal();
 
-    links.forEach(link => {
-        if (link.dataset.unfurled || link.dataset.unfurling) return;
-
-        const url = link.getAttribute('href');
-        try {
-            const parsedUrl = new URL(url);
-            if (parsedUrl.origin === window.location.origin) return;
-        } catch (e) {
-            return;
+        // Auto-focus first input or button inside the modal
+        const focusEl = modal.querySelector('input[type="text"], input[type="search"], select, textarea, [autofocus]');
+        if (focusEl) {
+            setTimeout(() => focusEl.focus(), 50);
         }
-
-        link.dataset.unfurling = "true";
-
-        fetch(`/api/link-preview?url=${encodeURIComponent(url)}`)
-            .then(response => {
-                if (!response.ok) throw new Error();
-                return response.json();
-            })
-            .then(data => {
-                link.dataset.unfurled = "true";
-                delete link.dataset.unfurling;
-
-                if (data && (data.title || data.description)) {
-                    const feedBody = link.closest('.feed-item-body');
-                    if (feedBody) {
-                        // Check if card already exists for this URL to avoid duplicates
-                        if (feedBody.querySelector(`.link-preview-card[data-preview-url="${url}"]`)) {
-                            return;
-                        }
-
-                        const card = document.createElement('div');
-                        card.className = 'link-preview-card';
-                        card.setAttribute('data-preview-url', url);
-
-                        let imageHtml = '';
-                        if (data.image) {
-                            imageHtml = `
-                                <div class="link-preview-image-container">
-                                    <img src="${escapeHtml(data.image)}" class="link-preview-image" alt="Aperçu de l'image">
-                                </div>
-                            `;
-                        }
-
-                        const titleText = data.title || url;
-                        const descText = data.description || '';
-                        const siteText = data.siteName || new URL(url).hostname;
-
-                        card.innerHTML = `
-                            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="link-preview-wrapper">
-                                ${imageHtml}
-                                <div class="link-preview-content">
-                                    <div class="link-preview-site">${escapeHtml(siteText)}</div>
-                                    <div class="link-preview-title">${escapeHtml(titleText)}</div>
-                                    ${descText ? `<div class="link-preview-description">${escapeHtml(descText)}</div>` : ''}
-                                </div>
-                            </a>
-                        `;
-
-                        // Append before reactions or thread badges, or at the end
-                        const reactions = feedBody.querySelector('.message-reactions-container');
-                        const threadBadge = feedBody.querySelector('.message-thread-badge-container');
-
-                        if (reactions) {
-                            feedBody.insertBefore(card, reactions);
-                        } else if (threadBadge) {
-                            feedBody.insertBefore(card, threadBadge);
-                        } else {
-                            feedBody.appendChild(card);
-                        }
-
-                        if (window.scrollToBottom) {
-                            window.scrollToBottom(true);
-                        }
-                    }
-                }
-            })
-            .catch(() => {
-                link.dataset.unfurled = "true";
-                delete link.dataset.unfurling;
-            });
-    });
+    }
 }
+
+export function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal && modal.open) {
+        modal.close();
+    }
+}
+
+// Automatically show modal dialogs when loaded dynamically via HTMX
+document.addEventListener('htmx:afterSwap', (e) => {
+    if (e.detail.target && e.detail.target.id === 'modal-container') {
+        const dialog = e.detail.target.querySelector('dialog');
+        if (dialog) {
+            dialog.showModal();
+            const focusEl = dialog.querySelector('input[type="text"], input[type="search"], select, textarea, [autofocus]');
+            if (focusEl) {
+                setTimeout(() => focusEl.focus(), 50);
+            }
+        }
+    }
+});
+
+// Auto-clean modal-container on close event
+document.addEventListener('close', (e) => {
+    if (e.target.tagName === 'DIALOG' && e.target.closest('#modal-container')) {
+        setTimeout(() => {
+            const container = document.getElementById('modal-container');
+            if (container) container.innerHTML = '';
+        }, 100);
+    }
+}, true); // Capture phase is required because the close event does not bubble
+
+// Global delegated click handler for modal backdrop closing
+document.addEventListener('click', (e) => {
+    if (e.target.tagName === 'DIALOG' && e.target.classList.contains('modal-backdrop-dialog')) {
+        closeModal(e.target.id);
+    }
+});
+
+// Global close listener to restore focus on dialog close
+document.addEventListener('close', (e) => {
+    if (e.target.tagName === 'DIALOG') {
+        const modal = e.target;
+        if (modal._triggerElement && typeof modal._triggerElement.focus === 'function') {
+            modal._triggerElement.focus();
+            modal._triggerElement = null;
+        }
+    }
+}, true); // Capture phase is required because the close event does not bubble
 
 export function openGlobalSearch() {
     const modal = document.getElementById('global-search-modal');
     const input = document.getElementById('global-search-input');
     if (modal && input) {
-        modal.style.display = 'flex';
+        modal.showModal();
         input.focus();
         input.select();
     }
@@ -953,29 +710,29 @@ export function openGlobalSearch() {
 
 export function closeGlobalSearch() {
     const modal = document.getElementById('global-search-modal');
-    if (modal && modal.style.display !== 'none' && modal.style.display !== '') {
-        modal.style.display = 'none';
+    if (modal && modal.open) {
+        modal.close();
         const messageInput = document.getElementById('message');
         const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (messageInput && !isMobile) messageInput.focus();
     }
 }
 
-export function handleGlobalSearchBackdropClick(event) {
-    if (event.target.id === 'global-search-modal') {
-        closeGlobalSearch();
-    }
-}
-
 export function initGlobalSearch() {
+    const modal = document.getElementById('global-search-modal');
+    modal?.addEventListener('click', (e) => {
+        if (e.target.id === 'global-search-modal') {
+            closeGlobalSearch();
+        }
+    });
+
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
             e.preventDefault();
             openGlobalSearch();
         }
         if (e.key === 'Escape') {
-            const modal = document.getElementById('global-search-modal');
-            if (modal && modal.style.display === 'flex') {
+            if (modal && modal.open) {
                 closeGlobalSearch();
             }
         }
@@ -1046,26 +803,25 @@ export function initMobileSidebar() {
 }
 
 // Global window binds
-window.scrollToBottom = scrollToBottom;
 window.highlightAllCodeBlocks = highlightAllCodeBlocks;
 window.formatBytes = formatBytes;
 window.initFileUpload = initFileUpload;
-window.toggleStatusDropdown = toggleStatusDropdown;
 window.updateElementStatus = updateElementStatus;
-window.clearChannelSearch = clearChannelSearch;
-window.toggleUnreadFilter = toggleUnreadFilter;
-window.clearUnreadFilter = clearUnreadFilter;
+
 window.scrollToMessage = scrollToMessage;
 window.updateChannelLastMessageDate = updateChannelLastMessageDate;
 window.initChannelReordering = initChannelReordering;
 window.initUnreadFilter = initUnreadFilter;
+window.initSidebarToggles = initSidebarToggles;
 window.showCustomConfirm = showCustomConfirm;
 window.showCustomAlert = showCustomAlert;
 window.initConfirmModals = initConfirmModals;
-window.initLinkPreviews = initLinkPreviews;
+
+window.openModal = openModal;
+window.closeModal = closeModal;
+
 window.openGlobalSearch = openGlobalSearch;
 window.closeGlobalSearch = closeGlobalSearch;
-window.handleGlobalSearchBackdropClick = handleGlobalSearchBackdropClick;
 window.initGlobalSearch = initGlobalSearch;
 window.initMobileSidebar = initMobileSidebar;
 
@@ -1092,9 +848,96 @@ export function toggleMessageActions(button, event) {
             list.classList.remove('show');
         }
     });
-
     actionsList.classList.toggle('show');
 }
 window.toggleMessageActions = toggleMessageActions;
+
+// Delegated member search filtering inside the channel members modal
+document.addEventListener('input', (e) => {
+    if (e.target.id === 'member-search-input') {
+        const query = e.target.value.toLowerCase().trim();
+        const items = document.querySelectorAll('.modal-member-item');
+        items.forEach(item => {
+            const username = item.getAttribute('data-username') || '';
+            const name = item.getAttribute('data-name') || '';
+            if (username.includes(query) || name.includes(query)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+});
+
+// Delegated markdown formatting toolbar listener for both main and thread inputs
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-format[data-markdown]');
+    if (!btn) return;
+
+    // Find the textarea in the same form
+    const form = btn.closest('form');
+    if (!form) return;
+    const textarea = form.querySelector('textarea');
+    if (!textarea) return;
+
+    const formattingType = btn.getAttribute('data-markdown');
+
+    // Core insertion logic
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+
+    let replacement = '';
+    switch (formattingType) {
+        case 'bold':
+            replacement = `**${selectedText || 'texte'}**`;
+            break;
+        case 'italic':
+            replacement = `*${selectedText || 'texte'}*`;
+            break;
+        case 'strikethrough':
+            replacement = `~~${selectedText || 'texte'}~~`;
+            break;
+        case 'quote':
+            replacement = `> ${selectedText || 'citation'}`;
+            break;
+        case 'code':
+            replacement = `\`${selectedText || 'code'}\``;
+            break;
+        case 'codeblock':
+            replacement = `\`\`\`\n${selectedText || 'code'}\n\`\`\``;
+            break;
+        case 'link':
+            replacement = `[${selectedText || 'lien'}](https://)`;
+            break;
+    }
+
+    textarea.focus();
+    textarea.setRangeText(replacement, start, end, 'select');
+
+    if (!selectedText) {
+        const offsets = {
+            bold: [2, 7],
+            italic: [1, 6],
+            strikethrough: [2, 7],
+            quote: [2, 10],
+            code: [1, 5],
+            codeblock: [4, 8],
+            link: [1, 5]
+        };
+        const offset = offsets[formattingType];
+        if (offset) {
+            textarea.setSelectionRange(start + offset[0], start + offset[1]);
+        }
+    } else {
+        const newCursorPos = start + replacement.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }
+
+    textarea.dispatchEvent(new Event('input', {bubbles: true}));
+});
+
+
 
 

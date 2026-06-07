@@ -28,7 +28,7 @@
                 <button class="btn-pinned-action btn-unpin"
                         hx-post="{{ path('app_message_unpin', {id: pinnedMessage.id}) }}"
                         hx-target="#pinned-banner-container"
-                        hx-swap="innerHTML"
+                        hx-swap="innerHTML transition:false"
                         title="{{ 'Désépingler'|trans }}">
                     ✕
                 </button>
