@@ -23,6 +23,16 @@ class AppExtension extends AbstractExtension
         private readonly TranslatorInterface $translator,
     ) {}
 
+    public function getFunctions(): array
+    {
+        return [
+            new \Twig\TwigFunction(
+                'get_cached_link_preview',
+                [\App\Twig\AppExtensionRuntime::class, 'getCachedLinkPreview'],
+            ),
+        ];
+    }
+
     public function getFilters(): array
     {
         return [
@@ -30,7 +40,23 @@ class AppExtension extends AbstractExtension
             new TwigFilter('wrap_emojis', [$this->formatter, 'wrapUnicodeEmojis'], ['is_safe' => ['html']]),
             new TwigFilter('format_bytes', [$this, 'formatBytes']),
             new TwigFilter('reaction_tooltip', [$this, 'formatReactionTooltip']),
+            new TwigFilter('extract_external_links', [$this, 'extractExternalLinks']),
         ];
+    }
+
+    public function extractExternalLinks(?string $content): array
+    {
+        if (!$content) {
+            return [];
+        }
+
+        // Match http/https URLs
+        preg_match_all('/https?:\/\/[^\s\)<>"]+/i', $content, $matches);
+        if (empty($matches[0])) {
+            return [];
+        }
+
+        return array_values(array_unique($matches[0]));
     }
 
     public function formatBytes(int $bytes, int $precision = 2): string

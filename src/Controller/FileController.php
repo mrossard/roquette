@@ -101,4 +101,68 @@ final class FileController extends AbstractController
             ],
         );
     }
+
+    #[Route('/messages/{id}/text-preview', name: 'app_file_text_preview', methods: ['GET'])]
+    public function textPreview(
+        int $id,
+        MessageRepository $messageRepository,
+        FileUploadService $fileUploadService,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        $message = $messageRepository->find($id);
+        if (!$message || !$message->getFilePath()) {
+            throw $this->createNotFoundException('Fichier non trouvé.');
+        }
+
+        $channel = $message->getChannel();
+        if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
+            throw $this->createAccessDeniedException('Non autorisé à accéder à ce fichier.');
+        }
+
+        if (!$fileUploadService->exists($message->getFilePath())) {
+            throw $this->createNotFoundException('Le fichier n\'existe pas.');
+        }
+
+        $stream = $fileUploadService->readStream($message->getFilePath());
+        $text = stream_get_contents($stream, 10000);
+
+        $isTruncated = false;
+        // If there is still at least one character to read, the content was truncated
+        if (fgetc($stream) !== false) {
+            $isTruncated = true;
+        }
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
+        if ($isTruncated) {
+            $text .= "\n\n... [Contenu tronqué, téléchargez le fichier pour le lire en entier]";
+        }
+
+        $fileExt = pathinfo($message->getFileName(), PATHINFO_EXTENSION);
+
+        return $this->render('dashboard/_text_preview.html.twig', [
+            'message_id' => $message->getId(),
+            'text' => $text,
+            'fileExt' => $fileExt,
+        ]);
+    }
+
+    #[Route('/messages/{id}/text-preview/hide', name: 'app_file_text_preview_hide', methods: ['GET'])]
+    public function textPreviewHide(
+        int $id,
+        MessageRepository $messageRepository,
+    ): Response {
+        $message = $messageRepository->find($id);
+        if (!$message) {
+            throw $this->createNotFoundException('Message non trouvé.');
+        }
+
+        return $this->render('dashboard/_text_preview_button.html.twig', [
+            'message_id' => $message->getId(),
+        ]);
+    }
 }

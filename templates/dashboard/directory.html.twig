@@ -10,7 +10,15 @@
 {% endblock %}
 
 {% block body %}
-<div class="app-container" hx-boost="true">
+    {% set mercureTopics = [
+        mercure_topic_prefix ~ '/users/' ~ app.user.username,
+        mercure_topic_prefix ~ '/users/status'
+    ] %}
+    {% for ch in channels %}
+        {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+    {% endfor %}
+    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
+    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
     <header class="app-header">
         <div class="logo-area">
             <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
@@ -24,27 +32,8 @@
                 <p class="subtitle">Symfony + HTMX + Mercure + AssetMapper</p>
             </div>
         </div>
-        
-        <div class="header-controls">
-            {% set mercureTopics = [
-                mercure_topic_prefix ~ '/users/' ~ app.user.username,
-                mercure_topic_prefix ~ '/users/status'
-            ] %}
-            {% for ch in channels %}
-                {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
-            {% endfor %}
-            <div class="status-badge" id="mercure-status" 
-                 data-active-channel-slug=""
-                 data-current-username="{{ app.user.username }}"
-                 data-hub="{{ mercure(mercureTopics, { subscribe: mercureTopics }) }}">
-                <span class="status-dot disconnected"></span>
-                <span class="status-text">Connexion au Hub...</span>
-            </div>
-            
-            <button id="theme-toggle" class="btn-theme-toggle" aria-label="Changer de thème">🌓</button>
 
-            {% include 'dashboard/_user_menu_dropdown.html.twig' %}
-        </div>
+        {% include 'dashboard/_header_controls.html.twig' %}
     </header>
 
     <main class="dashboard-grid">
@@ -72,14 +61,14 @@
                     <div>
                         <input type="text" id="directory-search" placeholder="Rechercher un canal..." class="input-sidebar" style="max-width: 250px; background: rgba(0,0,0,0.3) !important;">
                     </div>
-                    
+
                     <div role="tablist" aria-label="Sections du répertoire" style="display: flex; gap: 1rem; margin-top: 1rem; width: 100%; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
                         <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-channels" onclick="switchTab('channels')" id="tab-btn-channels" style="background: none; border: none; border-bottom: 2px solid var(--accent-cyan); color: var(--text-primary); font-size: 0.95rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; transition: var(--transition-smooth);">📁 Canaux Publics</button>
                         <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-members" onclick="switchTab('members')" id="tab-btn-members" style="background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-size: 0.95rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; transition: var(--transition-smooth);">👥 Membres de l'application</button>
                     </div>
                 </div>
             </div>
-            
+
             <div class="card-body chat-body" style="overflow-y: auto; padding-top: 1.5rem;">
                 {% for label, messages in app.flashes %}
                     {% for msg in messages %}
@@ -88,7 +77,7 @@
                         </div>
                     {% endfor %}
                 {% endfor %}
-                
+
                 <!-- Panel Canaux -->
                 <div id="panel-channels" role="tabpanel" aria-labelledby="tab-btn-channels">
                     <div class="directory-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
@@ -140,7 +129,7 @@
                         {% endfor %}
                     </div>
                 </div>
-                
+
                 <!-- Panel Membres -->
                 <div id="panel-members" style="display: none;" role="tabpanel" aria-labelledby="tab-btn-members">
                     <div class="directory-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
@@ -224,18 +213,18 @@
         const channelsPanel = document.getElementById('panel-channels');
         const membersPanel = document.getElementById('panel-members');
         const searchInput = document.getElementById('directory-search');
-        
+
         if (tab === 'channels') {
             channelsBtn.classList.add('active');
             channelsBtn.style.borderBottomColor = 'var(--accent-cyan)';
             channelsBtn.style.color = 'var(--text-primary)';
             channelsBtn.setAttribute('aria-selected', 'true');
-            
+
             membersBtn.classList.remove('active');
             membersBtn.style.borderBottomColor = 'transparent';
             membersBtn.style.color = 'var(--text-muted)';
             membersBtn.setAttribute('aria-selected', 'false');
-            
+
             channelsPanel.style.display = 'block';
             membersPanel.style.display = 'none';
             if (searchInput) {
@@ -246,19 +235,19 @@
             membersBtn.style.borderBottomColor = 'var(--accent-cyan)';
             membersBtn.style.color = 'var(--text-primary)';
             membersBtn.setAttribute('aria-selected', 'true');
-            
+
             channelsBtn.classList.remove('active');
             channelsBtn.style.borderBottomColor = 'transparent';
             channelsBtn.style.color = 'var(--text-muted)';
             channelsBtn.setAttribute('aria-selected', 'false');
-            
+
             membersPanel.style.display = 'block';
             channelsPanel.style.display = 'none';
             if (searchInput) {
                 searchInput.placeholder = 'Rechercher un membre...';
             }
         }
-        
+
         if (searchInput) {
             searchInput.value = '';
             searchInput.dispatchEvent(new Event('input'));
@@ -272,7 +261,7 @@
                 const tabs = Array.from(tabList.querySelectorAll('[role="tab"]'));
                 const activeIndex = tabs.indexOf(document.activeElement);
                 if (activeIndex === -1) return;
-                
+
                 if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
                     const nextIndex = (activeIndex + 1) % tabs.length;
                     tabs[nextIndex].focus();

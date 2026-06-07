@@ -1,0 +1,9 @@
+<div id="{{ helpMessageId }}" hx-swap-oob="true">
+    {% include 'dashboard/_feed_item.html.twig' with {
+        'message': html,
+        'user': 'Assistant Roquette',
+        'timestamp': timestamp,
+        'messageObject': null,
+        'is_html': true
+    } %}
+</div>

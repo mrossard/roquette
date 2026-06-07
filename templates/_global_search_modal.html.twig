@@ -1,5 +1,7 @@
-<div id="global-search-modal" class="modal-backdrop" style="display: none; align-items: flex-start; padding-top: 10vh; z-index: 1100;" onclick="handleGlobalSearchBackdropClick(event)">
-    <div class="modal-container glass-panel global-search-modal-container" style="max-width: 700px; width: 90%; border-radius: 1rem; overflow: hidden; display: flex; flex-direction: column; max-height: 75vh;" onclick="event.stopPropagation()">
+<dialog id="global-search-modal" class="modal-backdrop-dialog"
+        style="align-items: flex-start; padding-top: 10vh; z-index: 1100;">
+    <div class="modal-container glass-panel global-search-modal-container"
+         style="max-width: 700px; width: 90%; border-radius: 1rem; overflow: hidden; display: flex; flex-direction: column; max-height: 75vh;">
         <form hx-get="{{ path('app_global_search') }}"
               hx-target="#global-search-results"
               hx-swap="innerHTML transition:false"
@@ -139,7 +141,7 @@
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 <script>
     (function() {

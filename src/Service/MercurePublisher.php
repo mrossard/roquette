@@ -23,6 +23,7 @@ class MercurePublisher
     public function __construct(
         private MessageBusInterface $bus,
         private string $mercureTopicPrefix,
+        private \Twig\Environment $twig,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -48,21 +49,33 @@ class MercurePublisher
     // Generic publish helpers
     // -------------------------------------------------------------------------
 
-    public function publishToChannel(Channel $channel, array $payload): void
+    public function publishToChannel(Channel $channel, array|string $payload, ?string $type = null): void
     {
+        $data = is_array($payload) ? json_encode($payload) : $payload;
         $this->bus->dispatch(
-            new Update($this->getChannelTopic($channel), json_encode($payload), $channel->isPrivate() || $channel->isDm()),
+            new Update($this->getChannelTopic($channel), $data, $channel->isPrivate() || $channel->isDm(), null, $type),
         );
     }
 
-    public function publishToUser(User $user, array $payload): void
+    public function publishToUser(User $user, array|string $payload, ?string $type = null): void
     {
-        $this->bus->dispatch(new Update($this->getUserTopic($user), json_encode($payload), true)); // user topics are always private
+        $data = is_array($payload) ? json_encode($payload) : $payload;
+        $this->bus->dispatch(
+            new Update($this->getUserTopic($user), $data, true, null, $type),
+        );
     }
 
-    public function publishToTopic(string $topicUrl, array $payload, bool $private = false): void
+    public function publishToTopic(
+        string $topicUrl,
+        array|string $payload,
+        bool $private = false,
+        ?string $type = null,
+    ): void
     {
-        $this->bus->dispatch(new Update($topicUrl, json_encode($payload), $private));
+        $data = is_array($payload) ? json_encode($payload) : $payload;
+        $this->bus->dispatch(
+            new Update($topicUrl, $data, $private, null, $type),
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -87,22 +100,20 @@ class MercurePublisher
         ?int $replyCount = null,
         string $memberNotificationPrefix = '',
     ): void {
-        $payload = [
-            'html' => $renderedHtml,
-            'user' => $author->getUsername(),
-            'author' => $author->getUsername(),
-            'authorDisplayName' => ($author->getDisplayName() !== null && $author->getDisplayName() !== '') ? $author->getDisplayName() : $author->getUsername(),
-            'channelSlug' => $channel->getSlug(),
-            'channelName' => $channel->isDm() ? 'Message direct' : '#' . $channel->getName(),
-            'content' => $this->buildContentSummary($message),
-        ];
-
         if ($parentId !== null) {
-            $payload['parentId'] = $parentId;
-            $payload['replyCount'] = $replyCount ?? 0;
+            $parentMessage = $em->getRepository(Message::class)->find($parentId);
+            $badgeHtml = $this->twig->render('dashboard/_feed_item_reactions.html.twig', [
+                'message_id' => $parentId,
+                'messageObject' => $parentMessage,
+                'oob' => true,
+            ]);
+            $replyHtml = '<div id="thread-replies-list" hx-swap-oob="beforeend">'.$renderedHtml.'</div>';
+
+            $this->publishToChannel($channel, $replyHtml.$badgeHtml, 'message_'.$channel->getSlug());
+        } else {
+            $this->publishToChannel($channel, $renderedHtml, 'message_'.$channel->getSlug());
         }
 
-        $this->publishToChannel($channel, $payload);
         $this->publishMemberNotifications($channel, $message, $author, $messageText, $em, $memberNotificationPrefix);
     }
 
@@ -153,7 +164,7 @@ class MercurePublisher
                 'isMention' => $isMentioned,
                 'isMentionNotificationAllowed' => $member->isMentionNotificationsEnabled(),
                 'isDm' => $channel->isDm(),
-            ]);
+            ], 'personal_notification');
         }
     }
 

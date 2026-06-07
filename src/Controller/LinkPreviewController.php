@@ -6,8 +6,9 @@ namespace App\Controller;
 
 use App\Service\LinkPreviewService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -19,7 +20,7 @@ final class LinkPreviewController extends AbstractController
     ) {}
 
     #[Route('/api/link-preview', name: 'app_api_link_preview', methods: ['GET'])]
-    public function getPreview(Request $request): JsonResponse
+    public function getPreview(Request $request): Response
     {
         $url = $request->query->get('url');
         if (!$url) {
@@ -28,9 +29,16 @@ final class LinkPreviewController extends AbstractController
 
         $preview = $this->linkPreviewService->getPreview($url);
         if (!$preview) {
-            return new JsonResponse(['error' => 'Could not fetch metadata for this URL or URL is unsafe'], 400);
+            // Return empty 200 response so HTMX replaces the placeholder with nothing, effectively removing it.
+            return new Response('', 200);
         }
 
-        return new JsonResponse($preview);
+        return $this->render('dashboard/_link_preview.html.twig', [
+            'url' => $preview['url'],
+            'title' => $preview['title'],
+            'description' => $preview['description'],
+            'image' => $preview['image'],
+            'siteName' => $preview['siteName'],
+        ]);
     }
 }

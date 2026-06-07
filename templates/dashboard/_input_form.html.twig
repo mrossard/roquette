@@ -1,5 +1,5 @@
 <form hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
-      hx-swap="outerHTML"
+      hx-swap="morph transition:false"
       enctype="multipart/form-data"
       class="input-form chat-message-form">
     {% for label, messages in app.flashes %}
@@ -17,7 +17,7 @@
                         hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
                         hx-vals='{"message": ""}'
                         hx-target="closest form"
-                        hx-swap="outerHTML"
+                        hx-swap="morph transition:false"
                         title="Annuler">
                     Annuler
                 </button>
@@ -28,7 +28,7 @@
                          hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
                          hx-vals='{"message": "![giphy {{ giphyQuery|escape('js') }}]({{ gif.url }})"}'
                          hx-target="closest form"
-                         hx-swap="outerHTML">
+                         hx-swap="morph transition:false">
                         <img src="{{ gif.preview }}" alt="GIF Preview" class="giphy-preview-img">
                         <div class="giphy-preview-overlay">
                             <span class="giphy-send-icon">📤</span>
@@ -44,7 +44,7 @@
                     hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
                     hx-vals='{"message": ""}'
                     hx-target="closest form"
-                    hx-swap="outerHTML"
+                    hx-swap="morph transition:false"
                     title="Fermer">
                 Fermer
             </button>
@@ -52,41 +52,68 @@
     {% endif %}
 
     <!-- Poll Composer Panel -->
-    <div class="poll-composer glass-panel" style="display: none; padding: 1rem; margin-bottom: 0.75rem; border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03);">
+    <div class="poll-composer glass-panel"
+         style="{% if not pollComposerOpen|default(false) %}display: none;{% endif %} padding: 1rem; margin-bottom: 0.75rem; border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
             <span style="font-weight: 600; font-size: 0.95rem; color: var(--accent-cyan);">📊 Créer un sondage</span>
-            <button type="button" onclick="togglePollComposer()" title="Fermer" style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">✕</button>
+            <button type="button"
+                    hx-get="{{ path('app_composer_toggle', {slug: activeChannel.slug, open: 0}) }}"
+                    hx-include="closest form"
+                    hx-target="closest form"
+                    hx-swap="morph transition:false"
+                    title="Fermer"
+                    style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">
+                ✕
+            </button>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
             <div>
                 <label for="poll_question" style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Question</label>
-                <input type="text" id="poll_question" name="poll_question" placeholder="Posez votre question..." class="input-sidebar" />
+                <input type="text" id="poll_question" name="poll_question" placeholder="Posez votre question..."
+                       class="input-sidebar"
+                       value="{{ pollQuestion|default('') }}"
+                       {% if pollComposerOpen|default(false) %}required{% endif %} />
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(0, 0, 0, 0.2); padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-glass);">
                 <label for="allow_multiple" style="font-size: 0.85rem; color: var(--text-color); cursor: pointer; user-select: none; margin-bottom: 0; font-weight: 500;">Autoriser plusieurs réponses</label>
                 <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; margin-bottom: 0;">
                     <input type="checkbox" id="allow_multiple" name="allow_multiple" value="1" style="opacity: 0; width: 0; height: 0;"
+                           {% if allowMultiple|default(false) %}checked{% endif %}
                            onchange="this.nextElementSibling.style.backgroundColor = this.checked ? 'var(--accent-cyan)' : 'rgba(255, 255, 255, 0.1)';">
-                    <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.1); transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
+                    <span class="slider round"
+                          style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: {% if allowMultiple|default(false) %}var(--accent-cyan){% else %}rgba(255, 255, 255, 0.1){% endif %}; transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
                 </label>
             </div>
 
             <div>
                 <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Options de réponse</label>
-                <div id="poll-options-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <input type="text" name="poll_options[]" placeholder="Option 1" class="poll-option-input input-sidebar" style="flex: 1;" />
-                        <span style="width: 24px;"></span>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <input type="text" name="poll_options[]" placeholder="Option 2" class="poll-option-input input-sidebar" style="flex: 1;" />
-                        <span style="width: 24px;"></span>
-                    </div>
+                <div id="poll-options-container" class="poll-options-list"
+                     style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    {% set optionsToRender = pollOptions|default(['', '']) %}
+                    {% if optionsToRender|length == 0 %}
+                        {% set optionsToRender = ['', ''] %}
+                    {% elseif optionsToRender|length == 1 %}
+                        {% set optionsToRender = [optionsToRender[0], ''] %}
+                    {% endif %}
+                    {% for index, optionVal in optionsToRender %}
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="text" name="poll_options[]" placeholder="Option {{ index + 1 }}"
+                                   class="poll-option-input input-sidebar" style="flex: 1;"
+                                   {% if pollComposerOpen|default(false) and index < 2 %}required{% endif %}
+                                   value="{{ optionVal }}"/>
+                            <span style="width: 24px;"></span>
+                        </div>
+                    {% endfor %}
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-                    <button type="button" class="btn-format" onclick="addPollOption()" style="font-size: 0.8rem; padding: 0.4rem 0.8rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.5rem; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
+                    <button type="button" class="btn-format"
+                            hx-post="{{ path('app_poll_option_field') }}"
+                            hx-vals="js:{count: document.getElementById('poll-options-container').querySelectorAll('input').length, inputClass: 'poll-option-input', isRequired: 0}"
+                            hx-target="#poll-options-container"
+                            hx-swap="beforeend"
+                            style="font-size: 0.8rem; padding: 0.4rem 0.8rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.5rem; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
                         <span>+</span> Ajouter une option
                     </button>
 
@@ -100,47 +127,52 @@
 
     <!-- Formatting Toolbar -->
     <div class="formatting-toolbar">
-        <button type="button" class="btn-format" onclick="insertMarkdown('bold')" title="{{ 'Gras (**)'|trans }}">
+        <button type="button" class="btn-format" data-markdown="bold" title="{{ 'Gras (**)'|trans }}">
             <span class="icon">B</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('italic')" title="{{ 'Italique (*)'|trans }}">
+        <button type="button" class="btn-format" data-markdown="italic" title="{{ 'Italique (*)'|trans }}">
             <span class="icon">I</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('strikethrough')"
+        <button type="button" class="btn-format" data-markdown="strikethrough"
                 title="{{ 'Barré (~~)'|trans }}">
             <span class="icon">S</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('quote')"
+        <button type="button" class="btn-format" data-markdown="quote"
                 title="{{ 'Citation (&gt;)'|trans }}">
             <span class="icon">”</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('code')"
+        <button type="button" class="btn-format" data-markdown="code"
                 title="{{ 'Code en ligne (`)'|trans }}">
             <span class="icon">&lt;/&gt;</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('codeblock')"
+        <button type="button" class="btn-format" data-markdown="codeblock"
                 title="{{ 'Bloc de code (```)'|trans }}">
             <span class="icon">code</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertMarkdown('link')"
+        <button type="button" class="btn-format" data-markdown="link"
                 title="{{ 'Lien [texte](url)'|trans }}">
             <span class="icon">🔗</span>
         </button>
-        <button type="button" class="btn-format btn-poll-toggle" onclick="togglePollComposer()"
+        <button type="button"
+                class="btn-format btn-poll-toggle {% if pollComposerOpen|default(false) %}active{% endif %}"
+                hx-get="{{ path('app_composer_toggle', {slug: activeChannel.slug, open: pollComposerOpen|default(false) ? 0 : 1}) }}"
+                hx-include="closest form"
+                hx-target="closest form"
+                hx-swap="morph transition:false"
                 title="{{ 'Créer un sondage'|trans }}">
             <span class="icon">📊</span>
         </button>
 
         <div class="toolbar-tabs" style="margin-left: auto; display: flex; gap: 4px;">
             <button type="button" class="btn-format active" id="message-btn-edit-tab"
-                    onclick="switchInputTab('message', 'edit')"
+                    hx-on:click="this.closest('.chat-message-form').classList.remove('show-preview')"
                     title="{{ 'Écrire'|trans }}">{{ 'Écrire'|trans }}</button>
             <button type="button" class="btn-format" id="message-btn-preview-tab"
                     hx-post="{{ path('app_api_message_preview') }}"
                     hx-include="#message"
                     hx-target="#message-preview"
-                    hx-swap="innerHTML"
-                    onclick="switchInputTab('message', 'preview')"
+                    hx-swap="innerHTML transition:false"
+                    hx-on:click="this.closest('.chat-message-form').classList.add('show-preview')"
                     title="{{ 'Aperçu'|trans }}">{{ 'Aperçu'|trans }}</button>
         </div>
     </div>
@@ -171,9 +203,12 @@
         <label for="message" class="sr-only">{{ 'Message'|trans }}</label>
         <div class="message-input-wrapper">
             <input type="file" id="file-upload" name="file" style="display: none;" />
-            <textarea id="message" name="message" required
+            <textarea id="message" name="message"
+                      {% if not pollComposerOpen|default(false) %}required{% else %}disabled
+                      placeholder="Sondage en cours de création..."{% endif %}
+                      oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"
                       placeholder="{{ 'Saisissez votre message dans #%name%...'|trans({'%name%': activeChannel.name}) }}"
-                      rows="1"></textarea>
+                      rows="1">{{ messageValue|default('') }}</textarea>
             <div id="message-preview" class="message-preview-box" style="display: none;"></div>
 
 

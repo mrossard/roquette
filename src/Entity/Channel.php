@@ -55,6 +55,13 @@ class Channel
     private Collection $members;
 
     /**
+     * @var Collection<int, User>
+     */
+    #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'channel_administrator')]
+    private Collection $administrators;
+
+    /**
      * @var Collection<int, Message>
      */
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'channel', cascade: ['remove'])]
@@ -64,6 +71,7 @@ class Channel
     {
         $this->messages = new ArrayCollection();
         $this->members = new ArrayCollection();
+        $this->administrators = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -245,5 +253,38 @@ class Channel
     {
         $this->messageRetentionMonths = $messageRetentionMonths;
         return $this;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getAdministrators(): Collection
+    {
+        return $this->administrators;
+    }
+
+    public function addAdministrator(User $administrator): static
+    {
+        if (!$this->administrators->contains($administrator)) {
+            $this->administrators->add($administrator);
+        }
+
+        return $this;
+    }
+
+    public function removeAdministrator(User $administrator): static
+    {
+        $this->administrators->removeElement($administrator);
+
+        return $this;
+    }
+
+    public function isAdministrator(User $user): bool
+    {
+        if ($this->creator && $this->creator->getId() === $user->getId()) {
+            return true;
+        }
+
+        return $this->administrators->contains($user);
     }
 }

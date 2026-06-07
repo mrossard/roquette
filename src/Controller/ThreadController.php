@@ -86,6 +86,7 @@ final class ThreadController extends AbstractController
         $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $channel]);
 
         $currentLastReadId = $activeRead?->getLastReadMessage()?->getId() ?? 0;
+        $headers = [];
         if ($latestThreadMessage->getId() > $currentLastReadId) {
             if ($activeRead) {
                 $activeRead->setLastReadMessage($latestThreadMessage);
@@ -97,9 +98,10 @@ final class ThreadController extends AbstractController
                 $entityManager->persist($activeRead);
             }
             $entityManager->flush();
+            $headers['HX-Trigger'] = 'refresh-unread';
         }
 
-        return new Response('', 204);
+        return new Response('', 200, $headers);
     }
 
     // -------------------------------------------------------------------------
@@ -185,9 +187,8 @@ final class ThreadController extends AbstractController
             '(Fil) ',
         );
 
-        return $this->render('dashboard/_thread_reply_response.html.twig', [
+        return $this->render('dashboard/_thread_input_form.html.twig', [
             'parentMessage' => $parentMessage,
-            'replies' => $parentMessage->getReplies(),
         ]);
     }
 }

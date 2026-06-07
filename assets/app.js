@@ -1,6 +1,8 @@
 import './styles/app.css';
 import htmx from 'htmx.org';
 window.htmx = htmx;
+import 'htmx-ext-sse';
+import {initializeChannelScroll, adjustScrollForLinkPreview} from './scroll.js';
 
 import hljs from 'highlight.js';
 window.hljs = hljs;
@@ -51,38 +53,25 @@ import './poll.js';
 
 console.log('Roquette application initialized! 🚀');
 
-// Auto-resize textarea setup
 function initAutoResizeTextarea() {
-    const textarea = document.getElementById('message');
-    if (!textarea) return;
-
-    if (textarea.hasAttribute('data-autoresize-initialized')) return;
-    textarea.setAttribute('data-autoresize-initialized', 'true');
-
-    const adjustHeight = () => {
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-    };
-
-    textarea.addEventListener('input', adjustHeight);
-    adjustHeight();
+    // Managed natively by CSS field-sizing: content
 }
 
 window.toggleMessageReactionPicker = function(event, messageId) {
     event.stopPropagation();
     const picker = document.getElementById(`reaction-picker-${messageId}`);
     if (!picker) return;
-    
+
     // Close other open reaction pickers first
     document.querySelectorAll('.reaction-picker.show').forEach(p => {
         if (p !== picker) {
             p.classList.remove('show');
         }
     });
-    
+
     const isShowing = !picker.classList.contains('show');
     picker.classList.toggle('show');
-    
+
     if (isShowing) {
         // Dynamically move/initialize the full emoji picker inside this picker
         let emojiPickerContainer = document.getElementById('shared-reaction-emoji-picker');
@@ -107,14 +96,14 @@ window.toggleMessageReactionPicker = function(event, messageId) {
             });
             emojiPickerContainer = element;
             emojiPickerContainer.id = 'shared-reaction-emoji-picker';
-            
+
             // Store focusSearch function on the DOM element for subsequent clicks
             emojiPickerContainer.focusSearch = focusSearchFn;
         }
-        
+
         emojiPickerContainer.dataset.messageId = messageId;
         picker.appendChild(emojiPickerContainer);
-        
+
         // Reset positioning styles
         picker.style.left = '0';
         picker.style.right = 'auto';
@@ -122,14 +111,14 @@ window.toggleMessageReactionPicker = function(event, messageId) {
         picker.style.bottom = 'auto';
         picker.style.marginTop = '4px';
         picker.style.marginBottom = '0';
-        
+
         // Handle horizontal overflow (avoid going off screen to the right)
         let rect = picker.getBoundingClientRect();
         if (rect.right > window.innerWidth) {
             picker.style.left = 'auto';
             picker.style.right = '0';
         }
-        
+
         // Handle vertical overflow (avoid going off screen or under the message composer at the bottom)
         let bottomThreshold = window.innerHeight;
         const container = picker.closest('#live-feed, .thread-content');
@@ -139,14 +128,14 @@ window.toggleMessageReactionPicker = function(event, messageId) {
                 bottomThreshold = nextEl.getBoundingClientRect().top;
             }
         }
-        
+
         if (rect.bottom > bottomThreshold) {
             picker.style.top = 'auto';
             picker.style.bottom = '100%';
             picker.style.marginTop = '0';
             picker.style.marginBottom = '8px';
         }
-        
+
         if (emojiPickerContainer.focusSearch) {
             emojiPickerContainer.focusSearch();
         }
@@ -192,6 +181,19 @@ document.addEventListener('htmx:configRequest', (evt) => {
 
 // Handle file upload loading indicator and progress updates
 document.body.addEventListener('htmx:beforeRequest', (evt) => {
+    // Show skeletons during page/channel navigation (when target is app-container or BODY)
+    const target = evt.detail.target;
+    if (target && (target.classList.contains('app-container') || target.tagName === 'BODY')) {
+        const chatPanel = document.querySelector('.chat-panel');
+        if (chatPanel) {
+            chatPanel.classList.add('channel-loading');
+        }
+        const settingsPanel = document.querySelector('.settings-panel');
+        if (settingsPanel) {
+            settingsPanel.classList.add('settings-loading');
+        }
+    }
+
     const elt = evt.detail.elt;
     if (!elt) return;
 
@@ -266,6 +268,16 @@ document.body.addEventListener('htmx:xhr:progress', (evt) => {
 });
 
 document.body.addEventListener('htmx:afterRequest', (evt) => {
+    // Remove loading skeletons classes
+    const chatPanel = document.querySelector('.chat-panel');
+    if (chatPanel) {
+        chatPanel.classList.remove('channel-loading');
+    }
+    const settingsPanel = document.querySelector('.settings-panel');
+    if (settingsPanel) {
+        settingsPanel.classList.remove('settings-loading');
+    }
+
     const progressWrapper = document.getElementById('file-upload-progress');
     if (progressWrapper) progressWrapper.style.display = 'none';
     const threadProgressWrapper = document.getElementById('thread-file-upload-progress');
@@ -276,6 +288,25 @@ document.body.addEventListener('htmx:afterRequest', (evt) => {
     if (elt) {
         const submitBtn = elt.querySelector('button[type="submit"]');
         if (submitBtn) submitBtn.disabled = false;
+
+        // Reset the file input if the form submission was successful
+        if (evt.detail.successful) {
+            const isMainForm = elt.classList.contains('chat-message-form') && !elt.classList.contains('thread-message-form');
+            const isThreadForm = elt.classList.contains('thread-message-form');
+            if (isMainForm) {
+                const fileInput = document.getElementById('file-upload');
+                if (fileInput) {
+                    fileInput.value = '';
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            } else if (isThreadForm) {
+                const fileInput = document.getElementById('thread-file-upload');
+                if (fileInput) {
+                    fileInput.value = '';
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            }
+        }
     }
     const clearBtn = document.getElementById('btn-clear-file');
     if (clearBtn) clearBtn.style.display = '';
@@ -283,49 +314,21 @@ document.body.addEventListener('htmx:afterRequest', (evt) => {
     if (threadClearBtn) threadClearBtn.style.display = '';
 });
 
-// Preserve scroll position when loading older messages (prepending to top of #live-feed)
-let loadMoreScrollTracker = null;
-
 document.body.addEventListener('htmx:beforeSwap', (evt) => {
     // Allow swapping for validation/rate limit errors (400, 422, 429)
     if (evt.detail.xhr.status === 400 || evt.detail.xhr.status === 422 || evt.detail.xhr.status === 429) {
         evt.detail.shouldSwap = true;
         evt.detail.isError = false;
     }
-
-    const target = evt.detail.target;
-    if (target && (target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
-        const feed = document.getElementById('live-feed');
-        if (feed) {
-            loadMoreScrollTracker = {
-                scrollHeight: feed.scrollHeight,
-                scrollTop: feed.scrollTop
-            };
-        }
-    }
-});
-
-document.body.addEventListener('htmx:afterSwap', (evt) => {
-    const target = evt.detail.target;
-    if (target && (target.id === 'load-more-trigger' || target.classList.contains('load-more-container')) && loadMoreScrollTracker) {
-        const feed = document.getElementById('live-feed');
-        if (feed) {
-            const heightDifference = feed.scrollHeight - loadMoreScrollTracker.scrollHeight;
-            feed.scrollTop = loadMoreScrollTracker.scrollTop + heightDifference;
-        }
-        loadMoreScrollTracker = null;
-    }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initial connection
     if (window.connectMercure) window.connectMercure();
-    if (window.scrollToBottom) window.scrollToBottom(false);
     if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
     if (window.highlightAllCodeBlocks) {
         window.highlightAllCodeBlocks();
     }
-    if (window.initLinkPreviews) window.initLinkPreviews();
     if (window.initEmojiPickers) window.initEmojiPickers();
     if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
     initAutoResizeTextarea();
@@ -335,13 +338,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initTypingIndicator) window.initTypingIndicator();
     if (window.initChannelReordering) window.initChannelReordering();
     if (window.initUnreadFilter) window.initUnreadFilter();
+    if (window.initSidebarToggles) window.initSidebarToggles();
     if (window.initConfirmModals) window.initConfirmModals();
     if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
     if (window.initOfflineQueue) window.initOfflineQueue();
     if (window.initGlobalSearch) window.initGlobalSearch();
     if (window.initMobileSidebar) window.initMobileSidebar();
     if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
-    initInfiniteScroll();
+
 
     // Heartbeat to keep user status online
     if (document.getElementById('mercure-status')) {
@@ -364,45 +368,82 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.focus();
     }
     checkJumpToMessage();
+    initializeChannelScroll();
 
-    // Reconnect and scroll when HTMX swaps content (e.g. switching channels)
-    document.body.addEventListener('htmx:afterSwap', (evt) => {
-        const target = evt.detail.target;
-        if (target && (target.id === 'global-search-results' || target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
-            return;
-        }
-        const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
-        if (isChannelSwitch && window.scrollToBottom) {
-            window.scrollToBottom(false);
-        }
-    });
 
     document.body.addEventListener('htmx:afterSettle', (evt) => {
         const target = evt.detail.target;
-        if (target && (target.id === 'global-search-results' || target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
-            if (target.id === 'global-search-results') {
-                return;
-            }
-            // For load more, just initialize infinite scroll and return without refocusing
-            initInfiniteScroll();
+        const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
+
+        // ── Skip / early-return cases ──────────────────────────────────────────
+        if (target && target.id === 'global-search-results') {
+            return;
+        }
+        if (target && (target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
             return;
         }
 
-        const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
-        console.log('[Diagnostic] HTMX settle target:', target, 'isChannelSwitch:', isChannelSwitch);
+        // ── SSE message appended to #live-feed ────────────────────────────────
+        // Only run lightweight per-item initialisation; scrolling is already
+        // handled by the htmx:sseMessage listener in mercure.js (+50ms delay).
+        if (target && target.id === 'live-feed') {
+            if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
+            if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
+            if (window.initEmojiPickers) window.initEmojiPickers();
+            return;
+        }
 
-        console.log('HTMX content settled. Checking Mercure connection...');
-        // Cancel any pending inline edit when switching channels
-        if (isChannelSwitch && window.cancelInlineEdit) {
-            window.cancelInlineEdit();
+        // ── Form morph after sending a message ───────────────────────────────
+        // The textarea was cleared by idiomorph. Only re-init the form itself;
+        // avoid expensive full-page operations that cause visible repaints.
+        if (target && target.classList.contains('chat-message-form')) {
+            initAutoResizeTextarea();
+            if (window.initFileUpload) window.initFileUpload();
+            if (window.initTypingIndicator) window.initTypingIndicator();
+            if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
+
+
+            const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            if (!isMobileDevice) {
+                const threadPanel = document.getElementById('thread-panel');
+                const threadTextarea = document.getElementById('thread-message');
+                if (threadPanel && threadPanel.style.display !== 'none' && threadTextarea) {
+                    threadTextarea.focus();
+                } else {
+                    const messageInputAfterSettle = document.getElementById('message');
+                    if (messageInputAfterSettle) messageInputAfterSettle.focus();
+                }
+            }
+            return;
         }
-        if (window.connectMercure) window.connectMercure();
-        if (isChannelSwitch && window.scrollToBottom) window.scrollToBottom(false);
+
+        // ── Single feed-item swap (edit/view/reaction) ───────────────────────
+        if (target && target.classList.contains('feed-item')) {
+            if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
+            if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
+            if (window.initEmojiPickers) window.initEmojiPickers();
+            return;
+        }
+
+        // ── Text preview swap ─────────────────────────────────────────────────
+        if (target && (target.classList.contains('text-preview-container') || target.querySelector('.text-preview-code'))) {
+            const activeTarget = target.id ? (document.getElementById(target.id) || target) : target;
+            if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks(activeTarget);
+            setTimeout(() => {
+                activeTarget.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+            }, 80);
+            return;
+        }
+
+        // ── Link preview swap ──────────────────────────────────────────────────
+        if (target && (target.classList.contains('link-preview-card') || target.querySelector('.link-preview-card'))) {
+            const previewCard = target.classList.contains('link-preview-card') ? target : target.querySelector('.link-preview-card');
+            adjustScrollForLinkPreview(previewCard);
+            return;
+        }
+
         if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
-        if (window.highlightAllCodeBlocks) {
-            window.highlightAllCodeBlocks();
-        }
-        if (window.initLinkPreviews) window.initLinkPreviews();
+        if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
         if (window.initEmojiPickers) window.initEmojiPickers();
         if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
         initAutoResizeTextarea();
@@ -412,32 +453,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initTypingIndicator) window.initTypingIndicator();
         if (window.initChannelReordering) window.initChannelReordering();
         if (window.initUnreadFilter) window.initUnreadFilter();
+        if (window.initSidebarToggles) window.initSidebarToggles();
         if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
         if (window.renderChannelOfflineMessages) window.renderChannelOfflineMessages();
         if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
-        initInfiniteScroll();
 
-        // Scroll thread replies to bottom if thread panel is open (handles OOB-injected replies)
-        if (window.scrollToBottom) {
-            window.scrollToBottom(true, 'thread-replies-feed');
-        }
 
-        // Refocus appropriate input after content swap/settle (ONLY when switching channels, i.e. target is BODY or .app-container)
+        // Refocus appropriate input after channel switches
         const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (isChannelSwitch && !isMobileDevice) {
-            // If the thread panel is open, keep focus on the thread input
             const threadPanel = document.getElementById('thread-panel');
             const threadTextarea = document.getElementById('thread-message');
             if (threadPanel && threadPanel.style.display !== 'none' && threadTextarea) {
-                console.log('[Diagnostic] Focusing thread input');
                 threadTextarea.focus();
             } else {
                 const messageInputAfterSettle = document.getElementById('message');
-                if (messageInputAfterSettle) {
-                    console.log('[Diagnostic] Focusing message input');
-                    messageInputAfterSettle.focus();
-                }
+                if (messageInputAfterSettle) messageInputAfterSettle.focus();
             }
+        }
+        if (isChannelSwitch) {
+            initializeChannelScroll();
         }
         checkJumpToMessage();
     });
@@ -478,42 +513,20 @@ function checkJumpToMessage() {
     }
 }
 
-function initInfiniteScroll() {
-    const feed = document.getElementById('live-feed');
-    if (!feed) return;
-
-    if (!feed.dataset.infiniteScrollBound) {
-        feed.addEventListener('scroll', () => {
-            if (window.triggerInfiniteScrollCheck) {
-                window.triggerInfiniteScrollCheck();
-            }
-        });
-        feed.dataset.infiniteScrollBound = 'true';
+// Prevent view transitions for non-boosted requests (like typing indicators, SSE messages, reactions, etc.)
+// to avoid page-wide flickering/blinking. Only allow them for boosted page/channel transitions.
+document.body.addEventListener('htmx:beforeTransition', (event) => {
+    if (!event.detail.boosted) {
+        event.preventDefault();
     }
+});
 
-    // Always schedule a check to see if we need to load more immediately (e.g. if not scrollable or already near top)
-    setTimeout(() => {
-        if (window.triggerInfiniteScrollCheck) {
-            window.triggerInfiniteScrollCheck();
-        }
-    }, 100);
-}
-
-window.triggerInfiniteScrollCheck = function() {
-    const feed = document.getElementById('live-feed');
-    if (!feed) return;
-
-    const trigger = document.getElementById('load-more-trigger');
-    if (trigger && !trigger.classList.contains('htmx-request')) {
-        const isNearTop = feed.scrollTop < 30;
-        const isNotScrollable = feed.scrollHeight <= feed.clientHeight;
-        if (isNearTop || isNotScrollable) {
-            const btn = trigger.querySelector('.btn-load-more');
-            if (btn) {
-                btn.click();
-            }
-        }
+// Run syntax highlighting on code blocks swapped via OOB
+document.body.addEventListener('htmx:oobAfterSwap', (evt) => {
+    if (window.highlightAllCodeBlocks && evt.detail.target) {
+        window.highlightAllCodeBlocks(evt.detail.target);
     }
-};
+});
+
 
 

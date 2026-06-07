@@ -10,7 +10,16 @@
 {% endblock %}
 
 {% block body %}
-<div class="app-container" hx-boost="true">
+    {% set mercureTopics = [
+        mercure_topic_prefix ~ '/users/' ~ app.user.username,
+        mercure_topic_prefix ~ '/users/status'
+    ] %}
+    {% for ch in channels %}
+        {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+    {% endfor %}
+    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
+    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
+        <div sse-swap="channel_deleted" hx-swap="none" style="display: none;"></div>
     {% include 'dashboard/_header.html.twig' with {
         'channels': channels,
         'activeChannel': activeChannel
@@ -111,7 +120,13 @@
                             </p>
                             <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; flex-wrap: wrap;">
                                 {% if not activeChannel.isDm %}
-                                    <button type="button" class="status-pill" onclick="openChannelMembersModal(this)" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass); font-size: 0.75rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer; transition: background 0.2s, color 0.2s; outline: none; font-family: inherit;" onmouseover="this.style.background='rgba(255, 255, 255, 0.12)'; this.style.color='var(--text-primary)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.color='var(--text-muted)'">
+                                    <button type="button" class="status-pill"
+                                            hx-get="{{ path('app_channel_members_modal', {slug: activeChannel.slug}) }}"
+                                            hx-target="#modal-container"
+                                            hx-trigger="click"
+                                            style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass); font-size: 0.75rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer; transition: background 0.2s, color 0.2s; outline: none; font-family: inherit;"
+                                            onmouseover="this.style.background='rgba(255, 255, 255, 0.12)'; this.style.color='var(--text-primary)'"
+                                            onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.color='var(--text-muted)'">
                                         👥 {{ activeChannel.members|length }} {{ (activeChannel.members|length > 1 ? 'membres' : 'membre')|trans }}
                                     </button>
                                 {% endif %}
@@ -133,53 +148,67 @@
 
                         <div class="chat-header-actions">
                             {% if isMember %}
-                                <div class="search-container">
-                                    <span class="search-icon">🔍</span>
-                                    <input type="search"
-                                           id="channel-search-input"
-                                           name="q"
-                                           placeholder="{{ 'Rechercher...'|trans }}"
-                                           class="input-search"
-                                           hx-get="{{ path('app_channel_search', {slug: activeChannel.slug}) }}"
-                                           hx-trigger="input changed delay:400ms, search"
-                                           hx-target="#live-feed"
-                                           hx-indicator="#search-indicator"
-                                           aria-label="{{ 'Rechercher dans ce canal'|trans }}">
-                                    <span id="search-indicator" class="htmx-indicator spinner-subtle" style="display: none;"></span>
-                                </div>
+                                <form id="channel-filters-form"
+                                      hx-get="{{ path('app_channel_search', {slug: activeChannel.slug}) }}"
+                                      hx-target="#live-feed"
+                                      hx-swap="innerHTML transition:false"
+                                      hx-trigger="input changed delay:400ms from:#channel-search-input, change from:#unread-filter-checkbox, refresh-unread from:body"
+                                      style="display: inline-flex; align-items: center; gap: 0.5rem; margin: 0; padding: 0;">
+                                    <div class="search-container">
+                                        <span class="search-icon">🔍</span>
+                                        <input type="search"
+                                               id="channel-search-input"
+                                               name="q"
+                                               placeholder="{{ 'Rechercher...'|trans }}"
+                                               class="input-search"
+                                               hx-indicator="#search-indicator"
+                                               aria-label="{{ 'Rechercher dans ce canal'|trans }}">
+                                        <span id="search-indicator" class="htmx-indicator spinner-subtle"
+                                              style="display: none;"></span>
+                                    </div>
 
-                                {% set channelUnread = unreadCounts[activeChannel.id] is defined ? unreadCounts[activeChannel.id].count : 0 %}
-                                <button id="btn-unread-filter"
-                                        class="btn-unread-filter"
-                                        hx-get="{{ path('app_channel_unread', {slug: activeChannel.slug}) }}"
-                                        hx-target="#live-feed"
-                                        hx-swap="innerHTML"
-                                        onclick="toggleUnreadFilter(this, event)"
-                                        title="{{ 'Afficher uniquement les messages non lus'|trans }}"
-                                        aria-label="{{ 'Filtrer les messages non lus'|trans }}">
-                                    <span class="unread-filter-icon">🔔</span>
-                                    <span>{{ 'Non lus'|trans }}</span>
-                                    {% if channelUnread > 0 %}
-                                        <span class="unread-filter-badge" id="unread-filter-badge-count">{{ channelUnread }}</span>
-                                    {% else %}
-                                        <span class="unread-filter-badge unread-filter-badge-zero" id="unread-filter-badge-count" style="display:none;">0</span>
-                                    {% endif %}
-                                </button>
+                                    {% set channelUnread = unreadCounts[activeChannel.id] is defined ? unreadCounts[activeChannel.id].count : 0 %}
+                                    <label class="btn-unread-filter-wrapper"
+                                           style="display: inline-flex; align-items: center; margin: 0; padding: 0;">
+                                        <input type="checkbox"
+                                               name="unread"
+                                               value="1"
+                                               id="unread-filter-checkbox"
+                                               style="display: none;">
+                                        <div id="btn-unread-filter"
+                                             class="btn-unread-filter"
+                                             title="{{ 'Afficher uniquement les messages non lus'|trans }}"
+                                             aria-label="{{ 'Filtrer les messages non lus'|trans }}"
+                                             style="cursor: pointer;">
+                                            <span class="unread-filter-icon">🔔</span>
+                                            <span>{{ 'Non lus'|trans }}</span>
+                                            {% if channelUnread > 0 %}
+                                                <span class="unread-filter-badge"
+                                                      id="unread-filter-badge-count">{{ channelUnread }}</span>
+                                            {% else %}
+                                                <span class="unread-filter-badge unread-filter-badge-zero"
+                                                      id="unread-filter-badge-count" style="display:none;">0</span>
+                                            {% endif %}
+                                        </div>
+                                    </label>
+                                </form>
+                            {% endif %}
 
                                 {% include 'dashboard/_notification_toggle.html.twig' with {
                                     'activeChannel': activeChannel,
                                     'notificationsEnabled': notificationsEnabled
                                 } %}
-                            {% endif %}
                             {% if isMember and not activeChannel.isDm %}
                                 {% if activeChannel.isPrivate and activeChannel.creator == app.user %}
                                     {% include 'dashboard/_invite_section.html.twig' with {'activeChannel': activeChannel, 'usersToInvite': usersToInvite} %}
                                 {% endif %}
 
-                                {% if activeChannel.creator and activeChannel.creator == app.user %}
+                                {% if activeChannel.isAdministrator(app.user) %}
                                     <button type="button" class="btn-delete-channel"
                                             style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;"
-                                            onclick="openEditChannelModal(this)">⚙️ {{ 'Paramètres'|trans }}</button>
+                                            hx-get="{{ path('app_channel_edit_modal', {slug: activeChannel.slug}) }}"
+                                            hx-target="#modal-container"
+                                            hx-trigger="click">⚙️ {{ 'Paramètres'|trans }}</button>
                                 {% endif %}
 
                                 {% if is_granted('ROLE_ADMIN') and not (activeChannel.creator and activeChannel.creator == app.user) %}
@@ -222,7 +251,9 @@
                             {% include 'dashboard/_pinned_banner.html.twig' with {'pinnedMessage': activeChannel.pinnedMessage, 'activeChannel': activeChannel} %}
                         {% endif %}
                     </div>
-                    <div id="live-feed" class="feed-container" role="log" aria-live="polite">
+                    <div id="live-feed" class="feed-container" role="log" aria-live="polite"
+                         sse-swap="message_{{ activeChannel.slug }}" hx-swap="beforeend transition:false"
+                         {% if activeChannel.creator == app.user or is_granted('ROLE_ADMIN') %}data-is-channel-creator="true"{% endif %}>
                         {% include 'dashboard/_messages_feed.html.twig' with {
                             'messages': messages,
                             'activeChannel': activeChannel,
@@ -231,7 +262,7 @@
                     </div>
 
                     <div class="chat-input-area">
-                        <div id="typing-indicator" class="typing-indicator" style="visibility: hidden;">&nbsp;</div>
+                        {% include 'dashboard/_typing_indicator.html.twig' with {'typingUsers': typingUsers|default([]), 'activeChannel': activeChannel} %}
                         {% include 'dashboard/_input_form.html.twig' with {'activeChannel': activeChannel} %}
                     </div>
                 </div>
@@ -241,9 +272,7 @@
         </section>
 
         <!-- Thread Panel -->
-        <section id="thread-panel" class="card glass-panel thread-panel" style="display: none;">
-            {# This will be filled dynamically via HTMX #}
-        </section>
+        <section id="thread-panel" class="card glass-panel thread-panel"></section>
     </main>
 
     {% include '_footer.html.twig' %}

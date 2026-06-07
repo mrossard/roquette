@@ -215,6 +215,69 @@ class ChannelTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Administrators management
+    // -------------------------------------------------------------------------
+
+    #[Test]
+    public function administratorsIsEmptyByDefault(): void
+    {
+        $channel = new Channel();
+        $this->assertCount(0, $channel->getAdministrators());
+    }
+
+    #[Test]
+    public function addAdministratorAddsUserToCollection(): void
+    {
+        $channel = new Channel();
+        $user = new User();
+
+        $channel->addAdministrator($user);
+
+        $this->assertTrue($channel->getAdministrators()->contains($user));
+    }
+
+    #[Test]
+    public function removeAdministratorRemovesUserFromCollection(): void
+    {
+        $channel = new Channel();
+        $user = new User();
+
+        $channel->addAdministrator($user);
+        $channel->removeAdministrator($user);
+
+        $this->assertFalse($channel->getAdministrators()->contains($user));
+    }
+
+    #[Test]
+    public function isAdministratorReturnsTrueForCreator(): void
+    {
+        $channel = new Channel();
+        $creator = $this->createUserWithId(1, 'creator');
+        $channel->setCreator($creator);
+
+        $this->assertTrue($channel->isAdministrator($creator));
+    }
+
+    #[Test]
+    public function isAdministratorReturnsTrueForAdministrator(): void
+    {
+        $channel = new Channel();
+        $admin = $this->createUserWithId(2, 'admin');
+        $channel->addAdministrator($admin);
+
+        $this->assertTrue($channel->isAdministrator($admin));
+    }
+
+    #[Test]
+    public function isAdministratorReturnsFalseForNonAdmin(): void
+    {
+        $channel = new Channel();
+        $user = $this->createUserWithId(3, 'user');
+
+        $this->assertFalse($channel->isAdministrator($user));
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

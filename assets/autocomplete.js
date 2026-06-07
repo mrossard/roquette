@@ -14,92 +14,28 @@ const SLASH_COMMANDS = [
     { name: 'color',  icon: '🎨',  description: 'Changer la couleur de votre pseudo',    usage: '/color [0-360]' },
 ];
 
-async function fetchUsersForAutocomplete() {
+async function fetchUsersForAutocomplete(query = '') {
     try {
-        const response = await fetch('/api/users');
+        const response = await fetch('/api/users?q=' + encodeURIComponent(query));
         if (response.ok) {
-            appUsers = await response.json();
+            return await response.json();
         }
     } catch (e) {
         console.error('Failed to fetch users for autocomplete:', e);
     }
+    return [];
 }
 
-async function fetchChannelsForAutocomplete() {
+async function fetchChannelsForAutocomplete(query = '') {
     try {
-        const response = await fetch('/api/channels');
+        const response = await fetch('/api/channels?q=' + encodeURIComponent(query));
         if (response.ok) {
-            appChannels = await response.json();
+            return await response.json();
         }
     } catch (e) {
         console.error('Failed to fetch channels for autocomplete:', e);
     }
-}
-
-function findMatchingChannelsForQuery(query) {
-    if (!query) {
-        return appChannels.slice(0, 6);
-    }
-
-    const matched = [];
-    appChannels.forEach(channel => {
-        const name = (channel.name || '').toLowerCase();
-        const slug = (channel.slug || '').toLowerCase();
-
-        let priority = 0;
-        if (name.startsWith(query)) {
-            priority = 3;
-        } else if (slug.startsWith(query)) {
-            priority = 2;
-        } else if (name.includes(query) || slug.includes(query)) {
-            priority = 1;
-        }
-
-        if (priority > 0) {
-            matched.push({
-                channel,
-                priority
-            });
-        }
-    });
-
-    return matched
-        .sort((a, b) => b.priority - a.priority)
-        .map(item => item.channel)
-        .slice(0, 6);
-}
-
-function findMatchingUsersForQuery(query) {
-    if (!query) {
-        return appUsers.slice(0, 6);
-    }
-
-    const matched = [];
-    appUsers.forEach(user => {
-        const username = (user.username || '').toLowerCase();
-        const displayName = (user.displayName || '').toLowerCase();
-
-        let priority = 0;
-        if (username.startsWith(query)) {
-            priority = 3;
-        } else if (displayName.startsWith(query)) {
-            priority = 2;
-        } else if (username.includes(query) || displayName.includes(query)) {
-            priority = 1;
-        }
-
-        if (priority > 0) {
-            matched.push({
-                user,
-                priority
-            });
-        }
-    });
-
-    return matched
-        .sort((a, b) => b.priority - a.priority)
-        .map(item => item.user)
-        .slice(0, 6);
+    return [];
 }
 
 function findMatchingEmojisForQuery(query) {
@@ -136,31 +72,22 @@ function findMatchingCommands(query) {
 }
 
 export function initEmojiAutocomplete() {
-    const textareas = document.querySelectorAll('textarea:not([data-autocomplete-initialized])');
+    const targets = document.querySelectorAll('textarea:not([data-autocomplete-initialized]), input#global-search-input:not([data-autocomplete-initialized])');
 
-    if (textareas.length > 0) {
-        if (appUsers.length === 0) {
-            fetchUsersForAutocomplete();
-        }
-        if (appChannels.length === 0) {
-            fetchChannelsForAutocomplete();
-        }
-    }
+    targets.forEach(target => {
+        target.setAttribute('data-autocomplete-initialized', 'true');
 
-    textareas.forEach(textarea => {
-        textarea.setAttribute('data-autocomplete-initialized', 'true');
-
-        textarea.addEventListener('input', () => {
-            handleTextareaInputForAutocomplete(textarea);
+        target.addEventListener('input', () => {
+            handleTextareaInputForAutocomplete(target);
         });
 
-        textarea.addEventListener('keydown', (e) => {
-            handleTextareaKeydownForAutocomplete(textarea, e);
+        target.addEventListener('keydown', (e) => {
+            handleTextareaKeydownForAutocomplete(target, e);
         });
 
-        textarea.addEventListener('blur', () => {
+        target.addEventListener('blur', () => {
             setTimeout(() => {
-                if (activeAutocomplete && activeAutocomplete.textarea === textarea) {
+                if (activeAutocomplete && activeAutocomplete.textarea === target) {
                     closeAutocomplete();
                 }
             }, 150);
@@ -168,15 +95,69 @@ export function initEmojiAutocomplete() {
     });
 }
 
-function handleTextareaInputForAutocomplete(textarea) {
+async function handleTextareaInputForAutocomplete(textarea) {
     const cursor = textarea.selectionStart;
     const text = textarea.value;
 
     const textBeforeCursor = text.substring(0, cursor);
     const matchEmoji = textBeforeCursor.match(/:([a-zA-Z0-9_à-ÿÀ-Ÿ]{1,})$/);
-    const matchMention = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_à-ÿÀ-Ÿ]{0,})$/);
-    const matchChannel = textBeforeCursor.match(/(?:^|\s)#([a-zA-Z0-9_à-ÿÀ-Ÿ-]{0,})$/);
+    const matchMention = textBeforeCursor.match(/(?:^|\s|:)@([a-zA-Z0-9_à-ÿÀ-Ÿ]{0,})$/);
+    const matchChannel = textBeforeCursor.match(/(?:^|\s|:)#([a-zA-Z0-9_à-ÿÀ-Ÿ-]{0,})$/);
     const matchCommand = textBeforeCursor.match(/^\/([a-zA-Z0-9_]*)$/);
+
+    if (textarea.id === 'admin-autocomplete-input') {
+        const query = text.trim().toLowerCase();
+        const queryStartIndex = 0;
+        const queryEndIndex = cursor;
+
+        if (query === '') {
+            closeAutocomplete();
+            return;
+        }
+
+        const matches = await fetchUsersForAutocomplete(query);
+
+        if (matches.length === 0) {
+            closeAutocomplete();
+            return;
+        }
+
+        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
+        return;
+    }
+
+    if (textarea.id === 'global-search-input') {
+        if (matchMention) {
+            const query = matchMention[1].toLowerCase();
+            const queryStartIndex = textBeforeCursor.lastIndexOf('@');
+            const queryEndIndex = cursor;
+
+            const matches = await fetchUsersForAutocomplete(query);
+
+            if (matches.length === 0) {
+                closeAutocomplete();
+                return;
+            }
+
+            showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
+        } else if (matchChannel) {
+            const query = matchChannel[1].toLowerCase();
+            const queryStartIndex = textBeforeCursor.lastIndexOf('#');
+            const queryEndIndex = cursor;
+
+            const matches = await fetchChannelsForAutocomplete(query);
+
+            if (matches.length === 0) {
+                closeAutocomplete();
+                return;
+            }
+
+            showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
+        } else {
+            closeAutocomplete();
+        }
+        return;
+    }
 
     if (matchCommand) {
         const query = matchCommand[1].toLowerCase();
@@ -206,41 +187,27 @@ function handleTextareaInputForAutocomplete(textarea) {
         const queryStartIndex = textBeforeCursor.lastIndexOf('@');
         const queryEndIndex = cursor;
 
-        if (appUsers.length === 0) {
-            fetchUsersForAutocomplete().then(() => {
-                handleTextareaInputForAutocomplete(textarea);
-            });
-            return;
-        }
-
-        const matches = findMatchingUsersForQuery(query);
+        const matches = await fetchUsersForAutocomplete(query);
 
         if (matches.length === 0) {
             closeAutocomplete();
             return;
         }
 
-        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches);
+        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
     } else if (matchChannel) {
         const query = matchChannel[1].toLowerCase();
         const queryStartIndex = textBeforeCursor.lastIndexOf('#');
         const queryEndIndex = cursor;
 
-        if (appChannels.length === 0) {
-            fetchChannelsForAutocomplete().then(() => {
-                handleTextareaInputForAutocomplete(textarea);
-            });
-            return;
-        }
-
-        const matches = findMatchingChannelsForQuery(query);
+        const matches = await fetchChannelsForAutocomplete(query);
 
         if (matches.length === 0) {
             closeAutocomplete();
             return;
         }
 
-        showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches);
+        showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
     } else {
         closeAutocomplete();
     }
@@ -269,6 +236,18 @@ function showAutocompleteDropdown(textarea, type, query, queryStartIndex, queryE
     const wrapper = textarea.closest('.message-input-wrapper');
     if (wrapper) {
         wrapper.appendChild(dropdown);
+    } else if (textarea.id === 'global-search-input' || textarea.id === 'admin-autocomplete-input') {
+        const form = textarea.closest('form') || textarea.parentNode;
+        if (form) {
+            form.style.position = 'relative';
+            form.appendChild(dropdown);
+            dropdown.style.top = '100%';
+            dropdown.style.bottom = 'auto';
+            dropdown.style.left = textarea.id === 'global-search-input' ? '3rem' : '0';
+            dropdown.style.right = '0';
+            dropdown.style.minWidth = '100%';
+            dropdown.style.maxWidth = '100%';
+        }
     } else {
         document.body.appendChild(dropdown);
         const rect = textarea.getBoundingClientRect();
@@ -461,6 +440,19 @@ function selectAutocompleteUser(idx) {
 
     const { textarea, startIndex, endIndex, matches } = activeAutocomplete;
     const selectedUser = matches[idx];
+
+    const customEvent = new CustomEvent('autocomplete-user-selected', {
+        bubbles: true,
+        detail: {user: selectedUser}
+    });
+    textarea.dispatchEvent(customEvent);
+
+    if (textarea.id === 'admin-autocomplete-input') {
+        closeAutocomplete();
+        textarea.value = '';
+        return;
+    }
+
     const insertText = '@' + selectedUser.username + ' ';
 
     const text = textarea.value;
@@ -559,3 +551,44 @@ function handleTextareaKeydownForAutocomplete(textarea, e) {
 // Global window binds
 window.initEmojiAutocomplete = initEmojiAutocomplete;
 window.closeAutocomplete = closeAutocomplete;
+
+window.setupGenericAutocomplete = function ({input, suggestions, onSearch, onSelect}) {
+    if (!input || !suggestions) return;
+
+    input.oninput = function () {
+        const query = this.value.trim();
+        if (query === '') {
+            suggestions.style.display = 'none';
+            return;
+        }
+
+        const matches = onSearch(query);
+
+        if (matches.length === 0) {
+            suggestions.innerHTML = '<div class="emoji-autocomplete-item" style="color: var(--text-muted); text-align: center; justify-content: center;">Aucun résultat</div>';
+        } else {
+            suggestions.innerHTML = '';
+            matches.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'emoji-autocomplete-item';
+                div.innerText = item.label || item.name || item;
+
+                div.addEventListener('click', () => {
+                    onSelect(item);
+                    input.value = '';
+                    suggestions.style.display = 'none';
+                });
+                suggestions.appendChild(div);
+            });
+        }
+        suggestions.style.display = 'block';
+    };
+
+    const closeHandler = function (e) {
+        if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+            suggestions.style.display = 'none';
+        }
+    };
+    document.removeEventListener('click', closeHandler);
+    document.addEventListener('click', closeHandler);
+};

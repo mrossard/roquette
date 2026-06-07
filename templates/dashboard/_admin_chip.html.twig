@@ -1,0 +1,9 @@
+<div class="admin-chip" id="admin-chip-{{ member.id }}"
+     style="background: rgba(99, 102, 241, 0.2); border: 1px solid #6366f1; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary);">
+    <span>{{ member.displayName ?: member.username }}</span>
+    <button type="button" onclick="this.closest('.admin-chip').remove()"
+            style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 1rem; line-height: 1; display: flex; align-items: center;">
+        &times;
+    </button>
+    <input type="hidden" name="administrators[]" value="{{ member.id }}">
+</div>

@@ -1,5 +1,5 @@
 <form hx-post="{{ path('app_message_thread_reply', {id: parentMessage.id}) }}"
-      hx-swap="outerHTML"
+      hx-swap="morph transition:false"
       enctype="multipart/form-data"
       class="input-form chat-message-form thread-message-form">
     {% for label, messages in app.flashes %}
@@ -9,38 +9,41 @@
             </div>
         {% endfor %}
     {% endfor %}
-    
+
     <div class="formatting-toolbar">
-        <button type="button" class="btn-format" onclick="insertThreadMarkdown('bold')" title="Gras (**)">
+        <button type="button" class="btn-format" data-markdown="bold" title="Gras (**)">
             <span class="icon">B</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertThreadMarkdown('italic')" title="Italique (*)">
+        <button type="button" class="btn-format" data-markdown="italic" title="Italique (*)">
             <span class="icon">I</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertThreadMarkdown('strikethrough')" title="Barré (~~)">
+        <button type="button" class="btn-format" data-markdown="strikethrough" title="Barré (~~)">
             <span class="icon">S</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertThreadMarkdown('quote')" title="Citation (&gt;)">
+        <button type="button" class="btn-format" data-markdown="quote" title="Citation (&gt;)">
             <span class="icon">”</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertThreadMarkdown('code')" title="Code en ligne (`)">
+        <button type="button" class="btn-format" data-markdown="code" title="Code en ligne (`)">
             <span class="icon">&lt;/&gt;</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertThreadMarkdown('codeblock')" title="Bloc de code (```)">
+        <button type="button" class="btn-format" data-markdown="codeblock" title="Bloc de code (```)">
             <span class="icon">code</span>
         </button>
-        <button type="button" class="btn-format" onclick="insertThreadMarkdown('link')" title="Lien [texte](url)">
+        <button type="button" class="btn-format" data-markdown="link" title="Lien [texte](url)">
             <span class="icon">🔗</span>
         </button>
-        
+
         <div class="toolbar-tabs" style="margin-left: auto; display: flex; gap: 4px;">
-            <button type="button" class="btn-format active" id="thread-message-btn-edit-tab" onclick="switchInputTab('thread-message', 'edit')" title="Écrire">Écrire</button>
+            <button type="button" class="btn-format active" id="thread-message-btn-edit-tab"
+                    hx-on:click="this.closest('.chat-message-form').classList.remove('show-preview')"
+                    title="Écrire">Écrire
+            </button>
             <button type="button" class="btn-format" id="thread-message-btn-preview-tab"
                     hx-post="{{ path('app_api_message_preview') }}"
                     hx-include="#thread-message"
                     hx-target="#thread-message-preview"
-                    hx-swap="innerHTML"
-                    onclick="switchInputTab('thread-message', 'preview')"
+                    hx-swap="innerHTML transition:false"
+                    hx-on:click="this.closest('.chat-message-form').classList.add('show-preview')"
                     title="Aperçu">Aperçu</button>
         </div>
     </div>
@@ -68,10 +71,12 @@
         <label for="thread-message" class="sr-only">Répondre...</label>
         <div class="message-input-wrapper">
             <input type="file" id="thread-file-upload" name="file" style="display: none;" />
-            <textarea id="thread-message" name="message" required placeholder="Répondre au fil..." rows="1"></textarea>
+            <textarea id="thread-message" name="message" required
+                      oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"
+                      placeholder="Répondre au fil..." rows="1"></textarea>
             <div id="thread-message-preview" class="message-preview-box" style="display: none;"></div>
 
-            
+
             <div class="input-actions-wrapper">
                 <button type="button" class="btn-file-toggle" onclick="document.getElementById('thread-file-upload').click()" title="Joindre un fichier" aria-label="Joindre un fichier">
                     {{ ux_icon('heroicons:paper-clip', {class: 'btn-icon', 'aria-hidden': 'true'}) }}

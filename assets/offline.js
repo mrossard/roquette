@@ -92,13 +92,6 @@ export function queueOfflineMessage(form) {
     textarea.value = '';
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
 
-    // Scroll to bottom
-    if (window.scrollToBottom) {
-        window.scrollToBottom(true);
-        if (parentId) {
-            window.scrollToBottom(true, 'thread-replies-feed');
-        }
-    }
 
     // Start sync retries
     startSyncInterval();
