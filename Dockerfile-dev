@@ -30,7 +30,7 @@ RUN php bin/console asset-map:compile
 
 COPY --link --chmod=755 ./docker/entrypoint.sh /usr/local/bin/docker-entrypoint
 COPY --link --chmod=644 ./docker/php-overrides.ini /usr/local/etc/php/conf.d/99-overrides.ini
-#COPY --link --chmod=644 ./docker/xdebug-conf.ini /usr/local/etc/php/conf.d/99-xdebug.ini
+COPY --link --chmod=644 ./docker/xdebug-conf.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
 

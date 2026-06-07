@@ -109,12 +109,20 @@ final class UserSettingsController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/api/users', name: 'app_api_users', methods: ['GET'])]
-    public function apiUsers(EntityManagerInterface $entityManager): JsonResponse
+    public function apiUsers(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $users = $entityManager->getRepository(\App\Entity\User::class)->findAll();
+        $q = $request->query->get('q', '');
+        $qb = $entityManager->getRepository(\App\Entity\User::class)->createQueryBuilder('u');
+        if ($q !== '') {
+            $qb
+                ->where('u.username LIKE :q OR u.displayName LIKE :q')
+                ->setParameter('q', '%'.$q.'%');
+        }
+        $users = $qb->getQuery()->getResult();
+
         $data = [];
         foreach ($users as $user) {
             $data[] = [
@@ -133,7 +141,7 @@ final class UserSettingsController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/api/channels', name: 'app_api_channels', methods: ['GET'])]
-    public function apiChannels(EntityManagerInterface $entityManager): JsonResponse
+    public function apiChannels(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -141,12 +149,21 @@ final class UserSettingsController extends AbstractController
             return new JsonResponse([], Response::HTTP_UNAUTHORIZED);
         }
 
-        $channels = $entityManager
+        $q = $request->query->get('q', '');
+        $qb = $entityManager
             ->getRepository(\App\Entity\Channel::class)->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
             ->where('c.isDm = false')
             ->andWhere('c.isPrivate = false OR m.id = :userId')
-            ->setParameter('userId', $currentUser->getId())
+            ->setParameter('userId', $currentUser->getId());
+
+        if ($q !== '') {
+            $qb
+                ->andWhere('c.name LIKE :q OR c.slug LIKE :q')
+                ->setParameter('q', '%'.$q.'%');
+        }
+
+        $channels = $qb
             ->orderBy('c.name', 'ASC')
             ->getQuery()
             ->getResult();
