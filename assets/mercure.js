@@ -338,10 +338,6 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
             if (window.handleInvitationNotification) {
                 window.handleInvitationNotification(data);
             }
-        } else if (type === 'channel_deleted') {
-            if (window.handleChannelDeletedNotification) {
-                window.handleChannelDeletedNotification(data);
-            }
         }
     } catch (err) {
         // Expected for message HTML payloads

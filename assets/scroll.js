@@ -107,47 +107,26 @@ export function adjustScrollForLinkPreview(previewCard) {
 }
 
 export function initInfiniteScroll() {
-    const feed = document.getElementById('live-feed');
-    if (!feed) return;
-
-    if (!feed.dataset.infiniteScrollBound) {
-        feed.addEventListener('scroll', () => {
-            // Track if user is at the bottom (threshold of 50px for manual scroll)
-            const threshold = 50;
-            const atBottom = (feed.scrollHeight - feed.scrollTop - feed.clientHeight) < threshold;
-            wasAtBottom = atBottom;
-
-            if (window.triggerInfiniteScrollCheck) {
-                window.triggerInfiniteScrollCheck();
-            }
-        });
-        feed.dataset.infiniteScrollBound = 'true';
-    }
-
-    // Always schedule a check to see if we need to load more immediately (e.g. if not scrollable or already near top)
-    setTimeout(() => {
-        if (window.triggerInfiniteScrollCheck) {
-            window.triggerInfiniteScrollCheck();
-        }
-    }, 100);
-}
-
-window.triggerInfiniteScrollCheck = function () {
-    const feed = document.getElementById('live-feed');
-    if (!feed) return;
-
     const trigger = document.getElementById('load-more-trigger');
-    if (trigger && !trigger.classList.contains('htmx-request')) {
-        const isNearTop = feed.scrollTop < 30;
-        const isNotScrollable = feed.scrollHeight <= feed.clientHeight;
-        if (isNearTop || isNotScrollable) {
-            const btn = trigger.querySelector('.btn-load-more');
-            if (btn) {
-                btn.click();
+    const feed = document.getElementById('live-feed');
+    if (!trigger || !feed) return;
+
+    if (trigger.dataset.observerBound === 'true') return;
+    trigger.dataset.observerBound = 'true';
+
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !trigger.classList.contains('htmx-request')) {
+            if (window.htmx) {
+                window.htmx.trigger(trigger, 'load-more');
             }
         }
-    }
-};
+    }, {
+        root: feed,
+        threshold: 0.1
+    });
+
+    observer.observe(trigger);
+}
 
 // Scroll and maintain data-last-message attribute on new SSE messages
 document.body.addEventListener('htmx:sseMessage', (event) => {

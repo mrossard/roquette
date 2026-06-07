@@ -52,14 +52,13 @@
             <div class="input-group" style="margin-top: 0.5rem;">
                 <label for="admin-autocomplete-input">Ajouter un administrateur</label>
                 <div class="autocomplete-wrapper" style="position: relative; width: 100%;">
-                    <input type="text" id="admin-autocomplete-input" placeholder="Saisir le nom d'un membre..."
+                    <input type="text" id="admin-autocomplete-input" name="search"
+                           placeholder="Saisir le nom d'un membre..."
                            class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;" autocomplete="off"
-                           hx-post="{{ path('app_channel_admin_chip_add', {slug: activeChannel.slug}) }}"
-                           hx-trigger="autocomplete-user-selected"
-                           hx-vals="js:{userId: event.detail.user.id}"
-                           hx-include="[name='administrators[]']"
-                           hx-target="#admin-chips-container"
-                           hx-swap="beforeend"
+                           hx-get="{{ path('app_channel_admin_autocomplete', {slug: activeChannel.slug}) }}"
+                           hx-trigger="keyup changed delay:300ms"
+                           hx-target="#admin-autocomplete-suggestions"
+                           hx-swap="outerHTML"
                            onkeydown="if(event.key === 'Enter') event.preventDefault();">
                     <div id="admin-autocomplete-suggestions" class="emoji-autocomplete-dropdown"
                          style="display: none; top: 100%; bottom: auto; left: 0; right: 0; min-width: 100%; max-width: 100%; margin-top: 4px;"></div>

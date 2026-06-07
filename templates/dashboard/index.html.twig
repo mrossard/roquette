@@ -19,6 +19,7 @@
     {% endfor %}
     {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
     <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
+        <div sse-swap="channel_deleted" hx-swap="none" style="display: none;"></div>
     {% include 'dashboard/_header.html.twig' with {
         'channels': channels,
         'activeChannel': activeChannel

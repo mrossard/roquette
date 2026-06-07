@@ -136,7 +136,7 @@ function findMatchingCommands(query) {
 }
 
 export function initEmojiAutocomplete() {
-    const targets = document.querySelectorAll('textarea:not([data-autocomplete-initialized]), input#global-search-input:not([data-autocomplete-initialized]), #admin-autocomplete-input:not([data-autocomplete-initialized])');
+    const targets = document.querySelectorAll('textarea:not([data-autocomplete-initialized]), input#global-search-input:not([data-autocomplete-initialized])');
 
     if (targets.length > 0) {
         if (appUsers.length === 0) {

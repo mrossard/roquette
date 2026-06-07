@@ -108,7 +108,6 @@ final class ChannelController extends AbstractController
         Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
-        UserRepository $userRepository,
         InvitationRepository $invitationRepository,
         EntityManagerInterface $entityManager,
     ): Response {
@@ -468,10 +467,13 @@ final class ChannelController extends AbstractController
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à supprimer ce canal.');
         }
 
-        $this->mercurePublisher->publishToChannel($channel, [
-            'type' => 'channel_deleted',
-            'channelSlug' => $slug,
-        ], 'channel_deleted');
+        $oobHtml = sprintf(
+            '<a id="sidebar-channel-%s" hx-swap-oob="delete"></a>'.
+            '<script>if(window.location.pathname === "/channels/%s"){ window.location.href = "/"; }</script>',
+            $slug,
+            $slug,
+        );
+        $this->mercurePublisher->publishToChannel($channel, $oobHtml, 'channel_deleted');
 
         $this->logger->info(sprintf(
             'Channel deleted: "%s" (slug: "%s") by user "%s"',
@@ -737,6 +739,46 @@ final class ChannelController extends AbstractController
 
         return $this->render('dashboard/_admin_chip.html.twig', [
             'member' => $user,
+        ]);
+    }
+
+    #[Route('/channels/{slug}/admin-autocomplete', name: 'app_channel_admin_autocomplete', methods: ['GET'])]
+    public function adminAutocomplete(
+        string $slug,
+        Request $request,
+        ChannelRepository $channelRepository,
+    ): Response {
+        $channel = $channelRepository->findOneBy(['slug' => $slug]);
+        if (!$channel) {
+            return new Response('', 404);
+        }
+
+        $query = trim($request->query->get('search', ''));
+        if ($query === '') {
+            return new Response(
+                '<div id="admin-autocomplete-suggestions" class="emoji-autocomplete-dropdown" style="display: none;"></div>',
+            );
+        }
+
+        // Find channel members matching the query who are not already administrators (including creator)
+        $matches = [];
+        foreach ($channel->getMembers() as $member) {
+            if ($channel->getAdministrators()->contains($member) || $member === $channel->getCreator()) {
+                continue;
+            }
+
+            $username = strtolower($member->getUsername());
+            $displayName = strtolower($member->getDisplayName() ?? '');
+            $q = strtolower($query);
+
+            if (str_contains($username, $q) || str_contains($displayName, $q)) {
+                $matches[] = $member;
+            }
+        }
+
+        return $this->render('dashboard/_admin_autocomplete_suggestions.html.twig', [
+            'matches' => array_slice($matches, 0, 6),
+            'channel' => $channel,
         ]);
     }
 
