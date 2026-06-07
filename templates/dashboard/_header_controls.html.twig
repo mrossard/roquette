@@ -16,7 +16,12 @@
         {% endif %}
     {% endif %}
 
-    <button id="theme-toggle" class="btn-theme-toggle" aria-label="{{ 'Changer de thème'|trans }}">🌓</button>
+    <button id="theme-toggle"
+            hx-post="{{ path('app_user_update_theme') }}"
+            hx-swap="none"
+            class="btn-theme-toggle"
+            aria-label="{{ 'Changer de thème'|trans }}">🌓
+    </button>
 
     <button id="header-notification-btn" class="btn-account"
             style="display: none; align-items: center; gap: 0.35rem; cursor: pointer;"></button>

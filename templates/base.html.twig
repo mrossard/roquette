@@ -118,39 +118,6 @@
             {% include '_busy_status_modal.html.twig' %}
             {% include '_confirmation_dialogs.html.twig' %}
             <div id="modal-container" hx-target="this" hx-swap="innerHTML"></div>
-
-            <script>
-                (function() {
-                    if (!window.themeToggleInitialized) {
-                        window.themeToggleInitialized = true;
-                        document.addEventListener('click', function(e) {
-                            const toggle = e.target.closest('#theme-toggle');
-                            if (toggle) {
-                                const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-                                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                                document.documentElement.setAttribute('data-theme', newTheme);
-                                localStorage.setItem('theme', newTheme);
-
-                                const hljsLink = document.getElementById('hljs-theme');
-                                if (hljsLink) {
-                                    hljsLink.href = newTheme === 'dark'
-                                        ? '{{ asset('styles/highlight/atom-one-dark.min.css') }}'
-                                        : '{{ asset('styles/highlight/atom-one-light.min.css') }}';
-                                }
-
-                                // Update database state asynchronously
-                                fetch('{{ path('app_user_update_theme') }}', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/x-www-form-urlencoded',
-                                    },
-                                    body: 'theme=' + encodeURIComponent(newTheme)
-                                }).catch(err => console.error('Failed to sync theme preference:', err));
-                            }
-                        });
-                    }
-                })();
-            </script>
         {% endif %}
     </body>
 </html>

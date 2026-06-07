@@ -71,7 +71,9 @@
         <label for="thread-message" class="sr-only">Répondre...</label>
         <div class="message-input-wrapper">
             <input type="file" id="thread-file-upload" name="file" style="display: none;" />
-            <textarea id="thread-message" name="message" required placeholder="Répondre au fil..." rows="1"></textarea>
+            <textarea id="thread-message" name="message" required
+                      oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"
+                      placeholder="Répondre au fil..." rows="1"></textarea>
             <div id="thread-message-preview" class="message-preview-box" style="display: none;"></div>
 
 

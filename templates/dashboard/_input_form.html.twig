@@ -178,6 +178,7 @@
         <div class="message-input-wrapper">
             <input type="file" id="file-upload" name="file" style="display: none;" />
             <textarea id="message" name="message" required
+                      oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"
                       placeholder="{{ 'Saisissez votre message dans #%name%...'|trans({'%name%': activeChannel.name}) }}"
                       rows="1"></textarea>
             <div id="message-preview" class="message-preview-box" style="display: none;"></div>

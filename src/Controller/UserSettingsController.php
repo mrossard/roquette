@@ -47,20 +47,16 @@ final class UserSettingsController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/user/update-theme', name: 'app_user_update_theme', methods: ['POST'])]
-    public function updateTheme(Request $request, EntityManagerInterface $entityManager): Response
+    public function updateTheme(EntityManagerInterface $entityManager): Response
     {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $theme = $request->request->get('theme');
-        if (!in_array($theme, ['light', 'dark'], true)) {
-            return new Response('Thème invalide.', 400);
-        }
-
-        $currentUser->setTheme($theme);
+        $newTheme = $currentUser->getTheme() === 'dark' ? 'light' : 'dark';
+        $currentUser->setTheme($newTheme);
         $entityManager->flush();
 
-        return new Response(null, 204);
+        return new Response(null, 204, ['HX-Refresh' => 'true']);
     }
 
     // -------------------------------------------------------------------------

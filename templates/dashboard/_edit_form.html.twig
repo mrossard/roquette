@@ -67,7 +67,7 @@
                     <textarea name="content" class="edit-message-textarea" required autofocus
                               aria-label="Modifier le message"
                               style="width: 100%; min-height: 80px; padding: 0.6rem; padding-right: 2.5rem; border-radius: 0.5rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: inherit; font-size: 0.925rem; resize: vertical; outline: none; transition: var(--transition-smooth);"
-                              onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); } else if(event.key === 'Escape') { this.form.querySelector('.btn-cancel').click(); }">{{ message.content }}</textarea>
+                              onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.altKey) { event.preventDefault(); this.form.requestSubmit(); } else if(event.key === 'Escape') { this.form.querySelector('.btn-cancel').click(); }">{{ message.content }}</textarea>
                     <button type="button" class="btn-emoji-toggle" data-emoji-target="textarea" title="Ajouter un émoji" aria-label="Ajouter un émoji">
                         {{ ux_icon('heroicons:face-smile', {'aria-hidden': 'true'}) }}
                     </button>

@@ -53,21 +53,8 @@ import './poll.js';
 
 console.log('Roquette application initialized! 🚀');
 
-// Auto-resize textarea setup
 function initAutoResizeTextarea() {
-    const textarea = document.getElementById('message');
-    if (!textarea) return;
-
-    if (textarea.hasAttribute('data-autoresize-initialized')) return;
-    textarea.setAttribute('data-autoresize-initialized', 'true');
-
-    const adjustHeight = () => {
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-    };
-
-    textarea.addEventListener('input', adjustHeight);
-    adjustHeight();
+    // Managed natively by CSS field-sizing: content
 }
 
 window.toggleMessageReactionPicker = function(event, messageId) {
