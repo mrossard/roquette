@@ -15,12 +15,14 @@ use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_USER')]
 final class AccountController extends AbstractController
 {
     public function __construct(
         private string $mercureTopicPrefix,
+        private TranslatorInterface $translator,
     ) {}
 
     #[Route('/account', name: 'app_account', methods: ['GET', 'POST'])]
@@ -80,32 +82,47 @@ final class AccountController extends AbstractController
                 ]), true, null, 'user_status_changed');
                 $bus->dispatch($update);
 
-                $this->addFlash('success', 'Votre profil a été mis à jour avec succès !');
+                $this->addFlash('success', $this->translator->trans('Votre profil a été mis à jour avec succès !'));
             } elseif ($action === 'notifications') {
                 $mentionNotificationsEnabled = (bool) $request->request->get('mentionNotificationsEnabled');
                 $currentUser->setMentionNotificationsEnabled($mentionNotificationsEnabled);
 
                 $entityManager->flush();
 
-                $this->addFlash('success', 'Vos préférences de notification ont été mises à jour !');
+                $this->addFlash(
+                    'success',
+                    $this->translator->trans('Vos préférences de notification ont été mises à jour !'),
+                );
             } elseif (hash_equals('password', $action ?? '')) {
                 $currentPassword = (string) $request->request->get('currentPassword', '');
                 $newPassword = (string) $request->request->get('newPassword', '');
                 $confirmPassword = (string) $request->request->get('confirmPassword', '');
 
                 if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
-                    $this->addFlash('error', 'Tous les champs de mot de passe sont obligatoires.');
+                    $this->addFlash(
+                        'error',
+                        $this->translator->trans('Tous les champs de mot de passe sont obligatoires.'),
+                    );
                 } elseif (!$passwordHasher->isPasswordValid($currentUser, $currentPassword)) {
-                    $this->addFlash('error', 'Le mot de passe actuel est incorrect.');
+                    $this->addFlash('error', $this->translator->trans('Le mot de passe actuel est incorrect.'));
                 } elseif (!hash_equals($newPassword, $confirmPassword)) {
-                    $this->addFlash('error', 'Le nouveau mot de passe et sa confirmation ne correspondent pas.');
+                    $this->addFlash(
+                        'error',
+                        $this->translator->trans('Le nouveau mot de passe et sa confirmation ne correspondent pas.'),
+                    );
                 } elseif (strlen($newPassword) < 6) {
-                    $this->addFlash('error', 'Le nouveau mot de passe doit faire au moins 6 caractères.');
+                    $this->addFlash(
+                        'error',
+                        $this->translator->trans('Le nouveau mot de passe doit faire au moins 6 caractères.'),
+                    );
                 } else {
                     $hashed = $passwordHasher->hashPassword($currentUser, $newPassword);
                     $currentUser->setPassword($hashed);
                     $entityManager->flush();
-                    $this->addFlash('success', 'Votre mot de passe a été modifié avec succès !');
+                    $this->addFlash(
+                        'success',
+                        $this->translator->trans('Votre mot de passe a été modifié avec succès !'),
+                    );
                 }
             }
 

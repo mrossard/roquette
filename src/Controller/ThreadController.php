@@ -18,12 +18,17 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_USER')]
 final class ThreadController extends AbstractController
 {
     use MessageRendererTrait;
     use RequestValidationTrait;
+
+    public function __construct(
+        private TranslatorInterface $translator,
+    ) {}
 
     // -------------------------------------------------------------------------
     // View thread
@@ -34,7 +39,7 @@ final class ThreadController extends AbstractController
     {
         $message = $messageRepository->find($id);
         if (!$message) {
-            return new Response('Message non trouvé.', 404);
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
         /** @var \App\Entity\User $currentUser */
@@ -42,7 +47,7 @@ final class ThreadController extends AbstractController
 
         $channel = $message->getChannel();
         if ($channel->isPrivate() && !$channel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
+            return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 
         return $this->render('dashboard/_thread_pane.html.twig', [
@@ -66,12 +71,12 @@ final class ThreadController extends AbstractController
 
         $parentMessage = $messageRepository->find($id);
         if (!$parentMessage) {
-            return new Response('Message non trouvé.', 404);
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
         $channel = $parentMessage->getChannel();
         if ($channel->isPrivate() && !$channel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
+            return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 
         $replies = $parentMessage->getReplies()->toArray();
@@ -120,7 +125,7 @@ final class ThreadController extends AbstractController
     ): Response {
         $parentMessage = $messageRepository->find($id);
         if (!$parentMessage) {
-            return new Response('Message parent non trouvé.', 404);
+            return new Response($this->translator->trans('Message parent non trouvé.'), 404);
         }
 
         /** @var \App\Entity\User $currentUser */
@@ -128,18 +133,23 @@ final class ThreadController extends AbstractController
 
         $limiter = $messageApiLimiter->create('user_' . $currentUser->getId());
         if (false === $limiter->consume(1)->isAccepted()) {
-            return new Response('Trop de messages envoyés. Veuillez patienter.', Response::HTTP_TOO_MANY_REQUESTS);
+            return new Response(
+                $this->translator->trans('Trop de messages envoyés. Veuillez patienter.'),
+                Response::HTTP_TOO_MANY_REQUESTS,
+            );
         }
 
         $activeChannel = $parentMessage->getChannel();
         if ($activeChannel->isPrivate() && !$activeChannel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
+            return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 
         if ($this->isPostMaxSizeExceeded($request)) {
             $this->addFlash(
                 'error',
-                'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).',
+                $this->translator->trans(
+                    'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).',
+                ),
             );
             return $this->render('dashboard/_thread_input_form.html.twig', [
                 'parentMessage' => $parentMessage,
@@ -150,7 +160,7 @@ final class ThreadController extends AbstractController
         $uploadedFile = $request->files->get('file');
 
         if (trim($messageText) === '' && !$uploadedFile) {
-            return new Response('Le message ne peut pas être vide.', 400);
+            return new Response($this->translator->trans('Le message ne peut pas être vide.'), 400);
         }
 
         $message = new Message();

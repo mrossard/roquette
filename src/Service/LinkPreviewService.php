@@ -139,8 +139,6 @@ class LinkPreviewService
                     'User-Agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)',
                 ],
                 'max_redirects' => 3,
-                'verify_peer' => false,
-                'verify_host' => false,
             ]);
 
             $content = '';

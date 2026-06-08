@@ -12,10 +12,15 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_USER')]
 final class FileController extends AbstractController
 {
+    public function __construct(
+        private TranslatorInterface $translator,
+    ) {}
+
     #[Route('/messages/{id}/download', name: 'app_file_download', methods: ['GET'])]
     public function downloadFile(
         int $id,
@@ -27,16 +32,16 @@ final class FileController extends AbstractController
 
         $message = $messageRepository->find($id);
         if (!$message || !$message->getFilePath()) {
-            throw $this->createNotFoundException('Fichier non trouvé.');
+            throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
         }
 
         $channel = $message->getChannel();
         if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            throw $this->createAccessDeniedException('Non autorisé à accéder à ce fichier.');
+            throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
         }
 
         if (!$fileUploadService->exists($message->getFilePath())) {
-            throw $this->createNotFoundException('Le fichier n\'existe pas.');
+            throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
         }
 
         $stream = $fileUploadService->readStream($message->getFilePath());
@@ -70,16 +75,16 @@ final class FileController extends AbstractController
 
         $message = $messageRepository->find($id);
         if (!$message || !$message->getFilePath()) {
-            throw $this->createNotFoundException('Fichier non trouvé.');
+            throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
         }
 
         $channel = $message->getChannel();
         if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            throw $this->createAccessDeniedException('Non autorisé à accéder à ce fichier.');
+            throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
         }
 
         if (!$fileUploadService->exists($message->getFilePath())) {
-            throw $this->createNotFoundException('Le fichier n\'existe pas.');
+            throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
         }
 
         $stream = $fileUploadService->readStream($message->getFilePath());
@@ -113,16 +118,16 @@ final class FileController extends AbstractController
 
         $message = $messageRepository->find($id);
         if (!$message || !$message->getFilePath()) {
-            throw $this->createNotFoundException('Fichier non trouvé.');
+            throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
         }
 
         $channel = $message->getChannel();
         if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            throw $this->createAccessDeniedException('Non autorisé à accéder à ce fichier.');
+            throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
         }
 
         if (!$fileUploadService->exists($message->getFilePath())) {
-            throw $this->createNotFoundException('Le fichier n\'existe pas.');
+            throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
         }
 
         $stream = $fileUploadService->readStream($message->getFilePath());
@@ -139,7 +144,9 @@ final class FileController extends AbstractController
         }
 
         if ($isTruncated) {
-            $text .= "\n\n... [Contenu tronqué, téléchargez le fichier pour le lire en entier]";
+            $text .= "\n\n... [".$this->translator->trans(
+                    'Contenu tronqué, téléchargez le fichier pour le lire en entier',
+                )."]";
         }
 
         $fileExt = pathinfo($message->getFileName(), PATHINFO_EXTENSION);
@@ -158,7 +165,7 @@ final class FileController extends AbstractController
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
-            throw $this->createNotFoundException('Message non trouvé.');
+            throw $this->createNotFoundException($this->translator->trans('Message non trouvé.'));
         }
 
         return $this->render('dashboard/_text_preview_button.html.twig', [
@@ -176,12 +183,12 @@ final class FileController extends AbstractController
 
         $message = $messageRepository->find($id);
         if (!$message || !$message->getFilePath()) {
-            throw $this->createNotFoundException('Fichier non trouvé.');
+            throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
         }
 
         $channel = $message->getChannel();
         if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            throw $this->createAccessDeniedException('Non autorisé à accéder à ce fichier.');
+            throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
         }
 
         return $this->render('_lightbox_content.html.twig', [

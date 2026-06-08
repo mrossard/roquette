@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_USER')]
 final class ChannelController extends AbstractController
@@ -32,6 +33,7 @@ final class ChannelController extends AbstractController
         private ReadTrackingService $readTrackingService,
         private LoggerInterface $logger,
         private CacheInterface $cache,
+        private TranslatorInterface $translator,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -48,7 +50,7 @@ final class ChannelController extends AbstractController
         $description = trim($request->request->get('description', ''));
 
         if ($name === '') {
-            $this->addFlash('error', 'Le nom du canal ne peut pas être vide.');
+            $this->addFlash('error', $this->translator->trans('Le nom du canal ne peut pas être vide.'));
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -130,10 +132,10 @@ final class ChannelController extends AbstractController
         if (!$activeChannel) {
             $existingChannel = $entityManager->getRepository(Channel::class)->findOneBy(['slug' => $slug]);
             if (!$existingChannel) {
-                throw $this->createNotFoundException('Canal non trouvé.');
+                throw $this->createNotFoundException($this->translator->trans('Canal non trouvé.'));
             }
             if ($existingChannel->isPrivate()) {
-                $this->addFlash('error', 'Vous n\'avez pas accès à ce canal privé.');
+                $this->addFlash('error', $this->translator->trans('Vous n\'avez pas accès à ce canal privé.'));
                 return $this->redirectToRoute('app_dashboard');
             }
             $activeChannel = $existingChannel;
@@ -259,7 +261,7 @@ final class ChannelController extends AbstractController
 
         $activeChannel = $entityManager->getRepository(Channel::class)->findOneBy(['slug' => $slug]);
         if (!$activeChannel) {
-            throw $this->createNotFoundException('Canal non trouvé.');
+            throw $this->createNotFoundException($this->translator->trans('Canal non trouvé.'));
         }
 
         $channels = $channelRepository->findAllForUser($currentUser);
@@ -274,12 +276,12 @@ final class ChannelController extends AbstractController
         }
 
         if (!$isMember) {
-            return new Response('Accès interdit', Response::HTTP_FORBIDDEN);
+            return new Response($this->translator->trans('Accès interdit'), Response::HTTP_FORBIDDEN);
         }
 
         $beforeId = $request->query->getInt('beforeId');
         if ($beforeId <= 0) {
-            return new Response('Paramètre manquant', Response::HTTP_BAD_REQUEST);
+            return new Response($this->translator->trans('Paramètre manquant'), Response::HTTP_BAD_REQUEST);
         }
 
         $moreMessages = $messageRepository->findLatestInChannel($activeChannel, 50, $beforeId);
@@ -307,11 +309,11 @@ final class ChannelController extends AbstractController
 
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
         if (!$channel) {
-            return new Response('Canal non trouvé.', 404);
+            return new Response($this->translator->trans('Canal non trouvé.'), 404);
         }
 
         if ($channel->isPrivate() && !$channel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
+            return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 
         $ucrRepo = $entityManager->getRepository(\App\Entity\UserChannelRead::class);
@@ -339,12 +341,15 @@ final class ChannelController extends AbstractController
 
         $partner = $entityManager->getRepository(\App\Entity\User::class)->findOneBy(['username' => $username]);
         if (!$partner) {
-            $this->addFlash('error', 'Utilisateur non trouvé.');
+            $this->addFlash('error', $this->translator->trans('Utilisateur non trouvé.'));
             return $this->redirectToRoute('app_dashboard');
         }
 
         if ($partner->getId() === $currentUser->getId()) {
-            $this->addFlash('error', 'Vous ne pouvez pas envoyer de message direct à vous-même.');
+            $this->addFlash(
+                'error',
+                $this->translator->trans('Vous ne pouvez pas envoyer de message direct à vous-même.'),
+            );
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -398,11 +403,14 @@ final class ChannelController extends AbstractController
 
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
         if (!$channel) {
-            return new Response('Canal non trouvé.', 404);
+            return new Response($this->translator->trans('Canal non trouvé.'), 404);
         }
 
         if ($channel->isPrivate()) {
-            return new Response('Vous ne pouvez pas rejoindre directement un canal privé.', 403);
+            return new Response(
+                $this->translator->trans('Vous ne pouvez pas rejoindre directement un canal privé.'),
+                403,
+            );
         }
 
         if (!$channel->getMembers()->contains($currentUser)) {
@@ -424,7 +432,7 @@ final class ChannelController extends AbstractController
 
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
         if (!$channel) {
-            return new Response('Canal non trouvé.', 404);
+            return new Response($this->translator->trans('Canal non trouvé.'), 404);
         }
 
         if ($channel->getMembers()->contains($currentUser)) {
@@ -464,7 +472,9 @@ final class ChannelController extends AbstractController
         $isCreator = $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
 
         if (!$isAdmin && !$isCreator) {
-            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à supprimer ce canal.');
+            throw $this->createAccessDeniedException(
+                $this->translator->trans('Vous n\'êtes pas autorisé à supprimer ce canal.'),
+            );
         }
 
         $oobHtml = sprintf(
@@ -485,7 +495,13 @@ final class ChannelController extends AbstractController
         $entityManager->remove($channel);
         $entityManager->flush();
 
-        $this->addFlash('success', sprintf('Le canal "%s" a été supprimé.', $channel->getName()));
+        $this->addFlash(
+            'success',
+            $this->translator->trans(
+                'Le canal "%channelName%" a été supprimé.',
+                ['%channelName%' => $channel->getName()],
+            ),
+        );
 
         return $this->redirectToRoute('app_dashboard');
     }
@@ -520,7 +536,7 @@ final class ChannelController extends AbstractController
             return $this->json(['success' => true]);
         }
 
-        return $this->json(['error' => 'Données invalides.'], 400);
+        return $this->json(['error' => $this->translator->trans('Données invalides.')], 400);
     }
 
     #[Route('/channels/{slug}/favorite', name: 'app_channel_favorite_toggle', methods: ['POST'])]
@@ -536,7 +552,7 @@ final class ChannelController extends AbstractController
 
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
         if (!$channel) {
-            return new Response('Canal non trouvé.', 404);
+            return new Response($this->translator->trans('Canal non trouvé.'), 404);
         }
 
         if ($currentUser->isChannelFavorite($channel)) {
@@ -618,7 +634,9 @@ final class ChannelController extends AbstractController
         $isCreatorOrAdmin = $channel->isAdministrator($currentUser);
 
         if (!$isAdmin && !$isCreatorOrAdmin) {
-            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à modifier la rétention de ce canal.');
+            throw $this->createAccessDeniedException(
+                $this->translator->trans('Vous n\'êtes pas autorisé à modifier la rétention de ce canal.'),
+            );
         }
 
         $retention = $request->request->get('messageRetentionMonths');
@@ -631,10 +649,13 @@ final class ChannelController extends AbstractController
 
         $entityManager->flush();
 
-        $this->addFlash('success', sprintf(
-            'La durée de rétention du canal "%s" a été mise à jour.',
-            $channel->getName(),
-        ));
+        $this->addFlash(
+            'success',
+            $this->translator->trans(
+                'La durée de rétention du canal "%channelName%" a été mise à jour.',
+                ['%channelName%' => $channel->getName()],
+            ),
+        );
 
         return new Response(null, 204, ['HX-Refresh' => 'true']);
     }
@@ -658,7 +679,7 @@ final class ChannelController extends AbstractController
         $isCreatorOrAdmin = $channel->isAdministrator($currentUser);
         if (!$isAdmin && !$isCreatorOrAdmin) {
             throw $this->createAccessDeniedException(
-                'Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.',
+                $this->translator->trans('Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.'),
             );
         }
 
@@ -666,7 +687,7 @@ final class ChannelController extends AbstractController
         $description = trim($request->request->get('description', ''));
 
         if ($name === '') {
-            $this->addFlash('error', 'Le nom du canal ne peut pas être vide.');
+            $this->addFlash('error', $this->translator->trans('Le nom du canal ne peut pas être vide.'));
             return $this->redirectToRoute('app_channel', ['slug' => $slug]);
         }
 
@@ -719,7 +740,7 @@ final class ChannelController extends AbstractController
 
         $entityManager->flush();
 
-        $this->addFlash('success', 'Les paramètres du canal ont été modifiés.');
+        $this->addFlash('success', $this->translator->trans('Les paramètres du canal ont été modifiés.'));
 
         return $this->redirectToRoute('app_channel', ['slug' => $channel->getSlug()]);
     }
@@ -743,7 +764,11 @@ final class ChannelController extends AbstractController
         }
 
         if (!$channel->getMembers()->contains($user)) {
-            return new Response('<script>alert("Cet utilisateur n\'est pas membre de ce canal.");</script>', 200);
+            return new Response(
+                '<script>alert("'.$this->translator->trans(
+                    "Cet utilisateur n'est pas membre de ce canal.",
+                ).'");</script>', 200,
+            );
         }
 
         return $this->render('dashboard/_admin_chip.html.twig', [

@@ -48,13 +48,10 @@
 "Automatique": "Automatique"
 "Hors ligne": "Hors ligne"
 "Déconnexion": "Déconnexion"
-"Rechercher ou démarrer une conversation": "Rechercher ou démarrer une conversation"
 "Épinglé": "Épinglé"
-"Membres": "Membres"
 "Modifier": "Modifier"
 "Inviter": "Inviter"
 "Sondage": "Sondage"
-"Envoyer un message": "Envoyer un message"
 "Votre profil a été mis à jour avec succès !": "Votre profil a été mis à jour avec succès !"
 "Vos préférences de notification ont été mises à jour !": "Vos préférences de notification ont été mises à jour !"
 "Votre mot de passe a été modifié avec succès !": "Votre mot de passe a été modifié avec succès !"
@@ -142,7 +139,6 @@
 "Votre navigateur ne supporte pas la lecture vidéo.": "Votre navigateur ne supporte pas la lecture vidéo."
 "Ouvrir le PDF": "Ouvrir le PDF"
 "Prévisualiser le texte": "Prévisualiser le texte"
-"Chargement...": "Chargement..."
 "réponses": "réponses"
 "réponse": "réponse"
 "Dernier message :": "Dernier message :"
@@ -165,9 +161,70 @@
 "Erreur de connexion": "Erreur de connexion"
 "Connexion au serveur instable. Reconnexion en cours...": "Connexion au serveur instable. Reconnexion en cours..."
 "Connexion au serveur perdue. Tentative de reconnexion...": "Connexion au serveur perdue. Tentative de reconnexion..."
-"Impossible d'établir la connexion.": "Impossible d'établir la connexion."
 "Message épinglé": "Message épinglé"
 "sondage :": "sondage :"
 "Utilisateur": "Utilisateur"
 "Aller au message": "Aller au message"
 "Voir": "Voir"
+
+"Créer le compte": "Créer le compte"
+"Créer un sondage": "Créer un sondage"
+"Masquer l'aperçu": "Masquer l'aperçu"
+"Êtes-vous sûr de vouloir quitter ce canal ?": "Êtes-vous sûr de vouloir quitter ce canal ?"
+"Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement.": "Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement."
+
+# Admin
+"L'utilisateur \"%username%\" est déjà banni.": "L'utilisateur \"%username%\" est déjà banni."
+"Impossible de bannir un administrateur.": "Impossible de bannir un administrateur."
+"Vous ne pouvez pas vous bannir vous-même.": "Vous ne pouvez pas vous bannir vous-même."
+"L'utilisateur \"%username%\" a été banni.": "L'utilisateur \"%username%\" a été banni."
+"L'utilisateur \"%username%\" n'est pas banni.": "L'utilisateur \"%username%\" n'est pas banni."
+"L'utilisateur \"%username%\" a été réhabilité.": "L'utilisateur \"%username%\" a été réhabilité."
+
+# Channel
+"Le nom du canal ne peut pas être vide.": "Le nom du canal ne peut pas être vide."
+"Canal non trouvé.": "Canal non trouvé."
+"Vous n'avez pas accès à ce canal privé.": "Vous n'avez pas accès à ce canal privé."
+"Accès interdit": "Accès interdit"
+"Paramètre manquant": "Paramètre manquant"
+"Non autorisé.": "Non autorisé."
+"Utilisateur non trouvé.": "Utilisateur non trouvé."
+"Vous ne pouvez pas envoyer de message direct à vous-même.": "Vous ne pouvez pas envoyer de message direct à vous-même."
+"Vous ne pouvez pas rejoindre directement un canal privé.": "Vous ne pouvez pas rejoindre directement un canal privé."
+"Vous n'êtes pas autorisé à supprimer ce canal.": "Vous n'êtes pas autorisé à supprimer ce canal."
+"Le canal \"%channelName%\" a été supprimé.": "Le canal \"%channelName%\" a été supprimé."
+"Données invalides.": "Données invalides."
+"Vous n'êtes pas autorisé à modifier la rétention de ce canal.": "Vous n'êtes pas autorisé à modifier la rétention de ce canal."
+"La durée de rétention du canal \"%channelName%\" a été mise à jour.": "La durée de rétention du canal \"%channelName%\" a été mise à jour."
+"Vous n'êtes pas autorisé à modifier les paramètres de ce canal.": "Vous n'êtes pas autorisé à modifier les paramètres de ce canal."
+"Les paramètres du canal ont été modifiés.": "Les paramètres du canal ont été modifiés."
+"Cet utilisateur n'est pas membre de ce canal.": "Cet utilisateur n'est pas membre de ce canal."
+
+# File
+"Fichier non trouvé.": "Fichier non trouvé."
+"Non autorisé à accéder à ce fichier.": "Non autorisé à accéder à ce fichier."
+"Le fichier n'existe pas.": "Le fichier n'existe pas."
+"Contenu tronqué, téléchargez le fichier pour le lire en entier": "Contenu tronqué, téléchargez le fichier pour le lire en entier"
+
+# Message
+"Rien à prévisualiser": "Rien à prévisualiser"
+"Trop de messages envoyés. Veuillez patienter.": "Trop de messages envoyés. Veuillez patienter."
+"Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).": "Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée)."
+"Un sondage requiert au moins 2 options.": "Un sondage requiert au moins 2 options."
+"Non autorisé à modifier ce message.": "Non autorisé à modifier ce message."
+"Impossible de modifier un sondage qui a déjà des votes.": "Impossible de modifier un sondage qui a déjà des votes."
+"La question du sondage ne peut pas être vide.": "La question du sondage ne peut pas être vide."
+"Le message ne peut pas être vide.": "Le message ne peut pas être vide."
+"Non autorisé à supprimer ce message.": "Non autorisé à supprimer ce message."
+"Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`": "Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`"
+
+# Reaction
+"Emoji non supporté.": "Emoji non supporté."
+
+# Security
+"L'inscription est désactivée.": "L'inscription est désactivée."
+"Trop de tentatives d'inscription. Veuillez réessayer plus tard.": "Trop de tentatives d'inscription. Veuillez réessayer plus tard."
+"Votre compte a été créé avec succès ! Connectez-vous maintenant.": "Votre compte a été créé avec succès ! Connectez-vous maintenant."
+
+# Thread
+"Message parent non trouvé.": "Message parent non trouvé."

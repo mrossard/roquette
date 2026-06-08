@@ -12,12 +12,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_ADMIN')]
 final class AdminController extends AbstractController
 {
     public function __construct(
         private LoggerInterface $logger,
+        private TranslatorInterface $translator,
     ) {}
 
     #[Route('/admin/users', name: 'app_admin_users')]
@@ -40,9 +42,9 @@ final class AdminController extends AbstractController
         if ($user->isBanned()) {
             $this->addFlash(
                 'error',
-                sprintf(
-                    'L\'utilisateur "%s" est déjà banni.',
-                    $user->getUsername(),
+                $this->translator->trans(
+                    'L\'utilisateur "%username%" est déjà banni.',
+                    ['%username%' => $user->getUsername()],
                 ),
             );
 
@@ -50,7 +52,7 @@ final class AdminController extends AbstractController
         }
 
         if ($user->isAdmin()) {
-            $this->addFlash('error', 'Impossible de bannir un administrateur.');
+            $this->addFlash('error', $this->translator->trans('Impossible de bannir un administrateur.'));
 
             return $this->redirectToRoute('app_admin_users');
         }
@@ -58,7 +60,7 @@ final class AdminController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
         if ($user->getId() === $currentUser->getId()) {
-            $this->addFlash('error', 'Vous ne pouvez pas vous bannir vous-même.');
+            $this->addFlash('error', $this->translator->trans('Vous ne pouvez pas vous bannir vous-même.'));
 
             return $this->redirectToRoute('app_admin_users');
         }
@@ -79,9 +81,7 @@ final class AdminController extends AbstractController
 
         $this->addFlash(
             'success',
-            sprintf(
-                'L\'utilisateur "%s" a été banni.',
-                $user->getUsername(),
+            $this->translator->trans('L\'utilisateur "%username%" a été banni.', ['%username%' => $user->getUsername()],
             ),
         );
 
@@ -96,9 +96,9 @@ final class AdminController extends AbstractController
         if (!$user->isBanned()) {
             $this->addFlash(
                 'error',
-                sprintf(
-                    'L\'utilisateur "%s" n\'est pas banni.',
-                    $user->getUsername(),
+                $this->translator->trans(
+                    'L\'utilisateur "%username%" n\'est pas banni.',
+                    ['%username%' => $user->getUsername()],
                 ),
             );
 
@@ -124,9 +124,9 @@ final class AdminController extends AbstractController
 
         $this->addFlash(
             'success',
-            sprintf(
-                'L\'utilisateur "%s" a été réhabilité.',
-                $user->getUsername(),
+            $this->translator->trans(
+                'L\'utilisateur "%username%" a été réhabilité.',
+                ['%username%' => $user->getUsername()],
             ),
         );
 

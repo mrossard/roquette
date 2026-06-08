@@ -12,10 +12,15 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_USER')]
 final class UserSettingsController extends AbstractController
 {
+    public function __construct(
+        private TranslatorInterface $translator,
+    ) {}
+
     // -------------------------------------------------------------------------
     // Update avatar color
     // -------------------------------------------------------------------------
@@ -28,12 +33,12 @@ final class UserSettingsController extends AbstractController
 
         $hue = $request->request->get('hue');
         if ($hue === null) {
-            return new Response('Teinte manquante.', 400);
+            return new Response($this->translator->trans('Teinte manquante.'), 400);
         }
 
         $hueVal = (int) $hue;
         if ($hueVal < 0 || $hueVal > 360) {
-            return new Response('Teinte invalide.', 400);
+            return new Response($this->translator->trans('Teinte invalide.'), 400);
         }
 
         $currentUser->setCustomHue($hueVal);
@@ -91,7 +96,7 @@ final class UserSettingsController extends AbstractController
             return new Response(null, 204);
         }
 
-        return new Response('Statut invalide.', 400);
+        return new Response($this->translator->trans('Statut invalide.'), 400);
     }
 
     // -------------------------------------------------------------------------
@@ -250,7 +255,7 @@ final class UserSettingsController extends AbstractController
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
-            return new Response('Message non trouvé.', 404);
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
         /** @var \App\Entity\User $currentUser */
@@ -258,7 +263,7 @@ final class UserSettingsController extends AbstractController
 
         $channel = $message->getChannel();
         if ($channel->getCreator() !== $currentUser) {
-            return new Response('Seul le créateur du canal peut épingler un message.', 403);
+            return new Response($this->translator->trans('Seul le créateur du canal peut épingler un message.'), 403);
         }
 
         $previousPinnedMessage = $channel->getPinnedMessage();
@@ -295,7 +300,7 @@ final class UserSettingsController extends AbstractController
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
-            return new Response('Message non trouvé.', 404);
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
         /** @var \App\Entity\User $currentUser */
@@ -303,7 +308,9 @@ final class UserSettingsController extends AbstractController
 
         $channel = $message->getChannel();
         if ($channel->getCreator() !== $currentUser) {
-            return new Response('Seul le créateur du canal peut désépingler un message.', 403);
+            return new Response(
+                $this->translator->trans('Seul le créateur du canal peut désépingler un message.'), 403,
+            );
         }
 
         if ($channel->getPinnedMessage() === $message) {

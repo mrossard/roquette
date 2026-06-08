@@ -37,10 +37,7 @@
         publisher_jwt {$MERCURE_JWT_SECRET}
         # Subscriber JWT key
         subscriber_jwt {$MERCURE_JWT_SECRET}
-        # Allow anonymous subscribers (double-check that it's what you want)
-        anonymous
-        # Enable the subscription API (double-check that it's what you want)
-        subscriptions
+
         # Extra directives
         {$MERCURE_EXTRA_DIRECTIVES}
     }

@@ -25,6 +25,7 @@ use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_USER')]
 final class MessageController extends AbstractController
@@ -39,6 +40,7 @@ final class MessageController extends AbstractController
         private string $tenorApiKey,
         private HttpClientInterface $httpClient,
         private MessageBusInterface $messageBus,
+        private TranslatorInterface $translator,
     ) {}
 
     #[Route('/api/message/preview', name: 'app_api_message_preview', methods: ['POST'])]
@@ -67,7 +69,9 @@ final class MessageController extends AbstractController
 
         $html = $messageFormatter->format($content);
 
-        return new Response($html ?: '<span class="preview-empty">Rien à prévisualiser</span>');
+        return new Response(
+            $html ?: '<span class="preview-empty">'.$this->translator->trans('Rien à prévisualiser').'</span>',
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -95,7 +99,7 @@ final class MessageController extends AbstractController
 
         $limiter = $messageApiLimiter->create('user_' . $currentUser->getId());
         if (false === $limiter->consume(1)->isAccepted()) {
-            $this->addFlash('error', 'Trop de messages envoyés. Veuillez patienter.');
+            $this->addFlash('error', $this->translator->trans('Trop de messages envoyés. Veuillez patienter.'));
             return $this->render(
                 'dashboard/_input_form.html.twig',
                 [
@@ -108,7 +112,9 @@ final class MessageController extends AbstractController
         if ($this->isPostMaxSizeExceeded($request)) {
             $this->addFlash(
                 'error',
-                'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).',
+                $this->translator->trans(
+                    'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).',
+                ),
             );
             return $this->render('dashboard/_input_form.html.twig', [
                 'activeChannel' => $activeChannel,
@@ -130,7 +136,7 @@ final class MessageController extends AbstractController
             $optionsData = $this->getPollOptions($request);
 
             if (count($optionsData) < 2) {
-                return new Response('Un sondage requiert au moins 2 options.', 400);
+                return new Response($this->translator->trans('Un sondage requiert au moins 2 options.'), 400);
             }
         }
 
@@ -221,18 +227,20 @@ final class MessageController extends AbstractController
     {
         $message = $messageRepository->find($id);
         if (!$message) {
-            return new Response('Message non trouvé.', 404);
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
         if ($message->getAuthor() !== $currentUser) {
-            return new Response('Non autorisé à modifier ce message.', 403);
+            return new Response($this->translator->trans('Non autorisé à modifier ce message.'), 403);
         }
 
         if ($message->isPoll() && $message->getPoll()->getTotalVotes() > 0) {
-            return new Response('Impossible de modifier un sondage qui a déjà des votes.', 400);
+            return new Response(
+                $this->translator->trans('Impossible de modifier un sondage qui a déjà des votes.'), 400,
+            );
         }
 
         return $this->render('dashboard/_edit_form.html.twig', [
@@ -250,28 +258,31 @@ final class MessageController extends AbstractController
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
-            return new Response('Message non trouvé.', 404);
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
         if ($message->getAuthor() !== $currentUser) {
-            return new Response('Non autorisé à modifier ce message.', 403);
+            return new Response($this->translator->trans('Non autorisé à modifier ce message.'), 403);
         }
 
         if ($message->isPoll()) {
             if ($message->getPoll()->getTotalVotes() > 0) {
-                return new Response('Impossible de modifier un sondage qui a déjà des votes.', 400);
+                return new Response(
+                    $this->translator->trans('Impossible de modifier un sondage qui a déjà des votes.'),
+                    400,
+                );
             }
             $pollQuestion = $request->request->get('poll_question');
             $optionsData = $this->getPollOptions($request);
 
             if (empty($pollQuestion)) {
-                return new Response('La question du sondage ne peut pas être vide.', 400);
+                return new Response($this->translator->trans('La question du sondage ne peut pas être vide.'), 400);
             }
             if (count($optionsData) < 2) {
-                return new Response('Un sondage requiert au moins 2 options.', 400);
+                return new Response($this->translator->trans('Un sondage requiert au moins 2 options.'), 400);
             }
 
             $poll = $message->getPoll();
@@ -305,7 +316,7 @@ final class MessageController extends AbstractController
         } else {
             $newContent = $request->request->get('content', '');
             if (trim($newContent) === '' && !$message->getFilePath()) {
-                return new Response('Le message ne peut pas être vide.', 400);
+                return new Response($this->translator->trans('Le message ne peut pas être vide.'), 400);
             }
 
             $message->setContent(trim($newContent) === '' ? null : $newContent);
@@ -343,7 +354,7 @@ final class MessageController extends AbstractController
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
-            return new Response('Message non trouvé.', 404);
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
         /** @var \App\Entity\User $currentUser */
@@ -352,7 +363,7 @@ final class MessageController extends AbstractController
         $channel = $message->getChannel();
 
         if ($message->getAuthor() !== $currentUser && $channel->getCreator() !== $currentUser) {
-            return new Response('Non autorisé à supprimer ce message.', 403);
+            return new Response($this->translator->trans('Non autorisé à supprimer ce message.'), 403);
         }
 
         if ($channel->getPinnedMessage() === $message) {
@@ -386,7 +397,7 @@ final class MessageController extends AbstractController
     {
         $message = $messageRepository->find($id);
         if (!$message) {
-            return new Response('Message non trouvé.', 404);
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
         /** @var \App\Entity\User $currentUser */
@@ -394,7 +405,7 @@ final class MessageController extends AbstractController
 
         $channel = $message->getChannel();
         if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
+            return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 
         return $this->render('dashboard/_feed_item.html.twig', $this->feedItemParams($message));
@@ -412,7 +423,7 @@ final class MessageController extends AbstractController
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
-            return new Response('Message non trouvé.', 404);
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
         /** @var \App\Entity\User $currentUser */
@@ -482,7 +493,9 @@ final class MessageController extends AbstractController
 
             if ($args === '') {
                 $oobHtml = $this->renderView('dashboard/_help_message_oob.html.twig', [
-                    'answer' => "Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`",
+                    'answer' => $this->translator->trans(
+                        "Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`",
+                    ),
                     'question' => '',
                     'helpMessageId' => $helpMessageId,
                     'activeChannel' => $activeChannel,

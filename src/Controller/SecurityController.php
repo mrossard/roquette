@@ -14,6 +14,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class SecurityController extends AbstractController
 {
@@ -22,6 +23,7 @@ final class SecurityController extends AbstractController
         private bool $authFormEnabled,
         #[Autowire(env: 'bool:AUTH_OAUTH_ENABLED')]
         private bool $authOauthEnabled,
+        private TranslatorInterface $translator,
     ) {}
 
     #[Route('/login', name: 'app_login')]
@@ -62,7 +64,7 @@ final class SecurityController extends AbstractController
         \Psr\Log\LoggerInterface $logger,
     ): Response {
         if (!$this->authFormEnabled) {
-            throw $this->createAccessDeniedException('L\'inscription est désactivée.');
+            throw $this->createAccessDeniedException($this->translator->trans("L'inscription est désactivée."));
         }
 
         if ($this->getUser()) {
@@ -100,7 +102,10 @@ final class SecurityController extends AbstractController
                 implode(', ', $user->getRoles()),
             ));
 
-            $this->addFlash('success', 'Votre compte a été créé avec succès ! Connectez-vous maintenant.');
+            $this->addFlash(
+                'success',
+                $this->translator->trans("Votre compte a été créé avec succès ! Connectez-vous maintenant."),
+            );
             return $this->redirectToRoute('app_login');
         }
 
@@ -111,7 +116,10 @@ final class SecurityController extends AbstractController
                     'Registration rate limit exceeded for IP %s during POST verification',
                     $request->getClientIp(),
                 ));
-                $this->addFlash('error', 'Trop de tentatives d\'inscription. Veuillez réessayer plus tard.');
+                $this->addFlash(
+                    'error',
+                    $this->translator->trans("Trop de tentatives d'inscription. Veuillez réessayer plus tard."),
+                );
                 return $this->render(
                     'security/register.html.twig',
                     [

@@ -13,11 +13,16 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_USER')]
 final class ReactionController extends AbstractController
 {
     use MessageRendererTrait;
+
+    public function __construct(
+        private TranslatorInterface $translator,
+    ) {}
 
     #[Route('/messages/{id}/react/{emoji}', name: 'app_message_react', methods: ['POST'])]
     public function react(
@@ -29,7 +34,7 @@ final class ReactionController extends AbstractController
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
-            return new Response('Message non trouvé.', 404);
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
         /** @var \App\Entity\User $currentUser */
@@ -37,12 +42,12 @@ final class ReactionController extends AbstractController
 
         $channel = $message->getChannel();
         if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
+            return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 
         // Allow any emoji/character sequence as long as it is short enough to fit in the DB and prevent abuse
         if (mb_strlen($emoji) < 1 || mb_strlen($emoji) > 16) {
-            return new Response('Emoji non supporté.', 400);
+            return new Response($this->translator->trans('Emoji non supporté.'), 400);
         }
 
         $reactionRepo = $entityManager->getRepository(Reaction::class);
