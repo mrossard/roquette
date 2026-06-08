@@ -827,12 +827,23 @@ export function toggleMobileChannelDetails() {
 }
 window.toggleMobileChannelDetails = toggleMobileChannelDetails;
 
-export function toggleMessageActions(button, event) {
-    event.stopPropagation();
+window.clearSearchFilters = function () {
+    const input = document.getElementById('channel-search-input');
+    const checkbox = document.getElementById('unread-filter-checkbox');
+    const form = document.getElementById('channel-filters-form');
+    if (input) input.value = '';
+    if (checkbox) checkbox.checked = false;
+    if (form) htmx.trigger(form, 'submit');
+};
+
+function toggleMessageActionsFromEvent(e) {
+    const button = e.target.closest('.btn-actions-toggle');
+    if (!button) return;
+
+    e.stopPropagation();
     const actionsList = button.nextElementSibling;
     if (!actionsList) return;
 
-    // Close other open message action lists first
     document.querySelectorAll('.feed-item-actions-list.show').forEach(list => {
         if (list !== actionsList) {
             list.classList.remove('show');
@@ -840,7 +851,8 @@ export function toggleMessageActions(button, event) {
     });
     actionsList.classList.toggle('show');
 }
-window.toggleMessageActions = toggleMessageActions;
+
+document.addEventListener('click', toggleMessageActionsFromEvent);
 
 // Delegated member search filtering inside the channel members modal
 document.addEventListener('input', (e) => {

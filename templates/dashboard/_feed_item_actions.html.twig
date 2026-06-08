@@ -1,11 +1,11 @@
 <div class="feed-item-actions">
-    <button type="button" class="btn-actions-toggle" onclick="toggleMessageActions(this, event)"
+    <button type="button" class="btn-actions-toggle"
             title="{{ 'Actions'|trans }}" aria-label="{{ 'Actions du message'|trans }}">•••
     </button>
     <div class="feed-item-actions-list">
         {% if messageObject is not defined or not messageObject or not messageObject.poll %}
-            <button class="btn-reply-subtle"
-                    onclick="replyToMessage('{{ username|escape('js') }}', '{{ message|escape('js') }}')"
+            <button class="btn-reply-subtle btn-quote-reply"
+                    data-reply-username="{{ username|escape('js') }}" data-reply-content="{{ message|escape('js') }}"
                     title="{{ 'Répondre'|trans }}">
                 {{ ux_icon('heroicons:arrow-uturn-left', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
                 <span>{{ 'Répondre'|trans }}</span>
@@ -25,7 +25,6 @@
             <div class="add-reaction-trigger-container"
                  style="position: relative; display: inline-flex; align-items: center;">
                 <button class="btn-reply-subtle btn-add-reaction"
-                        onclick="toggleMessageReactionPicker(event, {{ message_id }})"
                         title="{{ 'Réagir'|trans }}">
                     {{ ux_icon('heroicons:face-smile', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
                     <span>{{ 'Réagir'|trans }}</span>

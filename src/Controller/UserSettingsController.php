@@ -192,6 +192,52 @@ final class UserSettingsController extends AbstractController
     }
 
     // -------------------------------------------------------------------------
+    // API: autocomplete HTML fragments (for @mention and #channel)
+    // -------------------------------------------------------------------------
+
+    #[Route('/api/autocomplete/{type}', name: 'app_api_autocomplete', methods: ['GET'])]
+    public function apiAutocomplete(
+        string $type,
+        Request $request,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        $q = $request->query->get('q', '');
+
+        if ($type === 'users') {
+            $qb = $entityManager->getRepository(\App\Entity\User::class)->createQueryBuilder('u');
+            if ($q !== '') {
+                $qb
+                    ->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')
+                    ->setParameter('q', '%'.mb_strtolower($q).'%');
+            }
+
+            return $this->render('api/_autocomplete_items.html.twig', [
+                'type' => 'users',
+                'users' => $qb->getQuery()->getResult(),
+            ]);
+        }
+
+        $currentUser = $this->getUser();
+        $qb = $entityManager
+            ->getRepository(\App\Entity\Channel::class)->createQueryBuilder('c')
+            ->leftJoin('c.members', 'm')
+            ->where('c.isDm = false')
+            ->andWhere('c.isPrivate = false OR m.id = :userId')
+            ->setParameter('userId', $currentUser->getId());
+
+        if ($q !== '') {
+            $qb
+                ->andWhere('LOWER(c.name) LIKE :q OR LOWER(c.slug) LIKE :q')
+                ->setParameter('q', '%'.mb_strtolower($q).'%');
+        }
+
+        return $this->render('api/_autocomplete_items.html.twig', [
+            'type' => 'channels',
+            'channels' => $qb->orderBy('c.name', 'ASC')->getQuery()->getResult(),
+        ]);
+    }
+
+    // -------------------------------------------------------------------------
     // Pin/Unpin message (moved from DashboardController, logically user/channel action)
     // -------------------------------------------------------------------------
 

@@ -1,0 +1,48 @@
+{% if type == 'users' %}
+    {% for user in users %}
+        <button type="button"
+                class="emoji-autocomplete-item"
+                data-type="user"
+                data-username="{{ user.username }}"
+                data-display-name="{{ user.displayName|default(user.username) }}"
+                data-hue="{{ user.hue }}">
+            <div class="user-avatar-circle"
+                 style="background-color: hsl({{ user.hue }}, 90%, 65%); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #111; font-size: 0.7rem; flex-shrink: 0;">
+                {{ user.username|slice(0, 1)|upper }}
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 6px; overflow: hidden;">
+                <span
+                    style="font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{ user.displayName|default(user.username) }}</span>
+                <span class="keyword">@{{ user.username }}</span>
+            </div>
+        </button>
+    {% else %}
+        <div class="emoji-autocomplete-item"
+             style="color: var(--text-muted); text-align: center; justify-content: center; cursor: default;">Aucun
+            utilisateur trouvé
+        </div>
+    {% endfor %}
+{% else %}
+    {% for channel in channels %}
+        <button type="button"
+                class="emoji-autocomplete-item"
+                data-type="channel"
+                data-slug="{{ channel.slug }}"
+                data-name="{{ channel.name }}">
+            <div
+                style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-muted, #888); font-size: 1.1rem; flex-shrink: 0;">
+                #
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 6px; overflow: hidden;">
+                <span
+                    style="font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{ channel.name }}</span>
+                <span class="keyword">#{{ channel.slug }}</span>
+            </div>
+        </button>
+    {% else %}
+        <div class="emoji-autocomplete-item"
+             style="color: var(--text-muted); text-align: center; justify-content: center; cursor: default;">Aucun canal
+            trouvé
+        </div>
+    {% endfor %}
+{% endif %}

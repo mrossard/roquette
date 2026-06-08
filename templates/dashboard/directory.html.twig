@@ -78,94 +78,8 @@
                     {% endfor %}
                 {% endfor %}
 
-                <!-- Panel Canaux -->
-                <div id="panel-channels" role="tabpanel" aria-labelledby="tab-btn-channels">
-                    <div class="directory-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
-                        {% for channel in allPublicChannels|sort((a, b) => a.name|lower <=> b.name|lower) %}
-                            {% set isMember = channel.members.contains(app.user) %}
-                            <div class="directory-card glass-panel fade-in" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); border-radius: 0.75rem; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: var(--transition-smooth); cursor: default;">
-                                <div>
-                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                        <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                                            <span style="color: var(--accent-cyan);">#</span> {{ channel.name }}
-                                        </h3>
-                                        {% if isMember %}
-                                            <span class="status-pill member-pill" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.2); font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 9999px;">Membre</span>
-                                        {% endif %}
-                                    </div>
-                                    <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.8rem;">
-                                        {{ channel.description|default('Aucune description fournie.') }}
-                                    </p>
-                                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                                        <span style="font-size: 0.8rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.25rem;">
-                                            👥 {{ channel.members|length }} membre{{ channel.members|length > 1 ? 's' : '' }}
-                                        </span>
-                                        <span style="font-size: 0.8rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.25rem;">
-                                            ⏱️ {% if channel.messageRetentionMonths is null %}Sans limite{% else %}{{ channel.messageRetentionMonths }} mois{% endif %}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div style="display: flex; gap: 0.5rem; width: 100%;">
-                                    {% if isMember %}
-                                        <a href="{{ path('app_channel', {slug: channel.slug}) }}" class="btn-account" style="flex: 1; text-align: center; justify-content: center; padding: 0.6rem;">Ouvrir</a>
-                                        {% if channel.slug != 'general' %}
-                                            <form action="{{ path('app_channel_leave', {slug: channel.slug}) }}" method="POST" style="flex: 1;" hx-boost="false" data-confirm="Quitter le canal #{{ channel.name }} ?">
-                                                <button type="submit" class="btn-logout" style="width: 100%; text-align: center; cursor: pointer; padding: 0.6rem;">Quitter</button>
-                                            </form>
-                                        {% endif %}
-                                    {% else %}
-                                        <form action="{{ path('app_channel_join', {slug: channel.slug}) }}" method="POST" style="width: 100%;" hx-boost="false">
-                                            <button type="submit" class="btn-publish" style="width: 100%; cursor: pointer; padding: 0.6rem; font-size: 0.9rem;">Rejoindre</button>
-                                        </form>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="empty-state" style="grid-column: 1 / -1; padding: 4rem 1rem;">
-                                <div class="empty-icon">📡</div>
-                                <h3>Aucun canal public</h3>
-                                <p>Il n'y a pas encore de canaux publics disponibles.</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <!-- Panel Membres -->
-                <div id="panel-members" style="display: none;" role="tabpanel" aria-labelledby="tab-btn-members">
-                    <div class="directory-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
-                        {% for user in allUsers|sort((a, b) => (a.displayName|default(a.username))|lower <=> (b.displayName|default(b.username))|lower) %}
-                            <div class="member-card glass-panel fade-in" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); border-radius: 0.75rem; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: var(--transition-smooth); cursor: default;">
-                                <div style="display: flex; align-items: center; gap: 1rem;">
-                                    <div class="avatar-container large">
-                                        <div class="user-avatar-circle" style="background-color: hsl({{ user.hue }}, 90%, var(--user-hue-lightness-border)); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1.2rem; box-shadow: 0 0 10px hsla({{ user.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
-                                            {{ user.username|slice(0,1)|upper }}
-                                        </div>
-                                        <span class="status-dot-overlay {{ user.status }}" title="{{ user.statusLabel }}"></span>
-                                    </div>
-                                    <div>
-                                        <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                                            {{ user.displayName|default(user.username) }}
-                                        </h3>
-                                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.1rem;">
-                                            <span class="member-username" style="font-size: 0.8rem; color: var(--text-muted);">@{{ user.username }}</span>
-                                            <span style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.05); padding: 0.15rem 0.4rem; border-radius: 0.5rem; color: var(--text-muted); font-weight: 500;">{{ user.statusLabel }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div style="display: flex; gap: 0.5rem; width: 100%;">
-                                    <a href="{{ path('app_dm_open', {username: user.username}) }}" class="btn-publish" style="width: 100%; text-align: center; text-decoration: none; font-size: 0.9rem; padding: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                                        💬 Message Direct
-                                    </a>
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="empty-state" style="grid-column: 1 / -1; padding: 4rem 1rem;">
-                                <div class="empty-icon">👥</div>
-                                <h3>Aucun autre membre</h3>
-                                <p>Il n'y a pas d'autres utilisateurs enregistrés pour le moment.</p>
-                            </div>
-                        {% endfor %}
-                    </div>
+                <div id="directory-panels">
+                    {% include 'dashboard/_directory_panel.html.twig' with {type: 'channels', allPublicChannels: allPublicChannels} %}
                 </div>
             </div>
         </section>
@@ -210,43 +124,30 @@
     function switchTab(tab) {
         const channelsBtn = document.getElementById('tab-btn-channels');
         const membersBtn = document.getElementById('tab-btn-members');
-        const channelsPanel = document.getElementById('panel-channels');
-        const membersPanel = document.getElementById('panel-members');
         const searchInput = document.getElementById('directory-search');
 
         if (tab === 'channels') {
-            channelsBtn.classList.add('active');
             channelsBtn.style.borderBottomColor = 'var(--accent-cyan)';
             channelsBtn.style.color = 'var(--text-primary)';
             channelsBtn.setAttribute('aria-selected', 'true');
-
-            membersBtn.classList.remove('active');
             membersBtn.style.borderBottomColor = 'transparent';
             membersBtn.style.color = 'var(--text-muted)';
             membersBtn.setAttribute('aria-selected', 'false');
-
-            channelsPanel.style.display = 'block';
-            membersPanel.style.display = 'none';
-            if (searchInput) {
-                searchInput.placeholder = 'Rechercher un canal...';
-            }
+            if (searchInput) searchInput.placeholder = 'Rechercher un canal...';
         } else {
-            membersBtn.classList.add('active');
             membersBtn.style.borderBottomColor = 'var(--accent-cyan)';
             membersBtn.style.color = 'var(--text-primary)';
             membersBtn.setAttribute('aria-selected', 'true');
-
-            channelsBtn.classList.remove('active');
             channelsBtn.style.borderBottomColor = 'transparent';
             channelsBtn.style.color = 'var(--text-muted)';
             channelsBtn.setAttribute('aria-selected', 'false');
-
-            membersPanel.style.display = 'block';
-            channelsPanel.style.display = 'none';
-            if (searchInput) {
-                searchInput.placeholder = 'Rechercher un membre...';
-            }
+            if (searchInput) searchInput.placeholder = 'Rechercher un membre...';
         }
+
+        htmx.ajax('GET', '{{ path('app_directory_panel', {type: 'TYPE'}) }}'.replace('TYPE', tab), {
+            target: '#directory-panels',
+            swap: 'innerHTML',
+        });
 
         if (searchInput) {
             searchInput.value = '';

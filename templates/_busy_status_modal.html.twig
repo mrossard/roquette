@@ -18,7 +18,7 @@
             </p>
         </div>
         <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-            <button type="button" class="btn-cancel" onclick="this.closest('dialog').close()"
+            <button type="button" class="btn-cancel" data-dialog-close
                     style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s;">
                 Annuler
             </button>
@@ -27,7 +27,7 @@
                     hx-post="{{ path('app_user_update_status') }}"
                     hx-vals='{"status": "busy"}'
                     hx-swap="none"
-                    onclick="this.closest('dialog').close()"
+                    data-dialog-close
                     style="margin-top: 0; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; background: #ffab00; border: none; color: #000; font-weight: bold; transition: opacity 0.2s;">
                 Confirmer
             </button>

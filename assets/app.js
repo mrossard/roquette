@@ -49,6 +49,7 @@ import './autocomplete.js';
 import { buildEmojiPickerDOM } from './emoji.js';
 import './thread.js';
 import './offline.js';
+import './search-builder.js';
 
 console.log('Roquette application initialized! 🚀');
 
@@ -56,12 +57,32 @@ function initAutoResizeTextarea() {
     // Managed natively by CSS field-sizing: content
 }
 
-window.toggleMessageReactionPicker = function(event, messageId) {
-    event.stopPropagation();
+window.getPollOptionCount = function (containerId) {
+    const container = document.getElementById(containerId);
+    return container ? container.querySelectorAll('input').length : 0;
+};
+
+window.removePollOption = function (btn) {
+    const parent = btn.closest('.poll-options-list');
+    btn.closest('div').remove();
+    if (parent) {
+        parent.querySelectorAll('input').forEach((inp, i) => inp.placeholder = 'Option ' + (i + 1));
+    }
+};
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-add-reaction');
+    if (!btn) return;
+
+    e.stopPropagation();
+    const feedItem = btn.closest('.feed-item');
+    if (!feedItem) return;
+    const messageId = feedItem.dataset.messageId;
+    if (!messageId) return;
+
     const picker = document.getElementById(`reaction-picker-${messageId}`);
     if (!picker) return;
 
-    // Close other open reaction pickers first
     document.querySelectorAll('.reaction-picker.show').forEach(p => {
         if (p !== picker) {
             p.classList.remove('show');
@@ -72,10 +93,8 @@ window.toggleMessageReactionPicker = function(event, messageId) {
     picker.classList.toggle('show');
 
     if (isShowing) {
-        // Dynamically move/initialize the full emoji picker inside this picker
         let emojiPickerContainer = document.getElementById('shared-reaction-emoji-picker');
         if (!emojiPickerContainer) {
-            // Build the local custom emoji picker DOM
             const { element, focusSearch: focusSearchFn } = buildEmojiPickerDOM(emoji => {
                 const msgId = emojiPickerContainer.dataset.messageId;
                 if (emoji && msgId) {
@@ -87,7 +106,6 @@ window.toggleMessageReactionPicker = function(event, messageId) {
                         });
                     }
                 }
-                // Close the picker
                 const activePicker = emojiPickerContainer.closest('.reaction-picker');
                 if (activePicker) {
                     activePicker.classList.remove('show');
@@ -95,15 +113,12 @@ window.toggleMessageReactionPicker = function(event, messageId) {
             });
             emojiPickerContainer = element;
             emojiPickerContainer.id = 'shared-reaction-emoji-picker';
-
-            // Store focusSearch function on the DOM element for subsequent clicks
             emojiPickerContainer.focusSearch = focusSearchFn;
         }
 
         emojiPickerContainer.dataset.messageId = messageId;
         picker.appendChild(emojiPickerContainer);
 
-        // Reset positioning styles
         picker.style.left = '0';
         picker.style.right = 'auto';
         picker.style.top = '100%';
@@ -111,14 +126,12 @@ window.toggleMessageReactionPicker = function(event, messageId) {
         picker.style.marginTop = '4px';
         picker.style.marginBottom = '0';
 
-        // Handle horizontal overflow (avoid going off screen to the right)
         let rect = picker.getBoundingClientRect();
         if (rect.right > window.innerWidth) {
             picker.style.left = 'auto';
             picker.style.right = '0';
         }
 
-        // Handle vertical overflow (avoid going off screen or under the message composer at the bottom)
         let bottomThreshold = window.innerHeight;
         const container = picker.closest('#live-feed, .thread-content');
         if (container && container.nextElementSibling) {
@@ -139,7 +152,7 @@ window.toggleMessageReactionPicker = function(event, messageId) {
             emojiPickerContainer.focusSearch();
         }
     }
-};
+});
 
 // Global click/escape handlers to close picker
 document.addEventListener('click', (e) => {
@@ -166,6 +179,23 @@ document.addEventListener('keydown', (e) => {
             list.classList.remove('show');
         });
     }
+});
+
+document.addEventListener('click', (e) => {
+    const fileBtn = e.target.closest('.btn-file-toggle');
+    if (fileBtn) {
+        const inputId = fileBtn.dataset.fileInput;
+        if (inputId) document.getElementById(inputId)?.click();
+    }
+
+    const chipBtn = e.target.closest('.btn-remove-chip');
+    if (chipBtn) chipBtn.closest('.admin-chip')?.remove();
+
+    const dialogCloseBtn = e.target.closest('[data-dialog-close]');
+    if (dialogCloseBtn) dialogCloseBtn.closest('dialog')?.close();
+
+    const modalOpenBtn = e.target.closest('[data-open-modal]');
+    if (modalOpenBtn) document.getElementById(modalOpenBtn.dataset.openModal)?.showModal();
 });
 
 document.addEventListener('htmx:configRequest', (evt) => {
@@ -365,6 +395,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (target && (target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
+            return;
+        }
+        // ── Typing indicator swap — avoid heavy init cascade on each keystroke ─
+        if (target && target.id === 'typing-indicator') {
             return;
         }
 

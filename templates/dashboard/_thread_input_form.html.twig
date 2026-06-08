@@ -78,7 +78,8 @@
 
 
             <div class="input-actions-wrapper">
-                <button type="button" class="btn-file-toggle" onclick="document.getElementById('thread-file-upload').click()" title="Joindre un fichier" aria-label="Joindre un fichier">
+                <button type="button" class="btn-file-toggle" data-file-input="thread-file-upload"
+                        title="Joindre un fichier" aria-label="Joindre un fichier">
                     {{ ux_icon('heroicons:paper-clip', {class: 'btn-icon', 'aria-hidden': 'true'}) }}
                 </button>
                 <button type="button" class="btn-emoji-toggle" data-emoji-target="#thread-message" title="Ajouter un émoji" aria-label="Ajouter un émoji">

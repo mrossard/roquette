@@ -154,15 +154,11 @@ export function initTypingIndicator() {
 }
 
 export function sendTypingStatus(channelSlug, isTyping) {
-    const url = `/channel/${channelSlug}/typing`;
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ isTyping: isTyping })
-    }).catch(err => console.error('Error sending typing status:', err));
+    htmx.ajax('POST', `/channel/${channelSlug}/typing`, {
+        values: {isTyping: isTyping ? '1' : '0'},
+        target: document.getElementById('typing-indicator'),
+        swap: 'outerHTML',
+    });
 }
 
 
@@ -203,39 +199,49 @@ export function manualReconnect(button) {
         button.textContent = 'Vérification...';
     }
 
-    fetch('/user/ping', {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+    const el = document.createElement('div');
+    el.style.display = 'none';
+    document.body.appendChild(el);
+
+    el.addEventListener('htmx:beforeSwap', function onSwap(e) {
+        if (e.detail.elt !== el) return;
+        el.removeEventListener('htmx:beforeSwap', onSwap);
+        e.detail.shouldSwap = false;
+        el.remove();
+
+        const xhr = e.detail.xhr;
+        if (xhr.responseURL && xhr.responseURL.includes('/login')) {
+            safeRedirectToLogin('Redirected to login');
+            return;
         }
-    })
-        .then(response => {
-            if (response.redirected && response.url.includes('/login')) {
-                safeRedirectToLogin('Redirected to login');
-                return;
-            }
-            if (!response.ok) {
-                if (response.status === 401 || response.status === 403) {
-                    safeRedirectToLogin(`Status ${response.status}`);
-                    return;
-                }
-                throw new Error('Session invalid');
-            }
-            // Reload page to re-establish connections cleanly
+        const status = xhr.status;
+        if (status === 401 || status === 403) {
+            safeRedirectToLogin(`Status ${status}`);
+            return;
+        }
+        if (status >= 200 && status < 300) {
             window.location.reload();
-        })
-        .catch(err => {
-            console.error('Manual reconnect failed checking session:', err);
-            if (button) {
-                button.disabled = false;
-                button.textContent = 'Reconnexion';
-            }
-            if (err.message && err.message.includes('Session invalid')) {
-                safeRedirectToLogin('Session invalid exception');
-            } else {
-                showOfflineBanner(true, 'Le serveur ne répond pas. Veuillez réessayer dans quelques instants.');
-            }
-        });
+            return;
+        }
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Reconnexion';
+        }
+        showOfflineBanner(true, 'Le serveur ne répond pas. Veuillez réessayer dans quelques instants.');
+    });
+
+    el.addEventListener('htmx:responseError', function onError(e) {
+        if (e.detail.elt !== el) return;
+        el.removeEventListener('htmx:responseError', onError);
+        el.remove();
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Reconnexion';
+        }
+        safeRedirectToLogin('Session invalid');
+    });
+
+    htmx.ajax('GET', '/user/ping', {target: el, swap: 'innerHTML'});
 }
 
 // HTMX SSE connection event listeners
@@ -245,28 +251,41 @@ document.body.addEventListener('htmx:sseOpen', () => {
 });
 
 document.body.addEventListener('htmx:sseError', () => {
-    fetch('/user/ping', {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+    const el = document.createElement('div');
+    el.style.display = 'none';
+    document.body.appendChild(el);
+
+    const showOffline = () => {
+        updateMercureStatus(false, window.AppTranslations?.['Connexion interrompue'] || 'Connexion interrompue', 'disconnected');
+        showOfflineBanner(true, window.AppTranslations?.['Connexion au serveur perdue. Tentative de reconnexion...'] || 'Connexion au serveur perdue. Tentative de reconnexion...');
+    };
+
+    el.addEventListener('htmx:beforeSwap', function onSwap(e) {
+        if (e.detail.elt !== el) return;
+        el.removeEventListener('htmx:beforeSwap', onSwap);
+        e.detail.shouldSwap = false;
+        el.remove();
+
+        const xhr = e.detail.xhr;
+        if (xhr.responseURL && xhr.responseURL.includes('/login')) {
+            safeRedirectToLogin('Redirected to login');
+            return;
         }
-    })
-        .then(response => {
-            if (response.redirected && response.url.includes('/login')) {
-                safeRedirectToLogin('Redirected to login');
-                return;
-            }
-            if (!response.ok && (response.status === 401 || response.status === 403)) {
-                safeRedirectToLogin(`Status ${response.status}`);
-                return;
-            }
-            updateMercureStatus(false, window.AppTranslations?.['Connexion interrompue'] || 'Connexion interrompue', 'disconnected');
-            showOfflineBanner(true, window.AppTranslations?.['Connexion au serveur perdue. Tentative de reconnexion...'] || 'Connexion au serveur perdue. Tentative de reconnexion...');
-        })
-        .catch(() => {
-            updateMercureStatus(false, window.AppTranslations?.['Connexion interrompue'] || 'Connexion interrompue', 'disconnected');
-            showOfflineBanner(true, window.AppTranslations?.['Connexion au serveur perdue. Tentative de reconnexion...'] || 'Connexion au serveur perdue. Tentative de reconnexion...');
-        });
+        if (xhr.status === 401 || xhr.status === 403) {
+            safeRedirectToLogin(`Status ${xhr.status}`);
+            return;
+        }
+        showOffline();
+    });
+
+    el.addEventListener('htmx:responseError', function onError(e) {
+        if (e.detail.elt !== el) return;
+        el.removeEventListener('htmx:responseError', onError);
+        el.remove();
+        showOffline();
+    });
+
+    htmx.ajax('GET', '/user/ping', {target: el, swap: 'innerHTML'});
 });
 
 document.body.addEventListener('htmx:sseMessage', (event) => {

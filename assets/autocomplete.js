@@ -1,10 +1,8 @@
 import {EMOJI_CATEGORIES, EMOJI_KEYWORDS, EMOJI_PRIMARY_SHORTCODES} from './emoji-data.js';
 
 let activeAutocomplete = null;
-let appUsers = [];
-let appChannels = [];
+let lastAutocompleteQuery = '';
 
-// Slash commands available in the app
 const SLASH_COMMANDS = [
     {name: 'help', icon: '🤖', description: 'Poser une question à l\'Assistant Roquette', usage: '/help <question>'},
     { name: 'giphy',  icon: '🎞️',  description: 'Rechercher et envoyer un GIF animé',   usage: '/giphy <recherche>' },
@@ -13,28 +11,17 @@ const SLASH_COMMANDS = [
     { name: 'color',  icon: '🎨',  description: 'Changer la couleur de votre pseudo',    usage: '/color [0-360]' },
 ];
 
-async function fetchUsersForAutocomplete(query = '') {
-    try {
-        const response = await fetch('/api/users?q=' + encodeURIComponent(query));
-        if (response.ok) {
-            return await response.json();
-        }
-    } catch (e) {
-        console.error('Failed to fetch users for autocomplete:', e);
-    }
-    return [];
-}
+function loadAutocompleteItems(type, query) {
+    lastAutocompleteQuery = query;
+    const url = `/api/autocomplete/${type}?q=${encodeURIComponent(query)}`;
 
-async function fetchChannelsForAutocomplete(query = '') {
-    try {
-        const response = await fetch('/api/channels?q=' + encodeURIComponent(query));
-        if (response.ok) {
-            return await response.json();
-        }
-    } catch (e) {
-        console.error('Failed to fetch channels for autocomplete:', e);
-    }
-    return [];
+    return htmx.ajax('GET', url, {
+        target: activeAutocomplete.element,
+        swap: 'innerHTML',
+    }).then(() => {
+        if (lastAutocompleteQuery !== query) return;
+        updateAutocompleteActiveIndex();
+    });
 }
 
 function findMatchingEmojisForQuery(query) {
@@ -95,6 +82,10 @@ export function initEmojiAutocomplete() {
 }
 
 async function handleTextareaInputForAutocomplete(textarea) {
+    if (textarea.id === 'admin-autocomplete-input') {
+        return;
+    }
+
     const cursor = textarea.selectionStart;
     const text = textarea.value;
 
@@ -104,54 +95,21 @@ async function handleTextareaInputForAutocomplete(textarea) {
     const matchChannel = textBeforeCursor.match(/(?:^|\s|:)#([a-zA-Z0-9_à-ÿÀ-Ÿ-]{0,})$/);
     const matchCommand = textBeforeCursor.match(/^\/([a-zA-Z0-9_]*)$/);
 
-    if (textarea.id === 'admin-autocomplete-input') {
-        const query = text.trim().toLowerCase();
-        const queryStartIndex = 0;
-        const queryEndIndex = cursor;
-
-        if (query === '') {
-            closeAutocomplete();
-            return;
-        }
-
-        const matches = await fetchUsersForAutocomplete(query);
-
-        if (matches.length === 0) {
-            closeAutocomplete();
-            return;
-        }
-
-        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
-        return;
-    }
-
     if (textarea.id === 'global-search-input') {
         if (matchMention) {
             const query = matchMention[1].toLowerCase();
             const queryStartIndex = textBeforeCursor.lastIndexOf('@');
             const queryEndIndex = cursor;
 
-            const matches = await fetchUsersForAutocomplete(query);
-
-            if (matches.length === 0) {
-                closeAutocomplete();
-                return;
-            }
-
-            showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
+            showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, []);
+            loadAutocompleteItems('users', query);
         } else if (matchChannel) {
             const query = matchChannel[1].toLowerCase();
             const queryStartIndex = textBeforeCursor.lastIndexOf('#');
             const queryEndIndex = cursor;
 
-            const matches = await fetchChannelsForAutocomplete(query);
-
-            if (matches.length === 0) {
-                closeAutocomplete();
-                return;
-            }
-
-            showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
+            showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, []);
+            loadAutocompleteItems('channels', query);
         } else {
             closeAutocomplete();
         }
@@ -168,6 +126,7 @@ async function handleTextareaInputForAutocomplete(textarea) {
         }
 
         showAutocompleteDropdown(textarea, 'command', query, 0, cursor, matches);
+        renderAutocompleteItems();
     } else if (matchEmoji) {
         const query = matchEmoji[1].toLowerCase();
         const queryStartIndex = cursor - matchEmoji[0].length;
@@ -181,32 +140,21 @@ async function handleTextareaInputForAutocomplete(textarea) {
         }
 
         showAutocompleteDropdown(textarea, 'emoji', query, queryStartIndex, queryEndIndex, matches);
+        renderAutocompleteItems();
     } else if (matchMention) {
         const query = matchMention[1].toLowerCase();
         const queryStartIndex = textBeforeCursor.lastIndexOf('@');
         const queryEndIndex = cursor;
 
-        const matches = await fetchUsersForAutocomplete(query);
-
-        if (matches.length === 0) {
-            closeAutocomplete();
-            return;
-        }
-
-        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
+        showAutocompleteDropdown(textarea, 'mention', query, queryStartIndex, queryEndIndex, []);
+        loadAutocompleteItems('users', query);
     } else if (matchChannel) {
         const query = matchChannel[1].toLowerCase();
         const queryStartIndex = textBeforeCursor.lastIndexOf('#');
         const queryEndIndex = cursor;
 
-        const matches = await fetchChannelsForAutocomplete(query);
-
-        if (matches.length === 0) {
-            closeAutocomplete();
-            return;
-        }
-
-        showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, matches.slice(0, 6));
+        showAutocompleteDropdown(textarea, 'channel', query, queryStartIndex, queryEndIndex, []);
+        loadAutocompleteItems('channels', query);
     } else {
         closeAutocomplete();
     }
@@ -221,7 +169,11 @@ function showAutocompleteDropdown(textarea, type, query, queryStartIndex, queryE
         activeAutocomplete.matches = matches;
         activeAutocomplete.activeIndex = 0;
 
-        renderAutocompleteItems();
+        if (type === 'emoji' || type === 'command') {
+            renderAutocompleteItems();
+        } else {
+            activeAutocomplete.element.innerHTML = '';
+        }
         return;
     }
 
@@ -235,14 +187,14 @@ function showAutocompleteDropdown(textarea, type, query, queryStartIndex, queryE
     const wrapper = textarea.closest('.message-input-wrapper');
     if (wrapper) {
         wrapper.appendChild(dropdown);
-    } else if (textarea.id === 'global-search-input' || textarea.id === 'admin-autocomplete-input') {
+    } else if (textarea.id === 'global-search-input') {
         const form = textarea.closest('form') || textarea.parentNode;
         if (form) {
             form.style.position = 'relative';
             form.appendChild(dropdown);
             dropdown.style.top = '100%';
             dropdown.style.bottom = 'auto';
-            dropdown.style.left = textarea.id === 'global-search-input' ? '3rem' : '0';
+            dropdown.style.left = '3rem';
             dropdown.style.right = '0';
             dropdown.style.minWidth = '100%';
             dropdown.style.maxWidth = '100%';
@@ -266,7 +218,30 @@ function showAutocompleteDropdown(textarea, type, query, queryStartIndex, queryE
         activeIndex: 0
     };
 
-    renderAutocompleteItems();
+    dropdown.addEventListener('click', onAutocompleteClick);
+
+    if (type === 'emoji' || type === 'command') {
+        renderAutocompleteItems();
+    }
+}
+
+function onAutocompleteClick(e) {
+    const item = e.target.closest('.emoji-autocomplete-item');
+    if (!item || !activeAutocomplete) return;
+
+    const items = activeAutocomplete.element.querySelectorAll('.emoji-autocomplete-item');
+    const idx = Array.from(items).indexOf(item);
+    if (idx === -1) return;
+
+    if (activeAutocomplete.type === 'emoji') {
+        selectAutocompleteEmoji(idx);
+    } else if (activeAutocomplete.type === 'mention') {
+        selectAutocompleteUser(idx);
+    } else if (activeAutocomplete.type === 'channel') {
+        selectAutocompleteChannel(idx);
+    } else if (activeAutocomplete.type === 'command') {
+        selectAutocompleteCommand(idx);
+    }
 }
 
 function renderAutocompleteItems() {
@@ -275,7 +250,6 @@ function renderAutocompleteItems() {
     const { element, matches, activeIndex, type } = activeAutocomplete;
     element.innerHTML = '';
 
-    // Add command-dropdown class for wider styling
     if (type === 'command') {
         element.classList.add('command-dropdown');
         const header = document.createElement('div');
@@ -302,79 +276,6 @@ function renderAutocompleteItems() {
 
             item.appendChild(emojiSpan);
             item.appendChild(keywordSpan);
-        } else if (type === 'mention') {
-            const avatar = document.createElement('div');
-            avatar.className = 'user-avatar-circle';
-            avatar.style.backgroundColor = `hsl(${match.hue}, 90%, 65%)`;
-            avatar.style.width = '20px';
-            avatar.style.height = '20px';
-            avatar.style.borderRadius = '50%';
-            avatar.style.display = 'flex';
-            avatar.style.alignItems = 'center';
-            avatar.style.justifyContent = 'center';
-            avatar.style.fontWeight = '700';
-            avatar.style.color = '#111';
-            avatar.style.fontSize = '0.7rem';
-            avatar.style.flexShrink = '0';
-            avatar.textContent = (match.username || 'U')[0].toUpperCase();
-
-            const namesContainer = document.createElement('div');
-            namesContainer.style.display = 'flex';
-            namesContainer.style.alignItems = 'baseline';
-            namesContainer.style.gap = '6px';
-            namesContainer.style.overflow = 'hidden';
-
-            const displayNameSpan = document.createElement('span');
-            displayNameSpan.style.fontWeight = '600';
-            displayNameSpan.style.whiteSpace = 'nowrap';
-            displayNameSpan.style.textOverflow = 'ellipsis';
-            displayNameSpan.style.overflow = 'hidden';
-            displayNameSpan.textContent = match.displayName || match.username;
-
-            const usernameSpan = document.createElement('span');
-            usernameSpan.className = 'keyword';
-            usernameSpan.textContent = `@${match.username}`;
-
-            namesContainer.appendChild(displayNameSpan);
-            namesContainer.appendChild(usernameSpan);
-
-            item.appendChild(avatar);
-            item.appendChild(namesContainer);
-        } else if (type === 'channel') {
-            const hashSpan = document.createElement('div');
-            hashSpan.style.width = '20px';
-            hashSpan.style.height = '20px';
-            hashSpan.style.display = 'flex';
-            hashSpan.style.alignItems = 'center';
-            hashSpan.style.justifyContent = 'center';
-            hashSpan.style.fontWeight = '700';
-            hashSpan.style.color = 'var(--text-muted, #888)';
-            hashSpan.style.fontSize = '1.1rem';
-            hashSpan.style.flexShrink = '0';
-            hashSpan.textContent = '#';
-
-            const namesContainer = document.createElement('div');
-            namesContainer.style.display = 'flex';
-            namesContainer.style.alignItems = 'baseline';
-            namesContainer.style.gap = '6px';
-            namesContainer.style.overflow = 'hidden';
-
-            const channelNameSpan = document.createElement('span');
-            channelNameSpan.style.fontWeight = '600';
-            channelNameSpan.style.whiteSpace = 'nowrap';
-            channelNameSpan.style.textOverflow = 'ellipsis';
-            channelNameSpan.style.overflow = 'hidden';
-            channelNameSpan.textContent = match.name;
-
-            const slugSpan = document.createElement('span');
-            slugSpan.className = 'keyword';
-            slugSpan.textContent = `#${match.slug}`;
-
-            namesContainer.appendChild(channelNameSpan);
-            namesContainer.appendChild(slugSpan);
-
-            item.appendChild(hashSpan);
-            item.appendChild(namesContainer);
         } else if (type === 'command') {
             const iconSpan = document.createElement('span');
             iconSpan.className = 'command-icon';
@@ -397,20 +298,15 @@ function renderAutocompleteItems() {
             item.appendChild(infoContainer);
         }
 
-        item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (type === 'emoji') {
-                selectAutocompleteEmoji(idx);
-            } else if (type === 'mention') {
-                selectAutocompleteUser(idx);
-            } else if (type === 'channel') {
-                selectAutocompleteChannel(idx);
-            } else if (type === 'command') {
-                selectAutocompleteCommand(idx);
-            }
-        });
-
         element.appendChild(item);
+    });
+}
+
+function updateAutocompleteActiveIndex() {
+    if (!activeAutocomplete) return;
+    const items = activeAutocomplete.element.querySelectorAll('.emoji-autocomplete-item');
+    items.forEach((item, i) => {
+        item.classList.toggle('active', i === activeAutocomplete.activeIndex);
     });
 }
 
@@ -437,14 +333,12 @@ function selectAutocompleteEmoji(idx) {
 function selectAutocompleteUser(idx) {
     if (!activeAutocomplete) return;
 
-    const { textarea, startIndex, endIndex, matches } = activeAutocomplete;
-    const selectedUser = matches[idx];
+    const {textarea, startIndex, endIndex, element} = activeAutocomplete;
+    const items = element.querySelectorAll('.emoji-autocomplete-item[data-username]');
+    const selectedItem = items[idx];
+    if (!selectedItem) return;
 
-    const customEvent = new CustomEvent('autocomplete-user-selected', {
-        bubbles: true,
-        detail: {user: selectedUser}
-    });
-    textarea.dispatchEvent(customEvent);
+    const username = selectedItem.dataset.username;
 
     if (textarea.id === 'admin-autocomplete-input') {
         closeAutocomplete();
@@ -452,8 +346,7 @@ function selectAutocompleteUser(idx) {
         return;
     }
 
-    const insertText = '@' + selectedUser.username + ' ';
-
+    const insertText = '@' + username + ' ';
     const text = textarea.value;
     textarea.value = text.substring(0, startIndex) + insertText + text.substring(endIndex);
 
@@ -471,9 +364,13 @@ function selectAutocompleteUser(idx) {
 function selectAutocompleteChannel(idx) {
     if (!activeAutocomplete) return;
 
-    const {textarea, startIndex, endIndex, matches} = activeAutocomplete;
-    const selectedChannel = matches[idx];
-    const insertText = '#' + selectedChannel.slug + ' ';
+    const {textarea, startIndex, endIndex, element} = activeAutocomplete;
+    const items = element.querySelectorAll('.emoji-autocomplete-item[data-slug]');
+    const selectedItem = items[idx];
+    if (!selectedItem) return;
+
+    const slug = selectedItem.dataset.slug;
+    const insertText = '#' + slug + ' ';
 
     const text = textarea.value;
     textarea.value = text.substring(0, startIndex) + insertText + text.substring(endIndex);
@@ -494,7 +391,6 @@ function selectAutocompleteCommand(idx) {
 
     const { textarea, matches } = activeAutocomplete;
     const selectedCommand = matches[idx];
-    // Insert the command name followed by a space so the user can type args directly
     const insertText = `/${selectedCommand.name} `;
 
     textarea.value = insertText;
@@ -521,13 +417,31 @@ function handleTextareaKeydownForAutocomplete(textarea, e) {
     if (e.key === 'ArrowDown') {
         e.preventDefault();
         e.stopPropagation();
-        activeAutocomplete.activeIndex = (activeIndex + 1) % matches.length;
-        renderAutocompleteItems();
+
+        const items = activeAutocomplete.element.querySelectorAll('.emoji-autocomplete-item');
+        const maxIdx = items.length > 0 ? items.length : matches.length;
+
+        activeAutocomplete.activeIndex = (activeIndex + 1) % maxIdx;
+
+        if (type === 'emoji' || type === 'command') {
+            renderAutocompleteItems();
+        } else {
+            updateAutocompleteActiveIndex();
+        }
     } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         e.stopPropagation();
-        activeAutocomplete.activeIndex = (activeIndex - 1 + matches.length) % matches.length;
-        renderAutocompleteItems();
+
+        const items = activeAutocomplete.element.querySelectorAll('.emoji-autocomplete-item');
+        const maxIdx = items.length > 0 ? items.length : matches.length;
+
+        activeAutocomplete.activeIndex = (activeIndex - 1 + maxIdx) % maxIdx;
+
+        if (type === 'emoji' || type === 'command') {
+            renderAutocompleteItems();
+        } else {
+            updateAutocompleteActiveIndex();
+        }
     } else if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
         e.stopPropagation();

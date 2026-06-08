@@ -61,20 +61,3 @@
     {% include 'dashboard/_thread_input_form.html.twig' with {'parentMessage': parentMessage} %}
 </div>
 
-<script>
-    (function () {
-        const threadPanel = document.getElementById('thread-panel');
-        if (window.initEmojiPickers) window.initEmojiPickers();
-        if (window.initThreadFileUpload) window.initThreadFileUpload();
-        if (window.initThreadTextareaResize) window.initThreadTextareaResize();
-        if (window.highlightAllCodeBlocks) {
-            window.highlightAllCodeBlocks(threadPanel);
-        }
-
-        const threadTextarea = document.getElementById('thread-message');
-        const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        if (threadTextarea && !isMobile) {
-            threadTextarea.focus();
-        }
-    })();
-</script>

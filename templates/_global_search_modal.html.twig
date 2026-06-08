@@ -22,50 +22,27 @@
             </button>
         </div>
 
-        <div id="search-builder-panel" style="display: none; padding: 1rem; border-bottom: 1px solid var(--border-glass); background: rgba(0,0,0,0.15); flex-direction: column; gap: 0.75rem; width: 100%; flex-shrink: 0; box-sizing: border-box;">
+        <div id="search-builder-panel" data-users-url="{{ path('app_api_users_options') }}"
+             style="display: none; padding: 1rem; border-bottom: 1px solid var(--border-glass); background: rgba(0,0,0,0.15); flex-direction: column; gap: 0.75rem; width: 100%; flex-shrink: 0; box-sizing: border-box;">
             <div style="display: flex; gap: 1rem; flex-wrap: wrap; width: 100%;">
                 <!-- Filter by Author -->
                 <div style="flex: 1; min-width: 180px;">
                     <label for="builder-from" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">Auteur (from:)</label>
-                    <select id="builder-from" onchange="updateSearchQueryFromBuilder()" style="display: none;">
+                    <select id="builder-from" class="builder-select" onchange="updateSearchQueryFromBuilder()">
                         <option value="">Tous les utilisateurs</option>
                     </select>
-                    <div class="custom-dropdown-container" id="custom-dropdown-builder-from">
-                        <button type="button" class="custom-dropdown-trigger"
-                                onclick="toggleCustomDropdown(event, 'builder-from')">
-                            <span class="custom-dropdown-selected-label">Tous les utilisateurs</span>
-                            <span class="dropdown-chevron">▼</span>
-                        </button>
-                        <div class="custom-dropdown-menu">
-                            <button type="button" class="custom-dropdown-item active" data-value=""
-                                    onclick="selectCustomDropdownOption(event, 'builder-from')">Tous les utilisateurs
-                            </button>
-                        </div>
-                    </div>
                 </div>
                 <!-- Filter by Channel -->
                 <div style="flex: 1; min-width: 180px;">
                     <label for="builder-in" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">Canal (in:)</label>
-                    <select id="builder-in" onchange="updateSearchQueryFromBuilder()" style="display: none;">
+                    <select id="builder-in" class="builder-select" onchange="updateSearchQueryFromBuilder()">
                         <option value="">Tous les canaux</option>
                     </select>
-                    <div class="custom-dropdown-container" id="custom-dropdown-builder-in">
-                        <button type="button" class="custom-dropdown-trigger"
-                                onclick="toggleCustomDropdown(event, 'builder-in')">
-                            <span class="custom-dropdown-selected-label">Tous les canaux</span>
-                            <span class="dropdown-chevron">▼</span>
-                        </button>
-                        <div class="custom-dropdown-menu">
-                            <button type="button" class="custom-dropdown-item active" data-value=""
-                                    onclick="selectCustomDropdownOption(event, 'builder-in')">Tous les canaux
-                            </button>
-                        </div>
-                    </div>
                 </div>
                 <!-- Filter by attachment type -->
                 <div style="flex: 1; min-width: 180px;">
                     <label for="builder-has" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">Pièce jointe (has:)</label>
-                    <select id="builder-has" onchange="updateSearchQueryFromBuilder()" style="display: none;">
+                    <select id="builder-has" class="builder-select" onchange="updateSearchQueryFromBuilder()">
                         <option value="">Peu importe</option>
                         <option value="file">Tout fichier</option>
                         <option value="image">Image</option>
@@ -73,33 +50,6 @@
                         <option value="audio">Audio</option>
                         <option value="pdf">PDF</option>
                     </select>
-                    <div class="custom-dropdown-container" id="custom-dropdown-builder-has">
-                        <button type="button" class="custom-dropdown-trigger"
-                                onclick="toggleCustomDropdown(event, 'builder-has')">
-                            <span class="custom-dropdown-selected-label">Peu importe</span>
-                            <span class="dropdown-chevron">▼</span>
-                        </button>
-                        <div class="custom-dropdown-menu">
-                            <button type="button" class="custom-dropdown-item active" data-value=""
-                                    onclick="selectCustomDropdownOption(event, 'builder-has')">Peu importe
-                            </button>
-                            <button type="button" class="custom-dropdown-item" data-value="file"
-                                    onclick="selectCustomDropdownOption(event, 'builder-has')">Tout fichier
-                            </button>
-                            <button type="button" class="custom-dropdown-item" data-value="image"
-                                    onclick="selectCustomDropdownOption(event, 'builder-has')">Image
-                            </button>
-                            <button type="button" class="custom-dropdown-item" data-value="video"
-                                    onclick="selectCustomDropdownOption(event, 'builder-has')">Vidéo
-                            </button>
-                            <button type="button" class="custom-dropdown-item" data-value="audio"
-                                    onclick="selectCustomDropdownOption(event, 'builder-has')">Audio
-                            </button>
-                            <button type="button" class="custom-dropdown-item" data-value="pdf"
-                                    onclick="selectCustomDropdownOption(event, 'builder-has')">PDF
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
             <!-- Simple Text Query -->
@@ -143,265 +93,4 @@
     </div>
 </dialog>
 
-<script>
-    (function() {
-        let usersLoaded = false;
 
-        window.toggleSearchBuilder = function() {
-            const panel = document.getElementById('search-builder-panel');
-            const icon = document.querySelector('.builder-toggle-icon');
-            if (!panel) return;
-
-            if (panel.style.display === 'none' || panel.style.display === '') {
-                panel.style.display = 'flex';
-                icon.textContent = '▼';
-                populateSearchBuilderDropdowns();
-                parseQueryIntoBuilder();
-            } else {
-                panel.style.display = 'none';
-                icon.textContent = '▶';
-            }
-        };
-
-        window.toggleCustomDropdown = function (event, selectId) {
-            event.stopPropagation();
-            const container = document.getElementById('custom-dropdown-' + selectId);
-            const isOpen = container.classList.contains('open');
-
-            // Close all other dropdowns
-            document.querySelectorAll('.custom-dropdown-container').forEach(c => {
-                c.classList.remove('open');
-                const menu = c.querySelector('.custom-dropdown-menu');
-                if (menu) menu.style.display = 'none';
-            });
-
-            if (!isOpen) {
-                container.classList.add('open');
-                container.querySelector('.custom-dropdown-menu').style.display = 'flex';
-            }
-        };
-
-        window.selectCustomDropdownOption = function (event, selectId) {
-            event.stopPropagation();
-            const item = event.currentTarget;
-            const val = item.getAttribute('data-value');
-            const select = document.getElementById(selectId);
-
-            select.value = val;
-
-            const changeEvent = new Event('change', {bubbles: true});
-            select.dispatchEvent(changeEvent);
-
-            updateCustomDropdownFromSelect(selectId);
-
-            const container = document.getElementById('custom-dropdown-' + selectId);
-            container.classList.remove('open');
-            container.querySelector('.custom-dropdown-menu').style.display = 'none';
-        };
-
-        window.updateCustomDropdownFromSelect = function (selectId) {
-            const select = document.getElementById(selectId);
-            const container = document.getElementById('custom-dropdown-' + selectId);
-            if (!select || !container) return;
-            const selectedOption = select.options[select.selectedIndex];
-
-            if (selectedOption) {
-                const labelEl = container.querySelector('.custom-dropdown-selected-label');
-                if (labelEl) {
-                    labelEl.textContent = selectedOption.textContent;
-                }
-            }
-
-            container.querySelectorAll('.custom-dropdown-item').forEach(item => {
-                if (item.getAttribute('data-value') === select.value) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
-                }
-            });
-        };
-
-        window.buildCustomDropdownMenu = function (selectId) {
-            const select = document.getElementById(selectId);
-            const container = document.getElementById('custom-dropdown-' + selectId);
-            if (!select || !container) return;
-            const menu = container.querySelector('.custom-dropdown-menu');
-            if (!menu) return;
-
-            menu.innerHTML = '';
-            Array.from(select.options).forEach(opt => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'custom-dropdown-item' + (select.value === opt.value ? ' active' : '');
-                btn.setAttribute('data-value', opt.value);
-                btn.textContent = opt.textContent;
-                btn.addEventListener('click', (e) => {
-                    selectCustomDropdownOption(e, selectId);
-                });
-                menu.appendChild(btn);
-            });
-
-            const labelEl = container.querySelector('.custom-dropdown-selected-label');
-            if (labelEl && select.selectedIndex >= 0) {
-                labelEl.textContent = select.options[select.selectedIndex].textContent;
-            }
-        };
-
-        // Close dropdowns on document click
-        document.addEventListener('click', function () {
-            document.querySelectorAll('.custom-dropdown-container').forEach(c => {
-                c.classList.remove('open');
-                const menu = c.querySelector('.custom-dropdown-menu');
-                if (menu) menu.style.display = 'none';
-            });
-        });
-
-        window.populateSearchBuilderDropdowns = function() {
-            const selectFrom = document.getElementById('builder-from');
-            const selectIn = document.getElementById('builder-in');
-            if (!selectFrom || !selectIn) return;
-
-            const currentFrom = selectFrom.value;
-            const currentIn = selectIn.value;
-
-            selectFrom.innerHTML = '<option value="">Tous les utilisateurs</option>';
-            selectIn.innerHTML = '<option value="">Tous les canaux</option>';
-
-            const channelLinks = document.querySelectorAll('.channel-link');
-            const addedChannels = new Set();
-            channelLinks.forEach(link => {
-                const slug = link.getAttribute('data-channel-slug');
-                const nameElt = link.querySelector('.channel-name');
-                if (slug && nameElt) {
-                    const name = nameElt.textContent.trim();
-                    const isDm = link.querySelector('.status-dot') !== null;
-                    const prefix = isDm ? '@' : '#';
-
-                    if (!addedChannels.has(slug)) {
-                        addedChannels.add(slug);
-                        const opt = document.createElement('option');
-                        opt.value = slug;
-                        opt.textContent = prefix + ' ' + name;
-                        selectIn.appendChild(opt);
-                    }
-                }
-            });
-            if (currentIn) selectIn.value = currentIn;
-            buildCustomDropdownMenu('builder-in');
-
-            if (!usersLoaded) {
-                usersLoaded = true;
-                htmx.ajax('GET', '{{ path('app_api_users_options') }}', {
-                    target: '#builder-from',
-                    swap: 'innerHTML',
-                }).then(() => {
-                    if (currentFrom) selectFrom.value = currentFrom;
-                    buildCustomDropdownMenu('builder-from');
-                    parseQueryIntoBuilder();
-                });
-            } else {
-                buildCustomDropdownMenu('builder-from');
-            }
-        };
-
-        window.parseQueryIntoBuilder = function() {
-            const queryInput = document.getElementById('global-search-input');
-            const builderFrom = document.getElementById('builder-from');
-            const builderIn = document.getElementById('builder-in');
-            const builderHas = document.getElementById('builder-has');
-            const builderText = document.getElementById('builder-text');
-
-            if (!queryInput || !builderFrom || !builderIn || !builderHas || !builderText) return;
-
-            let query = queryInput.value;
-
-            // Parse from:
-            let fromVal = '';
-            const fromMatch = query.match(/from:([^\s"]+|"[^"]+")/);
-            if (fromMatch) {
-                fromVal = fromMatch[1].replace(/"/g, '').replace(/^@/, '');
-                query = query.replace(fromMatch[0], '');
-            }
-            // Check if option exists in select, otherwise it won't apply immediately (will apply after fetch if loading)
-            builderFrom.value = fromVal;
-
-            // Parse in:
-            let inVal = '';
-            const inMatch = query.match(/in:([^\s"]+|"[^"]+")/);
-            if (inMatch) {
-                inVal = inMatch[1].replace(/"/g, '').replace(/^#/, '');
-                query = query.replace(inMatch[0], '');
-            }
-            builderIn.value = inVal;
-
-            // Parse has:
-            let hasVal = '';
-            const hasMatch = query.match(/has:([^\s]+)/);
-            if (hasMatch) {
-                hasVal = hasMatch[1].toLowerCase();
-                query = query.replace(hasMatch[0], '');
-            }
-            builderHas.value = hasVal;
-
-            // Remaining is text
-            builderText.value = query.replace(/\s+/g, ' ').trim();
-
-            // Sync with custom dropdowns
-            updateCustomDropdownFromSelect('builder-from');
-            updateCustomDropdownFromSelect('builder-in');
-            updateCustomDropdownFromSelect('builder-has');
-        };
-
-        window.updateSearchQueryFromBuilder = function() {
-            const queryInput = document.getElementById('global-search-input');
-            const builderFrom = document.getElementById('builder-from');
-            const builderIn = document.getElementById('builder-in');
-            const builderHas = document.getElementById('builder-has');
-            const builderText = document.getElementById('builder-text');
-
-            if (!queryInput || !builderFrom || !builderIn || !builderHas || !builderText) return;
-
-            let parts = [];
-
-            if (builderFrom.value) {
-                parts.push(`from:${builderFrom.value}`);
-            }
-            if (builderIn.value) {
-                parts.push(`in:${builderIn.value}`);
-            }
-            if (builderHas.value) {
-                parts.push(`has:${builderHas.value}`);
-            }
-            if (builderText.value.trim()) {
-                parts.push(builderText.value.trim());
-            }
-
-            queryInput.value = parts.join(' ');
-        };
-
-        // Bind input event to sync builder bidirectional when typing in main search
-        const queryInput = document.getElementById('global-search-input');
-        if (queryInput) {
-            queryInput.addEventListener('input', () => {
-                const panel = document.getElementById('search-builder-panel');
-                if (panel && panel.style.display !== 'none') {
-                    parseQueryIntoBuilder();
-                }
-            });
-        }
-
-        // Bind Enter key to search builder inputs to trigger search explicitly
-        const panel = document.getElementById('search-builder-panel');
-        if (panel) {
-            panel.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const form = document.getElementById('global-search-input').closest('form');
-                    if (form) {
-                        htmx.trigger(form, 'submit');
-                    }
-                }
-            });
-        }
-    })();
-</script>

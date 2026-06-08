@@ -9,39 +9,6 @@ const isMobile = () => window.matchMedia('(max-width: 1024px)').matches || ('ont
 
 
 
-export function replyToMessage(author, content) {
-    const textarea = document.getElementById('message');
-    if (!textarea) return;
-
-    // Split content by lines, prefix each with "> "
-    const lines = content.split('\n');
-    const quotedLines = lines.map(line => `> ${line}`).join('\n');
-
-    // Add header to make it clear who said it
-    const quoteHeader = `> **@${author}** a écrit :\n`;
-
-    // Combine quote header and the quoted lines, then add empty lines for user's reply
-    const quote = `${quoteHeader}${quotedLines}\n\n`;
-
-    // Prepend or set the quote
-    const currentValue = textarea.value;
-    if (currentValue.trim()) {
-        textarea.value = quote + currentValue;
-    } else {
-        textarea.value = quote;
-    }
-
-    if (!isMobile()) {
-        textarea.focus();
-    }
-
-    // Set selection/cursor at the end of the text
-    textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-
-    // Trigger any auto-resize listeners
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-}
-
 // Send message on Enter (without Shift or Alt) in the message textarea — with history & inline edit support via HTMX
 document.addEventListener('keydown', (event) => {
     if (!event.target || event.target.id !== 'message') return;
@@ -258,7 +225,36 @@ export function updateUserLinks(currentUsername) {
     // Handled via pure CSS selectors
 }
 
-window.replyToMessage = replyToMessage;
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-quote-reply');
+    if (!btn) return;
+
+    const author = btn.dataset.replyUsername;
+    const content = btn.dataset.replyContent;
+    if (!author || !content) return;
+
+    const textarea = document.getElementById('message');
+    if (!textarea) return;
+
+    const lines = content.split('\n');
+    const quotedLines = lines.map(line => `> ${line}`).join('\n');
+    const quoteHeader = `> **@${author}** a écrit :\n`;
+    const quote = `${quoteHeader}${quotedLines}\n\n`;
+
+    const currentValue = textarea.value;
+    if (currentValue.trim()) {
+        textarea.value = quote + currentValue;
+    } else {
+        textarea.value = quote;
+    }
+
+    if (!isMobile()) {
+        textarea.focus();
+    }
+
+    textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    textarea.dispatchEvent(new Event('input', {bubbles: true}));
+});
 
 window.updateEditButtonsVisibility = updateEditButtonsVisibility;
 window.updateUserLinks = updateUserLinks;

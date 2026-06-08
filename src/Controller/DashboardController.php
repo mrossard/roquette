@@ -90,4 +90,30 @@ final class DashboardController extends AbstractController
             'allUsers' => $allUsers,
         ]);
     }
+
+    #[Route('/channels/directory/panel/{type}', name: 'app_directory_panel')]
+    public function directoryPanel(
+        string $type,
+        ChannelRepository $channelRepository,
+        UserRepository $userRepository,
+    ): Response {
+        $currentUser = $this->getUser();
+
+        if ($type === 'members') {
+            $allUsers = array_filter(
+                $userRepository->findAllExcept($currentUser),
+                fn(User $u) => $u->getUsername() !== User::ROBOT_USERNAME,
+            );
+
+            return $this->render('dashboard/_directory_panel.html.twig', [
+                'type' => 'members',
+                'allUsers' => $allUsers,
+            ]);
+        }
+
+        return $this->render('dashboard/_directory_panel.html.twig', [
+            'type' => 'channels',
+            'allPublicChannels' => $channelRepository->findAllPublic(),
+        ]);
+    }
 }

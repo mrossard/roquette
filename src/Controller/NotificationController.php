@@ -187,8 +187,11 @@ final class NotificationController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        $data = json_decode($request->getContent(), true);
-        $isTyping = filter_var($data['isTyping'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $isTyping = filter_var($request->request->get('isTyping', false), FILTER_VALIDATE_BOOLEAN);
+        if ($request->headers->get('Content-Type') === 'application/json') {
+            $data = json_decode($request->getContent(), true);
+            $isTyping = filter_var($data['isTyping'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        }
 
         $cacheKey = 'channel_typing_'.$activeChannel->getSlug();
 
@@ -222,7 +225,7 @@ final class NotificationController extends AbstractController
 
         $mercurePublisher->publishToChannel($activeChannel, 'ping', 'typing_'.$activeChannel->getSlug());
 
-        return new Response('', 204);
+        return $this->typingIndicator($slug, $channelRepository, $cache);
     }
 
     #[Route('/channel/{slug}/typing-indicator', name: 'app_channel_typing_indicator', methods: ['GET'])]

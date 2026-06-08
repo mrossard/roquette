@@ -2,14 +2,7 @@
     <div class="search-results-banner unread-filter-banner">
         <span class="search-banner-text">🔔 Affichage des <strong>messages non lus</strong> (et fils)</span>
         <button class="btn-clear-search btn-clear-unread"
-                hx-on:click="
-                    const input = document.getElementById('channel-search-input');
-                    const checkbox = document.getElementById('unread-filter-checkbox');
-                    const form = document.getElementById('channel-filters-form');
-                    if (input) input.value = '';
-                    if (checkbox) checkbox.checked = false;
-                    if (form) htmx.trigger(form, 'submit');
-                "
+                hx-on:click="clearSearchFilters()"
                 title="Revenir à tous les messages">Retour au direct
         </button>
     </div>
@@ -42,14 +35,7 @@
             <h3>Tout est à jour !</h3>
             <p>Aucun message non lu dans ce canal.</p>
             <button class="btn-clear-search"
-                    hx-on:click="
-                        const input = document.getElementById('channel-search-input');
-                        const checkbox = document.getElementById('unread-filter-checkbox');
-                        const form = document.getElementById('channel-filters-form');
-                        if (input) input.value = '';
-                        if (checkbox) checkbox.checked = false;
-                        if (form) htmx.trigger(form, 'submit');
-                    "
+                    hx-on:click="clearSearchFilters()"
                     style="margin-top: 1rem;">Retour au direct
             </button>
         </div>
@@ -58,14 +44,7 @@
     <div class="search-results-banner">
         <span class="search-banner-text">🔍 <strong>{{ messages|length }}</strong> résultat(s) pour "<strong>{{ searchQuery }}</strong>"</span>
         <button class="btn-clear-search"
-                hx-on:click="
-                    const input = document.getElementById('channel-search-input');
-                    const checkbox = document.getElementById('unread-filter-checkbox');
-                    const form = document.getElementById('channel-filters-form');
-                    if (input) input.value = '';
-                    if (checkbox) checkbox.checked = false;
-                    if (form) htmx.trigger(form, 'submit');
-                "
+                hx-on:click="clearSearchFilters()"
                 title="Quitter la recherche">Retour au direct
         </button>
     </div>

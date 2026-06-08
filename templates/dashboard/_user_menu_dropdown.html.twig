@@ -24,7 +24,7 @@
             <span class="option-label">{{ 'Absent'|trans }}</span>
         </button>
         <button class="user-status-option {% if app.user.statusOverride == 'busy' %}active{% endif %}"
-                data-status-value="busy" onclick="document.getElementById('busy-status-modal').showModal()"
+                data-status-value="busy" data-open-modal="busy-status-modal"
                 role="menuitem">
             <span class="status-dot busy" style="display: inline-block;"></span>
             <span class="option-label">{{ 'Occupé'|trans }}</span>
