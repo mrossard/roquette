@@ -331,7 +331,10 @@ export function scrollToMessage(messageId) {
             el.classList.remove('highlight-pinned-message');
         }, 2000);
     } else {
-        alert("Ce message n'est pas présent dans l'historique chargé.");
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.get('jumpTo')) {
+            window.location.href = window.location.pathname + '?jumpTo=' + messageId;
+        }
     }
 }
 

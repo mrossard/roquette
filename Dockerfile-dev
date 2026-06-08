@@ -3,8 +3,8 @@ FROM dunglas/frankenphp:1.12.4-php8.5
 #force non-https, TZ, ...
 ENV SERVER_NAME=":80" \
     TZ="Europe/Paris" \
-    COMPOSER_ALLOW_SUPERUSER=1
-#    FRANKENPHP_CONFIG="worker ./public/index.php 8"
+    COMPOSER_ALLOW_SUPERUSER=1 \
+    FRANKENPHP_CONFIG="worker ./public/index.php 8"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends supervisor tzdata && \
@@ -30,7 +30,7 @@ RUN php bin/console asset-map:compile
 
 COPY --link --chmod=755 ./docker/entrypoint.sh /usr/local/bin/docker-entrypoint
 COPY --link --chmod=644 ./docker/php-overrides.ini /usr/local/etc/php/conf.d/99-overrides.ini
-COPY --link --chmod=644 ./docker/xdebug-conf.ini /usr/local/etc/php/conf.d/99-xdebug.ini
+#COPY --link --chmod=644 ./docker/xdebug-conf.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
 

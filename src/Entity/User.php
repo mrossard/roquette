@@ -18,6 +18,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\UniqueConstraint(name: 'UNIQ_USER_OAUTH', fields: ['oauthId', 'oauthProvider'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    public const string ROBOT_USERNAME = 'robot-roquette';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -36,7 +38,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private array $roles = [];
 
     /**
-     * @var string The hashed password
+     * @var ?string The hashed password
      */
     #[ORM\Column]
     private ?string $password = null;
@@ -70,6 +72,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(options: ['default' => false])]
     private bool $admin = false;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $bannedAt = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $bannedReason = null;
 
     /**
      * @var Collection<int, Channel>
@@ -211,6 +219,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->admin = $admin;
 
         return $this;
+    }
+
+    public function getBannedAt(): ?\DateTimeImmutable
+    {
+        return $this->bannedAt;
+    }
+
+    public function setBannedAt(?\DateTimeImmutable $bannedAt): static
+    {
+        $this->bannedAt = $bannedAt;
+
+        return $this;
+    }
+
+    public function getBannedReason(): ?string
+    {
+        return $this->bannedReason;
+    }
+
+    public function setBannedReason(?string $bannedReason): static
+    {
+        $this->bannedReason = $bannedReason;
+
+        return $this;
+    }
+
+    public function isBanned(): bool
+    {
+        return $this->bannedAt !== null;
     }
 
     public function getDisplayName(): ?string

@@ -1,0 +1,142 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Roquette - Administration{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+    {% set mercureTopics = [
+        mercure_topic_prefix ~ '/users/' ~ app.user.username,
+        mercure_topic_prefix ~ '/users/status'
+    ] %}
+    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
+    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
+        <header class="app-header">
+            <div class="logo-area">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+                <span class="logo-rocket">🚀</span>
+                <div class="logo-text">
+                    <h1>Roquette</h1>
+                    <p class="subtitle">Administration</p>
+                </div>
+            </div>
+
+            {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
+        </header>
+
+        <main class="dashboard-grid" style="grid-template-columns: 1fr;">
+            <section class="card glass-panel settings-panel" style="flex-grow: 1;">
+                <div class="card-header">
+                    <h2>Gestion des utilisateurs</h2>
+                    <p class="card-description">Bannir ou réhabiliter des utilisateurs.</p>
+                </div>
+
+                <div class="card-body" style="gap: 1rem;">
+                    {% for label, messages in app.flashes %}
+                        {% for msg in messages %}
+                            <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in">
+                                {{ msg }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <div class="admin-users-table-wrapper" style="overflow-x: auto;">
+                        <table class="admin-users-table"
+                               style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                            <thead>
+                            <tr style="border-bottom: 1px solid var(--border-glass); text-align: left;">
+                                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">
+                                    Utilisateur
+                                </th>
+                                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Rôle
+                                </th>
+                                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">
+                                    Statut
+                                </th>
+                                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">
+                                    Actions
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for u in users %}
+                                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                                    <td style="padding: 0.75rem 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    <span class="feed-item-avatar"
+                                          style="--user-hue: {{ u.hue }}; width: 32px; height: 32px; font-size: 0.9rem; flex-shrink: 0;">
+                                        {{ u.username|slice(0, 1)|upper }}
+                                    </span>
+                                        <div>
+                                            <strong
+                                                style="color: hsl({{ u.hue }}, 90%, var(--user-hue-lightness-text));">{{ u.displayName|default(u.username) }}</strong>
+                                            <span
+                                                style="display: block; font-size: 0.8rem; color: var(--text-muted);">@{{ u.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 0.75rem 0.5rem;">
+                                        {% if u.admin %}
+                                            <span class="status-pill"
+                                                  style="background: rgba(147, 51, 234, 0.15); color: #a855f7; border: 1px solid rgba(147, 51, 234, 0.2);">Admin</span>
+                                        {% else %}
+                                            <span class="status-pill"
+                                                  style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass);">Utilisateur</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 0.75rem 0.5rem;">
+                                        {% if u.bannedAt %}
+                                            <span class="status-pill"
+                                                  style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
+                                            Banni
+                                        </span>
+                                            {% if u.bannedReason %}
+                                                <span
+                                                    style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">{{ u.bannedReason }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="status-pill"
+                                                  style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2);">Actif</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 0.75rem 0.5rem;">
+                                        {% if u.bannedAt %}
+                                            <form action="{{ path('app_admin_user_unban', {id: u.id}) }}" method="POST"
+                                                  style="display: inline;" hx-boost="false">
+                                                <button type="submit" class="btn-submit"
+                                                        style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2); padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                                                    Réhabiliter
+                                                </button>
+                                            </form>
+                                        {% elseif u.admin or u.id == app.user.id %}
+                                            <span style="color: var(--text-muted); font-size: 0.85rem;">—</span>
+                                        {% else %}
+                                            <form action="{{ path('app_admin_user_ban', {id: u.id}) }}" method="POST"
+                                                  style="display: inline;" hx-boost="false"
+                                                  data-confirm="Êtes-vous sûr de vouloir bannir {{ u.username }} ?">
+                                                <button type="submit" class="btn-delete-channel"
+                                                        style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                                                    Bannir
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        {% include '_footer.html.twig' %}
+    </div>
+{% endblock %}

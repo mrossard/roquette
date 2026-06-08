@@ -155,6 +155,13 @@ class OAuth2Authenticator extends AbstractAuthenticator
             $existingUserByUsername = $this->userRepository->findOneBy(['username' => $username]);
             if ($existingUserByUsername) {
                 $user = $existingUserByUsername;
+
+                if ($user->isBanned()) {
+                    throw new CustomUserMessageAuthenticationException(
+                        'Votre compte a été suspendu. Veuillez contacter un administrateur.',
+                    );
+                }
+
                 $user->setOauthId($oauthId);
                 $user->setOauthProvider('generic');
                 $this->entityManager->flush();
@@ -188,6 +195,12 @@ class OAuth2Authenticator extends AbstractAuthenticator
                 ));
             }
         } else {
+            if ($user->isBanned()) {
+                throw new CustomUserMessageAuthenticationException(
+                    'Votre compte a été suspendu. Veuillez contacter un administrateur.',
+                );
+            }
+
             $this->logger->debug(sprintf(
                 'User "%s" authenticated via OAuth2 with provider ID "%s".',
                 $user->getUsername(),

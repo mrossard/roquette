@@ -84,4 +84,23 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getQuery()
             ->getResult();
     }
+
+    public function getAllSortedByDisplayName(bool $withRobot): iterable
+    {
+        $qb = $this
+            ->createQueryBuilder('u')
+            ->addSelect('COALESCE(u.displayName, u.username) AS HIDDEN sortName')
+            ->orderBy('sortName', 'ASC');
+
+        if (!$withRobot) {
+            $qb
+                ->andWhere('u.username != :robot')
+                ->setParameter('robot', User::ROBOT_USERNAME);
+        }
+
+        return $qb
+            ->getQuery()
+            ->getResult();
+    }
+
 }

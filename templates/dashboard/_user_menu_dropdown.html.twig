@@ -40,6 +40,12 @@
             <span class="option-icon">⚙️</span>
             <span class="option-label">{{ 'Mon Compte'|trans }}</span>
         </a>
+        {% if is_granted('ROLE_ADMIN') %}
+            <a href="{{ path('app_admin_users') }}" class="user-status-option" role="menuitem">
+                <span class="option-icon">🛡️</span>
+                <span class="option-label">Administration</span>
+            </a>
+        {% endif %}
         <a href="{{ path('app_logout') }}" class="user-status-option logout-option" hx-boost="false" role="menuitem">
             <span class="option-icon">🚪</span>
             <span class="option-label">{{ 'Déconnexion'|trans }}</span>

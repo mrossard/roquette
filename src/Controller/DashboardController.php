@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
@@ -75,7 +76,10 @@ final class DashboardController extends AbstractController
 
         $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
         $allPublicChannels = $channelRepository->findAllPublic();
-        $allUsers = $userRepository->findAllExcept($currentUser);
+        $allUsers = array_filter(
+            $userRepository->findAllExcept($currentUser),
+            fn(User $u) => $u->getUsername() !== User::ROBOT_USERNAME,
+        );
 
         return $this->render('dashboard/directory.html.twig', [
             'channels' => $channels,
