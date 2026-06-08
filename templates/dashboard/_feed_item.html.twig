@@ -38,7 +38,7 @@
             <div class="feed-item-me-content">
                 <span
                     class="feed-item-time">{% if timestamp|date('Y-m-d') != 'now'|date('Y-m-d') %}{{ timestamp|date('d/m/Y') }} {% endif %}{{ timestamp|date('H:i') }}</span>
-                {% if author %}
+                {% if author and author.username != constant('App\\\\Entity\\\\User::ROBOT_USERNAME') %}
                     <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link"
                        title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel}) }}">
                         <span class="feed-item-user">{{ username|wrap_emojis }}</span>
@@ -66,7 +66,7 @@
     {% else %}
         <div class="feed-item-header">
             <div class="feed-item-user-container">
-                {% if author %}
+                {% if author and author.username != 'robot-roquette' %}
                     <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link"
                        title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel}) }}">
                         <div class="avatar-container">
@@ -95,6 +95,12 @@
                             {% endif %}
                         {% else %}
                             <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
+                        {% endif %}
+                        {% if author %}
+                            <span class="status-dot-overlay {{ author.status }}" data-username="{{ author.username }}"
+                                  data-status-override="{{ author.statusOverride|default('auto') }}"
+                                  data-last-active="{{ author.lastActiveAt ? author.lastActiveAt.timestamp : '' }}"
+                                  title="{{ author.statusLabel }}"></span>
                         {% endif %}
                     </div>
                     <span class="feed-item-user">{{ username|wrap_emojis }}</span>
