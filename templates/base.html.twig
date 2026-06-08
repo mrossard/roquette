@@ -113,11 +113,15 @@
         {% block body %}{% endblock %}
 
         {% if app.user %}
-            {% include '_lightbox_modal.html.twig' %}
             {% include '_global_search_modal.html.twig' %}
             {% include '_busy_status_modal.html.twig' %}
             {% include '_confirmation_dialogs.html.twig' %}
             <div id="modal-container" hx-target="this" hx-swap="innerHTML"></div>
+            <div hx-post="{{ path('app_user_ping') }}"
+                 hx-trigger="load delay:1s, every 60s"
+                 hx-swap="none"
+                 style="display:none"
+                 id="heartbeat-ping"></div>
         {% endif %}
     </body>
 </html>

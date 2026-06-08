@@ -16,13 +16,5 @@
             'messageObject': null
         } %}
     </div>
-    <script>
-        (function () {
-            const emptyState = document.getElementById('feed-empty-state');
-            if (emptyState) {
-                emptyState.remove();
-            }
-            // Removed scrollToBottom call
-        })();
-    </script>
+    <div id="feed-empty-state" hx-swap-oob="delete" style="display:none"></div>
 </div>

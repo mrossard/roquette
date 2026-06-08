@@ -290,21 +290,15 @@
             buildCustomDropdownMenu('builder-in');
 
             if (!usersLoaded) {
-                fetch('/api/users')
-                    .then(res => res.json())
-                    .then(users => {
-                        users.forEach(user => {
-                            const opt = document.createElement('option');
-                            opt.value = user.username;
-                            opt.textContent = `@${user.username} (${user.displayName || user.username})`;
-                            selectFrom.appendChild(opt);
-                        });
-                        usersLoaded = true;
-                        if (currentFrom) selectFrom.value = currentFrom;
-                        buildCustomDropdownMenu('builder-from');
-                        parseQueryIntoBuilder();
-                    })
-                    .catch(err => console.error('Failed to load users for search builder:', err));
+                usersLoaded = true;
+                htmx.ajax('GET', '{{ path('app_api_users_options') }}', {
+                    target: '#builder-from',
+                    swap: 'innerHTML',
+                }).then(() => {
+                    if (currentFrom) selectFrom.value = currentFrom;
+                    buildCustomDropdownMenu('builder-from');
+                    parseQueryIntoBuilder();
+                });
             } else {
                 buildCustomDropdownMenu('builder-from');
             }

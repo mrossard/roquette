@@ -11,7 +11,7 @@ export function sendDesktopNotification(title, body, icon = null, tag = null, ur
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
     if (isCurrentUserBusy()) return;
-    
+
     // Check user preference in localStorage
     const enabled = localStorage.getItem('roquette_notifications_enabled') !== 'false';
     if (!enabled) return;
@@ -63,7 +63,7 @@ export function setupNotificationHeaderButton() {
         const enabled = localStorage.getItem('roquette_notifications_enabled') !== 'false';
         const bell = btn.querySelector('.bell-icon') || document.createElement('span');
         bell.className = 'bell-icon';
-        
+
         if (btn.querySelector('.bell-icon') === null) {
             btn.appendChild(bell);
         }
@@ -199,7 +199,7 @@ export function updateSettingsPageUI() {
             <div class="notification-status-badge granted">
                 <span>✅ Les notifications sont autorisées dans votre navigateur.</span>
             </div>
-            
+
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 0.75rem; border: 1px solid var(--border-glass);">
                 <span style="font-size: 0.9rem; color: var(--text-primary);">Activer les notifications de bureau</span>
                 <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
@@ -222,7 +222,7 @@ export function updateSettingsPageUI() {
         checkbox?.addEventListener('change', (e) => {
             const isChecked = e.target.checked;
             localStorage.setItem('roquette_notifications_enabled', isChecked.toString());
-            
+
             if (slider) {
                 slider.style.backgroundColor = isChecked ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.1)';
             }
@@ -289,7 +289,7 @@ export function handleGlobalNotification(data) {
     if (shouldNotify) {
         const title = data.isMention ? `Mention dans ${data.channelName}` : (data.channelName || 'Nouveau message 🚀');
         const body = data.isMention ? `@${data.authorDisplayName || data.author} vous a mentionné : ${data.content}` : `@${data.authorDisplayName || data.author}: ${data.content || 'Nouveau message'}`;
-        
+
         sendDesktopNotification(
             title,
             body,
@@ -302,12 +302,7 @@ export function handleGlobalNotification(data) {
     if (data.channelSlug === activeChannelSlug && isPageActive) {
         // We are currently viewing this channel and the page is active, so mark it as read in the DB in background
         const readUrl = `/channels/${data.channelSlug}/read`;
-        fetch(readUrl, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        }).catch(err => console.error('Error marking channel as read:', err));
+        htmx.ajax('POST', readUrl, {swap: 'none'});
     } else {
         // We are on another channel, show/increment the unread badge
         const channelLink = document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`);
@@ -328,34 +323,15 @@ export function handleGlobalNotification(data) {
             badge.style.display = 'inline-flex';
         } else if (data.isDm) {
             const dmsList = document.getElementById('section-dms');
-            if (dmsList) {
-                fetch(`/channels/${data.channelSlug}/sidebar-item`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        return response.text();
-                    }
-                    throw new Error('Failed to fetch sidebar item');
-                })
-                .then(html => {
-                    if (!document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`)) {
-                        const emptyState = dmsList.querySelector('p');
-                        if (emptyState && emptyState.textContent.includes('Aucun message direct')) {
-                            emptyState.remove();
-                        }
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = html.trim();
-                        const newSidebarItem = tempDiv.firstChild;
-                        dmsList.appendChild(newSidebarItem);
-                        if (window.htmx) {
-                            window.htmx.process(newSidebarItem);
-                        }
-                    }
-                })
-                .catch(err => console.error('Error adding DM to sidebar:', err));
+            if (dmsList && !document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`)) {
+                const emptyState = dmsList.querySelector('p');
+                if (emptyState && emptyState.textContent.includes('Aucun message direct')) {
+                    emptyState.remove();
+                }
+                htmx.ajax('GET', `/channels/${data.channelSlug}/sidebar-item`, {
+                    target: '#section-dms',
+                    swap: 'beforeend'
+                });
             }
         }
     }
@@ -472,16 +448,8 @@ export function markActiveChannelAsReadIfFocused() {
         }
 
         const readUrl = `/channels/${activeChannelSlug}/read`;
-        fetch(readUrl, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(() => {
-            updateFaviconUnreadCount();
-        })
-        .catch(err => console.error('Error marking channel as read on focus:', err));
+        htmx.ajax('POST', readUrl, {swap: 'none'});
+        updateFaviconUnreadCount();
     }
 }
 

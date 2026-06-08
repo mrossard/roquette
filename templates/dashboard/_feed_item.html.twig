@@ -145,7 +145,9 @@
                 {% set isText = (mimeType is defined and mimeType and mimeType starts with 'text/') or fileExt in ['txt', 'log', 'md', 'html', 'css', 'js', 'json', 'php', 'yml', 'yaml', 'xml'] %}
                 {% if isImage %}
                     <div class="attachment-preview image-preview-container">
-                        <img src="{{ path('app_file_preview', {id: message_id}) }}" alt="{{ fileName }}" class="preview-image" onclick="openLightbox(this.src, '{{ fileName|escape('js') }}')">
+                        <img src="{{ path('app_file_preview', {id: message_id}) }}" alt="{{ fileName }}"
+                             class="preview-image" hx-get="{{ path('app_lightbox', {id: message_id}) }}"
+                             hx-target="#modal-container" hx-trigger="click" style="cursor:pointer">
                     </div>
                 {% elseif isAudio %}
                     <div class="attachment-preview audio-preview-container">

@@ -165,4 +165,30 @@ final class FileController extends AbstractController
             'message_id' => $message->getId(),
         ]);
     }
+
+    #[Route('/messages/{id}/lightbox', name: 'app_lightbox', methods: ['GET'])]
+    public function lightbox(
+        int $id,
+        MessageRepository $messageRepository,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        $message = $messageRepository->find($id);
+        if (!$message || !$message->getFilePath()) {
+            throw $this->createNotFoundException('Fichier non trouvé.');
+        }
+
+        $channel = $message->getChannel();
+        if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
+            throw $this->createAccessDeniedException('Non autorisé à accéder à ce fichier.');
+        }
+
+        return $this->render('_lightbox_content.html.twig', [
+            'message_id' => $message->getId(),
+            'fileName' => $message->getFileName(),
+            'previewUrl' => $this->generateUrl('app_file_preview', ['id' => $message->getId()]),
+            'downloadUrl' => $this->generateUrl('app_file_download', ['id' => $message->getId()]),
+        ]);
+    }
 }

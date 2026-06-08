@@ -136,6 +136,16 @@ final class UserSettingsController extends AbstractController
         return new JsonResponse($data);
     }
 
+    #[Route('/api/users-options', name: 'app_api_users_options', methods: ['GET'])]
+    public function apiUsersOptions(EntityManagerInterface $entityManager): Response
+    {
+        $users = $entityManager->getRepository(\App\Entity\User::class)->findBy([], ['displayName' => 'ASC']);
+
+        return $this->render('api/_user_options.html.twig', [
+            'users' => $users,
+        ]);
+    }
+
     // -------------------------------------------------------------------------
     // API: list channels
     // -------------------------------------------------------------------------

@@ -439,22 +439,9 @@ function saveChannelOrder() {
     const allLinks = document.querySelectorAll('.channel-link[data-channel-id]');
     const order = Array.from(allLinks).map(el => parseInt(el.getAttribute('data-channel-id'), 10));
 
-    fetch('/channels/reorder', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ order: order })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (!data.success) {
-            console.error('Failed to update channel order:', data.error);
-        }
-    })
-    .catch(err => {
-        console.error('Error updating channel order:', err);
+    htmx.ajax('POST', '/channels/reorder', {
+        values: {'order[]': order},
+        swap: 'none'
     });
 }
 

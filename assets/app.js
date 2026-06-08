@@ -49,8 +49,6 @@ import './autocomplete.js';
 import { buildEmojiPickerDOM } from './emoji.js';
 import './thread.js';
 import './offline.js';
-import './poll.js';
-import './channel-admin.js';
 
 console.log('Roquette application initialized! 🚀');
 
@@ -347,20 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initMobileSidebar) window.initMobileSidebar();
     if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
 
-
-    // Heartbeat to keep user status online
-    if (document.getElementById('mercure-status')) {
-        const sendHeartbeat = () => {
-            fetch('/user/ping', {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }).catch(err => console.error('Heartbeat failed:', err));
-        };
-        sendHeartbeat();
-        setInterval(sendHeartbeat, 60000);
-    }
 
     // Focus message input on load (unless on mobile)
     const messageInput = document.getElementById('message');
