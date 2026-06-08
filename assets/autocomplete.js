@@ -2,6 +2,7 @@ import {EMOJI_CATEGORIES, EMOJI_KEYWORDS, EMOJI_PRIMARY_SHORTCODES} from './emoj
 
 let activeAutocomplete = null;
 let lastAutocompleteQuery = '';
+let lastAutocompleteType = '';
 
 const SLASH_COMMANDS = [
     {name: 'help', icon: '🤖', description: 'Poser une question à l\'Assistant Roquette', usage: '/help <question>'},
@@ -13,13 +14,14 @@ const SLASH_COMMANDS = [
 
 function loadAutocompleteItems(type, query) {
     lastAutocompleteQuery = query;
+    lastAutocompleteType = type;
     const url = `/api/autocomplete/${type}?q=${encodeURIComponent(query)}`;
 
     return htmx.ajax('GET', url, {
         target: activeAutocomplete.element,
         swap: 'innerHTML',
     }).then(() => {
-        if (lastAutocompleteQuery !== query) return;
+        if (lastAutocompleteQuery !== query || lastAutocompleteType !== type) return;
         updateAutocompleteActiveIndex();
     });
 }
@@ -300,6 +302,9 @@ function renderAutocompleteItems() {
 
         element.appendChild(item);
     });
+
+    const activeItem = element.querySelector('.emoji-autocomplete-item.active');
+    if (activeItem) activeItem.scrollIntoView({block: 'nearest'});
 }
 
 function updateAutocompleteActiveIndex() {
@@ -308,6 +313,9 @@ function updateAutocompleteActiveIndex() {
     items.forEach((item, i) => {
         item.classList.toggle('active', i === activeAutocomplete.activeIndex);
     });
+
+    const activeItem = items[activeAutocomplete.activeIndex];
+    if (activeItem) activeItem.scrollIntoView({block: 'nearest'});
 }
 
 function selectAutocompleteEmoji(idx) {
@@ -421,6 +429,8 @@ function handleTextareaKeydownForAutocomplete(textarea, e) {
         const items = activeAutocomplete.element.querySelectorAll('.emoji-autocomplete-item');
         const maxIdx = items.length > 0 ? items.length : matches.length;
 
+        if (maxIdx === 0) return;
+
         activeAutocomplete.activeIndex = (activeIndex + 1) % maxIdx;
 
         if (type === 'emoji' || type === 'command') {
@@ -434,6 +444,8 @@ function handleTextareaKeydownForAutocomplete(textarea, e) {
 
         const items = activeAutocomplete.element.querySelectorAll('.emoji-autocomplete-item');
         const maxIdx = items.length > 0 ? items.length : matches.length;
+
+        if (maxIdx === 0) return;
 
         activeAutocomplete.activeIndex = (activeIndex - 1 + maxIdx) % maxIdx;
 
