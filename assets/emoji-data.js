@@ -619,3 +619,11 @@ for (const [shortname, emoji] of Object.entries(EMOJI_ALIASES)) {
         EMOJI_KEYWORDS[emoji].push(shortname);
     }
 }
+
+// Derive primary shortcodes map from aliases (first alias per emoji)
+export const EMOJI_PRIMARY_SHORTCODES = {};
+for (const [shortname, emoji] of Object.entries(EMOJI_ALIASES)) {
+    if (!EMOJI_PRIMARY_SHORTCODES[emoji]) {
+        EMOJI_PRIMARY_SHORTCODES[emoji] = shortname;
+    }
+}

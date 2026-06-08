@@ -86,7 +86,8 @@
         ],
         "post-update-cmd": [
             "@auto-scripts"
-        ]
+        ],
+        "generate-emoji-mapping": "php bin/generate-emoji-mapping.php"
     },
     "conflict": {
         "symfony/symfony": "*"

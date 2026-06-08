@@ -1,5 +1,4 @@
-import { EMOJI_CATEGORIES, EMOJI_KEYWORDS } from './emoji-data.js';
-import { EMOJI_PRIMARY_SHORTCODES } from './emoji-primary-shortcodes.js';
+import {EMOJI_CATEGORIES, EMOJI_KEYWORDS, EMOJI_PRIMARY_SHORTCODES} from './emoji-data.js';
 
 let activeAutocomplete = null;
 let appUsers = [];
