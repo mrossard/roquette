@@ -49,6 +49,12 @@ class Message
     #[ORM\JoinColumn(nullable: false)]
     private ?User $author = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $customAuthorName = null;
+
+    #[ORM\Column(length: 2048, nullable: true)]
+    private ?string $customAuthorAvatar = null;
+
     #[ORM\OneToMany(targetEntity: Reaction::class, mappedBy: 'message', orphanRemoval: true)]
     private Collection $reactions;
 
@@ -222,5 +228,29 @@ class Message
     public function isPoll(): bool
     {
         return $this->poll !== null;
+    }
+
+    public function getCustomAuthorName(): ?string
+    {
+        return $this->customAuthorName;
+    }
+
+    public function setCustomAuthorName(?string $customAuthorName): static
+    {
+        $this->customAuthorName = $customAuthorName;
+
+        return $this;
+    }
+
+    public function getCustomAuthorAvatar(): ?string
+    {
+        return $this->customAuthorAvatar;
+    }
+
+    public function setCustomAuthorAvatar(?string $customAuthorAvatar): static
+    {
+        $this->customAuthorAvatar = $customAuthorAvatar;
+
+        return $this;
     }
 }

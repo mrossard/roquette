@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Repository\ChannelRepository;
+use App\Repository\WebhookRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -17,6 +18,7 @@ final class ModalController extends AbstractController
     public function editModal(
         string $slug,
         ChannelRepository $channelRepository,
+        WebhookRepository $webhookRepository,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -30,8 +32,11 @@ final class ModalController extends AbstractController
             return new Response('Accès refusé', 403);
         }
 
+        $webhooks = $webhookRepository->findBy(['channel' => $channel], ['createdAt' => 'ASC']);
+
         return $this->render('_edit_channel_modal.html.twig', [
             'activeChannel' => $channel,
+            'webhooks' => $webhooks,
         ]);
     }
 

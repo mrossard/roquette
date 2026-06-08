@@ -222,3 +222,13 @@
 "Trop de tentatives d'inscription. Veuillez réessayer plus tard.": "Trop de tentatives d'inscription. Veuillez réessayer plus tard."
 "Votre compte a été créé avec succès ! Connectez-vous maintenant.": "Votre compte a été créé avec succès ! Connectez-vous maintenant."
 
+# Webhooks
+"Webhooks entrants": "Webhooks entrants"
+"Aucun webhook configuré pour ce canal.": "Aucun webhook configuré pour ce canal."
+"Actif": "Actif"
+"Inactif": "Inactif"
+"Êtes-vous sûr de vouloir supprimer ce webhook ?": "Êtes-vous sûr de vouloir supprimer ce webhook ?"
+"Copier l'URL": "Copier l'URL"
+"Nouveau webhook (Nom)": "Nouveau webhook (Nom)"
+"Créer": "Créer"
+

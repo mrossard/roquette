@@ -222,3 +222,13 @@
 "Trop de tentatives d'inscription. Veuillez réessayer plus tard.": "Too many registration attempts. Please try again later."
 "Votre compte a été créé avec succès ! Connectez-vous maintenant.": "Your account has been created successfully! Log in now."
 Rejoindre: 'Join'
+
+# Webhooks
+"Webhooks entrants": "Incoming Webhooks"
+"Aucun webhook configuré pour ce canal.": "No webhooks configured for this channel."
+"Actif": "Active"
+"Inactif": "Inactive"
+"Êtes-vous sûr de vouloir supprimer ce webhook ?": "Are you sure you want to delete this webhook?"
+"Copier l'URL": "Copy URL"
+"Nouveau webhook (Nom)": "New webhook (Name)"
+"Créer": "Create"

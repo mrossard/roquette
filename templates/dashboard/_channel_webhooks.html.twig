@@ -1,0 +1,78 @@
+<div id="channel-webhooks-container"
+     style="margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+    <h3 style="font-size: 1rem; color: var(--text-primary); margin-bottom: 0.75rem;">
+        🔗 {{ 'Webhooks entrants'|trans }}</h3>
+
+    <div id="webhooks-list" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
+        {% if webhooks is empty %}
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">{{ 'Aucun webhook configuré pour ce canal.'|trans }}</p>
+        {% else %}
+            {% for webhook in webhooks %}
+                <div class="webhook-item" id="webhook-{{ webhook.id }}"
+                     style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-glass); border-radius: 0.5rem; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                        <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">
+                            {{ webhook.name }}
+                        </span>
+
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <!-- Active/Inactive Status Toggle -->
+                            <button type="button"
+                                    hx-post="{{ path('app_webhook_toggle', {id: webhook.id}) }}"
+                                    hx-target="#channel-webhooks-container"
+                                    hx-swap="outerHTML"
+                                    style="background: none; border: none; cursor: pointer; padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 0.25rem; font-weight: bold; color: {{ webhook.isActive ? '#10b981' : '#ef4444' }}; border: 1px solid {{ webhook.isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}; background: {{ webhook.isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }};">
+                                {{ webhook.isActive ? 'Actif'|trans : 'Inactif'|trans }}
+                            </button>
+
+                            <!-- Delete Button -->
+                            <button type="button"
+                                    hx-post="{{ path('app_webhook_delete', {id: webhook.id}) }}"
+                                    hx-target="#channel-webhooks-container"
+                                    hx-swap="outerHTML"
+                                    hx-confirm="{{ 'Êtes-vous sûr de vouloir supprimer ce webhook ?'|trans }}"
+                                    style="background: none; border: none; cursor: pointer; color: var(--accent-red, #ff5b5b); font-size: 0.9rem; padding: 0.25rem;"
+                                    title="{{ 'Supprimer'|trans }}">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Webhook URL Display & Copy -->
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        {% set webhookUrl = url('app_webhook_incoming', {token: webhook.token}) %}
+                        <input type="text" readonly value="{{ webhookUrl }}"
+                               style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); border-radius: 0.25rem; color: var(--text-muted); padding: 0.25rem 0.5rem; font-size: 0.75rem; flex: 1; font-family: monospace; outline: none;"
+                               onclick="this.select();">
+
+                        <button type="button" class="btn-copy-webhook"
+                                onclick="navigator.clipboard.writeText('{{ webhookUrl }}'); const b = this; b.textContent = 'Copié !'; setTimeout(() => b.textContent = '📋', 1500);"
+                                style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem;"
+                                title="{{ 'Copier l\'URL'|trans }}">
+                            📋
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Create Webhook Form -->
+    <form hx-post="{{ path('app_webhook_create', {slug: activeChannel.slug}) }}"
+          hx-target="#channel-webhooks-container"
+          hx-swap="outerHTML"
+          style="display: flex; gap: 0.5rem; align-items: flex-end; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-glass); border-radius: 0.5rem; padding: 0.75rem;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+            <label for="new-webhook-name"
+                   style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">{{ 'Nouveau webhook (Nom)'|trans }}</label>
+            <input type="text" id="new-webhook-name" name="name" required placeholder="Ex: GitHub, GitLab, Alerting..."
+                   style="background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-glass); border-radius: 0.25rem; color: var(--text-primary); padding: 0.35rem 0.5rem; font-size: 0.8rem; outline: none; width: 100%;">
+        </div>
+        <button type="submit"
+                style="background: var(--accent-cyan, #00e5ff); border: none; color: #1e1b4b; cursor: pointer; padding: 0.35rem 0.75rem; border-radius: 0.25rem; font-size: 0.8rem; font-weight: bold; height: fit-content; transition: opacity 0.2s;"
+                onmouseover="this.style.opacity = '0.9';" onmouseout="this.style.opacity = '1';">
+            {{ 'Créer'|trans }}
+        </button>
+    </form>
+</div>
