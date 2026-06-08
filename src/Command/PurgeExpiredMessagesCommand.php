@@ -62,7 +62,7 @@ class PurgeExpiredMessagesCommand extends Command
                 ->where('m.channel = :channel')
                 ->andWhere('m.createdAt < :threshold')
                 ->andWhere(
-                    'NOT EXISTS (SELECT 1 FROM App\Entity\User u JOIN u.savedMessages sm WHERE sm.id = m.id OR sm.parent = m)',
+                    'NOT EXISTS (SELECT 1 FROM App\Entity\User u JOIN u.savedMessages sm WHERE sm.id = m.id)',
                 )
                 ->setParameter('channel', $channel)
                 ->setParameter('threshold', $threshold);
@@ -98,21 +98,6 @@ class PurgeExpiredMessagesCommand extends Command
                     $io->text(sprintf('     Fichier lié : %s', $message->getFilePath()));
                     if (!$dryRun) {
                         $this->fileUploadService->delete($message->getFilePath());
-                    }
-                }
-
-                foreach ($message->getReplies() as $reply) {
-                    if (!$reply->getFilePath()) {
-                        continue;
-                    }
-
-                    $io->text(sprintf(
-                        '     Fichier lié à la réponse ID %d : %s',
-                        $reply->getId(),
-                        $reply->getFilePath(),
-                    ));
-                    if (!$dryRun) {
-                        $this->fileUploadService->delete($reply->getFilePath());
                     }
                 }
 

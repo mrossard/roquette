@@ -313,7 +313,6 @@ final class LlmQueryHandler
                 $unreadMessages = $this->messageRepository
                     ->createQueryBuilder('m')
                     ->where('m.channel = :channel')
-                    ->andWhere('m.parent IS NULL')
                     ->orderBy('m.createdAt', 'DESC')
                     ->setParameter('channel', $targetChannel)
                     ->setMaxResults($this->maxSummaryMessages)

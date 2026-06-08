@@ -125,8 +125,6 @@
 "Actions": "Actions"
 "Actions du message": "Actions du message"
 "Répondre": "Répondre"
-"Fil de discussion": "Fil de discussion"
-"Fil": "Fil"
 "Réagir": "Réagir"
 "Voulez-vous vraiment supprimer ce message ?": "Voulez-vous vraiment supprimer ce message ?"
 "Désépingler": "Désépingler"
@@ -139,8 +137,6 @@
 "Votre navigateur ne supporte pas la lecture vidéo.": "Votre navigateur ne supporte pas la lecture vidéo."
 "Ouvrir le PDF": "Ouvrir le PDF"
 "Prévisualiser le texte": "Prévisualiser le texte"
-"réponses": "réponses"
-"réponse": "réponse"
 "Dernier message :": "Dernier message :"
 "et": "et"
 "%username% a réagi avec %reaction%": "%username% a réagi avec %reaction%"
@@ -226,5 +222,3 @@
 "Trop de tentatives d'inscription. Veuillez réessayer plus tard.": "Trop de tentatives d'inscription. Veuillez réessayer plus tard."
 "Votre compte a été créé avec succès ! Connectez-vous maintenant.": "Votre compte a été créé avec succès ! Connectez-vous maintenant."
 
-# Thread
-"Message parent non trouvé.": "Message parent non trouvé."

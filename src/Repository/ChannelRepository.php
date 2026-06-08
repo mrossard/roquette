@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Channel;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -133,7 +134,7 @@ class ChannelRepository extends ServiceEntityRepository
     /** @return Channel[] */
     public function findAllPublic(): array
     {
-        return $this->findBy(['isPrivate' => false], ['name' => 'ASC']);
+        return $this->findBy(['isPrivate' => false, 'parentMessage' => null], ['name' => 'ASC']);
     }
 
     public function findDmBetween(\App\Entity\User $user1, \App\Entity\User $user2): ?Channel
@@ -180,6 +181,7 @@ class ChannelRepository extends ServiceEntityRepository
             ->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
             ->where('c.isDm = false')
+            ->andWhere('c.parentMessage IS NULL')
             ->andWhere('LOWER(c.name) LIKE :query OR LOWER(c.description) LIKE :query')
             ->andWhere('c.isPrivate = false OR m.id = :userId')
             ->setParameter('query', '%' . strtolower($query) . '%')
@@ -187,5 +189,55 @@ class ChannelRepository extends ServiceEntityRepository
             ->setMaxResults(5)
             ->getQuery()
             ->getResult();
+    }
+
+    /** @return Channel[] */
+    public function findSubChannelsForUser(User $user): array
+    {
+        return $this
+            ->createQueryBuilder('c')
+            ->join('c.members', 'm')
+            ->where('m.id = :userId')
+            ->andWhere('c.parentMessage IS NOT NULL')
+            ->orderBy('c.createdAt', 'ASC')
+            ->setParameter('userId', $user->getId())
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Returns sub-channels of a given parent channel that the user is a member of.
+     *
+     * @return Channel[]
+     */
+    public function findSubChannelsOf(Channel $parent, User $user): array
+    {
+        return $this
+            ->createQueryBuilder('c')
+            ->join('c.members', 'm')
+            ->where('m.id = :userId')
+            ->andWhere('c.parentMessage = :parent')
+            ->orderBy('c.createdAt', 'ASC')
+            ->setParameter('userId', $user->getId())
+            ->setParameter('parent', $parent)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function hasUserParticipated(Channel $channel, User $user): bool
+    {
+        $count = $this
+            ->getEntityManager()
+            ->createQueryBuilder()
+            ->select('COUNT(m.id)')
+            ->from(\App\Entity\Message::class, 'm')
+            ->where('m.channel = :channel')
+            ->andWhere('m.author = :user')
+            ->setParameter('channel', $channel)
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int)$count > 0;
     }
 }

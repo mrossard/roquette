@@ -11,8 +11,6 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 #[ORM\Table(name: '`message`')]
-#[ORM\Index(name: 'idx_message_channel_parent', columns: ['channel_id', 'parent_id'])]
-#[ORM\Index(name: 'idx_message_parent', columns: ['parent_id'])]
 #[ORM\Index(name: 'idx_message_created_at', columns: ['created_at'])]
 #[ORM\Index(name: 'idx_message_author', columns: ['author_id'])]
 class Message
@@ -57,18 +55,10 @@ class Message
     #[ORM\OneToOne(mappedBy: 'message', targetEntity: Poll::class, cascade: ['persist', 'remove'])]
     private ?Poll $poll = null;
 
-    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'replies')]
-    #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE', nullable: true)]
-    private ?Message $parent = null;
-
-    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent', cascade: ['persist', 'remove'])]
-    private Collection $replies;
-
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->reactions = new ArrayCollection();
-        $this->replies = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -213,44 +203,6 @@ class Message
             }
         }
         return $grouped;
-    }
-
-    public function getParent(): ?self
-    {
-        return $this->parent;
-    }
-
-    public function setParent(?self $parent): static
-    {
-        $this->parent = $parent;
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Message>
-     */
-    public function getReplies(): Collection
-    {
-        return $this->replies;
-    }
-
-    public function addReply(self $reply): static
-    {
-        if (!$this->replies->contains($reply)) {
-            $this->replies->add($reply);
-            $reply->setParent($this);
-        }
-        return $this;
-    }
-
-    public function removeReply(self $reply): static
-    {
-        if ($this->replies->removeElement($reply)) {
-            if ($reply->getParent() === $this) {
-                $reply->setParent(null);
-            }
-        }
-        return $this;
     }
 
     public function getPoll(): ?Poll

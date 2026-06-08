@@ -1,0 +1,14 @@
+<div class="subchannel-parent-header">
+    <div class="subchannel-parent-header-label">
+        <span>🔗</span>
+        <span>{{ 'Sous-canal créé depuis'|trans }}</span>
+        <a href="{{ path('app_channel', {slug: parentMessage.channel.slug}) }}" class="subchannel-parent-channel-link">
+            #{{ parentMessage.channel.name }}
+        </a>
+    </div>
+    <div class="subchannel-parent-message">
+        {% include 'dashboard/_feed_item.html.twig' with {
+            'messageObject': parentMessage
+        } %}
+    </div>
+</div>

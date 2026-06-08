@@ -108,6 +108,7 @@
         }
     },
     "require-dev": {
+        "carthage-software/mago": "^1.30",
         "phpunit/phpunit": "^13.1",
         "symfony/ai-mate": "^0.9.0",
         "symfony/ai-monolog-mate-extension": "^0.9.0",

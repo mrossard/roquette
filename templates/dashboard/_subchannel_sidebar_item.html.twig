@@ -1,0 +1,34 @@
+{% set unread = unreadCounts[channel.id]|default(null) %}
+{% set count = unread ? unread.count : 0 %}
+{% set hasMention = unread ? unread.hasMention : false %}
+{% set parentChannelName = channel.parentMessage ? channel.parentMessage.channel.name : '' %}
+<a href="{{ path('app_channel', {slug: channel.slug}) }}"
+   id="sidebar-channel-{{ channel.slug }}"
+   class="channel-link subchannel-link {% if activeChannel and channel.id == activeChannel.id %}active{% endif %} {% if count > 0 and (not activeChannel or channel.id != activeChannel.id) %}unread{% endif %} {% if hasMention and (not activeChannel or channel.id != activeChannel.id) %}has-mention{% endif %}"
+   data-channel-slug="{{ channel.slug }}"
+   data-channel-id="{{ channel.id }}"
+   data-parent-channel-id="{{ channel.parentMessage ? channel.parentMessage.channel.id : '' }}"
+   draggable="false"
+   title="{{ channel.name }}">
+    <span class="subchannel-indent">└</span>
+    <span class="channel-hash" style="color: var(--accent-cyan); opacity: 0.7; font-size: 0.85rem;">⊞</span>
+    <span class="channel-name" style="font-size: 0.85rem;">{{ channel.name }}</span>
+    {% set lastMessage = channel.lastMessage %}
+    {% if lastMessage %}
+        {% set lastMessageDate = lastMessage.createdAt %}
+        {% set isToday = lastMessageDate|date('Y-m-d') == 'now'|date('Y-m-d') %}
+        <span class="channel-last-message-date"
+              title="{{ 'Dernier message :'|trans }} {{ lastMessageDate|date('d/m/Y H:i') }}">
+            {{ isToday ? lastMessageDate|date('H:i') : lastMessageDate|date('d/m') }}
+        </span>
+    {% endif %}
+    <button class="sidebar-favorite-toggle {% if app.user.isChannelFavorite(channel) %}is-favorite{% endif %}"
+            hx-post="{{ path('app_channel_favorite_toggle', {slug: channel.slug}) }}"
+            hx-swap="none"
+            onclick="event.stopPropagation(); event.preventDefault();"
+            title="{% if app.user.isChannelFavorite(channel) %}{{ 'Retirer des favoris'|trans }}{% else %}{{ 'Ajouter aux favoris'|trans }}{% endif %}">
+        ★
+    </button>
+    <span class="unread-badge"
+          {% if count == 0 or (activeChannel and channel.id == activeChannel.id) %}style="display: none;"{% endif %}>{{ count }}</span>
+</a>

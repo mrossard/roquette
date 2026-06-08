@@ -251,6 +251,11 @@
                             {% include 'dashboard/_pinned_banner.html.twig' with {'pinnedMessage': activeChannel.pinnedMessage, 'activeChannel': activeChannel} %}
                         {% endif %}
                     </div>
+                    {% if activeChannel.isSubChannel and activeChannel.parentMessage %}
+                        {% include 'dashboard/_subchannel_header.html.twig' with {
+                            'parentMessage': activeChannel.parentMessage
+                        } %}
+                    {% endif %}
                     <div id="live-feed" class="feed-container" role="log" aria-live="polite"
                          sse-swap="message_{{ activeChannel.slug }}" hx-swap="beforeend transition:false"
                          {% if activeChannel.creator == app.user or is_granted('ROLE_ADMIN') %}data-is-channel-creator="true"{% endif %}>
@@ -271,8 +276,6 @@
             {% endif %}
         </section>
 
-        <!-- Thread Panel -->
-        <section id="thread-panel" class="card glass-panel thread-panel"></section>
     </main>
 
     {% include '_footer.html.twig' %}

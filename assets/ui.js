@@ -394,6 +394,7 @@ export function initChannelReordering() {
             disabled: !sidebarPanel.classList.contains('reorder-active'),
             ghostClass: 'dragging-ghost',
             onEnd: () => {
+                enforceChannelHierarchy();
                 saveChannelOrder();
             }
         });
@@ -431,6 +432,29 @@ export function initChannelReordering() {
         // Toggle Sortable instances disabled state
         sortableInstances.forEach(inst => {
             inst.option('disabled', !isActive);
+        });
+    });
+}
+
+function enforceChannelHierarchy() {
+    const lists = document.querySelectorAll('.channel-list[data-list-type]');
+    lists.forEach(list => {
+        const parentLinks = Array.from(list.querySelectorAll('.channel-link:not(.subchannel-link)'));
+        const subchannelLinks = Array.from(list.querySelectorAll('.channel-link.subchannel-link'));
+
+        parentLinks.forEach(parentEl => {
+            const parentId = parentEl.getAttribute('data-channel-id');
+            if (!parentId) return;
+
+            const childSubchannels = subchannelLinks.filter(sub => sub.getAttribute('data-parent-channel-id') === parentId);
+
+            let referenceEl = parentEl;
+            childSubchannels.forEach(subEl => {
+                if (referenceEl.nextSibling !== subEl) {
+                    referenceEl.parentNode.insertBefore(subEl, referenceEl.nextSibling);
+                }
+                referenceEl = subEl;
+            });
         });
     });
 }
@@ -871,7 +895,7 @@ document.addEventListener('input', (e) => {
     }
 });
 
-// Delegated markdown formatting toolbar listener for both main and thread inputs
+// Delegated markdown formatting toolbar listener for message inputs
 document.addEventListener('click', (e) => {
     const btn = e.target.closest('.btn-format[data-markdown]');
     if (!btn) return;

@@ -395,6 +395,7 @@ final class ChannelController extends AbstractController
     #[Route('/channels/{slug}/join', name: 'app_channel_join', methods: ['POST'])]
     public function joinChannel(
         string $slug,
+        Request $request,
         ChannelRepository $channelRepository,
         EntityManagerInterface $entityManager,
     ): Response {
@@ -418,12 +419,18 @@ final class ChannelController extends AbstractController
             $entityManager->flush();
         }
 
-        return $this->redirectToRoute('app_channel', ['slug' => $slug]);
+        $url = $this->generateUrl('app_channel', ['slug' => $slug]);
+        if ($request->headers->has('HX-Request')) {
+            return new Response(null, 204, ['HX-Redirect' => $url]);
+        }
+
+        return $this->redirect($url);
     }
 
     #[Route('/channels/{slug}/leave', name: 'app_channel_leave', methods: ['POST'])]
     public function leaveChannel(
         string $slug,
+        Request $request,
         ChannelRepository $channelRepository,
         EntityManagerInterface $entityManager,
     ): Response {
@@ -447,7 +454,12 @@ final class ChannelController extends AbstractController
             $entityManager->flush();
         }
 
-        return $this->redirectToRoute('app_dashboard');
+        $url = $this->generateUrl('app_dashboard');
+        if ($request->headers->has('HX-Request')) {
+            return new Response(null, 204, ['HX-Redirect' => $url]);
+        }
+
+        return $this->redirect($url);
     }
 
     // -------------------------------------------------------------------------
@@ -814,6 +826,101 @@ final class ChannelController extends AbstractController
             'matches' => array_slice($matches, 0, 6),
             'channel' => $channel,
         ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Sub-channel creation
+    // -------------------------------------------------------------------------
+
+    #[Route('/messages/{id}/sub-channel', name: 'app_message_create_subchannel', methods: ['POST'])]
+    public function createSubChannel(
+        int $id,
+        Request $request,
+        MessageRepository $messageRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        $parentMessage = $messageRepository->find($id);
+        if (!$parentMessage) {
+            return new Response($this->translator->trans('Message non trouvé.'), 404);
+        }
+
+        // Check if a subchannel for this message already exists
+        $existingSubChannel = $entityManager->getRepository(Channel::class)->findOneBy(
+            ['parentMessage' => $parentMessage],
+        );
+        if ($existingSubChannel) {
+            $url = $this->generateUrl('app_channel', ['slug' => $existingSubChannel->getSlug()]);
+            if ($request->headers->has('HX-Request')) {
+                return new Response(null, 204, ['HX-Redirect' => $url]);
+            }
+
+            return $this->redirect($url);
+        }
+
+        $parentChannel = $parentMessage->getChannel();
+        if ($parentChannel->isPrivate() && !$parentChannel->getMembers()->contains($currentUser)) {
+            return new Response($this->translator->trans('Non autorisé.'), 403);
+        }
+
+        // Build sub-channel name from the message
+        $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Sous-canal';
+        $name = mb_substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 40);
+
+        $slug = 'sc-'.preg_replace('/[^a-z0-9]+/i', '-', mb_strtolower($name)).'-'.substr(
+                bin2hex(random_bytes(3)),
+                0,
+                6,
+            );
+        $slug = trim($slug, '-');
+
+        if ($entityManager->getRepository(Channel::class)->findOneBy(['slug' => $slug])) {
+            $slug .= '-'.rand(100, 999);
+        }
+
+        $channel = new Channel();
+        $channel->setName($name);
+        $channel->setSlug($slug);
+        $channel->setDescription($this->translator->trans('Sous-canal créé depuis un message.'));
+        $channel->setParentMessage($parentMessage);
+        $channel->setCreator($currentUser);
+        $channel->setIsPrivate($parentChannel->isPrivate());
+        $channel->setMessageRetentionMonths($parentChannel->getMessageRetentionMonths());
+
+        // Copy all members from the parent channel
+        foreach ($parentChannel->getMembers() as $member) {
+            $channel->addMember($member);
+        }
+
+        $entityManager->persist($channel);
+        $entityManager->flush();
+
+        $this->logger->info(
+            sprintf(
+                'Sub-channel created: "%s" (slug: "%s") from message #%d by user "%s"',
+                $channel->getName(),
+                $channel->getSlug(),
+                $parentMessage->getId(),
+                $currentUser->getUsername(),
+            ),
+        );
+
+        $this->addFlash(
+            'success',
+            $this->translator->trans(
+                'Sous-canal "%channelName%" créé.',
+                ['%channelName%' => $channel->getName()],
+            ),
+        );
+
+        $url = $this->generateUrl('app_channel', ['slug' => $channel->getSlug()]);
+        if ($request->headers->has('HX-Request')) {
+            return new Response(null, 204, ['HX-Redirect' => $url]);
+        }
+
+        return $this->redirect($url);
     }
 
     // -------------------------------------------------------------------------

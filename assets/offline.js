@@ -44,9 +44,7 @@ export function queueOfflineMessage(form) {
     const actionUrl = form.getAttribute('hx-post') || form.getAttribute('data-hx-post') || form.action || '';
     if (!actionUrl) return;
 
-    // Detect if this is a thread reply or normal channel message
     let channelSlug = null;
-    let parentId = null;
     let postUrl = actionUrl;
 
     const channelMatch = actionUrl.match(/\/channels\/([^\/]+)\/publish/);
@@ -54,13 +52,8 @@ export function queueOfflineMessage(form) {
         channelSlug = channelMatch[1];
     }
 
-    const threadMatch = actionUrl.match(/\/messages\/(\d+)\/reply/);
-    if (threadMatch) {
-        parentId = parseInt(threadMatch[1]);
-    }
-
-    if (!channelSlug && !parentId) {
-        console.error('Could not determine channel or thread for offline message:', actionUrl);
+    if (!channelSlug) {
+        console.error('Could not determine channel for offline message:', actionUrl);
         return;
     }
 
@@ -74,7 +67,6 @@ export function queueOfflineMessage(form) {
     const offlineMsg = {
         id: offlineId,
         channelSlug: channelSlug,
-        parentId: parentId,
         content: messageText,
         postUrl: postUrl,
         timestamp: timestamp.toISOString(),
@@ -130,20 +122,11 @@ function renderOfflineMessage(msg) {
         </div>
     `;
 
-    // Append to feed
-    if (msg.parentId) {
-        const repliesList = document.querySelector('#thread-replies-feed .thread-replies-list');
-        if (repliesList) {
-            repliesList.appendChild(feedItem);
-        }
-    } else {
-        const activeFeedContainer = document.getElementById('live-feed');
-        if (activeFeedContainer) {
-            // Remove empty state
-            const emptyState = document.getElementById('feed-empty-state');
-            if (emptyState) emptyState.remove();
-            activeFeedContainer.appendChild(feedItem);
-        }
+    const activeFeedContainer = document.getElementById('live-feed');
+    if (activeFeedContainer) {
+        const emptyState = document.getElementById('feed-empty-state');
+        if (emptyState) emptyState.remove();
+        activeFeedContainer.appendChild(feedItem);
     }
 }
 
@@ -197,7 +180,7 @@ export function syncOfflineMessages() {
             offlineQueue.shift();
             saveOfflineQueue();
 
-            // Replace temporary message in the feed with actual HTML returned (if we are in the correct channel/thread)
+            // Replace temporary message in the feed with actual HTML returned (if we are in the correct channel)
             const tempEl = document.querySelector(`[data-offline-id="${msg.id}"]`);
             if (tempEl) {
                 const tempDiv = document.createElement('div');

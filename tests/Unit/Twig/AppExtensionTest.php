@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Twig;
 
 use App\Twig\AppExtension;
 use App\Service\MessageFormatter;
+use App\Repository\ChannelRepository;
 use PHPUnit\Framework\TestCase;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -18,6 +19,7 @@ class AppExtensionTest extends TestCase
     {
         $formatter = $this->createMock(MessageFormatter::class);
         $translator = $this->createMock(TranslatorInterface::class);
+        $channelRepository = $this->createMock(ChannelRepository::class);
         $translator->method('trans')->willReturnCallback(function (string $id, array $parameters = []) {
             if ($id === 'et') {
                 return 'et';
@@ -26,7 +28,7 @@ class AppExtensionTest extends TestCase
             return strtr($id, $parameters);
         });
 
-        $this->extension = new AppExtension($formatter, $translator);
+        $this->extension = new AppExtension($formatter, $translator, $channelRepository);
     }
 
     public function testFormatReactionTooltipWithSingleUser(): void

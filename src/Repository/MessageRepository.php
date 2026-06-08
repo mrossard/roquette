@@ -22,8 +22,7 @@ class MessageRepository extends ServiceEntityRepository
     }
 
     /**
-     * Returns top-level messages that are unread (id > lastReadMessageId, author != user)
-     * OR that have at least one unread reply (reply.id > lastReadMessageId, reply.author != user).
+     * Returns messages in a channel that are unread (id > lastReadMessageId, author != user).
      *
      * @return Message[]
      */
@@ -32,45 +31,21 @@ class MessageRepository extends ServiceEntityRepository
         User $user,
         ?int $lastReadMessageId,
     ): array {
-        if ($lastReadMessageId === null) {
-            // No read record at all: all messages from others are "unread"
-            return $this
-                ->createQueryBuilder('m')
-                ->where('m.channel = :channel')
-                ->andWhere('m.parent IS NULL')
-                ->andWhere('m.author != :user')
-                ->orderBy('m.createdAt', 'ASC')
-                ->setParameter('channel', $channel)
-                ->setParameter('user', $user)
-                ->getQuery()
-                ->getResult();
+        $qb = $this
+            ->createQueryBuilder('m')
+            ->where('m.channel = :channel')
+            ->andWhere('m.author != :user')
+            ->orderBy('m.createdAt', 'ASC')
+            ->setParameter('channel', $channel)
+            ->setParameter('user', $user);
+
+        if ($lastReadMessageId !== null) {
+            $qb
+                ->andWhere('m.id > :lastRead')
+                ->setParameter('lastRead', $lastReadMessageId);
         }
 
-        // Use a native EXISTS subquery to reliably detect parents with unread replies
-        $em = $this->getEntityManager();
-
-        $dql = '
-            SELECT m FROM App\Entity\Message m
-            WHERE m.channel = :channel
-            AND m.parent IS NULL
-            AND (
-                (m.id > :lastRead AND m.author != :user)
-                OR EXISTS (
-                    SELECT r.id FROM App\Entity\Message r
-                    WHERE r.parent = m
-                    AND r.id > :lastRead
-                    AND r.author != :user
-                )
-            )
-            ORDER BY m.createdAt ASC
-        ';
-
-        return $em
-            ->createQuery($dql)
-            ->setParameter('channel', $channel)
-            ->setParameter('user', $user)
-            ->setParameter('lastRead', $lastReadMessageId)
-            ->getResult();
+        return $qb->getQuery()->getResult();
     }
 
     /**
@@ -90,7 +65,7 @@ class MessageRepository extends ServiceEntityRepository
     }
 
     /**
-     * Finds the latest top-level messages in a channel, eager loading the author, reactions, and reaction users.
+     * Finds the latest messages in a channel, eager loading the author, reactions, and reaction users.
      *
      * @return Message[]
      */
@@ -98,17 +73,24 @@ class MessageRepository extends ServiceEntityRepository
     {
         $qb = $this
             ->createQueryBuilder('m')
-            ->select('m', 'author', 'reactions', 'reaction_user', 'replies', 'poll', 'poll_options', 'poll_votes', 'poll_vote_user')
+            ->select(
+                'm',
+                'author',
+                'reactions',
+                'reaction_user',
+                'poll',
+                'poll_options',
+                'poll_votes',
+                'poll_vote_user',
+            )
             ->leftJoin('m.author', 'author')
             ->leftJoin('m.reactions', 'reactions')
             ->leftJoin('reactions.user', 'reaction_user')
-            ->leftJoin('m.replies', 'replies')
             ->leftJoin('m.poll', 'poll')
             ->leftJoin('poll.options', 'poll_options')
             ->leftJoin('poll_options.votes', 'poll_votes')
             ->leftJoin('poll_votes.user', 'poll_vote_user')
-            ->where('m.channel = :channel')
-            ->andWhere('m.parent IS NULL');
+            ->where('m.channel = :channel');
 
         if ($beforeId !== null) {
             $qb->andWhere('m.id < :beforeId')->setParameter('beforeId', $beforeId);
@@ -187,17 +169,24 @@ class MessageRepository extends ServiceEntityRepository
     {
         $qb = $this
             ->createQueryBuilder('m')
-            ->select('m', 'author', 'reactions', 'reaction_user', 'replies', 'poll', 'poll_options', 'poll_votes', 'poll_vote_user')
+            ->select(
+                'm',
+                'author',
+                'reactions',
+                'reaction_user',
+                'poll',
+                'poll_options',
+                'poll_votes',
+                'poll_vote_user',
+            )
             ->leftJoin('m.author', 'author')
             ->leftJoin('m.reactions', 'reactions')
             ->leftJoin('reactions.user', 'reaction_user')
-            ->leftJoin('m.replies', 'replies')
             ->leftJoin('m.poll', 'poll')
             ->leftJoin('poll.options', 'poll_options')
             ->leftJoin('poll_options.votes', 'poll_votes')
             ->leftJoin('poll_votes.user', 'poll_vote_user')
             ->where('m.channel = :channel')
-            ->andWhere('m.parent IS NULL')
             ->andWhere('m.id >= :minId')
             ->setParameter('channel', $channel)
             ->setParameter('minId', max(1, $messageId - 5))

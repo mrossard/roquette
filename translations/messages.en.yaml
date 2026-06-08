@@ -125,8 +125,6 @@
 "Actions": "Actions"
 "Actions du message": "Message Actions"
 "Répondre": "Reply"
-"Fil de discussion": "Discussion thread"
-"Fil": "Thread"
 "Réagir": "React"
 "Voulez-vous vraiment supprimer ce message ?": "Are you sure you want to delete this message?"
 "Désépingler": "Unpin"
@@ -139,8 +137,6 @@
 "Votre navigateur ne supporte pas la lecture vidéo.": "Your browser does not support video playback."
 "Ouvrir le PDF": "Open PDF"
 "Prévisualiser le texte": "Preview text"
-"réponses": "replies"
-"réponse": "reply"
 "Dernier message :": "Last message:"
 "et": "and"
 "%username% a réagi avec %reaction%": "%username% reacted with %reaction%"
@@ -225,6 +221,4 @@
 "L'inscription est désactivée.": "Registration is disabled."
 "Trop de tentatives d'inscription. Veuillez réessayer plus tard.": "Too many registration attempts. Please try again later."
 "Votre compte a été créé avec succès ! Connectez-vous maintenant.": "Your account has been created successfully! Log in now."
-
-# Thread
-"Message parent non trouvé.": "Parent message not found."
+Rejoindre: 'Join'

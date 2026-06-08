@@ -64,6 +64,10 @@ class Channel
     /**
      * @var Collection<int, Message>
      */
+    #[ORM\ManyToOne(targetEntity: Message::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Message $parentMessage = null;
+
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'channel', cascade: ['remove'])]
     private Collection $messages;
 
@@ -173,6 +177,23 @@ class Channel
     public function setIsDm(bool $isDm): static
     {
         $this->isDm = $isDm;
+        return $this;
+    }
+
+    public function isSubChannel(): bool
+    {
+        return $this->parentMessage !== null;
+    }
+
+    public function getParentMessage(): ?Message
+    {
+        return $this->parentMessage;
+    }
+
+    public function setParentMessage(?Message $parentMessage): static
+    {
+        $this->parentMessage = $parentMessage;
+
         return $this;
     }
 
@@ -286,5 +307,20 @@ class Channel
         }
 
         return $this->administrators->contains($user);
+    }
+
+    public function hasUserParticipated(User $user): bool
+    {
+        if ($this->creator && $this->creator->getId() === $user->getId()) {
+            return true;
+        }
+
+        foreach ($this->messages as $message) {
+            if ($message->getAuthor() && $message->getAuthor()->getId() === $user->getId()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

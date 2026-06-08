@@ -21,14 +21,12 @@ use Symfony\Component\Messenger\MessageBusInterface;
 class MercurePublisherTest extends TestCase
 {
     private MessageBusInterface&MockObject $bus;
-    private \Twig\Environment&MockObject $twig;
     private MercurePublisher $publisher;
 
     protected function setUp(): void
     {
         $this->bus = $this->createMock(MessageBusInterface::class);
-        $this->twig = $this->createMock(\Twig\Environment::class);
-        $this->publisher = new MercurePublisher($this->bus, 'http://test-mercure', $this->twig);
+        $this->publisher = new MercurePublisher($this->bus, 'http://test-mercure');
     }
 
     #[Test]

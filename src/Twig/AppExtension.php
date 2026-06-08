@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
+use App\Repository\ChannelRepository;
+use App\Entity\Channel;
 use App\Service\MessageFormatter;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
@@ -21,6 +23,7 @@ class AppExtension extends AbstractExtension
     public function __construct(
         private readonly MessageFormatter $formatter,
         private readonly TranslatorInterface $translator,
+        private readonly ChannelRepository $channelRepository,
     ) {}
 
     public function getFunctions(): array
@@ -29,6 +32,10 @@ class AppExtension extends AbstractExtension
             new \Twig\TwigFunction(
                 'get_cached_link_preview',
                 [\App\Twig\AppExtensionRuntime::class, 'getCachedLinkPreview'],
+            ),
+            new \Twig\TwigFunction(
+                'get_subchannel',
+                [$this, 'getSubchannel'],
             ),
         ];
     }
@@ -97,5 +104,10 @@ class AppExtension extends AbstractExtension
             '%users%' => $usersString,
             '%reaction%' => $reactionName,
         ]);
+    }
+
+    public function getSubchannel(\App\Entity\Message $message): ?Channel
+    {
+        return $this->channelRepository->findOneBy(['parentMessage' => $message]);
     }
 }

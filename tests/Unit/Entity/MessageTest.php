@@ -32,13 +32,6 @@ class MessageTest extends TestCase
         $this->assertCount(0, $message->getReactions());
     }
 
-    #[Test]
-    public function repliesCollectionIsEmptyByDefault(): void
-    {
-        $message = new Message();
-        $this->assertCount(0, $message->getReplies());
-    }
-
     // -------------------------------------------------------------------------
     // isEdited()
     // -------------------------------------------------------------------------
@@ -87,47 +80,6 @@ class MessageTest extends TestCase
         $this->assertSame('uploads/photo-abc123.jpg', $message->getFilePath());
         $this->assertSame(204_800, $message->getFileSize());
         $this->assertSame('image/jpeg', $message->getMimeType());
-    }
-
-    // -------------------------------------------------------------------------
-    // Replies (thread)
-    // -------------------------------------------------------------------------
-
-    #[Test]
-    public function addReplyLinksBothSides(): void
-    {
-        $parent = new Message();
-        $reply = new Message();
-
-        $parent->addReply($reply);
-
-        $this->assertTrue($parent->getReplies()->contains($reply));
-        $this->assertSame($parent, $reply->getParent());
-    }
-
-    #[Test]
-    public function addReplyDoesNotDuplicate(): void
-    {
-        $parent = new Message();
-        $reply = new Message();
-
-        $parent->addReply($reply);
-        $parent->addReply($reply);
-
-        $this->assertCount(1, $parent->getReplies());
-    }
-
-    #[Test]
-    public function removeReplyUnlinksBothSides(): void
-    {
-        $parent = new Message();
-        $reply = new Message();
-
-        $parent->addReply($reply);
-        $parent->removeReply($reply);
-
-        $this->assertFalse($parent->getReplies()->contains($reply));
-        $this->assertNull($reply->getParent());
     }
 
     // -------------------------------------------------------------------------

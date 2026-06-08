@@ -24,7 +24,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * All other dashboard functionality has been split into dedicated controllers:
  *   - ChannelController      — CRUD and navigation for channels
  *   - MessageController      — send, edit, delete messages
- *   - ThreadController       — thread replies
  *   - ReactionController     — emoji reactions
  *   - FileController         — file download and preview
  *   - InvitationController   — invite, accept, reject

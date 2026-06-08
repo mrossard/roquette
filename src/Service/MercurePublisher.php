@@ -15,15 +15,13 @@ use Symfony\Component\Messenger\MessageBusInterface;
 /**
  * Centralises all Mercure SSE publish operations.
  *
- * Extracted from DashboardController to eliminate duplicated notification loops
- * that appeared identically in publish() and postReply().
+ * Extracted from DashboardController to eliminate duplicated notification loops.
  */
 class MercurePublisher
 {
     public function __construct(
         private MessageBusInterface $bus,
         private string $mercureTopicPrefix,
-        private \Twig\Environment $twig,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -96,25 +94,10 @@ class MercurePublisher
         string $messageText,
         string $renderedHtml,
         EntityManagerInterface $em,
-        ?int $parentId = null,
-        ?int $replyCount = null,
-        string $memberNotificationPrefix = '',
     ): void {
-        if ($parentId !== null) {
-            $parentMessage = $em->getRepository(Message::class)->find($parentId);
-            $badgeHtml = $this->twig->render('dashboard/_feed_item_reactions.html.twig', [
-                'message_id' => $parentId,
-                'messageObject' => $parentMessage,
-                'oob' => true,
-            ]);
-            $replyHtml = '<div id="thread-replies-list" hx-swap-oob="beforeend">'.$renderedHtml.'</div>';
+        $this->publishToChannel($channel, $renderedHtml, 'message_'.$channel->getSlug());
 
-            $this->publishToChannel($channel, $replyHtml.$badgeHtml, 'message_'.$channel->getSlug());
-        } else {
-            $this->publishToChannel($channel, $renderedHtml, 'message_'.$channel->getSlug());
-        }
-
-        $this->publishMemberNotifications($channel, $message, $author, $messageText, $em, $memberNotificationPrefix);
+        $this->publishMemberNotifications($channel, $message, $author, $messageText, $em);
     }
 
     /**
@@ -127,7 +110,6 @@ class MercurePublisher
         User $author,
         string $messageText,
         EntityManagerInterface $em,
-        string $contentPrefix = '',
     ): void {
         $ucrRepo = $em->getRepository(UserChannelRead::class);
 
@@ -148,7 +130,13 @@ class MercurePublisher
                 $isMentioned = (bool) preg_match($pattern, $messageText);
             }
 
-            $content = $contentPrefix . $this->buildContentSummary($message);
+            $content = $this->buildContentSummary($message);
+
+            $channelName = $channel->isDm() ? 'Message direct' : '#'.$channel->getName();
+            if ($channel->isSubChannel() && $channel->getParentMessage() !== null) {
+                $parentChannelName = '#'.$channel->getParentMessage()->getChannel()->getName();
+                $channelName .= ' (sous-canal de '.$parentChannelName.')';
+            }
 
             $this->publishToUser($member, [
                 'channelSlug' => $channel->getSlug(),
@@ -156,7 +144,7 @@ class MercurePublisher
                 'messageId' => $message->getId(),
                 'author' => $author->getUsername(),
                 'authorDisplayName' => ($author->getDisplayName() !== null && $author->getDisplayName() !== '') ? $author->getDisplayName() : $author->getUsername(),
-                'channelName' => $channel->isDm() ? 'Message direct' : '#' . $channel->getName(),
+                'channelName' => $channelName,
                 'content' => $content,
                 'notificationsEnabled' => $isMentioned
                     ? $member->isMentionNotificationsEnabled()

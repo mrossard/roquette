@@ -47,7 +47,6 @@ import './notifications.js';
 import './editor.js';
 import './autocomplete.js';
 import { buildEmojiPickerDOM } from './emoji.js';
-import './thread.js';
 import './offline.js';
 import './search-builder.js';
 
@@ -133,10 +132,10 @@ document.addEventListener('click', (e) => {
         }
 
         let bottomThreshold = window.innerHeight;
-        const container = picker.closest('#live-feed, .thread-content');
+        const container = picker.closest('#live-feed');
         if (container && container.nextElementSibling) {
             const nextEl = container.nextElementSibling;
-            if (nextEl.classList.contains('chat-input-area') || nextEl.classList.contains('thread-input-area')) {
+            if (nextEl.classList.contains('chat-input-area')) {
                 bottomThreshold = nextEl.getBoundingClientRect().top;
             }
         }
@@ -226,8 +225,7 @@ document.body.addEventListener('htmx:beforeRequest', (evt) => {
     const elt = evt.detail.elt;
     if (!elt) return;
 
-    const isMainForm = elt.classList.contains('chat-message-form') && !elt.classList.contains('thread-message-form');
-    const isThreadForm = elt.classList.contains('thread-message-form');
+    const isMainForm = elt.classList.contains('chat-message-form');
 
     if (isMainForm) {
         const fileInput = document.getElementById('file-upload');
@@ -245,22 +243,6 @@ document.body.addEventListener('htmx:beforeRequest', (evt) => {
             const clearBtn = document.getElementById('btn-clear-file');
             if (clearBtn) clearBtn.style.display = 'none';
         }
-    } else if (isThreadForm) {
-        const fileInput = document.getElementById('thread-file-upload');
-        if (fileInput && fileInput.files && fileInput.files.length > 0) {
-            const progressWrapper = document.getElementById('thread-file-upload-progress');
-            const progressBar = document.getElementById('thread-file-upload-progress-bar');
-            const progressPercent = document.getElementById('thread-file-upload-progress-percent');
-            if (progressWrapper && progressBar && progressPercent) {
-                progressWrapper.style.display = 'block';
-                progressBar.style.width = '0%';
-                progressPercent.textContent = '0%';
-            }
-            const submitBtn = elt.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.disabled = true;
-            const clearBtn = document.getElementById('thread-btn-clear-file');
-            if (clearBtn) clearBtn.style.display = 'none';
-        }
     }
 });
 
@@ -268,25 +250,13 @@ document.body.addEventListener('htmx:xhr:progress', (evt) => {
     const elt = evt.detail.elt;
     if (!elt) return;
 
-    const isMainForm = elt.classList.contains('chat-message-form') && !elt.classList.contains('thread-message-form');
-    const isThreadForm = elt.classList.contains('thread-message-form');
+    const isMainForm = elt.classList.contains('chat-message-form');
 
     if (isMainForm) {
         const fileInput = document.getElementById('file-upload');
         if (fileInput && fileInput.files && fileInput.files.length > 0) {
             const progressBar = document.getElementById('file-upload-progress-bar');
             const progressPercent = document.getElementById('file-upload-progress-percent');
-            if (progressBar && progressPercent && (evt.detail.lengthComputable || evt.detail.total > 0)) {
-                const percent = Math.round((evt.detail.loaded / evt.detail.total) * 100);
-                progressBar.style.width = percent + '%';
-                progressPercent.textContent = percent + '%';
-            }
-        }
-    } else if (isThreadForm) {
-        const fileInput = document.getElementById('thread-file-upload');
-        if (fileInput && fileInput.files && fileInput.files.length > 0) {
-            const progressBar = document.getElementById('thread-file-upload-progress-bar');
-            const progressPercent = document.getElementById('thread-file-upload-progress-percent');
             if (progressBar && progressPercent && (evt.detail.lengthComputable || evt.detail.total > 0)) {
                 const percent = Math.round((evt.detail.loaded / evt.detail.total) * 100);
                 progressBar.style.width = percent + '%';
@@ -309,8 +279,6 @@ document.body.addEventListener('htmx:afterRequest', (evt) => {
 
     const progressWrapper = document.getElementById('file-upload-progress');
     if (progressWrapper) progressWrapper.style.display = 'none';
-    const threadProgressWrapper = document.getElementById('thread-file-upload-progress');
-    if (threadProgressWrapper) threadProgressWrapper.style.display = 'none';
 
     // Restore buttons if request finished
     const elt = evt.detail.elt;
@@ -320,16 +288,9 @@ document.body.addEventListener('htmx:afterRequest', (evt) => {
 
         // Reset the file input if the form submission was successful
         if (evt.detail.successful) {
-            const isMainForm = elt.classList.contains('chat-message-form') && !elt.classList.contains('thread-message-form');
-            const isThreadForm = elt.classList.contains('thread-message-form');
+            const isMainForm = elt.classList.contains('chat-message-form');
             if (isMainForm) {
                 const fileInput = document.getElementById('file-upload');
-                if (fileInput) {
-                    fileInput.value = '';
-                    fileInput.dispatchEvent(new Event('change'));
-                }
-            } else if (isThreadForm) {
-                const fileInput = document.getElementById('thread-file-upload');
                 if (fileInput) {
                     fileInput.value = '';
                     fileInput.dispatchEvent(new Event('change'));
@@ -339,8 +300,6 @@ document.body.addEventListener('htmx:afterRequest', (evt) => {
     }
     const clearBtn = document.getElementById('btn-clear-file');
     if (clearBtn) clearBtn.style.display = '';
-    const threadClearBtn = document.getElementById('thread-btn-clear-file');
-    if (threadClearBtn) threadClearBtn.style.display = '';
 });
 
 document.body.addEventListener('htmx:beforeSwap', (evt) => {
@@ -421,18 +380,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.initTypingIndicator) window.initTypingIndicator();
             if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
 
-
-            const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            if (!isMobileDevice) {
-                const threadPanel = document.getElementById('thread-panel');
-                const threadTextarea = document.getElementById('thread-message');
-                if (threadPanel && threadPanel.style.display !== 'none' && threadTextarea) {
-                    threadTextarea.focus();
-                } else {
-                    const messageInputAfterSettle = document.getElementById('message');
-                    if (messageInputAfterSettle) messageInputAfterSettle.focus();
-                }
-            }
+            const messageInputAfterSettle = document.getElementById('message');
+            if (messageInputAfterSettle) messageInputAfterSettle.focus();
             return;
         }
 
@@ -479,18 +428,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         // Refocus appropriate input after channel switches
-        const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        if (isChannelSwitch && !isMobileDevice) {
-            const threadPanel = document.getElementById('thread-panel');
-            const threadTextarea = document.getElementById('thread-message');
-            if (threadPanel && threadPanel.style.display !== 'none' && threadTextarea) {
-                threadTextarea.focus();
-            } else {
-                const messageInputAfterSettle = document.getElementById('message');
-                if (messageInputAfterSettle) messageInputAfterSettle.focus();
-            }
-        }
         if (isChannelSwitch) {
+            const messageInputAfterSettle = document.getElementById('message');
+            if (messageInputAfterSettle) messageInputAfterSettle.focus();
             initializeChannelScroll();
         }
         checkJumpToMessage();

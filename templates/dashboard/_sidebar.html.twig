@@ -78,11 +78,21 @@
                 <div class="channel-list" id="section-favorites" data-list-type="favorites">
                     {% for channel in channels %}
                         {% if app.user.isChannelFavorite(channel) and not (channel.slug starts with 'dm-robot-roquette-') %}
-                            {% include 'dashboard/_channel_sidebar_item.html.twig' with {
-                                'channel': channel,
-                                'unreadCounts': unreadCounts,
-                                'activeChannel': activeChannel
-                            } %}
+                            {% if channel.isSubChannel %}
+                                {% if channel.hasUserParticipated(app.user) or (activeChannel and channel.id == activeChannel.id) %}
+                                    {% include 'dashboard/_subchannel_sidebar_item.html.twig' with {
+                                        'channel': channel,
+                                        'unreadCounts': unreadCounts,
+                                        'activeChannel': activeChannel
+                                    } %}
+                                {% endif %}
+                            {% else %}
+                                {% include 'dashboard/_channel_sidebar_item.html.twig' with {
+                                    'channel': channel,
+                                    'unreadCounts': unreadCounts,
+                                    'activeChannel': activeChannel
+                                } %}
+                            {% endif %}
                         {% endif %}
                     {% endfor %}
                 </div>
@@ -100,13 +110,24 @@
                 <div class="channel-list" id="section-channels" data-list-type="channels">
                     {% set hasChannels = false %}
                     {% for channel in channels %}
-                        {% if not channel.isDm and not app.user.isChannelFavorite(channel) %}
+                        {% if not channel.isDm and not channel.isSubChannel and not app.user.isChannelFavorite(channel) %}
                             {% set hasChannels = true %}
                             {% include 'dashboard/_channel_sidebar_item.html.twig' with {
                                 'channel': channel,
                                 'unreadCounts': unreadCounts,
                                 'activeChannel': activeChannel
                             } %}
+                            {% for sub in channels %}
+                                {% if sub.isSubChannel and sub.parentMessage and sub.parentMessage.channel.id == channel.id and not app.user.isChannelFavorite(sub) %}
+                                    {% if sub.hasUserParticipated(app.user) or (activeChannel and sub.id == activeChannel.id) %}
+                                        {% include 'dashboard/_subchannel_sidebar_item.html.twig' with {
+                                            'channel': sub,
+                                            'unreadCounts': unreadCounts,
+                                            'activeChannel': activeChannel
+                                        } %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
                         {% endif %}
                     {% endfor %}
                     {% if not hasChannels %}
