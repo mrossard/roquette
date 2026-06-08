@@ -158,7 +158,7 @@
                                       hx-get="{{ path('app_channel_search', {slug: activeChannel.slug}) }}"
                                       hx-target="#live-feed"
                                       hx-swap="innerHTML transition:false"
-                                      hx-trigger="input changed delay:400ms from:#channel-search-input, change from:#unread-filter-checkbox, refresh-unread from:body"
+                                      hx-trigger="input changed delay:400ms from:#channel-search-input, change from:#unread-filter-checkbox"
                                       style="display: inline-flex; align-items: center; gap: 0.5rem; margin: 0; padding: 0;">
                                     <div class="search-container">
                                         <span class="search-icon">🔍</span>
