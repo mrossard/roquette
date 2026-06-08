@@ -851,6 +851,45 @@ export function toggleMobileChannelDetails() {
 }
 window.toggleMobileChannelDetails = toggleMobileChannelDetails;
 
+export function initSubChannelsSidebar() {
+    const panel = document.getElementById('subchannels-sidebar-panel');
+    const grid = document.getElementById('dashboard-grid');
+    if (panel && grid) {
+        const isOpen = localStorage.getItem('subchannels_sidebar_open') === 'true';
+        if (isOpen) {
+            panel.style.display = 'flex';
+            panel.classList.add('open');
+            grid.classList.add('show-subchannels');
+        } else {
+            panel.style.display = 'none';
+            panel.classList.remove('open');
+            grid.classList.remove('show-subchannels');
+        }
+    }
+}
+
+window.initSubChannelsSidebar = initSubChannelsSidebar;
+
+export function toggleSubChannelsSidebar() {
+    const panel = document.getElementById('subchannels-sidebar-panel');
+    const grid = document.getElementById('dashboard-grid');
+    if (panel && grid) {
+        if (panel.style.display === 'none' || panel.style.display === '') {
+            panel.style.display = 'flex';
+            panel.classList.add('open');
+            grid.classList.add('show-subchannels');
+            localStorage.setItem('subchannels_sidebar_open', 'true');
+        } else {
+            panel.style.display = 'none';
+            panel.classList.remove('open');
+            grid.classList.remove('show-subchannels');
+            localStorage.setItem('subchannels_sidebar_open', 'false');
+        }
+    }
+}
+
+window.toggleSubChannelsSidebar = toggleSubChannelsSidebar;
+
 window.clearSearchFilters = function () {
     const input = document.getElementById('channel-search-input');
     const checkbox = document.getElementById('unread-filter-checkbox');

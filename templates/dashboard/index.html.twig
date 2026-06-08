@@ -10,6 +10,12 @@
 {% endblock %}
 
 {% block body %}
+    {% set activeSubChannels = [] %}
+    {% for sub in channels %}
+        {% if sub.isSubChannel and sub.parentMessage and sub.parentMessage.channel.id == activeChannel.id %}
+            {% set activeSubChannels = activeSubChannels|merge([sub]) %}
+        {% endif %}
+    {% endfor %}
     {% set mercureTopics = [
         mercure_topic_prefix ~ '/users/' ~ app.user.username,
         mercure_topic_prefix ~ '/users/status'
@@ -25,7 +31,7 @@
         'activeChannel': activeChannel
     } %}
 
-    <main class="dashboard-grid">
+        <main class="dashboard-grid" id="dashboard-grid">
         <!-- Channels Sidebar Panel -->
         {% include 'dashboard/_sidebar.html.twig' with {
             'channels': channels,
@@ -198,6 +204,15 @@
                                     'activeChannel': activeChannel,
                                     'notificationsEnabled': notificationsEnabled
                                 } %}
+                            {% if isMember and not activeChannel.isSubChannel %}
+                                <button type="button" class="btn-delete-channel"
+                                        id="btn-subchannels-toggle"
+                                        onclick="toggleSubChannelsSidebar()"
+                                        title="{{ 'Afficher les sous-canaux'|trans }}"
+                                        style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;">
+                                    🌿 {{ 'Sous-canaux'|trans }} ({{ activeSubChannels|length }})
+                                </button>
+                            {% endif %}
                             {% if isMember and not activeChannel.isDm %}
                                 {% if activeChannel.isPrivate and activeChannel.creator == app.user %}
                                     {% include 'dashboard/_invite_section.html.twig' with {'activeChannel': activeChannel, 'usersToInvite': usersToInvite} %}
@@ -275,6 +290,42 @@
                 {% include 'dashboard/_join_channel_prompt.html.twig' with {'activeChannel': activeChannel} %}
             {% endif %}
         </section>
+
+            {% if not activeChannel.isSubChannel %}
+                <!-- Right Sub-channels Sidebar Panel -->
+                <aside class="card glass-panel subchannels-sidebar-panel" id="subchannels-sidebar-panel">
+                    <div class="subchannels-sidebar-header">
+                        <h3>🌿 {{ 'Sous-canaux'|trans }}</h3>
+                        <button type="button" class="subchannels-sidebar-close" onclick="toggleSubChannelsSidebar()"
+                                title="{{ 'Fermer'|trans }}">✕
+                        </button>
+                    </div>
+                    <div class="subchannels-sidebar-list">
+                        {% if activeSubChannels is not empty %}
+                            {% for sub in activeSubChannels %}
+                                {% set subUnread = unreadCounts[sub.id]|default(null) %}
+                                {% set subCount = subUnread ? subUnread.count : 0 %}
+                                <a href="{{ path('app_channel', {slug: sub.slug}) }}" class="subchannels-sidebar-item">
+                                    <div class="subchannels-sidebar-item-header">
+                                        <span class="subchannels-sidebar-item-name">⊞ {{ sub.name }}</span>
+                                        {% if subCount > 0 %}
+                                            <span class="unread-badge"
+                                                  style="position: static; margin-left: auto;">{{ subCount }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="subchannels-sidebar-item-desc">
+                                    {{ sub.description|default('Aucune description.'|trans) }}
+                                </span>
+                                </a>
+                            {% endfor %}
+                        {% else %}
+                            <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; text-align: center; margin-top: 2rem;">
+                                {{ 'Aucun sous-canal existant.'|trans }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </aside>
+            {% endif %}
 
     </main>
 

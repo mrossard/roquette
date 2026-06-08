@@ -319,7 +319,10 @@ final class ChannelController extends AbstractController
         $ucrRepo = $entityManager->getRepository(\App\Entity\UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
 
-        return $this->render('dashboard/_channel_sidebar_item.html.twig', [
+        $template = $channel->isSubChannel(
+        ) ? 'dashboard/_subchannel_sidebar_item.html.twig' : 'dashboard/_channel_sidebar_item.html.twig';
+
+        return $this->render($template, [
             'channel' => $channel,
             'unreadCounts' => $unreadCounts,
             'activeChannel' => null,

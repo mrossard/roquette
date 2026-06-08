@@ -152,6 +152,9 @@ class MercurePublisher
                 'isMention' => $isMentioned,
                 'isMentionNotificationAllowed' => $member->isMentionNotificationsEnabled(),
                 'isDm' => $channel->isDm(),
+                'isSubChannel' => $channel->isSubChannel(),
+                'parentChannelId' => $channel->getParentMessage()?->getChannel()->getId(),
+                'parentChannelSlug' => $channel->getParentMessage()?->getChannel()->getSlug(),
             ], 'personal_notification');
         }
     }

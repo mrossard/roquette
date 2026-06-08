@@ -321,6 +321,15 @@ class Channel
             }
         }
 
+        if ($this->parentMessage) {
+            $parentChannel = $this->parentMessage->getChannel();
+            if ($parentChannel && $parentChannel->isDm()) {
+                if ($parentChannel->getMembers()->contains($user)) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 }

@@ -79,7 +79,7 @@
                     {% for channel in channels %}
                         {% if app.user.isChannelFavorite(channel) and not (channel.slug starts with 'dm-robot-roquette-') %}
                             {% if channel.isSubChannel %}
-                                {% if channel.hasUserParticipated(app.user) or (activeChannel and channel.id == activeChannel.id) %}
+                                {% if (activeChannel and channel.id == activeChannel.id) or (unreadCounts[channel.id] is defined and unreadCounts[channel.id].count > 0) %}
                                     {% include 'dashboard/_subchannel_sidebar_item.html.twig' with {
                                         'channel': channel,
                                         'unreadCounts': unreadCounts,
@@ -119,7 +119,7 @@
                             } %}
                             {% for sub in channels %}
                                 {% if sub.isSubChannel and sub.parentMessage and sub.parentMessage.channel.id == channel.id and not app.user.isChannelFavorite(sub) %}
-                                    {% if sub.hasUserParticipated(app.user) or (activeChannel and sub.id == activeChannel.id) %}
+                                    {% if (activeChannel and sub.id == activeChannel.id) or (unreadCounts[sub.id] is defined and unreadCounts[sub.id].count > 0) %}
                                         {% include 'dashboard/_subchannel_sidebar_item.html.twig' with {
                                             'channel': sub,
                                             'unreadCounts': unreadCounts,
@@ -154,6 +154,17 @@
                             'unreadCounts': unreadCounts,
                             'activeChannel': activeChannel
                         } %}
+                        {% for sub in channels %}
+                            {% if sub.isSubChannel and sub.parentMessage and sub.parentMessage.channel.id == channel.id and not app.user.isChannelFavorite(sub) %}
+                                {% if (activeChannel and sub.id == activeChannel.id) or (unreadCounts[sub.id] is defined and unreadCounts[sub.id].count > 0) %}
+                                    {% include 'dashboard/_subchannel_sidebar_item.html.twig' with {
+                                        'channel': sub,
+                                        'unreadCounts': unreadCounts,
+                                        'activeChannel': activeChannel
+                                    } %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
                     {% endif %}
                 {% endfor %}
                 {% if not hasDms %}
