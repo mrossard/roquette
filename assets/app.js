@@ -133,10 +133,10 @@ document.addEventListener('click', (e) => {
 
         let bottomThreshold = window.innerHeight;
         const container = picker.closest('#live-feed');
-        if (container && container.nextElementSibling) {
-            const nextEl = container.nextElementSibling;
-            if (nextEl.classList.contains('chat-input-area')) {
-                bottomThreshold = nextEl.getBoundingClientRect().top;
+        if (container) {
+            const chatInputArea = container.parentElement.querySelector('.chat-input-area');
+            if (chatInputArea) {
+                bottomThreshold = chatInputArea.getBoundingClientRect().top;
             }
         }
 
