@@ -7,6 +7,25 @@ function isCurrentUserBusy() {
     return currentUserDot && currentUserDot.classList.contains('busy');
 }
 
+function playNotificationSound() {
+    const soundEnabled = localStorage.getItem('roquette_notifications_sound') !== 'false';
+    if (!soundEnabled) return;
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 400;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.15);
+    } catch (e) {
+        // Silently ignore audio errors
+    }
+}
+
 export function sendDesktopNotification(title, body, icon = null, tag = null, url = null) {
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
@@ -15,6 +34,8 @@ export function sendDesktopNotification(title, body, icon = null, tag = null, ur
     // Check user preference in localStorage
     const enabled = localStorage.getItem('roquette_notifications_enabled') !== 'false';
     if (!enabled) return;
+
+    playNotificationSound();
 
     // Use a custom rocket icon if none provided
     const notificationIcon = icon || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><text y="0.9em" font-size="90">🚀</text></svg>';
@@ -195,16 +216,26 @@ export function updateSettingsPageUI() {
             });
         });
     } else if (permission === 'granted') {
+        const soundEnabled = localStorage.getItem('roquette_notifications_sound') !== 'false';
+
         container.innerHTML = `
             <div class="notification-status-badge granted">
                 <span>✅ Les notifications sont autorisées dans votre navigateur.</span>
             </div>
 
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 0.75rem; border: 1px solid var(--border-glass);">
-                <span style="font-size: 0.9rem; color: var(--text-primary);">Activer les notifications de bureau</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 0.75rem; border: 1px solid var(--border-glass);">
+                <span style="font-size: 0.9rem; color: var(--text-primary);">🔔 Notifications de bureau</span>
                 <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
                     <input type="checkbox" id="notification-toggle-checkbox" ${enabled ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
                     <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${enabled ? 'var(--accent-cyan)' : 'rgba(255, 255, 255, 0.1)'}; transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
+                </label>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 0.75rem; border: 1px solid var(--border-glass);">
+                <span style="font-size: 0.9rem; color: var(--text-primary);">🔊 Son de notification</span>
+                <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                    <input type="checkbox" id="notification-sound-checkbox" ${soundEnabled ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+                    <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${soundEnabled ? 'var(--accent-cyan)' : 'rgba(255, 255, 255, 0.1)'}; transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
                 </label>
             </div>
 
@@ -216,6 +247,7 @@ export function updateSettingsPageUI() {
         `;
 
         const checkbox = document.getElementById('notification-toggle-checkbox');
+        const soundCheckbox = document.getElementById('notification-sound-checkbox');
         const slider = container.querySelector('.slider');
         const testBtn = document.getElementById('test-notification-btn');
 
@@ -242,6 +274,14 @@ export function updateSettingsPageUI() {
             const headerBtn = document.getElementById('header-notification-btn');
             if (headerBtn && headerBtn.updateUI) {
                 headerBtn.updateUI();
+            }
+        });
+
+        soundCheckbox?.addEventListener('change', (e) => {
+            localStorage.setItem('roquette_notifications_sound', e.target.checked.toString());
+            const soundSlider = soundCheckbox.nextElementSibling;
+            if (soundSlider) {
+                soundSlider.style.backgroundColor = e.target.checked ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.1)';
             }
         });
 
