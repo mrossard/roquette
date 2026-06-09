@@ -38,6 +38,9 @@
         # Subscriber JWT key
         subscriber_jwt {$MERCURE_JWT_SECRET}
 
+        # Keep SSE alive through proxies
+        heartbeat 30s
+
         # Extra directives
         {$MERCURE_EXTRA_DIRECTIVES}
     }

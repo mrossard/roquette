@@ -6,3 +6,4 @@ mercure:
             jwt:
                 secret: '%env(MERCURE_JWT_SECRET)%'
                 publish: '*'
+            default_cookie_lifetime: 86400
