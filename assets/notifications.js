@@ -302,7 +302,7 @@ export function handleGlobalNotification(data) {
     if (data.channelSlug === activeChannelSlug && isPageActive) {
         // We are currently viewing this channel and the page is active, so mark it as read in the DB in background
         const readUrl = `/channels/${data.channelSlug}/read`;
-        htmx.ajax('POST', readUrl, {swap: 'none'});
+        fetch(readUrl, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}});
     } else {
         // We are on another channel, show/increment the unread badge
         const channelLink = document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`);
@@ -475,7 +475,7 @@ export function markActiveChannelAsReadIfFocused() {
         }
 
         const readUrl = `/channels/${activeChannelSlug}/read`;
-        htmx.ajax('POST', readUrl, {swap: 'none'});
+        fetch(readUrl, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}});
         updateFaviconUnreadCount();
     }
 }
