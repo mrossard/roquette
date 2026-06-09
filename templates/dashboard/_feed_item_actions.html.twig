@@ -12,7 +12,7 @@
                 <span>{{ 'Répondre'|trans }}</span>
             </button>
         {% endif %}
-        {% if message_id|default(0) > 0 %}
+        {% if message_id|default(0) > 0 and messageChannel and not messageChannel.isSubChannel() %}
             <button class="btn-reply-subtle btn-subchannel-subtle"
                     hx-post="{{ path('app_message_create_subchannel', {id: message_id}) }}"
                     title="{{ 'Créer un sous-canal'|trans }}">

@@ -341,6 +341,28 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
             if (window.handleInvitationNotification) {
                 window.handleInvitationNotification(data);
             }
+        } else if (type === 'channel_deleted') {
+            const channelLink = document.querySelector(
+                `.channel-link[data-channel-slug="${data.channelSlug}"]`,
+            );
+            if (channelLink) {
+                channelLink.remove();
+            }
+
+            const sidebarItem = document.querySelector(
+                `.subchannels-sidebar-item[href*="/${data.channelSlug}"]`,
+            );
+            if (sidebarItem) {
+                sidebarItem.remove();
+            }
+
+            const statusBadge = document.getElementById('mercure-status');
+            if (statusBadge) {
+                const activeChannelSlug = statusBadge.getAttribute('data-active-channel-slug');
+                if (data.channelSlug === activeChannelSlug) {
+                    window.location.href = data.redirectUrl || '/';
+                }
+            }
         }
     } catch (err) {
         // Expected for message HTML payloads

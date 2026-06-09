@@ -492,13 +492,16 @@ final class ChannelController extends AbstractController
             );
         }
 
-        $oobHtml = sprintf(
-            '<a id="sidebar-channel-%s" hx-swap-oob="delete"></a>'.
-            '<script>if(window.location.pathname === "/channels/%s"){ window.location.href = "/"; }</script>',
-            $slug,
-            $slug,
-        );
-        $this->mercurePublisher->publishToChannel($channel, $oobHtml, 'channel_deleted');
+        $parentChannel = $channel->getParentMessage()?->getChannel();
+
+        $redirectSlug = $parentChannel
+            ? '/channels/'.$parentChannel->getSlug()
+            : '/';
+
+        $this->mercurePublisher->publishToChannel($channel, [
+            'channelSlug' => $slug,
+            'redirectUrl' => $redirectSlug,
+        ], 'channel_deleted');
 
         $this->logger->info(sprintf(
             'Channel deleted: "%s" (slug: "%s") by user "%s"',
@@ -517,6 +520,12 @@ final class ChannelController extends AbstractController
                 ['%channelName%' => $channel->getName()],
             ),
         );
+
+        if ($parentChannel) {
+            return $this->redirectToRoute('app_channel', [
+                'slug' => $parentChannel->getSlug(),
+            ]);
+        }
 
         return $this->redirectToRoute('app_dashboard');
     }
@@ -864,6 +873,9 @@ final class ChannelController extends AbstractController
         }
 
         $parentChannel = $parentMessage->getChannel();
+        if ($parentChannel->isSubChannel()) {
+            return new Response($this->translator->trans('Non autorisé.'), 403);
+        }
         if ($parentChannel->isPrivate() && !$parentChannel->getMembers()->contains($currentUser)) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }

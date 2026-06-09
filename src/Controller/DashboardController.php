@@ -48,6 +48,11 @@ final class DashboardController extends AbstractController
             return $this->redirectToRoute('app_channels_directory');
         }
 
+        $general = $channelRepository->findOneBy(['slug' => 'general']);
+        if ($general !== null) {
+            return $this->redirectToRoute('app_channel', ['slug' => 'general']);
+        }
+
         return $this->redirectToRoute('app_channel', ['slug' => $channels[0]->getSlug()]);
     }
 

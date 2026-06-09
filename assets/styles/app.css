@@ -5694,6 +5694,24 @@ dialog.modal-backdrop-dialog#image-lightbox::backdrop {
     -webkit-box-orient: vertical;
 }
 
+.subchannel-settings-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.15rem 0.3rem;
+    line-height: 1;
+    border-radius: 0.25rem;
+    transition: color 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+
+.subchannel-settings-btn:hover {
+    color: var(--accent-cyan);
+    background: rgba(255, 255, 255, 0.08);
+}
+
 @media (min-width: 1200px) {
     .dashboard-grid.show-subchannels {
         grid-template-columns: 280px 1fr 300px;

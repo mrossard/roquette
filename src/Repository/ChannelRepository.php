@@ -30,13 +30,27 @@ class ChannelRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
-        if ($joinedChannels === []) {
-            $general = $this->findOneBy(['slug' => 'general']);
-            if ($general) {
-                $general->addMember($user);
-                $this->getEntityManager()->flush();
-                $joinedChannels[] = $general;
+        $general = $this->findOneBy(['slug' => 'general']);
+        if (!$general) {
+            $general = new Channel();
+            $general->setName('Général');
+            $general->setSlug('general');
+            $general->setDescription('Le canal de discussion principal pour tout le monde.');
+            $this->getEntityManager()->persist($general);
+        }
+
+        $isMemberOfGeneral = false;
+        foreach ($joinedChannels as $channel) {
+            if ($channel->getId() === $general->getId()) {
+                $isMemberOfGeneral = true;
+                break;
             }
+        }
+
+        if (!$isMemberOfGeneral) {
+            $general->addMember($user);
+            $this->getEntityManager()->flush();
+            array_unshift($joinedChannels, $general);
         }
 
         $robotUser = $this->getEntityManager()->getRepository(\App\Entity\User::class)->findOneBy(
