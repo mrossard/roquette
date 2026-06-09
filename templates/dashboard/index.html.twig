@@ -281,8 +281,9 @@
                         } %}
                     </div>
 
+                    {% include 'dashboard/_typing_indicator.html.twig' with {'typingUsers': typingUsers|default([]), 'activeChannel': activeChannel} %}
+
                     <div class="chat-input-area">
-                        {% include 'dashboard/_typing_indicator.html.twig' with {'typingUsers': typingUsers|default([]), 'activeChannel': activeChannel} %}
                         {% include 'dashboard/_input_form.html.twig' with {'activeChannel': activeChannel} %}
                     </div>
                 </div>
