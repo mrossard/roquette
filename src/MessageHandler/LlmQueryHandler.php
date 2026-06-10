@@ -47,14 +47,14 @@ final class LlmQueryHandler
         }
 
         $personalTopic = $this->mercureTopicPrefix.'/users/'.$user->getUsername();
+        $channelSlug = $message->getChannelSlug();
 
         // 1. Immediately upon receipt: show "Analyse de la demande... 🔍"
         $initialHtml = $this->messageFormatter->format('Analyse de la demande... 🔍');
-        $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $initialHtml);
+        $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $initialHtml, $channelSlug);
 
         [$prompt, $systemPrompt] = $this->getDefaultHelpPrompts($message->getQuestion());
 
-        $channelSlug = $message->getChannelSlug();
         $intent = 'help';
         $channelName = null;
         $batches = null;
@@ -108,6 +108,7 @@ final class LlmQueryHandler
             $personalTopic,
             $message->getHelpMessageId(),
             $this->messageFormatter->format($reformulation),
+            $channelSlug,
         );
 
         try {
@@ -129,6 +130,7 @@ final class LlmQueryHandler
                         $personalTopic,
                         $message->getHelpMessageId(),
                         $this->messageFormatter->format($reformulation),
+                        $channelSlug,
                     );
 
                     $batchPrompt = json_encode($batch, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -140,6 +142,7 @@ final class LlmQueryHandler
                     $personalTopic,
                     $message->getHelpMessageId(),
                     $this->messageFormatter->format($reformulation),
+                    $channelSlug,
                 );
 
                 // Prepare combining call
@@ -171,6 +174,7 @@ final class LlmQueryHandler
                         $personalTopic,
                         $message->getHelpMessageId(),
                         $formattedHtml,
+                        $channelSlug,
                     );
                 }
             }
@@ -180,6 +184,7 @@ final class LlmQueryHandler
                 $personalTopic,
                 $message->getHelpMessageId(),
                 $formattedHtml,
+                $channelSlug,
             );
 
             // Persist the message in the database so it is saved only if it is a DM with the robot
@@ -198,7 +203,7 @@ final class LlmQueryHandler
             $errorHtml = '<p style="color: var(--accent-red, #ff5b5b);">Désolé, une erreur est survenue lors de la communication avec le robot d\'aide : '.htmlspecialchars(
                     $e->getMessage(),
                 ).'</p>';
-            $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $errorHtml);
+            $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $errorHtml, $channelSlug);
         }
     }
 
@@ -386,12 +391,13 @@ final class LlmQueryHandler
         }
     }
 
-    private function publishUpdate(string $topic, string $helpMessageId, string $html): void
+    private function publishUpdate(string $topic, string $helpMessageId, string $html, string $channelSlug): void
     {
         $renderedHtml = $this->twig->render('dashboard/_help_message_update.html.twig', [
             'helpMessageId' => $helpMessageId,
             'html' => $html,
             'timestamp' => new \DateTime(),
+            'channelSlug' => $channelSlug,
         ]);
 
         $update = new Update(

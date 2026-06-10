@@ -1,4 +1,4 @@
-<div id="{{ helpMessageId }}" hx-swap-oob="true">
+<div id="{{ helpMessageId }}" hx-swap-oob="true" data-channel-slug="{{ channelSlug }}">
     {% include 'dashboard/_feed_item.html.twig' with {
         'message': html,
         'user': 'Assistant Roquette',

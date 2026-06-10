@@ -297,6 +297,34 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
             const doc = parser.parseFromString(event.detail.data, 'text/html');
             const oobElem = doc.querySelector('[hx-swap-oob]');
             if (oobElem) {
+                const channelSlug = oobElem.getAttribute('data-channel-slug');
+                const statusBadge = document.getElementById('mercure-status');
+                const activeChannelSlug = statusBadge ? statusBadge.getAttribute('data-active-channel-slug') : null;
+                if (channelSlug && channelSlug !== activeChannelSlug) {
+                    const channelLink = document.querySelector(`.channel-link[data-channel-slug="${channelSlug}"]`);
+                    if (channelLink) {
+                        channelLink.classList.add('unread');
+                        let badge = channelLink.querySelector('.unread-badge');
+                        if (!badge) {
+                            badge = document.createElement('span');
+                            badge.className = 'unread-badge';
+                            badge.textContent = '0';
+                            channelLink.appendChild(badge);
+                        }
+                        if (!window.processedHelpUnread) {
+                            window.processedHelpUnread = new Set();
+                        }
+                        const id = oobElem.id;
+                        if (!window.processedHelpUnread.has(id)) {
+                            window.processedHelpUnread.add(id);
+                            const currentCount = parseInt(badge.textContent, 10) || 0;
+                            badge.textContent = (currentCount + 1).toString();
+                        }
+                        badge.style.display = 'inline-flex';
+                    }
+                    return;
+                }
+
                 const id = oobElem.id;
                 const existing = document.getElementById(id);
                 if (existing) {
