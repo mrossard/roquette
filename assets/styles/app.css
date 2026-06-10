@@ -823,6 +823,20 @@ select option {
     user-select: none;
 }
 
+.channel-link.subchannel-link {
+    padding-left: 2rem;
+    cursor: pointer;
+}
+
+.channel-group {
+    margin-bottom: 0.125rem;
+}
+
+.channel-subchannels {
+    display: flex;
+    flex-direction: column;
+}
+
 .channel-link .channel-name {
     flex: 1;
     min-width: 0;

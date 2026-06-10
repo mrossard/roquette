@@ -229,6 +229,8 @@ final class ChannelController extends AbstractController
             $typingUsers = array_map(fn($info) => $info['name'], array_values($typingUsersFromCache));
         }
 
+        $subChannelsByParent = $this->buildSubChannelsByParent($channels);
+
         return $this->render('dashboard/index.html.twig', [
             'channels' => $channels,
             'activeChannel' => $activeChannel,
@@ -241,6 +243,7 @@ final class ChannelController extends AbstractController
             'isMember' => $isMember,
             'notificationsEnabled' => $notificationsEnabled,
             'typingUsers' => $typingUsers,
+            'subChannelsByParent' => $subChannelsByParent,
         ]);
     }
 
@@ -602,11 +605,14 @@ final class ChannelController extends AbstractController
                 }
             }
 
+            $subChannelsByParent = $this->buildSubChannelsByParent($channels);
+
             $sidebarHtml = $this->renderView('dashboard/_sidebar.html.twig', [
                 'channels' => $channels,
                 'unreadCounts' => $unreadCounts,
                 'activeChannel' => $activeChannel,
                 'pendingInvitations' => $pendingInvitations,
+                'subChannelsByParent' => $subChannelsByParent,
             ]);
 
             // Add hx-swap-oob="true" to the root of the rendered sidebar section
@@ -945,5 +951,22 @@ final class ChannelController extends AbstractController
     private function getChannelTopicUrl(Channel $channel): string
     {
         return $this->mercurePublisher->getChannelTopic($channel);
+    }
+
+    /**
+     * @param Channel[] $channels
+     * @return array<int, Channel[]>
+     */
+    private function buildSubChannelsByParent(array $channels): array
+    {
+        $map = [];
+        foreach ($channels as $ch) {
+            if ($ch->isSubChannel() && $ch->getParentMessage()) {
+                $parentId = $ch->getParentMessage()->getChannel()->getId();
+                $map[$parentId][] = $ch;
+            }
+        }
+
+        return $map;
     }
 }

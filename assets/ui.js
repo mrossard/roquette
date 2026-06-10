@@ -390,7 +390,7 @@ export function initChannelReordering() {
     lists.forEach(list => {
         const sortable = new Sortable(list, {
             animation: 150,
-            draggable: '.channel-link',
+            draggable: '.channel-link:not(.subchannel-link)',
             disabled: !sidebarPanel.classList.contains('reorder-active'),
             ghostClass: 'dragging-ghost',
             onEnd: () => {

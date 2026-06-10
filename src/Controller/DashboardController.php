@@ -85,6 +85,14 @@ final class DashboardController extends AbstractController
             fn(User $u) => $u->getUsername() !== User::ROBOT_USERNAME,
         );
 
+        $subChannelsByParent = [];
+        foreach ($channels as $ch) {
+            if ($ch->isSubChannel() && $ch->getParentMessage()) {
+                $parentId = $ch->getParentMessage()->getChannel()->getId();
+                $subChannelsByParent[$parentId][] = $ch;
+            }
+        }
+
         return $this->render('dashboard/directory.html.twig', [
             'channels' => $channels,
             'allPublicChannels' => $allPublicChannels,
@@ -92,6 +100,7 @@ final class DashboardController extends AbstractController
             'pendingInvitations' => $pendingInvitations,
             'activeChannel' => null,
             'allUsers' => $allUsers,
+            'subChannelsByParent' => $subChannelsByParent,
         ]);
     }
 

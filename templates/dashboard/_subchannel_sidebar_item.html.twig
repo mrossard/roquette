@@ -10,7 +10,6 @@
    data-parent-channel-id="{{ channel.parentMessage ? channel.parentMessage.channel.id : '' }}"
    draggable="false"
    title="{{ channel.name }}">
-    <span class="subchannel-indent">└</span>
     <span class="channel-hash" style="color: var(--accent-cyan); opacity: 0.7; font-size: 0.85rem;">⊞</span>
     <span class="channel-name" style="font-size: 0.85rem;">{{ channel.name }}</span>
     {% set lastMessage = channel.lastMessage %}

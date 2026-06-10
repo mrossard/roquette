@@ -362,29 +362,23 @@ export function handleGlobalNotification(data) {
             badge.textContent = (currentCount + 1).toString();
             badge.style.display = 'inline-flex';
         } else if (data.isSubChannel && data.parentChannelId) {
-            // Check if this sub-channel is already in the DOM
             const subChannelLink = document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`);
             if (!subChannelLink) {
-                // Fetch and insert it after all matching parent channel links in the sidebar
                 const parentLinks = document.querySelectorAll(`.channel-link[data-channel-id="${data.parentChannelId}"]:not(.subchannel-link)`);
                 if (parentLinks.length > 0) {
                     fetch(`/channels/${data.channelSlug}/sidebar-item`)
                         .then(response => response.text())
                         .then(html => {
                             parentLinks.forEach(parentLink => {
-                                // Double check if it wasn't added in the meantime
-                                const parentContainer = parentLink.parentNode;
-                                if (parentContainer && !parentContainer.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`)) {
-                                    parentLink.insertAdjacentHTML('afterend', html);
+                                const group = parentLink.closest('.channel-group');
+                                const container = group?.querySelector('.channel-subchannels');
+                                if (container && !container.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`)) {
+                                    container.insertAdjacentHTML('beforeend', html);
                                 }
                             });
-                            // Process HTMX for the new items
-                            const sectionChannels = document.getElementById('section-channels');
-                            if (sectionChannels) htmx.process(sectionChannels);
-                            const favorites = document.getElementById('section-favorites');
-                            if (favorites) htmx.process(favorites);
-                            const dms = document.getElementById('section-dms');
-                            if (dms) htmx.process(dms);
+                            htmx.process(document.getElementById('section-channels'));
+                            htmx.process(document.getElementById('section-favorites'));
+                            htmx.process(document.getElementById('section-dms'));
                         });
                 }
             }
