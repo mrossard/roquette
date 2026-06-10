@@ -83,6 +83,7 @@ final class MessageController extends AbstractController
         string $slug,
         Request $request,
         ChannelRepository $channelRepository,
+        MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
         MercurePublisher $mercurePublisher,
         FileUploadService $fileUploadService,
@@ -188,6 +189,23 @@ final class MessageController extends AbstractController
         $entityManager->flush();
 
         $renderedHtml = $this->renderFeedItem($message);
+
+        $previousMessages = $messageRepository->findLatestInChannel($activeChannel, 1, $message->getId());
+        if ($previousMessages !== []) {
+            $previousDate = $previousMessages[0]->getCreatedAt()->format('Y-m-d');
+            $newDate = $message->getCreatedAt()->format('Y-m-d');
+            if ($previousDate !== $newDate) {
+                $today = (new \DateTimeImmutable())->format('Y-m-d');
+                $yesterday = (new \DateTimeImmutable('-1 day'))->format('Y-m-d');
+                $label = match ($newDate) {
+                    $today => "Aujourd'hui",
+                    $yesterday => 'Hier',
+                    default => $message->getCreatedAt()->format('d/m/Y'),
+                };
+                $separatorHtml = $this->renderView('dashboard/_day_separator.html.twig', ['label' => $label]);
+                $renderedHtml = $separatorHtml."\n".$renderedHtml;
+            }
+        }
 
         $mercurePublisher->publishNewMessage(
             $activeChannel,
