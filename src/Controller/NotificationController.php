@@ -99,11 +99,7 @@ final class NotificationController extends AbstractController
         }
 
         if ($query === '') {
-            $messages = $messageRepository->findBy(
-                ['channel' => $activeChannel, 'parent' => null],
-                ['createdAt' => 'DESC'],
-                50,
-            );
+            $messages = $messageRepository->findLatestInChannel($activeChannel, 50);
             $messages = array_reverse($messages);
 
             return $this->render('dashboard/_messages_feed.html.twig', [
