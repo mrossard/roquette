@@ -380,6 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.initFileUpload) window.initFileUpload();
             if (window.initTypingIndicator) window.initTypingIndicator();
             if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
+            if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
 
             const messageInputAfterSettle = document.getElementById('message');
             if (messageInputAfterSettle) messageInputAfterSettle.focus();

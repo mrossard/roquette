@@ -1,12 +1,14 @@
 import { EMOJI_CATEGORIES, EMOJI_KEYWORDS } from './emoji-data.js';
 
 let activePicker = null;
+const emojiPickerInitialized = new WeakSet();
 
 export function initEmojiPickers() {
-    const triggers = document.querySelectorAll('.btn-emoji-toggle:not([data-emoji-initialized])');
+    const triggers = document.querySelectorAll('.btn-emoji-toggle');
     
     triggers.forEach(trigger => {
-        trigger.setAttribute('data-emoji-initialized', 'true');
+        if (emojiPickerInitialized.has(trigger)) return;
+        emojiPickerInitialized.add(trigger);
         
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();

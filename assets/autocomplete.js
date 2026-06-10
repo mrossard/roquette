@@ -3,6 +3,7 @@ import {EMOJI_CATEGORIES, EMOJI_KEYWORDS, EMOJI_PRIMARY_SHORTCODES} from './emoj
 let activeAutocomplete = null;
 let lastAutocompleteQuery = '';
 let lastAutocompleteType = '';
+const autocompleteInitialized = new WeakSet();
 
 const SLASH_COMMANDS = [
     {name: 'help', icon: '🤖', description: 'Poser une question à l\'Assistant Roquette', usage: '/help <question>'},
@@ -60,10 +61,11 @@ function findMatchingCommands(query) {
 }
 
 export function initEmojiAutocomplete() {
-    const targets = document.querySelectorAll('textarea:not([data-autocomplete-initialized]), input#global-search-input:not([data-autocomplete-initialized])');
+    const targets = document.querySelectorAll('textarea, input#global-search-input');
 
     targets.forEach(target => {
-        target.setAttribute('data-autocomplete-initialized', 'true');
+        if (autocompleteInitialized.has(target)) return;
+        autocompleteInitialized.add(target);
 
         target.addEventListener('input', () => {
             handleTextareaInputForAutocomplete(target);
@@ -164,19 +166,23 @@ async function handleTextareaInputForAutocomplete(textarea) {
 
 function showAutocompleteDropdown(textarea, type, query, queryStartIndex, queryEndIndex, matches) {
     if (activeAutocomplete && activeAutocomplete.textarea === textarea) {
-        activeAutocomplete.type = type;
-        activeAutocomplete.query = query;
-        activeAutocomplete.startIndex = queryStartIndex;
-        activeAutocomplete.endIndex = queryEndIndex;
-        activeAutocomplete.matches = matches;
-        activeAutocomplete.activeIndex = 0;
-
-        if (type === 'emoji' || type === 'command') {
-            renderAutocompleteItems();
+        if (!activeAutocomplete.element.isConnected) {
+            closeAutocomplete();
         } else {
-            activeAutocomplete.element.innerHTML = '';
+            activeAutocomplete.type = type;
+            activeAutocomplete.query = query;
+            activeAutocomplete.startIndex = queryStartIndex;
+            activeAutocomplete.endIndex = queryEndIndex;
+            activeAutocomplete.matches = matches;
+            activeAutocomplete.activeIndex = 0;
+
+            if (type === 'emoji' || type === 'command') {
+                renderAutocompleteItems();
+            } else {
+                activeAutocomplete.element.innerHTML = '';
+            }
+            return;
         }
-        return;
     }
 
     if (activeAutocomplete) {
@@ -248,6 +254,10 @@ function onAutocompleteClick(e) {
 
 function renderAutocompleteItems() {
     if (!activeAutocomplete) return;
+    if (!activeAutocomplete.element.isConnected) {
+        closeAutocomplete();
+        return;
+    }
 
     const { element, matches, activeIndex, type } = activeAutocomplete;
     element.innerHTML = '';
@@ -309,6 +319,10 @@ function renderAutocompleteItems() {
 
 function updateAutocompleteActiveIndex() {
     if (!activeAutocomplete) return;
+    if (!activeAutocomplete.element.isConnected) {
+        closeAutocomplete();
+        return;
+    }
     const items = activeAutocomplete.element.querySelectorAll('.emoji-autocomplete-item');
     items.forEach((item, i) => {
         item.classList.toggle('active', i === activeAutocomplete.activeIndex);
@@ -419,6 +433,11 @@ export function closeAutocomplete() {
 
 function handleTextareaKeydownForAutocomplete(textarea, e) {
     if (!activeAutocomplete || activeAutocomplete.textarea !== textarea) return;
+
+    if (!activeAutocomplete.element.isConnected) {
+        closeAutocomplete();
+        return;
+    }
 
     const { matches, activeIndex, type } = activeAutocomplete;
 
