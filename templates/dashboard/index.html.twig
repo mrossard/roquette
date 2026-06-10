@@ -277,7 +277,8 @@
                         {% include 'dashboard/_messages_feed.html.twig' with {
                             'messages': messages,
                             'activeChannel': activeChannel,
-                            'firstUnreadMessageId': firstUnreadMessageId
+                            'firstUnreadMessageId': firstUnreadMessageId,
+                            'replyCounts': replyCounts|default({})
                         } %}
                     </div>
 

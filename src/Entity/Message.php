@@ -50,9 +50,12 @@ class Message
     #[ORM\JoinColumn(nullable: false)]
     private ?User $author = null;
 
-    #[ORM\ManyToOne(targetEntity: Message::class)]
+    #[ORM\ManyToOne(targetEntity: Message::class, inversedBy: 'replies')]
     #[JoinColumn(name: 'parent_message_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Message $parentMessage = null;
+
+    #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'parentMessage')]
+    private Collection $replies;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $customAuthorName = null;
@@ -70,6 +73,7 @@ class Message
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->reactions = new ArrayCollection();
+        $this->replies = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -245,6 +249,14 @@ class Message
     public function isPoll(): bool
     {
         return $this->poll !== null;
+    }
+
+    /**
+     * @return Collection<int, Message>
+     */
+    public function getReplies(): Collection
+    {
+        return $this->replies;
     }
 
     public function getCustomAuthorName(): ?string

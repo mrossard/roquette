@@ -1,4 +1,6 @@
 {% if unreadFilterActive is defined and unreadFilterActive %}
+    <div hx-on:htmx:load="var f=document.getElementById('live-feed');if(f)f.removeAttribute('data-block-sse')"
+         style="display:none"></div>
     <div class="search-results-banner unread-filter-banner">
         <span class="search-banner-text">🔔 Affichage des <strong>messages non lus</strong></span>
         <button class="btn-clear-search btn-clear-unread"
@@ -15,7 +17,8 @@
             {% set lastDate = currentDate %}
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
-            'messageObject': message
+            'messageObject': message,
+            'replyCounts': replyCounts|default({})
         } %}
     {% else %}
         <div id="feed-empty-state" class="empty-state">
@@ -28,7 +31,42 @@
             </button>
         </div>
     {% endfor %}
+{% elseif threadOf is defined and threadOf is not null %}
+    <div hx-on:htmx:load="var f=document.getElementById('live-feed');if(f)f.setAttribute('data-block-sse','true')"
+         style="display:none"></div>
+    {% set replyCount = messages|length - 1 %}
+    <div class="search-results-banner thread-banner">
+        <span
+            class="search-banner-text">💬 <strong>{{ threadOf.author.displayName|default(threadOf.author.username) }}</strong> — {{ 'Fil de discussion'|trans }} ({{ replyCount }} {{ replyCount > 1 ? 'réponses' : 'réponse' }})</span>
+        <button class="btn-clear-search"
+                hx-on:click="clearSearchFilters()"
+                title="Revenir à tous les messages">{{ 'Retour au direct'|trans }}
+        </button>
+    </div>
+
+    {% set lastDate = null %}
+    {% for message in messages %}
+        {% set currentDate = message.createdAt|date('Y-m-d') %}
+        {% if lastDate is null or currentDate != lastDate %}
+            {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+            {% set lastDate = currentDate %}
+        {% endif %}
+        {% include 'dashboard/_feed_item.html.twig' with {
+            'messageObject': message,
+            'no_fade': true,
+            'isLast': loop.last,
+            'replyCounts': replyCounts|default({})
+        } %}
+    {% else %}
+        <div id="feed-empty-state" class="empty-state">
+            <div class="empty-icon">💬</div>
+            <h3>Aucune réponse</h3>
+            <p>Ce message n'a pas encore de réponse.</p>
+        </div>
+    {% endfor %}
 {% elseif searchQuery is defined and searchQuery is not empty %}
+    <div hx-on:htmx:load="var f=document.getElementById('live-feed');if(f)f.removeAttribute('data-block-sse')"
+         style="display:none"></div>
     <div class="search-results-banner">
         <span class="search-banner-text">🔍 <strong>{{ messages|length }}</strong> résultat(s) pour "<strong>{{ searchQuery }}</strong>"</span>
         <button class="btn-clear-search"
@@ -45,7 +83,8 @@
             {% set lastDate = currentDate %}
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
-            'messageObject': message
+            'messageObject': message,
+            'replyCounts': replyCounts|default({})
         } %}
     {% else %}
         <div id="feed-empty-state" class="empty-state">
@@ -55,6 +94,8 @@
         </div>
     {% endfor %}
 {% else %}
+    <div hx-on:htmx:load="var f=document.getElementById('live-feed');if(f)f.removeAttribute('data-block-sse')"
+         style="display:none"></div>
     {% if messages|length >= 50 %}
         {% include 'dashboard/_load_more_trigger.html.twig' with {
             'channel': activeChannel,
@@ -79,7 +120,8 @@
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
             'messageObject': message,
-            'isLast': loop.last
+            'isLast': loop.last,
+            'replyCounts': replyCounts|default({})
         } %}
     {% else %}
         <div id="feed-empty-state" class="empty-state">

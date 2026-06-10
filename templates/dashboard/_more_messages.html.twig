@@ -13,6 +13,7 @@
         {% set lastDate = currentDate %}
     {% endif %}
     {% include 'dashboard/_feed_item.html.twig' with {
-        'messageObject': message
+        'messageObject': message,
+        'replyCounts': replyCounts|default({})
     } %}
 {% endfor %}

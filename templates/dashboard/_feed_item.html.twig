@@ -233,4 +233,16 @@
             {% include 'dashboard/_feed_item_reactions.html.twig' %}
         </div>
     {% endif %}
+    {% set msgReplyCount = replyCounts[message_id]|default(0) %}
+    {% if msgReplyCount > 0 %}
+        <div class="thread-link-container">
+            <a href="#"
+               hx-get="{{ path('app_message_replies', {id: message_id}) }}"
+               hx-target="#live-feed"
+               hx-swap="innerHTML transition:false"
+               class="thread-link">
+                💬 {{ 'Voir les réponses (%count%)'|trans({'%count%': msgReplyCount}) }}
+            </a>
+        </div>
+    {% endif %}
 </div>

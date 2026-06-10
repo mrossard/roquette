@@ -179,7 +179,7 @@ final class UserSettingsController extends AbstractController
         }
 
         $channels = $qb
-            ->orderBy('c.name', 'ASC')
+            ->orderBy('LOWER(c.name)', 'ASC')
             ->getQuery()
             ->getResult();
 
@@ -238,7 +238,7 @@ final class UserSettingsController extends AbstractController
 
         return $this->render('api/_autocomplete_items.html.twig', [
             'type' => 'channels',
-            'channels' => $qb->orderBy('c.name', 'ASC')->getQuery()->getResult(),
+            'channels' => $qb->orderBy('LOWER(c.name)', 'ASC')->getQuery()->getResult(),
         ]);
     }
 

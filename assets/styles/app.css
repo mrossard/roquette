@@ -617,6 +617,34 @@ select option {
     margin-top: 1px;
 }
 
+.thread-link-container {
+    padding: 0.15rem 1rem 0.25rem 3.2rem;
+    display: flex;
+    align-items: center;
+}
+
+.thread-link {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent-cyan);
+    text-decoration: none;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(0, 229, 255, 0.06);
+    border: 1px solid rgba(0, 229, 255, 0.12);
+}
+
+.thread-link:hover {
+    background: rgba(0, 229, 255, 0.15);
+    border-color: rgba(0, 229, 255, 0.3);
+    box-shadow: 0 0 8px var(--accent-cyan-glow);
+    color: var(--accent-cyan);
+}
+
 .feed-item-header {
     display: flex;
     justify-content: flex-start;

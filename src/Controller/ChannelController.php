@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Channel;
+use App\Entity\Message;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
@@ -231,6 +232,9 @@ final class ChannelController extends AbstractController
 
         $subChannelsByParent = $this->buildSubChannelsByParent($channels);
 
+        $messageIds = array_map(fn(Message $m) => $m->getId(), $messages);
+        $replyCounts = $messageRepository->findReplyCounts($messageIds);
+
         return $this->render('dashboard/index.html.twig', [
             'channels' => $channels,
             'activeChannel' => $activeChannel,
@@ -244,6 +248,7 @@ final class ChannelController extends AbstractController
             'notificationsEnabled' => $notificationsEnabled,
             'typingUsers' => $typingUsers,
             'subChannelsByParent' => $subChannelsByParent,
+            'replyCounts' => $replyCounts,
         ]);
     }
 
@@ -293,11 +298,15 @@ final class ChannelController extends AbstractController
         $hasMore = count($moreMessages) === 50;
         $nextBeforeId = count($moreMessages) > 0 ? $moreMessages[0]->getId() : null;
 
+        $messageIds = array_map(fn(Message $m) => $m->getId(), $moreMessages);
+        $replyCounts = $messageRepository->findReplyCounts($messageIds);
+
         return $this->render('dashboard/_more_messages.html.twig', [
             'messages' => $moreMessages,
             'channel' => $activeChannel,
             'hasMore' => $hasMore,
             'nextBeforeId' => $nextBeforeId,
+            'replyCounts' => $replyCounts,
         ]);
     }
 

@@ -223,6 +223,12 @@
 "Votre compte a été créé avec succès ! Connectez-vous maintenant.": "Your account has been created successfully! Log in now."
 Rejoindre: 'Join'
 
+# Thread / Replies
+"Fil de discussion": "Thread"
+"Voir les réponses (%count%)": "View replies (%count%)"
+"Aucune réponse": "No replies"
+"Ce message n'a pas encore de réponse.": "This message does not have any replies yet."
+
 # Webhooks
 "Webhooks entrants": "Incoming Webhooks"
 "Aucun webhook configuré pour ce canal.": "No webhooks configured for this channel."

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
+use App\Entity\Message;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
@@ -89,12 +90,16 @@ final class NotificationController extends AbstractController
                 });
             }
 
+            $messageIds = array_map(fn(Message $m) => (int)$m->getId(), $messages);
+            $replyCounts = $messageRepository->findReplyCounts($messageIds);
+
             return $this->render('dashboard/_messages_feed.html.twig', [
                 'messages' => $messages,
                 'activeChannel' => $activeChannel,
                 'firstUnreadMessageId' => null,
                 'unreadFilterActive' => true,
                 'searchQuery' => $query !== '' ? $query : null,
+                'replyCounts' => $replyCounts,
             ]);
         }
 
@@ -102,20 +107,73 @@ final class NotificationController extends AbstractController
             $messages = $messageRepository->findLatestInChannel($activeChannel, 50);
             $messages = array_reverse($messages);
 
+            $messageIds = array_map(fn(Message $m) => (int)$m->getId(), $messages);
+            $replyCounts = $messageRepository->findReplyCounts($messageIds);
+
             return $this->render('dashboard/_messages_feed.html.twig', [
                 'messages' => $messages,
                 'activeChannel' => $activeChannel,
                 'firstUnreadMessageId' => null,
+                'replyCounts' => $replyCounts,
             ]);
         }
 
         $messages = $messageRepository->searchInChannel($activeChannel, $query);
+
+        $messageIds = array_map(fn(Message $m) => (int)$m->getId(), $messages);
+        $replyCounts = $messageRepository->findReplyCounts($messageIds);
 
         return $this->render('dashboard/_messages_feed.html.twig', [
             'messages' => $messages,
             'activeChannel' => $activeChannel,
             'searchQuery' => $query,
             'firstUnreadMessageId' => null,
+            'replyCounts' => $replyCounts,
+        ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // View all replies to a message (thread)
+    // -------------------------------------------------------------------------
+
+    #[Route('/messages/{id}/replies', name: 'app_message_replies', methods: ['GET'])]
+    public function replies(
+        int $id,
+        MessageRepository $messageRepository,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        $message = $messageRepository->find($id);
+        if (!$message) {
+            throw $this->createNotFoundException('Message not found');
+        }
+
+        $channel = $message->getChannel();
+        if (!$channel) {
+            throw $this->createNotFoundException('Channel not found');
+        }
+
+        // Verify access to the channel
+        $members = $channel->getMembers();
+        $hasAccess = $channel->isDm()
+            ? $members->contains($currentUser)
+            : (!$channel->isPrivate() || $members->contains($currentUser));
+
+        if (!$hasAccess) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $replies = $messageRepository->findReplyTree($message);
+
+        // Include the original message as the first item
+        $messages = array_merge([$message], $replies);
+
+        return $this->render('dashboard/_messages_feed.html.twig', [
+            'messages' => $messages,
+            'activeChannel' => $channel,
+            'firstUnreadMessageId' => null,
+            'threadOf' => $message,
         ]);
     }
 

@@ -1003,6 +1003,11 @@ document.addEventListener('click', (e) => {
     textarea.dispatchEvent(new Event('input', {bubbles: true}));
 });
 
-
-
+// Block SSE swap on #live-feed when in thread mode
+document.addEventListener('htmx:sseBeforeMessage', function (e) {
+    var feed = document.getElementById('live-feed');
+    if (feed && feed.hasAttribute('data-block-sse') && e.target === feed) {
+        e.preventDefault();
+    }
+});
 

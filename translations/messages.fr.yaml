@@ -222,6 +222,12 @@
 "Trop de tentatives d'inscription. Veuillez réessayer plus tard.": "Trop de tentatives d'inscription. Veuillez réessayer plus tard."
 "Votre compte a été créé avec succès ! Connectez-vous maintenant.": "Votre compte a été créé avec succès ! Connectez-vous maintenant."
 
+# Thread / Replies
+"Fil de discussion": "Fil de discussion"
+"Voir les réponses (%count%)": "Voir les réponses (%count%)"
+"Aucune réponse": "Aucune réponse"
+"Ce message n'a pas encore de réponse.": "Ce message n'a pas encore de réponse."
+
 # Webhooks
 "Webhooks entrants": "Webhooks entrants"
 "Aucun webhook configuré pour ce canal.": "Aucun webhook configuré pour ce canal."

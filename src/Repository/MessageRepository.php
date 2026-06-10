@@ -163,6 +163,89 @@ class MessageRepository extends ServiceEntityRepository
     }
 
     /**
+     * @param int[] $messageIds
+     *
+     * @return array<int, int> messageId => reply count
+     */
+    public function findReplyCounts(array $messageIds): array
+    {
+        if ($messageIds === []) {
+            return [];
+        }
+
+        $qb = $this
+            ->createQueryBuilder('m')
+            ->select('IDENTITY(m.parentMessage) AS parent_id, COUNT(m.id) AS reply_count')
+            ->where('m.parentMessage IN (:ids)')
+            ->setParameter('ids', $messageIds)
+            ->groupBy('m.parentMessage');
+
+        $results = $qb->getQuery()->getScalarResult();
+
+        $counts = [];
+        foreach ($results as $row) {
+            $counts[(int)$row['parent_id']] = (int)$row['reply_count'];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Finds all messages in the reply tree of a given message (including the message itself, ordered by creation date).
+     *
+     * @return Message[]
+     */
+    public function findReplyTree(Message $message): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $sql = '
+            WITH RECURSIVE reply_tree AS (
+                SELECT id, parent_message_id, created_at
+                FROM message
+                WHERE parent_message_id = :messageId
+                UNION ALL
+                SELECT m.id, m.parent_message_id, m.created_at
+                FROM message m
+                INNER JOIN reply_tree rt ON m.parent_message_id = rt.id
+            )
+            SELECT id FROM reply_tree
+            ORDER BY created_at ASC
+        ';
+        $ids = $conn->fetchFirstColumn($sql, ['messageId' => $message->getId()]);
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $ids = array_map('intval', $ids);
+
+        $qb = $this
+            ->createQueryBuilder('m')
+            ->select(
+                'm',
+                'author',
+                'reactions',
+                'reaction_user',
+                'poll',
+                'poll_options',
+                'poll_votes',
+                'poll_vote_user',
+            )
+            ->leftJoin('m.author', 'author')
+            ->leftJoin('m.reactions', 'reactions')
+            ->leftJoin('reactions.user', 'reaction_user')
+            ->leftJoin('m.poll', 'poll')
+            ->leftJoin('poll.options', 'poll_options')
+            ->leftJoin('poll_options.votes', 'poll_votes')
+            ->leftJoin('poll_votes.user', 'poll_vote_user')
+            ->where('m.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->orderBy('m.createdAt', 'ASC');
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * @return Message[]
      */
     public function findMessagesAround(Channel $channel, int $messageId, int $limit = 50): array
