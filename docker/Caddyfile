@@ -41,6 +41,9 @@
         # Keep SSE alive through proxies
         heartbeat 30s
 
+        # do not limit long connections
+        write_timeout 0s
+
         # Extra directives
         {$MERCURE_EXTRA_DIRECTIVES}
     }
