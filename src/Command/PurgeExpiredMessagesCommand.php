@@ -61,9 +61,7 @@ class PurgeExpiredMessagesCommand extends Command
                 ->from(Message::class, 'm')
                 ->where('m.channel = :channel')
                 ->andWhere('m.createdAt < :threshold')
-                ->andWhere(
-                    'NOT EXISTS (SELECT 1 FROM App\Entity\User u JOIN u.savedMessages sm WHERE sm.id = m.id)',
-                )
+                ->andWhere('NOT EXISTS (SELECT 1 FROM App\Entity\User u JOIN u.savedMessages sm WHERE sm.id = m.id)')
                 ->setParameter('channel', $channel)
                 ->setParameter('threshold', $threshold);
 

@@ -28,17 +28,9 @@ class LlmQueryHandlerTest extends TestCase
         $user = new User();
         $user->setUsername('test_user');
 
-        $userRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with(42)
-            ->willReturn($user);
+        $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
 
-        $parameterBag
-            ->expects($this->once())
-            ->method('get')
-            ->with('kernel.project_dir')
-            ->willReturn('/tmp');
+        $parameterBag->expects($this->once())->method('get')->with('kernel.project_dir')->willReturn('/tmp');
 
         // Mock generator for streaming response
         $generatorClosure = function () {
@@ -47,20 +39,14 @@ class LlmQueryHandlerTest extends TestCase
         };
         $generator = $generatorClosure();
 
-        $llmService
-            ->expects($this->once())
-            ->method('generateTextStream')
-            ->willReturn($generator);
+        $llmService->expects($this->once())->method('generateTextStream')->willReturn($generator);
 
         $messageFormatter
             ->expects($this->any())
             ->method('format')
             ->willReturnCallback(fn($text) => '<p>'.$text.'</p>');
 
-        $hub
-            ->expects($this->atLeastOnce())
-            ->method('publish')
-            ->with($this->isInstanceOf(Update::class));
+        $hub->expects($this->atLeastOnce())->method('publish')->with($this->isInstanceOf(Update::class));
 
         $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
         $messageRepository = $this->createMock(\App\Repository\MessageRepository::class);
@@ -105,11 +91,7 @@ class LlmQueryHandlerTest extends TestCase
         $user = new User();
         $user->setUsername('test_user');
 
-        $userRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with(42)
-            ->willReturn($user);
+        $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
 
         // Classification output and intermediate summaries
         $llmService
@@ -127,15 +109,9 @@ class LlmQueryHandlerTest extends TestCase
         $channel->setName('general');
         $channel->setSlug('general');
 
-        $channelRepository
-            ->expects($this->once())
-            ->method('findAllForUser')
-            ->willReturn([$channel]);
+        $channelRepository->expects($this->once())->method('findAllForUser')->willReturn([$channel]);
 
-        $userChannelReadRepository
-            ->expects($this->once())
-            ->method('findOneBy')
-            ->willReturn(null);
+        $userChannelReadRepository->expects($this->once())->method('findOneBy')->willReturn(null);
 
         // Return 5 messages
         $messages = [];
@@ -147,10 +123,7 @@ class LlmQueryHandlerTest extends TestCase
             $messages[] = $msg;
         }
 
-        $messageRepository
-            ->expects($this->once())
-            ->method('findUnreadInChannel')
-            ->willReturn($messages);
+        $messageRepository->expects($this->once())->method('findUnreadInChannel')->willReturn($messages);
 
         // We expect LLM to stream the final combination
         $llmService
@@ -206,11 +179,7 @@ class LlmQueryHandlerTest extends TestCase
         $user = new User();
         $user->setUsername('test_user');
 
-        $userRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with(42)
-            ->willReturn($user);
+        $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
 
         // Classification output
         $llmService
@@ -222,10 +191,7 @@ class LlmQueryHandlerTest extends TestCase
         $channel->setName('general');
         $channel->setSlug('general');
 
-        $channelRepository
-            ->expects($this->once())
-            ->method('findAllForUser')
-            ->willReturn([$channel]);
+        $channelRepository->expects($this->once())->method('findAllForUser')->willReturn([$channel]);
 
         $lastReadMsg = $this->createMock(\App\Entity\Message::class);
         $lastReadMsg->method('getId')->willReturn(10);
@@ -233,10 +199,7 @@ class LlmQueryHandlerTest extends TestCase
         $activeRead = $this->createMock(\App\Entity\UserChannelRead::class);
         $activeRead->method('getLastReadMessage')->willReturn($lastReadMsg);
 
-        $userChannelReadRepository
-            ->expects($this->once())
-            ->method('findOneBy')
-            ->willReturn($activeRead);
+        $userChannelReadRepository->expects($this->once())->method('findOneBy')->willReturn($activeRead);
 
         // Unread messages (3 messages)
         $unread = [];
@@ -248,24 +211,18 @@ class LlmQueryHandlerTest extends TestCase
             $unread[] = $msg;
         }
 
-        $messageRepository
-            ->expects($this->once())
-            ->method('findUnreadInChannel')
-            ->willReturn($unread);
+        $messageRepository->expects($this->once())->method('findUnreadInChannel')->willReturn($unread);
 
         // Mock query builder for last 5 read messages
         $readMsg = new \App\Entity\Message();
-        $readMsg->setContent("Read context");
+        $readMsg->setContent('Read context');
         $readMsg->setAuthor($user);
         $readMsg->setCreatedAt(new \DateTimeImmutable());
 
         $qb = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
         $query = $this->createMock(\Doctrine\ORM\Query::class);
 
-        $messageRepository
-            ->expects($this->once())
-            ->method('createQueryBuilder')
-            ->willReturn($qb);
+        $messageRepository->expects($this->once())->method('createQueryBuilder')->willReturn($qb);
 
         $qb->method('where')->willReturnSelf();
         $qb->method('andWhere')->willReturnSelf();
@@ -284,7 +241,7 @@ class LlmQueryHandlerTest extends TestCase
                     $data = json_decode($prompt, true);
 
                     return is_array($data) && count($data) === 4 && $data[0]['contenu'] === 'Read context';
-                }),
+                })
             )
             ->willReturn(
                 (function () {

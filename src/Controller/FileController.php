@@ -55,7 +55,10 @@ final class FileController extends AbstractController
             },
             200,
             [
-                'Content-Type' => ($message->getMimeType() !== null && $message->getMimeType() !== '') ? $message->getMimeType() : 'application/octet-stream',
+                'Content-Type' =>
+                    $message->getMimeType() !== null && $message->getMimeType() !== ''
+                        ? $message->getMimeType()
+                        : 'application/octet-stream',
                 'Content-Disposition' => HeaderUtils::makeDisposition(
                     HeaderUtils::DISPOSITION_ATTACHMENT,
                     $message->getFileName(),
@@ -98,7 +101,10 @@ final class FileController extends AbstractController
             },
             200,
             [
-                'Content-Type' => ($message->getMimeType() !== null && $message->getMimeType() !== '') ? $message->getMimeType() : 'application/octet-stream',
+                'Content-Type' =>
+                    $message->getMimeType() !== null && $message->getMimeType() !== ''
+                        ? $message->getMimeType()
+                        : 'application/octet-stream',
                 'Content-Disposition' => HeaderUtils::makeDisposition(
                     HeaderUtils::DISPOSITION_INLINE,
                     $message->getFileName(),
@@ -144,9 +150,10 @@ final class FileController extends AbstractController
         }
 
         if ($isTruncated) {
-            $text .= "\n\n... [".$this->translator->trans(
-                    'Contenu tronqué, téléchargez le fichier pour le lire en entier',
-                )."]";
+            $text .=
+                "\n\n... ["
+                .$this->translator->trans('Contenu tronqué, téléchargez le fichier pour le lire en entier')
+                .']';
         }
 
         $fileExt = pathinfo($message->getFileName(), PATHINFO_EXTENSION);
@@ -159,10 +166,8 @@ final class FileController extends AbstractController
     }
 
     #[Route('/messages/{id}/text-preview/hide', name: 'app_file_text_preview_hide', methods: ['GET'])]
-    public function textPreviewHide(
-        int $id,
-        MessageRepository $messageRepository,
-    ): Response {
+    public function textPreviewHide(int $id, MessageRepository $messageRepository): Response
+    {
         $message = $messageRepository->find($id);
         if (!$message) {
             throw $this->createNotFoundException($this->translator->trans('Message non trouvé.'));
@@ -174,10 +179,8 @@ final class FileController extends AbstractController
     }
 
     #[Route('/messages/{id}/lightbox', name: 'app_lightbox', methods: ['GET'])]
-    public function lightbox(
-        int $id,
-        MessageRepository $messageRepository,
-    ): Response {
+    public function lightbox(int $id, MessageRepository $messageRepository): Response
+    {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 

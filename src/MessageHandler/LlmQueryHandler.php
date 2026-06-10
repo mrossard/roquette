@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace App\MessageHandler;
 
 use App\Message\LlmQueryMessage;
-use App\Repository\UserRepository;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserChannelReadRepository;
+use App\Repository\UserRepository;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
+use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Doctrine\ORM\EntityManagerInterface;
 
 #[AsMessageHandler]
 final class LlmQueryHandler
@@ -72,19 +72,20 @@ final class LlmQueryHandler
                 // Find the target channel
                 $targetChannel = null;
                 foreach ($channels as $c) {
-                    if (strtolower($c->getSlug()) === strtolower($targetChannelSlug) || strtolower(
-                            $c->getName(),
-                        ) === strtolower($targetChannelSlug)) {
+                    if (
+                        strtolower($c->getSlug()) === strtolower($targetChannelSlug)
+                        || strtolower($c->getName()) === strtolower($targetChannelSlug)
+                    ) {
                         $targetChannel = $c;
                         break;
                     }
                 }
                 if (!$targetChannel) {
                     foreach ($channels as $c) {
-                        if (str_contains(strtolower($c->getName()), strtolower($targetChannelSlug)) || str_contains(
-                                strtolower($c->getSlug()),
-                                strtolower($targetChannelSlug),
-                            )) {
+                        if (
+                            str_contains(strtolower($c->getName()), strtolower($targetChannelSlug))
+                            || str_contains(strtolower($c->getSlug()), strtolower($targetChannelSlug))
+                        ) {
                             $targetChannel = $c;
                             break;
                         }
@@ -97,10 +98,10 @@ final class LlmQueryHandler
 
         // 2. Once classification is done: reformulate the request based on intent
         if ($intent === 'resumer') {
-            $reformulation = "Résumé du canal **#".($channelName ?? 'inconnu')."**... ⏳";
-            $prefix = "**Résumé du canal #".($channelName ?? 'inconnu')."** :\n\n";
+            $reformulation = 'Résumé du canal **#'.($channelName ?? 'inconnu').'**... ⏳';
+            $prefix = '**Résumé du canal #'.($channelName ?? 'inconnu')."** :\n\n";
         } else {
-            $reformulation = "Recherche dans la documentation... ⏳";
+            $reformulation = 'Recherche dans la documentation... ⏳';
             $prefix = "**Recherche dans la documentation** :\n\n";
         }
 
@@ -116,12 +117,13 @@ final class LlmQueryHandler
                 $intermediateSummaries = [];
                 $totalBatches = count($batches);
 
-                $intermediateSystemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette.\n"
+                $intermediateSystemPrompt =
+                    "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette.\n"
                     ."Rédige une synthèse claire, structurée et concise du lot de messages fourni.\n"
                     ."Consignes de traitement :\n"
                     ."- Analyse les données JSON fournies pour en extraire les principaux sujets abordés, les questions résolues ou en cours, ainsi que les décisions importantes.\n"
                     ."- Rédige une synthèse du lot de discussion, claire et concise.\n"
-                    ."- ATTENTION : Ne fais pas une retranscription brute ou une paraphrase message par message de la discussion. Ne cite pas chaque message un par un.";
+                    .'- ATTENTION : Ne fais pas une retranscription brute ou une paraphrase message par message de la discussion. Ne cite pas chaque message un par un.';
 
                 foreach ($batches as $index => $batch) {
                     $batchNum = $index + 1;
@@ -137,7 +139,7 @@ final class LlmQueryHandler
                     $intermediateSummaries[] = $this->llmService->generateText($batchPrompt, $intermediateSystemPrompt);
                 }
 
-                $reformulation = "Génération du résumé final combiné... ⏳";
+                $reformulation = 'Génération du résumé final combiné... ⏳';
                 $this->publishUpdate(
                     $personalTopic,
                     $message->getHelpMessageId(),
@@ -152,12 +154,13 @@ final class LlmQueryHandler
                     $prompt .= "--- Résumé du Lot {$batchNum} ---\n{$subSummary}\n\n";
                 }
 
-                $systemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette.\n"
+                $systemPrompt =
+                    "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette.\n"
                     ."Rédige une synthèse globale unique, claire, structurée et cohérente combinant les résumés des différents lots de discussion fournis ci-dessous.\n"
                     ."Consignes de traitement :\n"
                     ."- Fusionne les sujets redondants ou continus pour en faire une synthèse thématique unifiée.\n"
                     ."- Rédige une synthèse claire et concise dans la même langue que les résumés fournis.\n"
-                    ."- Ne fais pas une simple juxtaposition des résumés. Fais-en une synthèse globale.";
+                    .'- Ne fais pas une simple juxtaposition des résumés. Fais-en une synthèse globale.';
             }
 
             $accumulatedText = '';
@@ -168,24 +171,14 @@ final class LlmQueryHandler
                 $accumulatedText .= $chunk;
                 $chunkCount++;
 
-                if ($chunkCount <= 3 || $chunkCount % 3 === 0) {
+                if ($chunkCount <= 3 || ($chunkCount % 3) === 0) {
                     $formattedHtml = $this->messageFormatter->format($prefix.$accumulatedText);
-                    $this->publishUpdate(
-                        $personalTopic,
-                        $message->getHelpMessageId(),
-                        $formattedHtml,
-                        $channelSlug,
-                    );
+                    $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $formattedHtml, $channelSlug);
                 }
             }
 
             $formattedHtml = $this->messageFormatter->format($prefix.$accumulatedText);
-            $this->publishUpdate(
-                $personalTopic,
-                $message->getHelpMessageId(),
-                $formattedHtml,
-                $channelSlug,
-            );
+            $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $formattedHtml, $channelSlug);
 
             // Persist the message in the database so it is saved only if it is a DM with the robot
             $robotUser = $this->userRepository->findOneBy(['username' => 'robot-roquette']);
@@ -200,9 +193,10 @@ final class LlmQueryHandler
                 $this->entityManager->flush();
             }
         } catch (\Exception $e) {
-            $errorHtml = '<p style="color: var(--accent-red, #ff5b5b);">Désolé, une erreur est survenue lors de la communication avec le robot d\'aide : '.htmlspecialchars(
-                    $e->getMessage(),
-                ).'</p>';
+            $errorHtml =
+                '<p style="color: var(--accent-red, #ff5b5b);">Désolé, une erreur est survenue lors de la communication avec le robot d\'aide : '
+                .htmlspecialchars($e->getMessage())
+                .'</p>';
             $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $errorHtml, $channelSlug);
         }
     }
@@ -216,11 +210,13 @@ final class LlmQueryHandler
         $docPath = $projectDir.'/DOC_UTILISATEUR.md';
         $documentation = file_exists($docPath) ? file_get_contents($docPath) : '';
 
-        $systemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette. "
+        $systemPrompt =
+            "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette. "
             ."Réponds dans la langue de la question aux questions des utilisateurs en t'appuyant uniquement sur la documentation utilisateur fournie ci-dessous. "
-            ."Sois concis et précis dans ta réponse. "
+            .'Sois concis et précis dans ta réponse. '
             ."Si la réponse n'est pas dans la documentation, réponds poliment que tu ne sais pas car cela ne figure pas dans le guide utilisateur.\n\n"
-            ."Documentation utilisateur :\n".$documentation;
+            ."Documentation utilisateur :\n"
+            .$documentation;
 
         return [$question, $systemPrompt];
     }
@@ -247,7 +243,8 @@ final class LlmQueryHandler
         ];
         $classificationPrompt = json_encode($promptData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-        $classificationSystemPrompt = "Tu es un outil d'analyse d'intention d'utilisateur pour l'application Roquette. "
+        $classificationSystemPrompt =
+            "Tu es un outil d'analyse d'intention d'utilisateur pour l'application Roquette. "
             ."L'entrée qui te sera fournie sous forme de prompt est un objet JSON contenant :\n"
             ."- \"message\" : Le message ou la question écrite par l'utilisateur.\n"
             ."- \"channels\" : La liste des canaux auxquels l'utilisateur a accès, chaque canal ayant un \"name\", \"slug\", et \"description\".\n\n"
@@ -259,7 +256,7 @@ final class LlmQueryHandler
             ."{\n"
             ."  \"intent\": \"resumer\" ou \"help\",\n"
             ."  \"channelSlug\": \"le slug du canal à résumer\" (ou null si l'intention est \"help\" ou si le canal n'a pas pu être identifié)\n"
-            ."}";
+            .'}';
 
         try {
             $classificationOutput = $this->llmService->generateText($classificationPrompt, $classificationSystemPrompt);
@@ -283,9 +280,10 @@ final class LlmQueryHandler
     {
         $targetChannel = null;
         foreach ($channels as $c) {
-            if (strtolower($c->getSlug()) === strtolower($targetChannelSlug) || strtolower(
-                    $c->getName(),
-                ) === strtolower($targetChannelSlug)) {
+            if (
+                strtolower($c->getSlug()) === strtolower($targetChannelSlug)
+                || strtolower($c->getName()) === strtolower($targetChannelSlug)
+            ) {
                 $targetChannel = $c;
                 break;
             }
@@ -293,10 +291,10 @@ final class LlmQueryHandler
 
         if (!$targetChannel) {
             foreach ($channels as $c) {
-                if (str_contains(strtolower($c->getName()), strtolower($targetChannelSlug)) || str_contains(
-                        strtolower($c->getSlug()),
-                        strtolower($targetChannelSlug),
-                    )) {
+                if (
+                    str_contains(strtolower($c->getName()), strtolower($targetChannelSlug))
+                    || str_contains(strtolower($c->getSlug()), strtolower($targetChannelSlug))
+                ) {
                     $targetChannel = $c;
                     break;
                 }
@@ -358,18 +356,21 @@ final class LlmQueryHandler
                 ];
             }
 
-            $systemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette."
+            $systemPrompt =
+                "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette."
                 ."Ton objectif est d'être un simple observateur des discussions entre les utilisateurs et d'en extraire des synthèses claires, structurées et concises.\n\n"
                 ."Tu vas recevoir l'historique des discussions sous format JSON. Chaque objet du tableau représente un message avec sa date, son auteur et son contenu.\n\n"
                 ."Consignes de traitement :\n"
                 ."- Analyse les données JSON fournies pour en extraire les principaux sujets abordés, les questions résolues ou en cours, ainsi que les décisions importantes.\n"
                 ."- Rédige une synthèse globale et thématique de la discussion, claire et concise dans la même langue que la question.\n"
-                ."- ATTENTION : Ne fais pas une retranscription brute ou une paraphrase message par message de la discussion. Ne cite pas chaque message un par un. Nous voulons une synthèse condensée des échanges."
+                .'- ATTENTION : Ne fais pas une retranscription brute ou une paraphrase message par message de la discussion. Ne cite pas chaque message un par un. Nous voulons une synthèse condensée des échanges.'
                 ."- ATTENTION : tu n'es pas l'un des interlocuteurs et on ne te demande en aucun cas d'intervenir dans la discussion.";
 
             if (empty($structuredMessages)) {
-                $prompt = "Aucun message récent dans le canal #".$targetChannel->getName(
-                    ).". Indique poliment qu'il n'y a rien à résumer.";
+                $prompt =
+                    'Aucun message récent dans le canal #'
+                    .$targetChannel->getName()
+                    .". Indique poliment qu'il n'y a rien à résumer.";
 
                 return [$prompt, $systemPrompt, null];
             }
@@ -384,7 +385,10 @@ final class LlmQueryHandler
 
             return [$prompt, $systemPrompt, null];
         } else {
-            $prompt = "Explique poliment en français que tu n'as pas trouvé le canal '".$targetChannelSlug."' ou que l'utilisateur n'y est pas inscrit.";
+            $prompt =
+                "Explique poliment en français que tu n'as pas trouvé le canal '"
+                .$targetChannelSlug
+                ."' ou que l'utilisateur n'y est pas inscrit.";
             $systemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette. Réponds en français.";
 
             return [$prompt, $systemPrompt, null];
@@ -400,13 +404,7 @@ final class LlmQueryHandler
             'channelSlug' => $channelSlug,
         ]);
 
-        $update = new Update(
-            $topic,
-            $renderedHtml,
-            true,
-            null,
-            'help_stream_update',
-        );
+        $update = new Update($topic, $renderedHtml, true, null, 'help_stream_update');
 
         $this->hub->publish($update);
     }

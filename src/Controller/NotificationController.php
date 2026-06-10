@@ -24,6 +24,7 @@ use Symfony\Contracts\Cache\CacheInterface;
 final class NotificationController extends AbstractController
 {
     use ChannelAccessTrait;
+
     // -------------------------------------------------------------------------
     // Mark channel as read
     // -------------------------------------------------------------------------
@@ -83,10 +84,9 @@ final class NotificationController extends AbstractController
 
             if ($query !== '') {
                 $messages = array_filter($messages, function ($m) use ($query) {
-                    return mb_strpos(
-                            mb_strtolower($m->getContent(), 'UTF-8'),
-                            mb_strtolower($query, 'UTF-8'),
-                        ) !== false;
+                    return (
+                        mb_strpos(mb_strtolower($m->getContent(), 'UTF-8'), mb_strtolower($query, 'UTF-8')) !== false
+                    );
                 });
             }
 
@@ -137,10 +137,8 @@ final class NotificationController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/messages/{id}/replies', name: 'app_message_replies', methods: ['GET'])]
-    public function replies(
-        int $id,
-        MessageRepository $messageRepository,
-    ): Response {
+    public function replies(int $id, MessageRepository $messageRepository): Response
+    {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
@@ -158,7 +156,7 @@ final class NotificationController extends AbstractController
         $members = $channel->getMembers();
         $hasAccess = $channel->isDm()
             ? $members->contains($currentUser)
-            : (!$channel->isPrivate() || $members->contains($currentUser));
+            : !$channel->isPrivate() || $members->contains($currentUser);
 
         if (!$hasAccess) {
             throw $this->createAccessDeniedException();
@@ -254,8 +252,10 @@ final class NotificationController extends AbstractController
         });
 
         $now = time();
-        $displayName = ($currentUser->getDisplayName() !== null && $currentUser->getDisplayName(
-            ) !== '') ? $currentUser->getDisplayName() : $currentUser->getUsername();
+        $displayName =
+            $currentUser->getDisplayName() !== null && $currentUser->getDisplayName() !== ''
+                ? $currentUser->getDisplayName()
+                : $currentUser->getUsername();
 
         if ($isTyping) {
             $typingUsers[$currentUser->getUsername()] = [
@@ -283,11 +283,8 @@ final class NotificationController extends AbstractController
     }
 
     #[Route('/channel/{slug}/typing-indicator', name: 'app_channel_typing_indicator', methods: ['GET'])]
-    public function typingIndicator(
-        string $slug,
-        ChannelRepository $channelRepository,
-        CacheInterface $cache,
-    ): Response {
+    public function typingIndicator(string $slug, ChannelRepository $channelRepository, CacheInterface $cache): Response
+    {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 

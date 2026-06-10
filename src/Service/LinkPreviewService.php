@@ -241,7 +241,7 @@ class LinkPreviewService
 
         return [
             'url' => $url,
-            'title' => ($title !== null && $title !== '') ? $title : $url,
+            'title' => $title !== null && $title !== '' ? $title : $url,
             'description' => mb_strimwidth($description, 0, 200, '...'),
             'image' => $image,
             'siteName' => $siteName,

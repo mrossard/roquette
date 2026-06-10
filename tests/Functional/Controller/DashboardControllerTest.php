@@ -50,24 +50,25 @@ class DashboardControllerTest extends WebTestCase
         $conn = $this->entityManager->getConnection();
         $conn->executeStatement(
             'DELETE FROM invitation WHERE invitee_id IN (SELECT id FROM "user" WHERE username LIKE ?)',
-            ['test_dash_%'],
+            [
+                'test_dash_%',
+            ],
         );
         $conn->executeStatement(
             'DELETE FROM user_channel_read WHERE user_id IN (SELECT id FROM "user" WHERE username LIKE ?)',
-            ['test_dash_%'],
+            [
+                'test_dash_%',
+            ],
         );
         $conn->executeStatement(
             'DELETE FROM message WHERE channel_id IN (SELECT id FROM channel WHERE slug LIKE ? OR slug = ?)',
-            ['test-dash-%', 'general'],
+            [
+                'test-dash-%',
+                'general',
+            ],
         );
-        $conn->executeStatement(
-            'DELETE FROM channel WHERE slug LIKE ? OR slug = ?',
-            ['test-dash-%', 'general'],
-        );
-        $conn->executeStatement(
-            'DELETE FROM "user" WHERE username LIKE ?',
-            ['test_dash_%'],
-        );
+        $conn->executeStatement('DELETE FROM channel WHERE slug LIKE ? OR slug = ?', ['test-dash-%', 'general']);
+        $conn->executeStatement('DELETE FROM "user" WHERE username LIKE ?', ['test_dash_%']);
     }
 
     private function createChannel(string $slug, string $name, bool $public = true): Channel
@@ -98,9 +99,7 @@ class DashboardControllerTest extends WebTestCase
 
         // Manually update slug to 'general' (otherwise cleanup would delete it)
         $conn = $this->entityManager->getConnection();
-        $conn->executeStatement(
-            "UPDATE channel SET slug = 'general' WHERE slug = 'test-dash-general'",
-        );
+        $conn->executeStatement("UPDATE channel SET slug = 'general' WHERE slug = 'test-dash-general'");
         $this->entityManager->clear();
 
         $this->client->request('GET', '/');

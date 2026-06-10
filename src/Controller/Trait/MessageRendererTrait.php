@@ -23,7 +23,10 @@ trait MessageRendererTrait
     {
         return $this->renderView(
             'dashboard/_feed_item.html.twig',
-            array_merge($this->feedItemParams($message), $extraParams),
+            array_merge(
+                $this->feedItemParams($message),
+                $extraParams,
+            ),
         );
     }
 

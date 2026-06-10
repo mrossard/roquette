@@ -63,24 +63,22 @@ class NotificationControllerTest extends WebTestCase
         $conn = $this->entityManager->getConnection();
         $conn->executeStatement(
             'DELETE FROM reaction WHERE user_id IN (SELECT id FROM "user" WHERE username IN (?, ?))',
-            ['test_notif_user', 'test_notif_other'],
+            [
+                'test_notif_user',
+                'test_notif_other',
+            ],
         );
-        $conn->executeStatement(
-            'DELETE FROM message WHERE channel_id IN (SELECT id FROM channel WHERE slug = ?)',
-            ['test-notif-channel'],
-        );
+        $conn->executeStatement('DELETE FROM message WHERE channel_id IN (SELECT id FROM channel WHERE slug = ?)', [
+            'test-notif-channel',
+        ]);
         $conn->executeStatement(
             'DELETE FROM user_channel_read WHERE channel_id IN (SELECT id FROM channel WHERE slug = ?)',
-            ['test-notif-channel'],
+            [
+                'test-notif-channel',
+            ],
         );
-        $conn->executeStatement(
-            'DELETE FROM channel WHERE slug = ?',
-            ['test-notif-channel'],
-        );
-        $conn->executeStatement(
-            'DELETE FROM "user" WHERE username IN (?, ?)',
-            ['test_notif_user', 'test_notif_other'],
-        );
+        $conn->executeStatement('DELETE FROM channel WHERE slug = ?', ['test-notif-channel']);
+        $conn->executeStatement('DELETE FROM "user" WHERE username IN (?, ?)', ['test_notif_user', 'test_notif_other']);
     }
 
     // -------------------------------------------------------------------------

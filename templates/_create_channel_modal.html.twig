@@ -27,6 +27,14 @@
                 <input type="checkbox" name="isPrivate" id="modal-isPrivate" class="input-checkbox" style="width: auto; cursor: pointer;">
                 <label for="modal-isPrivate" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">Canal privé</label>
             </div>
+            <div class="input-group-checkbox"
+                 style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="isTodoList" id="modal-isTodoList" class="input-checkbox"
+                       style="width: auto; cursor: pointer;">
+                <label for="modal-isTodoList"
+                       style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">Canal
+                    todo list</label>
+            </div>
             <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Créer le canal</button>
         </form>
     {% endblock %}

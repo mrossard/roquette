@@ -26,11 +26,8 @@ class MessageRepository extends ServiceEntityRepository
      *
      * @return Message[]
      */
-    public function findUnreadInChannel(
-        Channel $channel,
-        User $user,
-        ?int $lastReadMessageId,
-    ): array {
+    public function findUnreadInChannel(Channel $channel, User $user, ?int $lastReadMessageId): array
+    {
         $qb = $this
             ->createQueryBuilder('m')
             ->where('m.channel = :channel')
@@ -40,9 +37,7 @@ class MessageRepository extends ServiceEntityRepository
             ->setParameter('user', $user);
 
         if ($lastReadMessageId !== null) {
-            $qb
-                ->andWhere('m.id > :lastRead')
-                ->setParameter('lastRead', $lastReadMessageId);
+            $qb->andWhere('m.id > :lastRead')->setParameter('lastRead', $lastReadMessageId);
         }
 
         return $qb->getQuery()->getResult();
@@ -96,9 +91,7 @@ class MessageRepository extends ServiceEntityRepository
             $qb->andWhere('m.id < :beforeId')->setParameter('beforeId', $beforeId);
         }
 
-        $qb->orderBy('m.id', 'DESC')
-            ->setParameter('channel', $channel)
-            ->setMaxResults($limit);
+        $qb->orderBy('m.id', 'DESC')->setParameter('channel', $channel)->setMaxResults($limit);
 
         $paginator = new Paginator($qb->getQuery());
 

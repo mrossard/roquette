@@ -35,18 +35,12 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/users/{id}/ban', name: 'app_admin_user_ban', methods: ['POST'])]
-    public function banUser(
-        User $user,
-        EntityManagerInterface $entityManager,
-    ): Response {
+    public function banUser(User $user, EntityManagerInterface $entityManager): Response
+    {
         if ($user->isBanned()) {
-            $this->addFlash(
-                'error',
-                $this->translator->trans(
-                    'L\'utilisateur "%username%" est déjà banni.',
-                    ['%username%' => $user->getUsername()],
-                ),
-            );
+            $this->addFlash('error', $this->translator->trans('L\'utilisateur "%username%" est déjà banni.', [
+                '%username%' => $user->getUsername(),
+            ]));
 
             return $this->redirectToRoute('app_admin_users');
         }
@@ -79,28 +73,20 @@ final class AdminController extends AbstractController
             ),
         );
 
-        $this->addFlash(
-            'success',
-            $this->translator->trans('L\'utilisateur "%username%" a été banni.', ['%username%' => $user->getUsername()],
-            ),
-        );
+        $this->addFlash('success', $this->translator->trans('L\'utilisateur "%username%" a été banni.', [
+            '%username%' => $user->getUsername(),
+        ]));
 
         return $this->redirectToRoute('app_admin_users');
     }
 
     #[Route('/admin/users/{id}/unban', name: 'app_admin_user_unban', methods: ['POST'])]
-    public function unbanUser(
-        User $user,
-        EntityManagerInterface $entityManager,
-    ): Response {
+    public function unbanUser(User $user, EntityManagerInterface $entityManager): Response
+    {
         if (!$user->isBanned()) {
-            $this->addFlash(
-                'error',
-                $this->translator->trans(
-                    'L\'utilisateur "%username%" n\'est pas banni.',
-                    ['%username%' => $user->getUsername()],
-                ),
-            );
+            $this->addFlash('error', $this->translator->trans('L\'utilisateur "%username%" n\'est pas banni.', [
+                '%username%' => $user->getUsername(),
+            ]));
 
             return $this->redirectToRoute('app_admin_users');
         }
@@ -122,13 +108,9 @@ final class AdminController extends AbstractController
             ),
         );
 
-        $this->addFlash(
-            'success',
-            $this->translator->trans(
-                'L\'utilisateur "%username%" a été réhabilité.',
-                ['%username%' => $user->getUsername()],
-            ),
-        );
+        $this->addFlash('success', $this->translator->trans('L\'utilisateur "%username%" a été réhabilité.', [
+            '%username%' => $user->getUsername(),
+        ]));
 
         return $this->redirectToRoute('app_admin_users');
     }

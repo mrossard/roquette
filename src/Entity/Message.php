@@ -223,7 +223,10 @@ class Message
             }
             $grouped[$emoji]['count']++;
             $user = $reaction->getUser();
-            $grouped[$emoji]['usernames'][] = ($user->getDisplayName() !== null && $user->getDisplayName() !== '') ? $user->getDisplayName() : $user->getUsername();
+            $grouped[$emoji]['usernames'][] =
+                $user->getDisplayName() !== null && $user->getDisplayName() !== ''
+                    ? $user->getDisplayName()
+                    : $user->getUsername();
             $grouped[$emoji]['reactorUsernames'][] = $reaction->getUser()->getUsername();
             if ($currentUser && $reaction->getUser()->getId() === $currentUser->getId()) {
                 $grouped[$emoji]['hasReacted'] = true;

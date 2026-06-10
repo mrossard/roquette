@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Controller;
 
 use App\Entity\Channel;
+use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\Webhook;
-use App\Entity\Message;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -107,11 +107,9 @@ class WebhookControllerTest extends WebTestCase
     public function testCreateWebhook(): void
     {
         // Request the creation of a webhook via POST inside the channel settings
-        $this->client->request(
-            'POST',
-            sprintf('/channels/%s/webhooks/create', $this->channel->getSlug()),
-            ['name' => 'GitHub Production'],
-        );
+        $this->client->request('POST', sprintf('/channels/%s/webhooks/create', $this->channel->getSlug()), [
+            'name' => 'GitHub Production',
+        ]);
 
         $this->assertResponseIsSuccessful();
 
@@ -139,10 +137,7 @@ class WebhookControllerTest extends WebTestCase
         $this->assertTrue($webhook->isActive());
 
         // Toggle active status (deactivate)
-        $this->client->request(
-            'POST',
-            sprintf('/webhooks/%d/toggle', $webhook->getId()),
-        );
+        $this->client->request('POST', sprintf('/webhooks/%d/toggle', $webhook->getId()));
 
         $this->assertResponseIsSuccessful();
 
@@ -152,10 +147,7 @@ class WebhookControllerTest extends WebTestCase
         $this->assertFalse($webhook->isActive());
 
         // Toggle again (activate)
-        $this->client->request(
-            'POST',
-            sprintf('/webhooks/%d/toggle', $webhook->getId()),
-        );
+        $this->client->request('POST', sprintf('/webhooks/%d/toggle', $webhook->getId()));
 
         $this->assertResponseIsSuccessful();
         $this->entityManager->clear(); // Clear entity manager cache
@@ -175,10 +167,7 @@ class WebhookControllerTest extends WebTestCase
 
         $webhookId = $webhook->getId();
 
-        $this->client->request(
-            'POST',
-            sprintf('/webhooks/%d/delete', $webhookId),
-        );
+        $this->client->request('POST', sprintf('/webhooks/%d/delete', $webhookId));
 
         $this->assertResponseIsSuccessful();
 

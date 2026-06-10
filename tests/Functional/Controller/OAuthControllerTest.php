@@ -216,13 +216,7 @@ class OAuthControllerTest extends WebTestCase
         $accessToken = $tokenData['access_token'];
 
         // Use Bearer header
-        $this->client->request(
-            'GET',
-            '/oauth/mock/user',
-            [],
-            [],
-            ['HTTP_AUTHORIZATION' => 'Bearer '.$accessToken],
-        );
+        $this->client->request('GET', '/oauth/mock/user', [], [], ['HTTP_AUTHORIZATION' => 'Bearer '.$accessToken]);
 
         $this->assertResponseIsSuccessful();
         $userData = json_decode($this->client->getResponse()->getContent(), true);

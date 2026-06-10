@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Tests\Unit\Service\ClamavServiceTestState;
 use App\Tests\Unit\Service\ClamavMockStream;
+use App\Tests\Unit\Service\ClamavServiceTestState;
 
 function fsockopen(string $hostname, int $port, &$errno, &$errstr, float $timeout)
 {

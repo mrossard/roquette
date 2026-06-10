@@ -3,7 +3,7 @@
             title="{{ 'Actions'|trans }}" aria-label="{{ 'Actions du message'|trans }}">•••
     </button>
     <div class="feed-item-actions-list">
-        {% if messageObject is not defined or not messageObject or not messageObject.poll %}
+        {% if (messageObject is not defined or not messageObject or not messageObject.poll) and (messageChannel is not defined or not messageChannel or not messageChannel.isTodoList()) %}
             <button class="btn-reply-subtle btn-quote-reply"
                     data-reply-message-id="{{ message_id|default('') }}"
                     data-reply-username="{{ username|escape('html_attr') }}"
@@ -12,7 +12,7 @@
                 <span>{{ 'Répondre'|trans }}</span>
             </button>
         {% endif %}
-        {% if message_id|default(0) > 0 and messageChannel and not messageChannel.isSubChannel() %}
+        {% if message_id|default(0) > 0 and messageChannel and (not messageChannel.isSubChannel() or messageChannel.isTodoList()) %}
             <button class="btn-reply-subtle btn-subchannel-subtle"
                     hx-post="{{ path('app_message_create_subchannel', {id: message_id}) }}"
                     title="{{ 'Créer un sous-canal'|trans }}">
@@ -30,7 +30,11 @@
                 </button>
                 <div class="reaction-picker" id="reaction-picker-{{ message_id }}">
                     <div class="reaction-picker-standards">
-                        {% for picker_emoji in ['👍', '❤️', '😂', '😮', '😢', '🎉'] %}
+                        {% set picker_emojis = ['👍', '❤️', '😂', '😮', '😢', '🎉'] %}
+                        {% if messageChannel and messageChannel.isTodoList() %}
+                            {% set picker_emojis = ['✅']|merge(picker_emojis) %}
+                        {% endif %}
+                        {% for picker_emoji in picker_emojis %}
                             <button class="reaction-picker-btn"
                                     hx-post="{{ path('app_message_react', {id: message_id, emoji: picker_emoji}) }}"
                                     hx-target="closest .feed-item"

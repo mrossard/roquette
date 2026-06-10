@@ -183,11 +183,13 @@ class MessageFormatter
                     }
                     $url = '/channels/'.$slug;
 
-                    return '<a href="'.$url.'" class="channel-ref">#'.htmlspecialchars(
-                            $channel->getName(),
-                            ENT_QUOTES,
-                            'UTF-8',
-                        ).'</a>';
+                    return (
+                        '<a href="'
+                        .$url
+                        .'" class="channel-ref">#'
+                        .htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8')
+                        .'</a>'
+                    );
                 }
 
                 return '#'.htmlspecialchars($slug, ENT_QUOTES, 'UTF-8');
@@ -246,13 +248,18 @@ class MessageFormatter
             return $text;
         }
 
-        return preg_replace_callback('/:([a-zA-Z0-9_\-\+]+):/', static function ($matches) {
-            $shortcode = $matches[1];
-            if (isset(EmojiMapping::MAPPING[$shortcode])) {
-                return EmojiMapping::MAPPING[$shortcode];
-            }
-            return $matches[0];
-        }, $text);
+        return preg_replace_callback(
+            '/:([a-zA-Z0-9_\-\+]+):/',
+            static function ($matches) {
+                $shortcode = $matches[1];
+                if (isset(EmojiMapping::MAPPING[$shortcode])) {
+                    return EmojiMapping::MAPPING[$shortcode];
+                }
+
+                return $matches[0];
+            },
+            $text,
+        );
     }
 
     public function wrapUnicodeEmojis(string $text): string
@@ -267,44 +274,56 @@ class MessageFormatter
             return $text;
         }
 
-        return preg_replace_callback('/\[:([a-zA-Z0-9_\-\+: ]+)\]/', function ($matches) {
-            $code = $matches[1];
-            $filename = $code . '.gif';
-            $filename = basename($filename);
+        return preg_replace_callback(
+            '/\[:([a-zA-Z0-9_\-\+: ]+)\]/',
+            function ($matches) {
+                $code = $matches[1];
+                $filename = $code.'.gif';
+                $filename = basename($filename);
 
-            $emojisDir = $this->projectDir . '/public/uploads/emojis';
-            if (!is_dir($emojisDir)) {
-                mkdir($emojisDir, 0777, true);
-            }
+                $emojisDir = $this->projectDir.'/public/uploads/emojis';
+                if (!is_dir($emojisDir)) {
+                    mkdir($emojisDir, 0777, true);
+                }
 
-            $localPath = $emojisDir . '/' . $filename;
-            $webPath = '/uploads/emojis/' . rawurlencode($filename);
+                $localPath = $emojisDir.'/'.$filename;
+                $webPath = '/uploads/emojis/'.rawurlencode($filename);
 
-            if (!file_exists($localPath)) {
-                $url = rtrim($this->emojiBaseUrl, '/') . '/' . rawurlencode($filename);
-                try {
-                    $response = $this->httpClient->request('GET', $url, [
-                        'timeout' => 2.0,
-                    ]);
-                    if ($response->getStatusCode() === 200) {
-                        $content = $response->getContent();
-                        file_put_contents($localPath, $content);
-                    } else {
+                if (!file_exists($localPath)) {
+                    $url = rtrim($this->emojiBaseUrl, '/').'/'.rawurlencode($filename);
+                    try {
+                        $response = $this->httpClient->request('GET', $url, [
+                            'timeout' => 2.0,
+                        ]);
+                        if ($response->getStatusCode() === 200) {
+                            $content = $response->getContent();
+                            file_put_contents($localPath, $content);
+                        } else {
+                            file_put_contents($localPath, '');
+                        }
+                    } catch (\Exception $e) {
                         file_put_contents($localPath, '');
                     }
-                } catch (\Exception $e) {
-                    file_put_contents($localPath, '');
                 }
-            }
 
-            if (file_exists($localPath) && filesize($localPath) > 0) {
-                $title = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
+                if (file_exists($localPath) && filesize($localPath) > 0) {
+                    $title = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
 
-                return '<img src="' . htmlspecialchars($webPath, ENT_QUOTES, 'UTF-8') . '" alt="[:' .$title. ']" title="[:' .$title. ']" class="message-emoji" style="vertical-align: middle;" />';
-            }
+                    return (
+                        '<img src="'
+                        .htmlspecialchars($webPath, ENT_QUOTES, 'UTF-8')
+                        .'" alt="[:'
+                        .$title
+                        .']" title="[:'
+                        .$title
+                        .']" class="message-emoji" style="vertical-align: middle;" />'
+                    );
+                }
 
-            return $matches[0];
-        }, $text);
+                return $matches[0];
+            },
+            $text,
+        );
     }
 
     private function replaceEmoticons(string $content): string
@@ -320,13 +339,18 @@ class MessageFormatter
         // We handle the single quote being escaped as &#039; by htmlspecialchars.
         $pattern = '/(?<=^|\s)(?:&lt;3|:(?:\'|&#039;)\(|:-\)|:-D|;-\)|:-\(|:-P|:-p|:-O|:-o|:-\*|:\)|:D|;\)|:\(|:P|:p|:O|:o|8\)|B\)|xD|XD|:\*|;\()(?=$|\s|[\.!?,])/';
 
-        $safeContent = preg_replace_callback($pattern, static function ($matches) {
-            $key = $matches[0];
-            if (str_contains($key, '&#039;')) {
-                $key = str_replace('&#039;', "'", $key);
-            }
-            return self::EMOTICONS[$key] ?? $matches[0];
-        }, $safeContent);
+        $safeContent = preg_replace_callback(
+            $pattern,
+            static function ($matches) {
+                $key = $matches[0];
+                if (str_contains($key, '&#039;')) {
+                    $key = str_replace('&#039;', "'", $key);
+                }
+
+                return self::EMOTICONS[$key] ?? $matches[0];
+            },
+            $safeContent,
+        );
 
         // On décode avant d'envoyer à CommonMark pour qu'il parse correctement les caractères complexes
         return htmlspecialchars_decode($safeContent, ENT_QUOTES);

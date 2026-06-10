@@ -70,16 +70,22 @@ final class AccountController extends AbstractController
                 $entityManager->flush();
 
                 // Publish status change via Mercure
-                $update = new Update($this->mercureTopicPrefix . '/users/status', json_encode([
-                    'type' => 'user_status_changed',
-                    'username' => $currentUser->getUsername(),
-                    'status' => $currentUser->getStatus(),
-                    'statusLabel' => $currentUser->getStatusLabel(),
-                    'statusOverride' => $currentUser->getStatusOverride() ?? 'auto',
-                    'lastActive' => $currentUser->getLastActiveAt()
-                        ? $currentUser->getLastActiveAt()->getTimestamp()
-                        : null,
-                ]), true, null, 'user_status_changed');
+                $update = new Update(
+                    $this->mercureTopicPrefix.'/users/status',
+                    json_encode([
+                        'type' => 'user_status_changed',
+                        'username' => $currentUser->getUsername(),
+                        'status' => $currentUser->getStatus(),
+                        'statusLabel' => $currentUser->getStatusLabel(),
+                        'statusOverride' => $currentUser->getStatusOverride() ?? 'auto',
+                        'lastActive' => $currentUser->getLastActiveAt()
+                            ? $currentUser->getLastActiveAt()->getTimestamp()
+                            : null,
+                    ]),
+                    true,
+                    null,
+                    'user_status_changed',
+                );
                 $bus->dispatch($update);
 
                 $this->addFlash('success', $this->translator->trans('Votre profil a été mis à jour avec succès !'));

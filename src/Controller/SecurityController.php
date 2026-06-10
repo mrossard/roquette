@@ -104,7 +104,7 @@ final class SecurityController extends AbstractController
 
             $this->addFlash(
                 'success',
-                $this->translator->trans("Votre compte a été créé avec succès ! Connectez-vous maintenant."),
+                $this->translator->trans('Votre compte a été créé avec succès ! Connectez-vous maintenant.'),
             );
             return $this->redirectToRoute('app_login');
         }

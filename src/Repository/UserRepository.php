@@ -67,8 +67,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->setParameter('channelId', $channel->getId());
 
         if ($searchQuery !== null && $searchQuery !== '') {
-            $qb->andWhere('LOWER(u.username) LIKE :searchQuery OR LOWER(u.displayName) LIKE :searchQuery')
-               ->setParameter('searchQuery', '%' . strtolower($searchQuery) . '%');
+            $qb->andWhere(
+                'LOWER(u.username) LIKE :searchQuery OR LOWER(u.displayName) LIKE :searchQuery',
+            )->setParameter('searchQuery', '%'.strtolower($searchQuery).'%');
         }
 
         return $qb->getQuery()->getResult();
@@ -93,14 +94,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->orderBy('sortName', 'ASC');
 
         if (!$withRobot) {
-            $qb
-                ->andWhere('u.username != :robot')
-                ->setParameter('robot', User::ROBOT_USERNAME);
+            $qb->andWhere('u.username != :robot')->setParameter('robot', User::ROBOT_USERNAME);
         }
 
-        return $qb
-            ->getQuery()
-            ->getResult();
+        return $qb->getQuery()->getResult();
     }
-
 }

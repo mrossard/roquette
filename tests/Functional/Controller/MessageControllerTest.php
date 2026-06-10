@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Controller;
 
 use App\Entity\Channel;
-use App\Entity\User;
 use App\Entity\Message;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -92,7 +92,7 @@ class MessageControllerTest extends WebTestCase
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
-            json_encode(['content' => '/me is testing preview'])
+            json_encode(['content' => '/me is testing preview']),
         );
 
         $this->assertResponseIsSuccessful();
@@ -103,11 +103,9 @@ class MessageControllerTest extends WebTestCase
     #[Test]
     public function testPublishMeCommand(): void
     {
-        $this->client->request(
-            'POST',
-            '/channels/test-msg-channel/publish',
-            ['message' => '/me is typing a long message']
-        );
+        $this->client->request('POST', '/channels/test-msg-channel/publish', [
+            'message' => '/me is typing a long message',
+        ]);
 
         $this->assertResponseIsSuccessful();
 
@@ -121,14 +119,10 @@ class MessageControllerTest extends WebTestCase
     #[Test]
     public function testPublishPollMessage(): void
     {
-        $this->client->request(
-            'POST',
-            '/channels/test-msg-channel/publish',
-            [
-                'poll_question' => 'Quel est votre langage préféré ?',
-                'poll_options' => ['PHP', 'TypeScript', 'Rust'],
-            ]
-        );
+        $this->client->request('POST', '/channels/test-msg-channel/publish', [
+            'poll_question' => 'Quel est votre langage préféré ?',
+            'poll_options' => ['PHP', 'TypeScript', 'Rust'],
+        ]);
 
         $this->assertResponseIsSuccessful();
 
@@ -160,14 +154,10 @@ class MessageControllerTest extends WebTestCase
     #[Test]
     public function testPublishPollRequiresMinTwoOptions(): void
     {
-        $this->client->request(
-            'POST',
-            '/channels/test-msg-channel/publish',
-            [
-                'poll_question' => 'Un seul choix ?',
-                'poll_options' => ['Option Unique'],
-            ]
-        );
+        $this->client->request('POST', '/channels/test-msg-channel/publish', [
+            'poll_question' => 'Un seul choix ?',
+            'poll_options' => ['Option Unique'],
+        ]);
 
         $this->assertResponseStatusCodeSame(400);
     }
@@ -175,15 +165,11 @@ class MessageControllerTest extends WebTestCase
     #[Test]
     public function testPublishPollWithAllowMultiple(): void
     {
-        $this->client->request(
-            'POST',
-            '/channels/test-msg-channel/publish',
-            [
-                'poll_question' => 'Choix multiples ?',
-                'poll_options' => ['A', 'B', 'C'],
-                'allow_multiple' => '1',
-            ]
-        );
+        $this->client->request('POST', '/channels/test-msg-channel/publish', [
+            'poll_question' => 'Choix multiples ?',
+            'poll_options' => ['A', 'B', 'C'],
+            'allow_multiple' => '1',
+        ]);
 
         $this->assertResponseIsSuccessful();
 
@@ -208,14 +194,10 @@ class MessageControllerTest extends WebTestCase
     public function testEditPollMessage(): void
     {
         // 1. Create a poll message
-        $this->client->request(
-            'POST',
-            '/channels/test-msg-channel/publish',
-            [
-                'poll_question' => 'Original Question?',
-                'poll_options' => ['Opt1', 'Opt2'],
-            ]
-        );
+        $this->client->request('POST', '/channels/test-msg-channel/publish', [
+            'poll_question' => 'Original Question?',
+            'poll_options' => ['Opt1', 'Opt2'],
+        ]);
         $this->assertResponseIsSuccessful();
 
         $messageRepository = $this->entityManager->getRepository(Message::class);
@@ -231,15 +213,11 @@ class MessageControllerTest extends WebTestCase
         $this->assertNotNull($pollMessage);
 
         // 2. Modify the poll
-        $this->client->request(
-            'POST',
-            sprintf('/messages/%d/edit', $pollMessage->getId()),
-            [
-                'poll_question' => 'Updated Question?',
-                'poll_options' => ['New Opt1', 'New Opt2', 'Added Opt3'],
-                'allow_multiple' => '1',
-            ]
-        );
+        $this->client->request('POST', sprintf('/messages/%d/edit', $pollMessage->getId()), [
+            'poll_question' => 'Updated Question?',
+            'poll_options' => ['New Opt1', 'New Opt2', 'Added Opt3'],
+            'allow_multiple' => '1',
+        ]);
         $this->assertResponseIsSuccessful();
 
         $this->entityManager->clear();
@@ -260,15 +238,11 @@ class MessageControllerTest extends WebTestCase
     public function testEditPollWithVotesIsBlocked(): void
     {
         // 1. Create a poll message with multiple choice allowed
-        $this->client->request(
-            'POST',
-            '/channels/test-msg-channel/publish',
-            [
-                'poll_question' => 'Vote test?',
-                'poll_options' => ['Option A', 'Option B'],
-                'allow_multiple' => '1',
-            ]
-        );
+        $this->client->request('POST', '/channels/test-msg-channel/publish', [
+            'poll_question' => 'Vote test?',
+            'poll_options' => ['Option A', 'Option B'],
+            'allow_multiple' => '1',
+        ]);
         $this->assertResponseIsSuccessful();
 
         $messageRepository = $this->entityManager->getRepository(Message::class);
@@ -312,11 +286,9 @@ class MessageControllerTest extends WebTestCase
 
         $this->client->getContainer()->set(\Symfony\Component\Messenger\MessageBusInterface::class, $messageBusMock);
 
-        $this->client->request(
-            'POST',
-            '/channels/test-msg-channel/publish',
-            ['message' => '/help Comment fonctionne roquette ?'],
-        );
+        $this->client->request('POST', '/channels/test-msg-channel/publish', [
+            'message' => '/help Comment fonctionne roquette ?',
+        ]);
 
         $this->assertResponseIsSuccessful();
         $responseContent = $this->client->getResponse()->getContent();
@@ -325,4 +297,3 @@ class MessageControllerTest extends WebTestCase
         $this->assertStringContainsString('En attente de l\'Assistant Roquette... ⏳', $responseContent);
     }
 }
-

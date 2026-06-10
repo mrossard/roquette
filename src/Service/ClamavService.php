@@ -34,9 +34,9 @@ class ClamavService
                 'Failed to connect to ClamAV daemon at %s:%d: %s (error code: %d, exception: %s)',
                 $this->host,
                 $this->port,
-                ($errstr !== null && $errstr !== '') ? $errstr : 'Unknown error',
+                $errstr !== null && $errstr !== '' ? $errstr : 'Unknown error',
                 $errno,
-                $e->getMessage()
+                $e->getMessage(),
             ));
             throw new \RuntimeException('Le service d\'analyse antivirus est temporairement indisponible.', 0, $e);
         } finally {
@@ -48,7 +48,7 @@ class ClamavService
                 'Failed to connect to ClamAV daemon at %s:%d: %s (%d)',
                 $this->host,
                 $this->port,
-                ($errstr !== null && $errstr !== '') ? $errstr : 'Unknown error',
+                $errstr !== null && $errstr !== '' ? $errstr : 'Unknown error',
                 $errno,
             ));
             throw new \RuntimeException('Le service d\'analyse antivirus est temporairement indisponible.');

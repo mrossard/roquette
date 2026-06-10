@@ -47,14 +47,8 @@ class AccountControllerTest extends WebTestCase
     private function cleanup(): void
     {
         $conn = $this->entityManager->getConnection();
-        $conn->executeStatement(
-            'DELETE FROM messenger_messages WHERE body LIKE ?',
-            ['%test_acc_user%'],
-        );
-        $conn->executeStatement(
-            'DELETE FROM "user" WHERE username LIKE ?',
-            ['test_acc_%'],
-        );
+        $conn->executeStatement('DELETE FROM messenger_messages WHERE body LIKE ?', ['%test_acc_user%']);
+        $conn->executeStatement('DELETE FROM "user" WHERE username LIKE ?', ['test_acc_%']);
     }
 
     // -------------------------------------------------------------------------

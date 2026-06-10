@@ -61,18 +61,11 @@ class FileControllerTest extends WebTestCase
     private function cleanup(): void
     {
         $conn = $this->entityManager->getConnection();
-        $conn->executeStatement(
-            'DELETE FROM message WHERE channel_id IN (SELECT id FROM channel WHERE slug LIKE ?)',
-            ['test-file-%'],
-        );
-        $conn->executeStatement(
-            'DELETE FROM channel WHERE slug LIKE ?',
-            ['test-file-%'],
-        );
-        $conn->executeStatement(
-            'DELETE FROM "user" WHERE username IN (?, ?)',
-            ['test_file_user', 'test_file_other'],
-        );
+        $conn->executeStatement('DELETE FROM message WHERE channel_id IN (SELECT id FROM channel WHERE slug LIKE ?)', [
+            'test-file-%',
+        ]);
+        $conn->executeStatement('DELETE FROM channel WHERE slug LIKE ?', ['test-file-%']);
+        $conn->executeStatement('DELETE FROM "user" WHERE username IN (?, ?)', ['test_file_user', 'test_file_other']);
     }
 
     private function createMessageWithFile(): Message

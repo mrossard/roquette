@@ -206,4 +206,27 @@ class ChannelControllerTest extends WebTestCase
 
         $this->assertResponseStatusCodeSame(403);
     }
+
+    #[Test]
+    public function testCreateTodoListChannel(): void
+    {
+        $this->client->request('POST', '/channels/create', [
+            'name' => 'Ma Todo List',
+            'description' => 'Ma super liste de tâches',
+            'messageRetentionMonths' => '6',
+            'isTodoList' => '1',
+        ]);
+
+        $this->assertResponseRedirects('/channels/ma-todo-list');
+
+        $this->entityManager->clear();
+        $channel = $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => 'ma-todo-list']);
+        static::assertNotNull($channel);
+        static::assertTrue($channel->isTodoList());
+
+        if ($channel) {
+            $this->entityManager->remove($channel);
+            $this->entityManager->flush();
+        }
+    }
 }

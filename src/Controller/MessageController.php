@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Controller\Trait\MessageRendererTrait;
 use App\Controller\Trait\ChannelAccessTrait;
+use App\Controller\Trait\MessageRendererTrait;
 use App\Controller\Trait\RequestValidationTrait;
 use App\Entity\Message;
+use App\Message\LlmQueryMessage;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
-use App\Message\LlmQueryMessage;
 use App\Service\FileUploadService;
 use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
@@ -57,11 +57,11 @@ final class MessageController extends AbstractController
 
         if (str_starts_with(trim($content), '/shrug')) {
             $parts = explode(' ', trim($content), 2);
-            $args = (($parts[1] ?? null) !== null) ? trim($parts[1]) : '';
+            $args = ($parts[1] ?? null) !== null ? trim($parts[1]) : '';
             $content = ($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯';
         } elseif (str_starts_with(trim($content), '/me ')) {
             $parts = explode(' ', trim($content), 2);
-            $args = (($parts[1] ?? null) !== null) ? trim($parts[1]) : '';
+            $args = ($parts[1] ?? null) !== null ? trim($parts[1]) : '';
             $content = '*' . $args . '*';
         } elseif (trim($content) === '/me') {
             $content = '';
@@ -156,7 +156,7 @@ final class MessageController extends AbstractController
         $message->setChannel($activeChannel);
 
         $replyToId = $request->request->get('replyTo');
-        if ($replyToId) {
+        if ($replyToId && !$activeChannel->isTodoList()) {
             $parentMessage = $messageRepository->find((int)$replyToId);
             if ($parentMessage && $parentMessage->getChannel()->getId() === $activeChannel->getId()) {
                 $message->setParentMessage($parentMessage);
@@ -181,16 +181,17 @@ final class MessageController extends AbstractController
         } else {
             $message->setContent(trim($messageText) === '' ? null : $messageText);
 
-        if ($uploadedFile) {
-            try {
-                $fileUploadService->uploadAndAttachToMessage($uploadedFile, $message);
-            } catch (\InvalidArgumentException $e) {
-                $this->addFlash('error', $e->getMessage());
-                return $this->render('dashboard/_input_form.html.twig', [
-                    'activeChannel' => $activeChannel,
-                ]);
+            if ($uploadedFile) {
+                try {
+                    $fileUploadService->uploadAndAttachToMessage($uploadedFile, $message);
+                } catch (\InvalidArgumentException $e) {
+                    $this->addFlash('error', $e->getMessage());
+
+                    return $this->render('dashboard/_input_form.html.twig', [
+                        'activeChannel' => $activeChannel,
+                    ]);
+                }
             }
-        }
         }
 
         $entityManager->persist($message);
@@ -203,8 +204,8 @@ final class MessageController extends AbstractController
             $previousDate = $previousMessages[0]->getCreatedAt()->format('Y-m-d');
             $newDate = $message->getCreatedAt()->format('Y-m-d');
             if ($previousDate !== $newDate) {
-                $today = (new \DateTimeImmutable())->format('Y-m-d');
-                $yesterday = (new \DateTimeImmutable('-1 day'))->format('Y-m-d');
+                $today = new \DateTimeImmutable()->format('Y-m-d');
+                $yesterday = new \DateTimeImmutable('-1 day')->format('Y-m-d');
                 $label = match ($newDate) {
                     $today => "Aujourd'hui",
                     $yesterday => 'Hier',
@@ -224,18 +225,16 @@ final class MessageController extends AbstractController
             $entityManager,
         );
 
-        if ($activeChannel->getSlug() === 'dm-robot-roquette-'.$currentUser->getSlug()
-            && !$isPoll && !$uploadedFile) {
+        if (
+            $activeChannel->getSlug() === 'dm-robot-roquette-'.$currentUser->getSlug()
+            && !$isPoll
+            && !$uploadedFile
+        ) {
             $helpMessageId = 'help-'.uniqid();
 
             // Dispatch message to Symfony Messenger to run LLM query asynchronously
             $this->messageBus->dispatch(
-                new LlmQueryMessage(
-                    $messageText,
-                    $currentUser->getId(),
-                    $activeChannel->getSlug(),
-                    $helpMessageId,
-                ),
+                new LlmQueryMessage($messageText, $currentUser->getId(), $activeChannel->getSlug(), $helpMessageId),
             );
         }
 
@@ -265,7 +264,8 @@ final class MessageController extends AbstractController
 
         if ($message->isPoll() && $message->getPoll()->getTotalVotes() > 0) {
             return new Response(
-                $this->translator->trans('Impossible de modifier un sondage qui a déjà des votes.'), 400,
+                $this->translator->trans('Impossible de modifier un sondage qui a déjà des votes.'),
+                400,
             );
         }
 
@@ -498,7 +498,7 @@ final class MessageController extends AbstractController
         $trimmedMsg = trim($messageText);
         $parts = explode(' ', $trimmedMsg, 2);
         $command = strtolower(substr($parts[0], 1));
-        $args = (($parts[1] ?? null) !== null) ? trim($parts[1]) : '';
+        $args = ($parts[1] ?? null) !== null ? trim($parts[1]) : '';
 
         if ($command === 'color') {
             $hueVal = $args !== '' && is_numeric($args) ? (int) $args : rand(0, 360);
@@ -520,7 +520,7 @@ final class MessageController extends AbstractController
             if ($args === '') {
                 $oobHtml = $this->renderView('dashboard/_help_message_oob.html.twig', [
                     'answer' => $this->translator->trans(
-                        "Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`",
+                        'Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`',
                     ),
                     'question' => '',
                     'helpMessageId' => $helpMessageId,
@@ -530,12 +530,7 @@ final class MessageController extends AbstractController
             } else {
                 // Dispatch message to Symfony Messenger to run LLM query asynchronously
                 $this->messageBus->dispatch(
-                    new LlmQueryMessage(
-                        $args,
-                        $currentUser->getId(),
-                        $activeChannel->getSlug(),
-                        $helpMessageId,
-                    ),
+                    new LlmQueryMessage($args, $currentUser->getId(), $activeChannel->getSlug(), $helpMessageId),
                 );
 
                 // Render OOB with empty placeholder first (answer = null)
@@ -573,7 +568,10 @@ final class MessageController extends AbstractController
                 $data = $response->toArray();
                 if (($data['results'] ?? null) !== null && $data['results'] !== []) {
                     foreach ($data['results'] as $result) {
-                        if (($result['media'][0]['gif']['url'] ?? null) === null || $result['media'][0]['gif']['url'] === '') {
+                        if (
+                            ($result['media'][0]['gif']['url'] ?? null) === null
+                            || $result['media'][0]['gif']['url'] === ''
+                        ) {
                             continue;
                         }
 

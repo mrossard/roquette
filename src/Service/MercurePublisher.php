@@ -58,9 +58,7 @@ class MercurePublisher
     public function publishToUser(User $user, array|string $payload, ?string $type = null): void
     {
         $data = is_array($payload) ? json_encode($payload) : $payload;
-        $this->bus->dispatch(
-            new Update($this->getUserTopic($user), $data, true, null, $type),
-        );
+        $this->bus->dispatch(new Update($this->getUserTopic($user), $data, true, null, $type));
     }
 
     public function publishToTopic(
@@ -71,9 +69,7 @@ class MercurePublisher
     ): void
     {
         $data = is_array($payload) ? json_encode($payload) : $payload;
-        $this->bus->dispatch(
-            new Update($topicUrl, $data, $private, null, $type),
-        );
+        $this->bus->dispatch(new Update($topicUrl, $data, $private, null, $type));
     }
 
     // -------------------------------------------------------------------------
@@ -138,24 +134,31 @@ class MercurePublisher
                 $channelName .= ' (sous-canal de '.$parentChannelName.')';
             }
 
-            $this->publishToUser($member, [
-                'channelSlug' => $channel->getSlug(),
-                'channelId' => $channel->getId(),
-                'messageId' => $message->getId(),
-                'author' => $author->getUsername(),
-                'authorDisplayName' => ($author->getDisplayName() !== null && $author->getDisplayName() !== '') ? $author->getDisplayName() : $author->getUsername(),
-                'channelName' => $channelName,
-                'content' => $content,
-                'notificationsEnabled' => $isMentioned
-                    ? $member->isMentionNotificationsEnabled()
-                    : $notificationsEnabled,
-                'isMention' => $isMentioned,
-                'isMentionNotificationAllowed' => $member->isMentionNotificationsEnabled(),
-                'isDm' => $channel->isDm(),
-                'isSubChannel' => $channel->isSubChannel(),
-                'parentChannelId' => $channel->getParentMessage()?->getChannel()->getId(),
-                'parentChannelSlug' => $channel->getParentMessage()?->getChannel()->getSlug(),
-            ], 'personal_notification');
+            $this->publishToUser(
+                $member,
+                [
+                    'channelSlug' => $channel->getSlug(),
+                    'channelId' => $channel->getId(),
+                    'messageId' => $message->getId(),
+                    'author' => $author->getUsername(),
+                    'authorDisplayName' =>
+                        $author->getDisplayName() !== null && $author->getDisplayName() !== ''
+                            ? $author->getDisplayName()
+                            : $author->getUsername(),
+                    'channelName' => $channelName,
+                    'content' => $content,
+                    'notificationsEnabled' => $isMentioned
+                        ? $member->isMentionNotificationsEnabled()
+                        : $notificationsEnabled,
+                    'isMention' => $isMentioned,
+                    'isMentionNotificationAllowed' => $member->isMentionNotificationsEnabled(),
+                    'isDm' => $channel->isDm(),
+                    'isSubChannel' => $channel->isSubChannel(),
+                    'parentChannelId' => $channel->getParentMessage()?->getChannel()->getId(),
+                    'parentChannelSlug' => $channel->getParentMessage()?->getChannel()->getSlug(),
+                ],
+                'personal_notification',
+            );
         }
     }
 

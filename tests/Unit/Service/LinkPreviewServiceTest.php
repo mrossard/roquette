@@ -98,9 +98,12 @@ class LinkPreviewServiceTest extends TestCase
             'siteName' => 'Example',
         ]);
 
-        $cache = new class($item) implements \Symfony\Contracts\Cache\CacheInterface,
-                                             \Psr\Cache\CacheItemPoolInterface {
-            public function __construct(private readonly \Psr\Cache\CacheItemInterface $item) {}
+        $cache = new class($item) implements
+            \Symfony\Contracts\Cache\CacheInterface,
+            \Psr\Cache\CacheItemPoolInterface {
+            public function __construct(
+                private readonly \Psr\Cache\CacheItemInterface $item,
+            ) {}
 
             public function get(string $key, callable $callback, ?float $beta = null, ?array &$metadata = null): mixed
             {
@@ -174,9 +177,12 @@ class LinkPreviewServiceTest extends TestCase
         $item->method('isHit')->willReturn(true);
         $item->method('get')->willReturn(null);
 
-        $cache = new class($item) implements \Symfony\Contracts\Cache\CacheInterface,
-                                             \Psr\Cache\CacheItemPoolInterface {
-            public function __construct(private readonly \Psr\Cache\CacheItemInterface $item) {}
+        $cache = new class($item) implements
+            \Symfony\Contracts\Cache\CacheInterface,
+            \Psr\Cache\CacheItemPoolInterface {
+            public function __construct(
+                private readonly \Psr\Cache\CacheItemInterface $item,
+            ) {}
 
             public function get(string $key, callable $callback, ?float $beta = null, ?array &$metadata = null): mixed
             {
@@ -248,9 +254,12 @@ class LinkPreviewServiceTest extends TestCase
         $item = $this->createMock(\Psr\Cache\CacheItemInterface::class);
         $item->method('isHit')->willReturn(false);
 
-        $cache = new class($item) implements \Symfony\Contracts\Cache\CacheInterface,
-                                             \Psr\Cache\CacheItemPoolInterface {
-            public function __construct(private readonly \Psr\Cache\CacheItemInterface $item) {}
+        $cache = new class($item) implements
+            \Symfony\Contracts\Cache\CacheInterface,
+            \Psr\Cache\CacheItemPoolInterface {
+            public function __construct(
+                private readonly \Psr\Cache\CacheItemInterface $item,
+            ) {}
 
             public function get(string $key, callable $callback, ?float $beta = null, ?array &$metadata = null): mixed
             {

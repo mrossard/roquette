@@ -25,8 +25,16 @@
 {% set isThisMessagePinned = messageChannel and messageChannel.pinnedMessage == messageObject %}
 {% set isMeMessage = message is not null and (message starts with '/me ' or message == '/me') %}
 {% set pollHasVotes = messageObject and messageObject.poll and messageObject.poll.totalVotes > 0 %}
+{% set isTodoCompleted = false %}
+{% if messageChannel and messageChannel.isTodoList() and messageObject %}
+    {% for reaction in messageObject.reactions %}
+        {% if reaction.emoji == '✅' %}
+            {% set isTodoCompleted = true %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
 <div
-    class="feed-item {{ (oob|default(false) or no_fade|default(false)) ? '' : 'fade-in' }} {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isMeMessage ? 'is-me-message' : '' }}"
+    class="feed-item {{ (oob|default(false) or no_fade|default(false)) ? '' : 'fade-in' }} {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isMeMessage ? 'is-me-message' : '' }} {{ isTodoCompleted ? 'todo-completed' : '' }} {{ (messageChannel and messageChannel.isTodoList()) ? 'is-todo-channel-item' : '' }}"
      id="feed-item-{{ message_id|default('') }}" {% if oob|default(false) %}hx-swap-oob="morph"{% endif %}
      style="--user-hue: {{ user_hue }};" data-message-id="{{ message_id|default('') }}"
      data-author-username="{{ author ? author.username : '' }}" data-raw-content="{{ message|default('') }}"
@@ -65,10 +73,31 @@
         {% endif %}
     {% else %}
         <div class="feed-item-header">
-            <div class="feed-item-user-container">
-                {% if author and author.username != 'robot-roquette' %}
-                    <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link"
-                       title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel}) }}">
+            {% if messageChannel is null or not messageChannel.isTodoList() %}
+                <div class="feed-item-user-container">
+                    {% if author and author.username != 'robot-roquette' %}
+                        <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link"
+                           title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel}) }}">
+                            <div class="avatar-container">
+                                {% if messageObject and messageObject.customAuthorAvatar %}
+                                    {% if messageObject.customAuthorAvatar starts with 'http' or messageObject.customAuthorAvatar starts with '/' %}
+                                        <img src="{{ messageObject.customAuthorAvatar }}" class="feed-item-avatar-img"
+                                             style="width: 24px; height: 24px; object-fit: cover; border-radius: 50%;">
+                                    {% else %}
+                                        <span class="feed-item-avatar">{{ messageObject.customAuthorAvatar }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
+                                {% endif %}
+                                <span class="status-dot-overlay {{ author.status }}"
+                                      data-username="{{ author.username }}"
+                                      data-status-override="{{ author.statusOverride|default('auto') }}"
+                                      data-last-active="{{ author.lastActiveAt ? author.lastActiveAt.timestamp : '' }}"
+                                      title="{{ author.statusLabel }}"></span>
+                            </div>
+                            <span class="feed-item-user">{{ username|wrap_emojis }}</span>
+                        </a>
+                    {% else %}
                         <div class="avatar-container">
                             {% if messageObject and messageObject.customAuthorAvatar %}
                                 {% if messageObject.customAuthorAvatar starts with 'http' or messageObject.customAuthorAvatar starts with '/' %}
@@ -80,41 +109,27 @@
                             {% else %}
                                 <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
                             {% endif %}
-                            <span class="status-dot-overlay {{ author.status }}" data-username="{{ author.username }}" data-status-override="{{ author.statusOverride|default('auto') }}" data-last-active="{{ author.lastActiveAt ? author.lastActiveAt.timestamp : '' }}" title="{{ author.statusLabel }}"></span>
+                            {% if author %}
+                                <span class="status-dot-overlay {{ author.status }}"
+                                      data-username="{{ author.username }}"
+                                      data-status-override="{{ author.statusOverride|default('auto') }}"
+                                      data-last-active="{{ author.lastActiveAt ? author.lastActiveAt.timestamp : '' }}"
+                                      title="{{ author.statusLabel }}"></span>
+                            {% endif %}
                         </div>
                         <span class="feed-item-user">{{ username|wrap_emojis }}</span>
-                    </a>
-                {% else %}
-                    <div class="avatar-container">
-                        {% if messageObject and messageObject.customAuthorAvatar %}
-                            {% if messageObject.customAuthorAvatar starts with 'http' or messageObject.customAuthorAvatar starts with '/' %}
-                                <img src="{{ messageObject.customAuthorAvatar }}" class="feed-item-avatar-img"
-                                     style="width: 24px; height: 24px; object-fit: cover; border-radius: 50%;">
-                            {% else %}
-                                <span class="feed-item-avatar">{{ messageObject.customAuthorAvatar }}</span>
-                            {% endif %}
-                        {% else %}
-                            <span class="feed-item-avatar">{{ username|slice(0, 1)|upper }}</span>
-                        {% endif %}
-                        {% if author %}
-                            <span class="status-dot-overlay {{ author.status }}" data-username="{{ author.username }}"
-                                  data-status-override="{{ author.statusOverride|default('auto') }}"
-                                  data-last-active="{{ author.lastActiveAt ? author.lastActiveAt.timestamp : '' }}"
-                                  title="{{ author.statusLabel }}"></span>
-                        {% endif %}
-                    </div>
-                    <span class="feed-item-user">{{ username|wrap_emojis }}</span>
+                    {% endif %}
+                </div>
+                <span
+                    class="feed-item-time">{% if timestamp|date('Y-m-d') != 'now'|date('Y-m-d') %}{{ timestamp|date('d/m/Y') }} {% endif %}{{ timestamp|date('H:i') }}</span>
+                {% if updated_at is defined and updated_at %}
+                    <span class="feed-item-edited-indicator"
+                          title="{{ 'Modifié le'|trans }} {{ updated_at|date('d/m/Y H:i') }}">(modifié)</span>
                 {% endif %}
-            </div>
-            <span
-                class="feed-item-time">{% if timestamp|date('Y-m-d') != 'now'|date('Y-m-d') %}{{ timestamp|date('d/m/Y') }} {% endif %}{{ timestamp|date('H:i') }}</span>
-            {% if updated_at is defined and updated_at %}
-                <span class="feed-item-edited-indicator"
-                      title="{{ 'Modifié le'|trans }} {{ updated_at|date('d/m/Y H:i') }}">(modifié)</span>
-            {% endif %}
-            {% if isThisMessagePinned %}
-                <span class="feed-item-pinned-indicator"
-                      title="{{ 'Message épinglé dans ce canal'|trans }}">📌 {{ 'Épinglé'|trans }}</span>
+                {% if isThisMessagePinned %}
+                    <span class="feed-item-pinned-indicator"
+                          title="{{ 'Message épinglé dans ce canal'|trans }}">📌 {{ 'Épinglé'|trans }}</span>
+                {% endif %}
             {% endif %}
             {% include 'dashboard/_feed_item_actions.html.twig' %}
         </div>
@@ -215,8 +230,8 @@
                     </div>
                 {% endif %}
             {% endif %}
-            {% if messageObject %}
-                {% set subChannel = get_subchannel(messageObject) %}
+            {% if messageObject and (messageChannel is null or not messageChannel.isTodoList()) %}
+                {% set subChannel = messageObject ? get_subchannel(messageObject) : null %}
                 {% if subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}
                     <div class="subchannel-indicator"
                          style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; background: var(--accent-cyan-glow); border: 1px solid var(--accent-cyan); padding: 0.5rem 0.75rem; border-radius: 0.375rem; width: fit-content; font-size: 0.85rem;">
@@ -230,8 +245,20 @@
                     </div>
                 {% endif %}
             {% endif %}
-            {% include 'dashboard/_feed_item_reactions.html.twig' %}
+            {% if messageChannel is null or not messageChannel.isTodoList() %}
+                {% include 'dashboard/_feed_item_reactions.html.twig' %}
+            {% endif %}
         </div>
+        {% if messageChannel and messageChannel.isTodoList() %}
+            {% set subChannel = messageObject ? get_subchannel(messageObject) : null %}
+            {% if subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}
+                <a href="{{ path('app_channel', {slug: subChannel.slug}) }}" class="btn-todo-discussion"
+                   hx-boost="false">
+                    {{ 'discussion'|trans }}
+                </a>
+            {% endif %}
+            {% include 'dashboard/_feed_item_reactions.html.twig' %}
+        {% endif %}
     {% endif %}
     {% set msgReplyCount = replyCounts[message_id]|default(0) %}
     {% if msgReplyCount > 0 %}

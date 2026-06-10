@@ -36,6 +36,9 @@ class Channel
     #[ORM\Column(options: ['default' => false])]
     private bool $isDm = false;
 
+    #[ORM\Column(options: ['default' => false])]
+    private bool $isTodoList = false;
+
     #[ORM\Column(type: 'integer', nullable: true, options: ['default' => 6])]
     private ?int $messageRetentionMonths = 6;
 
@@ -177,6 +180,19 @@ class Channel
     public function setIsDm(bool $isDm): static
     {
         $this->isDm = $isDm;
+        return $this;
+    }
+
+    public function isTodoList(): bool
+    {
+        return $this->isTodoList;
+    }
+
+    // @mago-expect no-boolean-flag-parameter
+    public function setIsTodoList(bool $isTodoList): static
+    {
+        $this->isTodoList = $isTodoList;
+
         return $this;
     }
 

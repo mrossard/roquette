@@ -326,13 +326,17 @@ class MessageFormatterTest extends TestCase
         $response->method('getStatusCode')->willReturn(200);
         $response->method('getContent')->willReturn('fake_gif_content');
 
-        $this->httpClient->expects($this->once())
+        $this->httpClient
+            ->expects($this->once())
             ->method('request')
             ->with('GET', 'http://example.com/emojis/smile.gif')
             ->willReturn($response);
 
         $result = $this->formatter->format('Hello [:smile] !');
-        $this->assertStringContainsString('<img src="/uploads/emojis/smile.gif" alt="[:smile]" title="[:smile]" class="message-emoji"', $result);
+        $this->assertStringContainsString(
+            '<img src="/uploads/emojis/smile.gif" alt="[:smile]" title="[:smile]" class="message-emoji"',
+            $result,
+        );
     }
 
     #[Test]
@@ -342,13 +346,17 @@ class MessageFormatterTest extends TestCase
         $response->method('getStatusCode')->willReturn(200);
         $response->method('getContent')->willReturn('fake_gif_content');
 
-        $this->httpClient->expects($this->once())
+        $this->httpClient
+            ->expects($this->once())
             ->method('request')
             ->with('GET', 'http://example.com/emojis/doc%20petrus.gif')
             ->willReturn($response);
 
         $result = $this->formatter->format('Hello [:doc petrus] !');
-        $this->assertStringContainsString('<img src="/uploads/emojis/doc%20petrus.gif" alt="[:doc petrus]" title="[:doc petrus]" class="message-emoji"', $result);
+        $this->assertStringContainsString(
+            '<img src="/uploads/emojis/doc%20petrus.gif" alt="[:doc petrus]" title="[:doc petrus]" class="message-emoji"',
+            $result,
+        );
     }
 
     #[Test]
@@ -357,7 +365,8 @@ class MessageFormatterTest extends TestCase
         $response = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
         $response->method('getStatusCode')->willReturn(404);
 
-        $this->httpClient->expects($this->once())
+        $this->httpClient
+            ->expects($this->once())
             ->method('request')
             ->with('GET', 'http://example.com/emojis/notfound.gif')
             ->willReturn($response);
@@ -382,7 +391,10 @@ class MessageFormatterTest extends TestCase
     public function formatReplacesShortcodesWithUnicodeEmoji(): void
     {
         $result = $this->formatter->format('Hello :grin: and :smile:!');
-        $this->assertStringContainsString('Hello <span class="unicode-emoji">😁</span> and <span class="unicode-emoji">😄</span>!', $result);
+        $this->assertStringContainsString(
+            'Hello <span class="unicode-emoji">😁</span> and <span class="unicode-emoji">😄</span>!',
+            $result,
+        );
     }
 
     #[Test]

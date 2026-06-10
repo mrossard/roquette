@@ -41,10 +41,8 @@ final class ModalController extends AbstractController
     }
 
     #[Route('/channels/{slug}/invite-modal', name: 'app_channel_invite_modal', methods: ['GET'])]
-    public function inviteModal(
-        string $slug,
-        ChannelRepository $channelRepository,
-    ): Response {
+    public function inviteModal(string $slug, ChannelRepository $channelRepository): Response
+    {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
@@ -64,10 +62,8 @@ final class ModalController extends AbstractController
     }
 
     #[Route('/channels/{slug}/members-modal', name: 'app_channel_members_modal', methods: ['GET'])]
-    public function membersModal(
-        string $slug,
-        ChannelRepository $channelRepository,
-    ): Response {
+    public function membersModal(string $slug, ChannelRepository $channelRepository): Response
+    {
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
 
         if (!$channel) {

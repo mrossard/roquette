@@ -26,7 +26,8 @@ final class WebhookController extends AbstractController
 
     #[Route('/api/webhooks/incoming/{token}', name: 'app_webhook_incoming', methods: ['POST'])]
     public function incoming(
-        #[\SensitiveParameter] string $token,
+        #[\SensitiveParameter]
+        string $token,
         Request $request,
         WebhookRepository $webhookRepository,
         UserRepository $userRepository,
@@ -47,8 +48,9 @@ final class WebhookController extends AbstractController
 
         $content = $data['text'] ?? $data['content'] ?? null;
         if (null === $content || trim((string)$content) === '') {
-            return new JsonResponse(['error' => 'Missing message content ("text" or "content")'],
-                Response::HTTP_BAD_REQUEST);
+            return new JsonResponse([
+                'error' => 'Missing message content ("text" or "content")',
+            ], Response::HTTP_BAD_REQUEST);
         }
 
         $customName = $data['username'] ?? $data['customAuthorName'] ?? $webhook->getName();

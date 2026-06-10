@@ -79,6 +79,11 @@ final class ChannelController extends AbstractController
             $channel->setIsPrivate(true);
         }
 
+        $isTodoList = $request->request->getBoolean('isTodoList', false);
+        if ($isTodoList) {
+            $channel->setIsTodoList(true);
+        }
+
         $retention = $request->request->get('messageRetentionMonths');
         if ($retention !== null && $retention !== '') {
             $retentionVal = (int) $retention;
@@ -105,7 +110,9 @@ final class ChannelController extends AbstractController
     // Main channel page
     // -------------------------------------------------------------------------
 
-    #[Route('/channels/{slug}', name: 'app_channel', requirements: ['slug' => '^(?!directory$|reorder$|create$|create-modal$)[^/]+$'])]
+    #[Route('/channels/{slug}', name: 'app_channel', requirements: [
+        'slug' => '^(?!directory$|reorder$|create$|create-modal$)[^/]+$',
+    ])]
     public function channel(
         string $slug,
         Request $request,
@@ -331,8 +338,9 @@ final class ChannelController extends AbstractController
         $ucrRepo = $entityManager->getRepository(\App\Entity\UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
 
-        $template = $channel->isSubChannel(
-        ) ? 'dashboard/_subchannel_sidebar_item.html.twig' : 'dashboard/_channel_sidebar_item.html.twig';
+        $template = $channel->isSubChannel()
+            ? 'dashboard/_subchannel_sidebar_item.html.twig'
+            : 'dashboard/_channel_sidebar_item.html.twig';
 
         return $this->render($template, [
             'channel' => $channel,
@@ -500,20 +508,24 @@ final class ChannelController extends AbstractController
 
         if (!$isAdmin && !$isCreator) {
             throw $this->createAccessDeniedException(
-                $this->translator->trans('Vous n\'êtes pas autorisé à supprimer ce canal.'),
+                $this->translator->trans(
+                    'Vous n\'êtes pas autorisé à supprimer ce canal.',
+                ),
             );
         }
 
         $parentChannel = $channel->getParentMessage()?->getChannel();
 
-        $redirectSlug = $parentChannel
-            ? '/channels/'.$parentChannel->getSlug()
-            : '/';
+        $redirectSlug = $parentChannel ? '/channels/'.$parentChannel->getSlug() : '/';
 
-        $this->mercurePublisher->publishToChannel($channel, [
-            'channelSlug' => $slug,
-            'redirectUrl' => $redirectSlug,
-        ], 'channel_deleted');
+        $this->mercurePublisher->publishToChannel(
+            $channel,
+            [
+                'channelSlug' => $slug,
+                'redirectUrl' => $redirectSlug,
+            ],
+            'channel_deleted',
+        );
 
         $this->logger->info(sprintf(
             'Channel deleted: "%s" (slug: "%s") by user "%s"',
@@ -525,13 +537,9 @@ final class ChannelController extends AbstractController
         $entityManager->remove($channel);
         $entityManager->flush();
 
-        $this->addFlash(
-            'success',
-            $this->translator->trans(
-                'Le canal "%channelName%" a été supprimé.',
-                ['%channelName%' => $channel->getName()],
-            ),
-        );
+        $this->addFlash('success', $this->translator->trans('Le canal "%channelName%" a été supprimé.', [
+            '%channelName%' => $channel->getName(),
+        ]));
 
         if ($parentChannel) {
             return $this->redirectToRoute('app_channel', [
@@ -674,7 +682,9 @@ final class ChannelController extends AbstractController
 
         if (!$isAdmin && !$isCreatorOrAdmin) {
             throw $this->createAccessDeniedException(
-                $this->translator->trans('Vous n\'êtes pas autorisé à modifier la rétention de ce canal.'),
+                $this->translator->trans(
+                    'Vous n\'êtes pas autorisé à modifier la rétention de ce canal.',
+                ),
             );
         }
 
@@ -690,10 +700,9 @@ final class ChannelController extends AbstractController
 
         $this->addFlash(
             'success',
-            $this->translator->trans(
-                'La durée de rétention du canal "%channelName%" a été mise à jour.',
-                ['%channelName%' => $channel->getName()],
-            ),
+            $this->translator->trans('La durée de rétention du canal "%channelName%" a été mise à jour.', [
+                '%channelName%' => $channel->getName(),
+            ]),
         );
 
         return new Response(null, 204, ['HX-Refresh' => 'true']);
@@ -718,7 +727,9 @@ final class ChannelController extends AbstractController
         $isCreatorOrAdmin = $channel->isAdministrator($currentUser);
         if (!$isAdmin && !$isCreatorOrAdmin) {
             throw $this->createAccessDeniedException(
-                $this->translator->trans('Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.'),
+                $this->translator->trans(
+                    'Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.',
+                ),
             );
         }
 
@@ -804,9 +815,10 @@ final class ChannelController extends AbstractController
 
         if (!$channel->getMembers()->contains($user)) {
             return new Response(
-                '<script>alert("'.$this->translator->trans(
-                    "Cet utilisateur n'est pas membre de ce canal.",
-                ).'");</script>', 200,
+                '<script>alert("'
+                .$this->translator->trans("Cet utilisateur n'est pas membre de ce canal.")
+                .'");</script>',
+                200,
             );
         }
 
@@ -816,11 +828,8 @@ final class ChannelController extends AbstractController
     }
 
     #[Route('/channels/{slug}/admin-autocomplete', name: 'app_channel_admin_autocomplete', methods: ['GET'])]
-    public function adminAutocomplete(
-        string $slug,
-        Request $request,
-        ChannelRepository $channelRepository,
-    ): Response {
+    public function adminAutocomplete(string $slug, Request $request, ChannelRepository $channelRepository): Response
+    {
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
         if (!$channel) {
             return new Response('', 404);
@@ -875,9 +884,9 @@ final class ChannelController extends AbstractController
         }
 
         // Check if a subchannel for this message already exists
-        $existingSubChannel = $entityManager->getRepository(Channel::class)->findOneBy(
-            ['parentMessage' => $parentMessage],
-        );
+        $existingSubChannel = $entityManager
+            ->getRepository(Channel::class)
+            ->findOneBy(['parentMessage' => $parentMessage]);
         if ($existingSubChannel) {
             $url = $this->generateUrl('app_channel', ['slug' => $existingSubChannel->getSlug()]);
             if ($request->headers->has('HX-Request')) {
@@ -888,7 +897,7 @@ final class ChannelController extends AbstractController
         }
 
         $parentChannel = $parentMessage->getChannel();
-        if ($parentChannel->isSubChannel()) {
+        if ($parentChannel->isSubChannel() && !$parentChannel->isTodoList()) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
         if ($parentChannel->isPrivate() && !$parentChannel->getMembers()->contains($currentUser)) {
@@ -899,11 +908,11 @@ final class ChannelController extends AbstractController
         $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Sous-canal';
         $name = mb_substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 40);
 
-        $slug = 'sc-'.preg_replace('/[^a-z0-9]+/i', '-', mb_strtolower($name)).'-'.substr(
-                bin2hex(random_bytes(3)),
-                0,
-                6,
-            );
+        $slug =
+            'sc-'
+            .preg_replace('/[^a-z0-9]+/i', '-', mb_strtolower($name))
+            .'-'
+            .substr(bin2hex(random_bytes(3)), 0, 6);
         $slug = trim($slug, '-');
 
         if ($entityManager->getRepository(Channel::class)->findOneBy(['slug' => $slug])) {
@@ -937,13 +946,9 @@ final class ChannelController extends AbstractController
             ),
         );
 
-        $this->addFlash(
-            'success',
-            $this->translator->trans(
-                'Sous-canal "%channelName%" créé.',
-                ['%channelName%' => $channel->getName()],
-            ),
-        );
+        $this->addFlash('success', $this->translator->trans('Sous-canal "%channelName%" créé.', [
+            '%channelName%' => $channel->getName(),
+        ]));
 
         $url = $this->generateUrl('app_channel', ['slug' => $channel->getSlug()]);
         if ($request->headers->has('HX-Request')) {

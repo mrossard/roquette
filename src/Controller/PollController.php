@@ -68,7 +68,8 @@ final class PollController extends AbstractController
 
         if (!$poll->isAllowMultiple()) {
             // Find all votes by this user on this poll's options in a single query
-            $userVotes = $voteRepo->createQueryBuilder('v')
+            $userVotes = $voteRepo
+                ->createQueryBuilder('v')
                 ->join('v.option', 'o')
                 ->where('o.poll = :poll')
                 ->andWhere('v.user = :user')
@@ -129,11 +130,8 @@ final class PollController extends AbstractController
     }
 
     #[Route('/channel/{slug}/composer/toggle', name: 'app_composer_toggle', methods: ['GET', 'POST'])]
-    public function toggleComposer(
-        string $slug,
-        Request $request,
-        EntityManagerInterface $entityManager,
-    ): Response {
+    public function toggleComposer(string $slug, Request $request, EntityManagerInterface $entityManager): Response
+    {
         $channel = $entityManager->getRepository(\App\Entity\Channel::class)->findOneBy(['slug' => $slug]);
         if (!$channel) {
             throw $this->createNotFoundException('Canal non trouvé.');
@@ -143,10 +141,9 @@ final class PollController extends AbstractController
         $messageValue = $request->query->get('message') ?? $request->request->get('message', '');
         $pollQuestion = $request->query->get('poll_question') ?? $request->request->get('poll_question', '');
         $pollOptions = $request->query->all('poll_options') ?: $request->request->all('poll_options') ?: [];
-        $allowMultiple = (bool)($request->query->get('allow_multiple') ?? $request->request->get(
-            'allow_multiple',
-            false,
-        ));
+        $allowMultiple = (bool)(
+            $request->query->get('allow_multiple') ?? $request->request->get('allow_multiple', false)
+        );
 
         // If we are closing, clear the poll fields
         if (!$open) {

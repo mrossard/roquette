@@ -560,6 +560,100 @@ select option {
     box-shadow: 0 4px 12px hsla(var(--user-hue), 80%, 55%, 0.08);
 }
 
+.feed-item.todo-completed .feed-item-body p,
+.feed-item.todo-completed .feed-item-me-text {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.feed-item.is-todo-channel-item {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem 0.35rem 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.feed-item.is-todo-channel-item::before {
+    content: "•";
+    position: absolute;
+    left: 0.6rem;
+    color: hsl(var(--user-hue), 85%, var(--user-hue-lightness-border));
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.feed-item.is-todo-channel-item .feed-item-body {
+    flex: 1;
+    order: 1;
+    margin: 0;
+    padding: 0;
+}
+
+.feed-item.is-todo-channel-item .feed-item-body p {
+    margin: 0;
+    padding: 0;
+}
+
+.btn-todo-discussion {
+    background: var(--accent-cyan);
+    color: var(--text-primary);
+    text-decoration: none;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+    order: 3;
+    margin-right: 0.25rem;
+    white-space: nowrap;
+}
+
+.btn-todo-discussion:hover {
+    background: var(--accent-cyan-hover);
+}
+
+.feed-item.is-todo-channel-item .message-reactions-container {
+    display: flex;
+    gap: 0.25rem;
+    order: 4;
+    margin: 0 !important;
+    padding: 0;
+}
+
+.feed-item.is-todo-channel-item .feed-item-header {
+    order: 2;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    margin-right: 0.5rem;
+}
+
+.feed-item.is-todo-channel-item:hover .feed-item-header,
+.feed-item.is-todo-channel-item:has(.reaction-picker.show) .feed-item-header {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Visually differentiate done and to-do elements */
+.feed-item.is-todo-channel-item.todo-completed {
+    opacity: 0.5;
+    background: rgba(255, 255, 255, 0.005);
+    border-left-color: var(--border-glass) !important;
+}
+
+.feed-item.is-todo-channel-item.todo-completed::before {
+    content: "✓";
+    color: var(--accent-green);
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
 .feed-item:has(.reaction-picker.show),
 .feed-item:has(.emoji-picker),
 .feed-item:has(.feed-item-actions-list.show) {

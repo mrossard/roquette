@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
-use App\Repository\ChannelRepository;
 use App\Entity\Channel;
+use App\Repository\ChannelRepository;
 use App\Service\MessageFormatter;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
-
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Extension Twig exposant les filtres `format_message` et `format_bytes`.
@@ -29,14 +28,11 @@ class AppExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new \Twig\TwigFunction(
-                'get_cached_link_preview',
-                [\App\Twig\AppExtensionRuntime::class, 'getCachedLinkPreview'],
-            ),
-            new \Twig\TwigFunction(
-                'get_subchannel',
-                [$this, 'getSubchannel'],
-            ),
+            new \Twig\TwigFunction('get_cached_link_preview', [
+                \App\Twig\AppExtensionRuntime::class,
+                'getCachedLinkPreview',
+            ]),
+            new \Twig\TwigFunction('get_subchannel', [$this, 'getSubchannel']),
         ];
     }
 

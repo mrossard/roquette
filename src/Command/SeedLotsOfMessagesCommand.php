@@ -29,13 +29,7 @@ class SeedLotsOfMessagesCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption(
-            'count',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'Le nombre de messages à insérer',
-            '150'
-        );
+        $this->addOption('count', null, InputOption::VALUE_OPTIONAL, 'Le nombre de messages à insérer', '150');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -75,7 +69,7 @@ class SeedLotsOfMessagesCommand extends Command
             $message->setChannel($channel);
             $message->setAuthor($user);
             $message->setContent(sprintf('Message de test #%d - Utile pour valider le scroll infini.', $i));
-            
+
             // Offset the date to simulate messages sent in the past, e.g., 1 minute apart
             $createdAt = $now->modify(sprintf('-%d minutes', $count - $i));
             $message->setCreatedAt($createdAt);

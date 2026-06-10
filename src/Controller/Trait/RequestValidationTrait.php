@@ -14,9 +14,11 @@ trait RequestValidationTrait
      */
     private function isPostMaxSizeExceeded(Request $request): bool
     {
-        return $request->isMethod('POST')
+        return (
+            $request->isMethod('POST')
             && count($request->request) === 0
             && count($request->files) === 0
-            && (int) $request->headers->get('CONTENT_LENGTH', 0) > 0;
+            && (int)$request->headers->get('CONTENT_LENGTH', 0) > 0
+        );
     }
 }

@@ -53,9 +53,10 @@ class ChannelRepository extends ServiceEntityRepository
             array_unshift($joinedChannels, $general);
         }
 
-        $robotUser = $this->getEntityManager()->getRepository(\App\Entity\User::class)->findOneBy(
-            ['username' => 'robot-roquette'],
-        );
+        $robotUser = $this
+            ->getEntityManager()
+            ->getRepository(\App\Entity\User::class)
+            ->findOneBy(['username' => 'robot-roquette']);
         if (!$robotUser) {
             $robotUser = new \App\Entity\User();
             $robotUser->setUsername('robot-roquette');

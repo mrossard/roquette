@@ -44,11 +44,10 @@ final class OAuthController extends AbstractController
         $state = bin2hex(random_bytes(16));
         $request->getSession()->set('oauth2state', $state);
 
-        $redirectUri = ($this->redirectUri !== null && $this->redirectUri !== '') ? $this->redirectUri : $this->generateUrl(
-            'app_oauth_check',
-            [],
-            UrlGeneratorInterface::ABSOLUTE_URL,
-        );
+        $redirectUri =
+            $this->redirectUri !== null && $this->redirectUri !== ''
+                ? $this->redirectUri
+                : $this->generateUrl('app_oauth_check', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
         // Build redirect URL
         $queryParams = http_build_query([

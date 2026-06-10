@@ -74,15 +74,19 @@ final class InvitationController extends AbstractController
             'invite' => $invitation,
         ]);
 
-        $mercurePublisher->publishToUser($invitedUser, [
-            'type' => 'invitation_received',
-            'invitedUsername' => $invitedUser->getUsername(),
-            'invitationId' => $invitation->getId(),
-            'channelSlug' => $activeChannel->getSlug(),
-            'channelName' => $activeChannel->getName(),
-            'senderName' => $currentUser->getDisplayName() ?: $currentUser->getUsername(),
-            'html' => $sidebarHtml,
-        ], 'invitation_received');
+        $mercurePublisher->publishToUser(
+            $invitedUser,
+            [
+                'type' => 'invitation_received',
+                'invitedUsername' => $invitedUser->getUsername(),
+                'invitationId' => $invitation->getId(),
+                'channelSlug' => $activeChannel->getSlug(),
+                'channelName' => $activeChannel->getName(),
+                'senderName' => $currentUser->getDisplayName() ?: $currentUser->getUsername(),
+                'html' => $sidebarHtml,
+            ],
+            'invitation_received',
+        );
 
         $query = $request->request->get('q', '');
         $query = trim($query);

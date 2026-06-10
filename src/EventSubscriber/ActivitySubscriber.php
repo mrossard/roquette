@@ -45,14 +45,20 @@ class ActivitySubscriber implements EventSubscriberInterface
             $this->entityManager->flush();
 
             $newStatus = $user->getStatus();
-            $update = new Update($this->mercureTopicPrefix . '/users/status', json_encode([
-                'type' => 'user_status_changed',
-                'username' => $user->getUsername(),
-                'status' => $newStatus,
-                'statusLabel' => $user->getStatusLabel(),
-                'statusOverride' => $user->getStatusOverride() ?? 'auto',
-                'lastActive' => $now->getTimestamp(),
-            ]), true, null, 'user_status_changed');
+            $update = new Update(
+                $this->mercureTopicPrefix.'/users/status',
+                json_encode([
+                    'type' => 'user_status_changed',
+                    'username' => $user->getUsername(),
+                    'status' => $newStatus,
+                    'statusLabel' => $user->getStatusLabel(),
+                    'statusOverride' => $user->getStatusOverride() ?? 'auto',
+                    'lastActive' => $now->getTimestamp(),
+                ]),
+                true,
+                null,
+                'user_status_changed',
+            );
             $this->bus->dispatch($update);
         }
     }
