@@ -1,8 +1,8 @@
 # Guide de l'utilisateur - Roquette
 
 Bienvenue dans le guide de l'utilisateur de **Roquette**, votre plateforme de messagerie collaborative en temps réel (
-alternative moderne à Slack et Discord). Ce guide détaille les fonctionnalités disponibles et comment les utiliser au
-quotidien.
+alternative moderne à Slack et Discord). Ce guide détaille l'ensemble des fonctionnalités de l'application et comment
+les exploiter au quotidien.
 
 ---
 
@@ -10,13 +10,15 @@ quotidien.
 
 1. [Prise en main](#1-prise-en-main)
 2. [Gestion du profil et personnalisation](#2-gestion-du-profil-et-personnalisation)
-3. [Canaux de discussion et messages directs](#3-canaux-de-discussion-et-messages-directs)
+3. [Canaux de discussion, sous-canaux et messages directs](#3-canaux-de-discussion-sous-canaux-et-messages-directs)
 4. [Messagerie, réactions et fils de discussion (Threads)](#4-messagerie-réactions-et-fils-de-discussion-threads)
-5. [Sondages, fichiers et aperçus](#5-sondages-fichiers-et-aperçus)
-6. [Commandes de chat intégrées (Slash Commands)](#6-commandes-de-chat-intégrées-slash-commands)
-7. [Notifications et recherche](#7-notifications-et-recherche)
-8. [Assistant virtuel & Synthèse (IA)](#8-assistant-virtuel--synthèse-ia)
-9. [Messages enregistrés](#9-messages-enregistrés)
+5. [Épinglage de messages](#5-épinglage-de-messages)
+6. [Sondages, fichiers et aperçus](#6-sondages-fichiers-et-aperçus)
+7. [Webhooks entrants](#7-webhooks-entrants)
+8. [Commandes de chat intégrées (Slash Commands)](#8-commandes-de-chat-intégrées-slash-commands)
+9. [Notifications, mise en sourdine et recherche](#9-notifications-mise-en-sourdine-et-recherche)
+10. [Assistant virtuel & Synthèse (IA)](#10-assistant-virtuel--synthèse-ia)
+11. [Messages enregistrés](#11-messages-enregistrés)
 
 ---
 
@@ -24,63 +26,80 @@ quotidien.
 
 Pour commencer à utiliser Roquette :
 
-* **Connexion / Inscription** : Connectez-vous avec vos identifiants ou créez un compte. Si activé par votre
-  administrateur, vous pouvez également vous connecter via un compte externe (OAuth2).
-* **Interface générale** : L'écran se divise en deux zones principales :
+* **Connexion / Inscription** : Connectez-vous avec vos identifiants ou créez un compte. Si cela a été configuré, vous
+  pouvez utiliser la connexion externe via OAuth2.
+* **Interface générale** : L'écran se divise en zones principales :
     * La **barre latérale (Sidebar)** à gauche : elle regroupe vos messages enregistrés, l'accès direct à l'Assistant,
       la liste des canaux, les messages directs et vos invitations.
     * La **fenêtre de discussion** au centre : elle affiche les messages du canal actif, le champ de saisie et les
       options de partage.
+    * Le **panneau des sous-canaux** à droite (si le canal actif possède des sous-canaux) : affiche la liste des
+      sous-canaux associés au canal actuel.
 
 ---
 
 ## 2. Gestion du profil et personnalisation
 
+Pour modifier vos paramètres de compte, accédez à la page Mon Compte. Vous y trouverez plusieurs options :
+
+### Informations de profil
+
+* **Nom d'affichage** : Modifiez le nom affiché pour vos collaborateurs (30 caractères max).
+* **Couleur du profil** : Personnalisez la couleur de votre avatar et de votre pseudo à l'aide du curseur de teinte (
+  Teinte HSL, de 0 à 360). La couleur se met à jour en temps réel sur l'interface.
+* **Langue** : Basculez l'interface entre le Français (`fr`) et l'Anglais (`en`).
+
 ### Statut de présence
 
-Indiquez votre disponibilité à vos collaborateurs. Cliquez sur l'indicateur de présence dans la barre latérale pour
-choisir parmi :
+Indiquez votre disponibilité. Choisissez parmi :
 
-* **Automatique** (Auto) : Ajuste votre statut en fonction de votre activité.
+* **Automatique** : Ajuste votre statut en ligne/absent en fonction de votre activité sur l'application.
 * **En ligne** (Online).
 * **Absent** (Away).
-* **Occupé** (Busy) : Idéal pour ne pas être dérangé.
-* **Hors ligne** (Offline).
+* **Occupé** (Busy) : Idéal pour travailler sans être interrompu.
+* **Hors ligne** (Offline) : Vous apparaissez invisible pour les autres utilisateurs.
 
-### Thème et Couleurs
+### Sécurité et notifications de bureau
 
-Adaptez Roquette à vos préférences visuelles :
-
-* **Mode Sombre / Clair** : Basculez entre le thème sombre et le thème clair depuis les paramètres de votre compte ou de
-  l'interface utilisateur.
-* **Couleur personnalisée** : Personnalisez la couleur de votre avatar et certains éléments de l'interface en modifiant
-  la teinte (Hue, de 0 à 360). Vous pouvez le faire depuis les paramètres ou via la commande `/color` directement dans
-  le chat.
+* **Changement de mot de passe** : Mettez à jour votre mot de passe en saisissant votre mot de passe actuel et le
+  nouveau (minimum 6 caractères).
+* **Notifications de bureau** : Activez ou désactivez les notifications système de bureau globales ou spécifiquement
+  pour les mentions.
+* **Thème Clair / Sombre** : Basculez entre le thème sombre et clair à tout moment depuis les boutons de l'interface ou
+  du menu utilisateur.
 
 ---
 
-## 3. Canaux de discussion et messages directs
+## 3. Canaux de discussion, sous-canaux et messages directs
 
 Les discussions sont organisées en canaux de communication :
 
-* **Canaux publics** : Accessibles à tous les membres de l'espace de travail. Tout utilisateur peut les rejoindre ou les
-  quitter librement.
-* **Canaux privés** : Restreints et invisibles pour les non-membres. Pour y accéder, vous devez y être invité par le
-  créateur du canal.
-* **Messages directs (DM)** : Discussions privées en tête-à-tête avec un collaborateur spécifique. Pour démarrer un DM,
-  cliquez sur le nom d'un utilisateur ou utilisez le bouton de message direct dans la barre latérale.
-* **Canal Assistant** : Un canal de discussion privé avec l'**Assistant** (indiqué par un emoji 🤖 dans la barre
-  latérale) est disponible pour chaque utilisateur afin de poser des questions ou demander des résumés.
+* **Canaux publics** : Accessibles et visibles par tous. Tout utilisateur peut les rejoindre ou les quitter librement.
+* **Canaux privés** : Restreints et invisibles pour les non-membres. L'accès requiert une invitation par un membre
+  existant.
+* **Messages directs (DM)** : Discussions privées en tête-à-tête avec un autre utilisateur.
+* **Canal Assistant** : Un canal de discussion privé avec l'**Assistant** (indiqué par un emoji 🤖 dans la barre laérale)
+  est disponible pour poser des questions ou demander des synthèses de canaux.
+
+### Les Sous-canaux (Sub-channels)
+
+Pour approfondir un sujet particulier mentionné dans un message sans encombrer le canal principal, vous pouvez créer un
+**sous-canal** dédié :
+
+* **Création** : Survolez un message, cliquez sur le menu d'actions (•••) et sélectionnez **Sous-canal**.
+* **Propriétés** : Le sous-canal prend automatiquement pour nom le début du message source (jusqu'à 40 caractères) et
+  copie la liste des membres, le niveau de confidentialité (public/privé) et la politique de rétention du canal parent.
+* **Navigation** : Les sous-canaux actifs du canal en cours apparaissent dans le panneau latéral droit pour une
+  navigation rapide.
 
 ### Actions sur les canaux :
 
-* **Favoris (Étoile)** : Cliquez sur l'étoile à côté du nom du canal pour l'épingler tout en haut de votre barre
-  latérale dans la section "Favoris".
-* **Réorganisation** : Vous pouvez glisser-déposer ou réordonner vos canaux pour organiser votre barre latérale comme
-  vous le souhaitez.
-* **Rétention des messages** : Si vous êtes le créateur d'un canal, vous pouvez définir une politique de rétention pour
-  supprimer automatiquement les messages après un certain nombre de jours.
-* **Invitations** : Invitez d'autres membres à rejoindre un canal privé via le menu d'options du canal.
+* **Favoris (Étoile)** : Cliquez sur l'étoile à côté du nom d'un canal pour l'épingler dans la section "Favoris" en haut
+  de la barre latérale.
+* **Réorganisation** : Vous pouvez réorganisation vos canaux dans la barre latérale par glisser-déposer.
+* **Rétention des messages** : Si vous êtes le créateur du canal, vous pouvez configurer une politique de rétention (en
+  mois) pour purger automatiquement les anciens messages.
+* **Invitations** : Invitez d'autres membres à rejoindre un canal privé depuis le bouton d'invitation.
 
 ---
 
@@ -88,134 +107,170 @@ Les discussions sont organisées en canaux de communication :
 
 ### Écrire des messages
 
-Saisissez votre texte dans la barre de message en bas et appuyez sur **Entrée** (ou cliquez sur le bouton d'envoi).
+Saisissez votre texte dans la barre de message et appuyez sur **Entrée** (ou utilisez le bouton d'envoi). Utilisez *
+*Shift + Entrée** pour aller à la ligne.
 
-* **Modification/Suppression** : Vous pouvez modifier ou supprimer vos propres messages en survolant le message concerné
-  et en sélectionnant l'action appropriée.
-* **Indicateur de saisie** : Lorsqu'un utilisateur commence à écrire, un indicateur discret apparaît en bas du chat pour
-  vous informer qu'un message arrive.
-* **Séparateur de dates** : Les messages d'un canal sont regroupés et séparés par des en-têtes de date clairs. Pour les
-  messages des jours précédents, la date et l'heure de publication sont affichées afin d'améliorer la lisibilité
-  temporelle de vos échanges.
+* **Modification et suppression** : Modifiez ou supprimez vos propres messages depuis le menu d'actions (•••) du
+  message.
+* **Indicateur de saisie** : Lorsqu'un membre écrit, un indicateur discret s'affiche en bas du flux de discussion.
 
 ### Fils de discussion (Threads)
 
-Pour répondre de manière ciblée à un message sans polluer le canal principal, utilisez les fils de discussion :
+Pour répondre de manière ciblée à un message et suivre une discussion spécifique :
 
-* Survolez un message et cliquez sur l'icône de **Fil de discussion** (bulle de dialogue).
-* Une barre latérale dédiée au fil de discussion s'ouvre sur la droite.
-* Toutes les réponses restent groupées sous le message d'origine.
+* **Répondre à un message** : Survolez le message en question, cliquez sur le menu d'actions (•••) et sélectionnez *
+  *Répondre** (ou cliquez sur le bouton de réponse rapide). Une bannière de contexte s'affiche au-dessus de votre champ
+  de saisie (`↩ nom_utilisateur`). Saisissez votre texte et envoyez : votre message sera enregistré comme une réponse à
+  ce message parent.
+* **Consulter les réponses** : Sous un message ayant reçu des réponses, un lien apparaît (ex:
+  `💬 Voir les réponses (3)`). Cliquez dessus pour charger l'intégralité du fil de discussion directement au centre de l'
+  interface, dans le flux de messages principal.
+* **Retourner au canal** : Cliquez sur le bouton **Retour au direct** en haut du fil de discussion pour revenir à
+  l'affichage normal de tous les messages du canal.
 
 ### Réactions (Émojis)
 
-Exprimez-vous rapidement sans écrire de message :
-
-* Survolez un message et cliquez sur le sélecteur d'émojis.
-* Cliquez sur un émoji existant sous le message pour ajouter votre vote (+1).
-* **Info-bulles de réactions** : Survolez une réaction existante sous un message pour afficher la liste des
-  collaborateurs ayant ajouté cette réaction.
+* Survolez un message, cliquez sur le sélecteur d'émojis (icône de smiley) et choisissez une réaction rapide (👍, ❤️, 😂,
+  😮, 😢, 🎉) ou tout autre emoji.
+* Cliquez sur une réaction existante sous un message pour ajouter votre vote (+1).
+* Survolez une réaction pour voir la liste des utilisateurs qui l'ont ajoutée.
 
 ---
 
-## 5. Sondages, fichiers et aperçus
+## 5. Épinglage de messages
+
+Si vous êtes le créateur du canal (ou administrateur), vous pouvez mettre en avant des messages importants :
+
+* **Épingler** : Dans le menu d'actions (•••) d'un message, cliquez sur **Épingler**.
+* **Bannière d'épinglage** : Une bannière apparaît en haut du canal affichant le message épinglé actuel. Tous les
+  membres peuvent cliquer sur **Voir** pour faire défiler automatiquement le chat jusqu'au message d'origine.
+* **Désépingler** : Cliquez sur la croix (✕) de la bannière ou sélectionnez **Désépingler** dans le menu d'actions du
+  message.
+
+---
+
+## 6. Sondages, fichiers et aperçus
 
 ### Créer un sondage
-
-Besoin de prendre une décision d'équipe ?
-
 1. Cliquez sur l'icône de **Sondage** (ou utilisez l'option dans le formulaire).
-2. Saisissez votre question.
-3. Ajoutez au moins deux options de réponse.
-4. Cochez "Autoriser les choix multiples" si les utilisateurs peuvent voter pour plusieurs options.
-5. Envoyez pour publier le sondage interactif en temps réel.
+2. Saisissez votre question et ajoutez au moins deux options de réponse.
+3. Cochez "Autoriser les choix multiples" si nécessaire, puis publiez. Les votes s'actualisent en temps réel pour tous
+   les utilisateurs.
 
 ### Partager des fichiers et des images
 
-* Glissez-déposez un fichier dans la zone de saisie ou cliquez sur le trombone pour sélectionner un fichier.
-* **Sécurité renforcée** : Chaque fichier téléversé est automatiquement analysé par l'antivirus ClamAV. Si un fichier
-  est infecté, il est immédiatement bloqué pour protéger vos collaborateurs.
+* Glissez-déposez un fichier sur l'interface ou utilisez le bouton trombone pour sélectionner un document (limite de 10
+  Mo).
+* **Sécurité** : Les fichiers téléversés sont analysés par l'antivirus ClamAV. Tout fichier détecté comme malveillant
+  est bloqué pour protéger les utilisateurs.
 
-### Prévisualisation automatique des liens
+### Prévisualisation de liens
 
-Lorsque vous partagez un lien URL (comme une vidéo YouTube ou un article de blog), Roquette génère automatiquement un
-aperçu enrichi (titre, description et image) directement sous votre message.
+Le partage d'une URL génère automatiquement un aperçu enrichi (titre, description, image) sous le message. Vous pouvez
+masquer cet aperçu en cliquant sur la croix si vous en êtes l'auteur.
 
 ---
 
-## 6. Commandes de chat intégrées (Slash Commands)
+## 7. Webhooks entrants
 
-Saisissez ces commandes directement au début de votre champ de saisie de message :
+Les webhooks permettent à des applications externes (GitHub, GitLab, serveurs de monitoring, etc.) de publier
+automatiquement des messages dans vos canaux.
+
+### Configuration (Administrateurs & Créateurs de canaux)
+
+1. Ouvrez le menu de configuration du canal et allez dans la section **Webhooks entrants**.
+2. Saisissez un nom descriptif pour votre webhook (ex: "Alertes Production") et cliquez sur **Créer**.
+3. Copiez l'URL générée contenant un jeton de sécurité unique.
+4. Vous pouvez activer/désactiver temporairement un webhook à l'aide du bouton **Actif/Inactif** ou le supprimer
+   définitivement.
+
+### Format du Payload (JSON)
+
+Pour envoyer un message via le webhook, effectuez une requête HTTP **POST** sur l'URL du webhook avec un corps JSON
+contenant au minimum l'attribut `text` ou `content` :
+
+```json
+{
+    "text": "Le déploiement de la version 2.4.0 est réussi ! 🚀",
+    "username": "Robot Déploiement",
+    "avatar_url": "https://example.com/avatar.png"
+}
+```
+
+* **Attributs acceptés** :
+    * `text` ou `content` (requis) : Le contenu textuel du message (supporte la syntaxe Markdown standard).
+    * `username` ou `customAuthorName` (optionnel) : Personnalise le nom d'affichage de l'émetteur du message.
+    * `avatar_url` ou `customAuthorAvatar` (optionnel) : Personnalise l'avatar de l'émetteur du message.
+
+---
+
+## 8. Commandes de chat intégrées (Slash Commands)
+
+Saisissez ces commandes au début de votre champ de saisie de message :
 
 * `/me [action]` : Affiche un message d'action à la troisième personne (ex. : `/me prend une pause café` affichera
-  `* Jean prend une pause café *` avec un style distinct).
-* `/color [0-360]` : Modifie instantanément la couleur de votre avatar avec la teinte spécifiée. Si aucun chiffre n'est
-  fourni, une couleur aléatoire sera choisie.
+  `* Jean prend une pause café *` en italique).
+* `/color [0-360]` : Modifie instantanément la couleur de votre avatar avec la teinte spécifiée. Sans argument, une
+  teinte aléatoire est choisie.
 * `/giphy [recherche]` : Recherche un GIF animé sur Tenor et affiche des suggestions. Cliquez sur le GIF de votre choix
   pour l'envoyer.
-* `/shrug [texte]` : Ajoute automatiquement le célèbre émoji haussant les épaules `¯\_(ツ)_/¯` à la fin de votre texte.
-* `/help [votre question]` : Interroge en temps réel l'Assistant virtuel à propos de l'utilisation de l'application. La
-  réponse est générée de manière asynchrone et affichée **uniquement pour vous** (de façon privée) directement dans le
-  canal en cours.
+* `/shrug [texte]` : Ajoute l'émoji `¯\_(ツ)_/¯` à la fin de votre texte.
+* `/help [votre question]` : Pose une question à l'Assistant virtuel sur l'utilisation de Roquette. La réponse s'affiche
+  de manière privée, visible uniquement par vous.
 
 ---
 
-## 7. Notifications et recherche
+## 9. Notifications, mise en sourdine et recherche
 
-### Gérer les notifications
+### Mettre en sourdine un canal (Mute)
 
-Si un canal est trop actif, vous pouvez le mettre en sourdine :
+Si un canal est trop actif :
 
-* Cliquez sur le nom du canal actif ou ouvrez son menu d'options.
-* Sélectionnez **Désactiver les notifications** (Mute). Vous ne recevrez plus de alertes visuelles de message non lu
-  pour ce canal, sauf si vous y êtes mentionné.
+* Cliquez sur l'icône de cloche / option de notification dans l'en-tête du canal.
+* Basculez le canal en sourdine. Les indicateurs de messages non lus n'apparaîtront plus pour ce canal, sauf si vous y
+  êtes directement mentionné.
 
 ### Outils de recherche
 
-Retrouvez facilement vos anciens échanges :
-
-* **Recherche locale** : Filtrez les messages du canal en cours à l'aide de la barre de recherche du canal.
-* **Recherche globale** : Utilisez la barre de recherche principale en haut de l'interface pour chercher des mots-clés
-  dans l'ensemble des canaux auxquels vous avez accès.
+* **Recherche par canal** : Filtrez les messages du canal en cours en saisissant un mot-clé dans la barre de recherche
+  située dans l'en-tête du canal.
+* **Recherche globale** : Utilisez la barre de recherche principale en haut de l'interface. Vous pouvez appliquer des
+  filtres avancés (recherche par auteur, par canal, présence de fichiers ou types de fichiers).
 
 ---
 
-## 8. Assistant virtuel & Synthèse (IA)
+## 10. Assistant virtuel & Synthèse (IA)
 
-Roquette intègre un **Assistant virtuel** propulsé par l'intelligence artificielle pour vous accompagner au quotidien.
-Cet assistant est accessible de deux manières :
+L'Assistant virtuel est propulsé par l'intelligence artificielle pour vous aider à utiliser la plateforme et à rester
+informé.
 
 ### A. La commande `/help`
 
-Depuis n'importe quel canal, saisissez `/help <votre question>` (ex: `/help comment créer un sondage ?`). L'Assistant
-analysera la documentation et vous renverra une réponse explicative privée visible uniquement par vous.
+Depuis n'importe quel canal, saisissez `/help <votre question>`. L'Assistant analyse la documentation et vous renvoie
+une réponse privée instantanée.
 
-### B. Le canal privé "Assistant" (DM)
+### B. Le canal privé "Assistant" (🤖)
 
-Dans la barre latérale, vous disposez d'un canal de discussion privé avec l'Assistant (indiqué par `🤖 Assistant`). Vous
-pouvez dialoguer librement avec lui :
+Accédez au canal privé de l'Assistant depuis la barre latérale pour dialoguer librement ou demander des résumés de
+canaux :
 
-1. **Questions sur l'application** : Posez-lui vos questions sur le fonctionnement de Roquette. Il répondra en se basant
-   sur ce guide d'utilisation.
-2. **Résumé de canal** : L'Assistant est capable de synthétiser les échanges récents d'un canal. Demandez-lui par
-   exemple :
-    * *"Résume le canal général"*
-    * *"Qu'est-ce qui s'est dit sur le canal #projet-x ?"*
-    * *"Fais-moi un résumé de la discussion dans le canal technique"*
+* **Aide à l'utilisation** : Posez des questions sur l'application (ex: *"Comment configurer un webhook ?"*).
+* **Résumer un canal** : Demandez un compte-rendu des échanges récents d'un canal (ex: *"Résume le canal général"*, *"
+  Fais-moi un résumé du canal #projet-x"*).
 
-*Note : Lors d'une demande, l'Assistant affiche des étapes de feedback en temps réel ("Analyse de la demande... 🔍",
-puis "Recherche dans la documentation... ⏳" ou "Résumé du canal... ⏳") avant d'afficher sa réponse définitive.*
+*Note : Lors d'une demande complexe, l'Assistant affiche des étapes de feedback en temps réel ("Analyse de la demande...
+🔍", puis "Recherche dans la documentation... ⏳" ou "Résumé du canal... ⏳") avant d'afficher sa réponse définitive. Si
+vous changez de canal pendant que l'assistant génère sa réponse, celle-ci ne viendra pas perturber votre lecture
+actuelle. À la place, un badge de message non lu apparaîtra sur le lien `🤖 Assistant` de la barre latérale pour vous
+signaler que la réponse est disponible.*
 
 ---
 
-## 9. Messages enregistrés
+## 11. Messages enregistrés
 
-Vous pouvez sauvegarder des messages importants pour les retrouver à tout moment :
+Sauvegardez des messages importants pour les consulter plus tard :
 
-* **Enregistrer un message** : Survolez un message dans le fil de discussion et cliquez sur le bouton **Enregistrer** (
-  représenté par une étoile ⭐). Le message affichera le statut "Enregistré".
-* **Consulter vos messages sauvegardés** : Cliquez sur le lien **Messages enregistrés** (situé tout en haut de votre
-  barre latérale). Vous y retrouverez la liste ordonnée de tous les messages que vous avez marqués.
-* **Retirer un message enregistré** : Survolez le message et cliquez à nouveau sur le bouton **Enregistré** (ou l'étoile
-  ⭐) pour le retirer de votre liste.obale** : Utilisez la barre de recherche principale en haut de l'interface pour
-  chercher des mots-clés
-  dans l'ensemble des canaux auxquels vous avez accès.
+* **Enregistrer un message** : Survolez un message et cliquez sur l'étoile (⭐) dans la barre d'actions.
+* **Consulter vos messages** : Cliquez sur **Messages enregistrés** tout en haut de la barre latérale pour afficher la
+  liste de vos messages sauvegardés.
+* **Retirer des favoris** : Cliquez de nouveau sur l'étoile (⭐) d'un message enregistré pour le retirer de votre liste.
