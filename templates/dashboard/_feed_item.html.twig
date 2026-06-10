@@ -118,6 +118,18 @@
             {% endif %}
             {% include 'dashboard/_feed_item_actions.html.twig' %}
         </div>
+        {% if messageObject and messageObject.parentMessage %}
+            {% set parentContent = messageObject.parentMessage.content|default('') %}
+            {% set parentPreview = parentContent|striptags|u.truncate(120, '…') %}
+            {% set parentAuthor = messageObject.parentMessage.author.displayName|default(messageObject.parentMessage.author.username) %}
+            <div class="reply-context-bar">
+                <a href="#feed-item-{{ messageObject.parentMessage.id }}" class="reply-context-link"
+                   onclick="event.preventDefault(); var el=document.getElementById('feed-item-{{ messageObject.parentMessage.id }}'); if(el)el.scrollIntoView({behavior:'smooth',block:'center'});">
+                    ↩ <strong>{{ parentAuthor }}</strong>
+                </a>
+                <span class="reply-context-snippet">{{ parentPreview }}</span>
+            </div>
+        {% endif %}
         <div class="feed-item-body">
             {% if messageObject is defined and messageObject and messageObject.poll %}
                 {% include 'dashboard/_poll.html.twig' with { poll: messageObject.poll } %}

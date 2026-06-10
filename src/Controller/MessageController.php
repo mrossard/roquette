@@ -155,6 +155,14 @@ final class MessageController extends AbstractController
         $message->setAuthor($currentUser);
         $message->setChannel($activeChannel);
 
+        $replyToId = $request->request->get('replyTo');
+        if ($replyToId) {
+            $parentMessage = $messageRepository->find((int)$replyToId);
+            if ($parentMessage && $parentMessage->getChannel()->getId() === $activeChannel->getId()) {
+                $message->setParentMessage($parentMessage);
+            }
+        }
+
         if ($isPoll) {
             $poll = new \App\Entity\Poll();
             $poll->setQuestion(trim($pollQuestion));

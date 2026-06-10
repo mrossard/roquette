@@ -5,8 +5,8 @@
     <div class="feed-item-actions-list">
         {% if messageObject is not defined or not messageObject or not messageObject.poll %}
             <button class="btn-reply-subtle btn-quote-reply"
+                    data-reply-message-id="{{ message_id|default('') }}"
                     data-reply-username="{{ username|escape('html_attr') }}"
-                    data-reply-content="{{ message|escape('html_attr') }}"
                     title="{{ 'Répondre'|trans }}">
                 {{ ux_icon('heroicons:arrow-uturn-left', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
                 <span>{{ 'Répondre'|trans }}</span>

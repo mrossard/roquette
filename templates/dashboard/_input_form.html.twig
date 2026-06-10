@@ -177,8 +177,19 @@
     </div>
 
     <div class="chat-input-container">
+        <!-- Reply context banner -->
+        <div id="reply-context-banner" class="reply-context-banner" style="display: none;">
+            <span class="reply-context-icon">↩</span>
+            <span id="reply-context-label" class="reply-context-label"></span>
+            <input type="hidden" id="reply-to-input" name="replyTo" value="">
+            <button type="button" id="btn-cancel-reply" class="btn-cancel-reply"
+                    title="{{ 'Annuler la réponse'|trans }}">✕
+            </button>
+        </div>
+
         <!-- File upload preview -->
-        <div id="file-preview-container" class="file-preview-container" style="display: none; flex-direction: column; align-items: stretch; gap: 0.5rem;">
+        <div id="file-preview-container" class="file-preview-container"
+             style="display: none; flex-direction: column; align-items: stretch; gap: 0.5rem;">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                 <div class="file-preview-info">
                     <span class="file-preview-icon">📎</span>

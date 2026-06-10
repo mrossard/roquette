@@ -8,6 +8,7 @@ use App\Repository\MessageRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\JoinColumn;
 
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 #[ORM\Table(name: '`message`')]
@@ -48,6 +49,10 @@ class Message
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $author = null;
+
+    #[ORM\ManyToOne(targetEntity: Message::class)]
+    #[JoinColumn(name: 'parent_message_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Message $parentMessage = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $customAuthorName = null;
@@ -113,6 +118,18 @@ class Message
     public function setAuthor(?User $author): static
     {
         $this->author = $author;
+        return $this;
+    }
+
+    public function getParentMessage(): ?self
+    {
+        return $this->parentMessage;
+    }
+
+    public function setParentMessage(?self $parentMessage): static
+    {
+        $this->parentMessage = $parentMessage;
+
         return $this;
     }
 

@@ -229,31 +229,44 @@ document.addEventListener('click', (e) => {
     const btn = e.target.closest('.btn-quote-reply');
     if (!btn) return;
 
+    const messageId = btn.dataset.replyMessageId;
     const author = btn.dataset.replyUsername;
-    const content = btn.dataset.replyContent;
-    if (!author || !content) return;
+    if (!messageId || !author) return;
 
     const textarea = document.getElementById('message');
     if (!textarea) return;
 
-    const lines = content.split('\n');
-    const quotedLines = lines.map(line => `> ${line}`).join('\n');
-    const quoteHeader = `> **@${author}** a écrit :\n`;
-    const quote = `${quoteHeader}${quotedLines}\n\n`;
+    const replyInput = document.getElementById('reply-to-input');
+    const banner = document.getElementById('reply-context-banner');
+    const label = document.getElementById('reply-context-label');
+    if (!replyInput || !banner || !label) return;
 
-    const currentValue = textarea.value;
-    if (currentValue.trim()) {
-        textarea.value = quote + currentValue;
-    } else {
-        textarea.value = quote;
-    }
+    replyInput.value = messageId;
+    label.textContent = `↩ ${author}`;
+    banner.style.display = 'flex';
 
     if (!isMobile()) {
         textarea.focus();
     }
 
-    textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
     textarea.dispatchEvent(new Event('input', {bubbles: true}));
+});
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('#btn-cancel-reply');
+    if (!btn) return;
+
+    const replyInput = document.getElementById('reply-to-input');
+    const banner = document.getElementById('reply-context-banner');
+    if (!replyInput || !banner) return;
+
+    replyInput.value = '';
+    banner.style.display = 'none';
+
+    const textarea = document.getElementById('message');
+    if (textarea) {
+        textarea.focus();
+    }
 });
 
 window.updateEditButtonsVisibility = updateEditButtonsVisibility;
