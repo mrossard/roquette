@@ -760,6 +760,11 @@ final class ChannelController extends AbstractController
 
         $channel->setDescription($description);
 
+        if ($channel->isSubChannel()) {
+            $isTodoList = $request->request->getBoolean('isTodoList', false);
+            $channel->setIsTodoList($isTodoList);
+        }
+
         $retention = $request->request->get('messageRetentionMonths');
         if ($retention !== null && $retention !== '') {
             $retentionVal = (int) $retention;

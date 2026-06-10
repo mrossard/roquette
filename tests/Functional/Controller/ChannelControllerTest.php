@@ -229,4 +229,49 @@ class ChannelControllerTest extends WebTestCase
             $this->entityManager->flush();
         }
     }
+
+    #[Test]
+    public function testTransformSubChannelToTodoList(): void
+    {
+        $subChannel = new Channel();
+        $subChannel->setName('Sub Channel');
+        $subChannel->setSlug('sub-channel-test');
+        $subChannel->setCreator($this->testUser);
+        $subChannel->addMember($this->testUser);
+
+        $parentMessage = new \App\Entity\Message();
+        $parentMessage->setContent('Parent Message content');
+        $parentMessage->setAuthor($this->testUser);
+        $parentMessage->setChannel($this->channel);
+        $this->entityManager->persist($parentMessage);
+
+        $subChannel->setParentMessage($parentMessage);
+        $this->entityManager->persist($subChannel);
+        $this->entityManager->flush();
+
+        static::assertFalse($subChannel->isTodoList());
+
+        $this->client->request('POST', '/channels/sub-channel-test/edit', [
+            'name' => 'Sub Channel Edited',
+            'description' => 'Sub channel description',
+            'messageRetentionMonths' => '6',
+            'isTodoList' => '1',
+        ]);
+
+        $this->assertResponseRedirects('/channels/sub-channel-edited');
+
+        $this->entityManager->clear();
+        $updatedSubChannel = $this->entityManager->getRepository(Channel::class)->find($subChannel->getId());
+        static::assertNotNull($updatedSubChannel);
+        static::assertTrue($updatedSubChannel->isTodoList());
+
+        $this->entityManager->remove($updatedSubChannel);
+        $dbParentMessage = $this->entityManager
+            ->getRepository(\App\Entity\Message::class)
+            ->find($parentMessage->getId());
+        if ($dbParentMessage) {
+            $this->entityManager->remove($dbParentMessage);
+        }
+        $this->entityManager->flush();
+    }
 }

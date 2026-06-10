@@ -23,6 +23,16 @@
                     <option value="0" {% if activeChannel.messageRetentionMonths is null %}selected{% endif %}>Sans limite</option>
                 </select>
             </div>
+            {% if activeChannel.isSubChannel() %}
+                <div class="input-group-checkbox"
+                     style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="isTodoList" id="edit-modal-isTodoList" class="input-checkbox"
+                           style="width: auto; cursor: pointer;" {% if activeChannel.isTodoList() %}checked{% endif %}>
+                    <label for="edit-modal-isTodoList"
+                           style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">Transformer
+                        en todo list</label>
+                </div>
+            {% endif %}
             <div class="input-group" style="margin-top: 0.75rem;">
                 <label>Administrateurs du canal</label>
                 <div id="admin-chips-container"
