@@ -77,7 +77,8 @@
 
                         <div class="input-group">
                             <label for="username-static">{{ "Nom d'utilisateur (non modifiable)"|trans }}</label>
-                            <input type="text" id="username-static" value="{{ user.username }}" disabled style="opacity: 0.6; cursor: not-allowed; background: rgba(0, 0, 0, 0.3);">
+                            <input type="text" id="username-static" value="{{ user.username }}" disabled
+                                   style="opacity: 0.6; cursor: not-allowed; background: var(--bg-input-sidebar); border: 1px solid var(--border-input);">
                         </div>
 
                         <div class="input-group">
@@ -88,7 +89,8 @@
 
                         <div class="input-group">
                             <label>{{ 'Couleur du profil'|trans }}</label>
-                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; background: rgba(0, 0, 0, 0.2); padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-glass);">
+                            <div
+                                style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; background: var(--bg-input); padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-input);">
                                 <span class="feed-item-avatar" style="--user-hue: {{ user.hue }}; margin-bottom: 0; width: 36px; height: 36px; font-size: 1.1rem;">
                                     {{ user.username|slice(0, 1)|upper }}
                                 </span>
@@ -186,7 +188,8 @@
                             <!-- Populated dynamically via JS -->
                         </div>
 
-                        <div class="input-group" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; margin-bottom: 1.25rem; background: rgba(0, 0, 0, 0.2); padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-glass);">
+                        <div class="input-group"
+                             style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; margin-bottom: 1.25rem; background: var(--bg-input); padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-input);">
                             <label for="mentionNotificationsEnabled"
                                    style="margin-bottom: 0; cursor: pointer; font-weight: 500;">{{ 'Notifications de bureau pour les mentions'|trans }}</label>
                             <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; margin-bottom: 0;">
@@ -195,7 +198,7 @@
                                        {% if user.mentionNotificationsEnabled %}checked{% endif %}
                                        style="opacity: 0; width: 0; height: 0;">
                                 <span class="slider round"
-                                      style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.1); transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
+                                      style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-input); transition: .3s; border-radius: 24px; border: 1px solid var(--border-input);"></span>
                             </label>
                         </div>
 

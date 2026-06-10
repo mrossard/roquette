@@ -1,11 +1,11 @@
 <div id="invite-modal-list-container">
     <div class="input-group" style="margin-bottom: 0.5rem; position: relative;">
-        <input type="text" 
-               name="q" 
-               id="invite-member-search-input" 
-               placeholder="Rechercher un membre à inviter..." 
-               class="input-sidebar" 
-               style="background: rgba(0, 0, 0, 0.3) !important; padding-right: 2.5rem;"
+        <input type="text"
+               name="q"
+               id="invite-member-search-input"
+               placeholder="Rechercher un membre à inviter..."
+               class="input-sidebar"
+               style="padding-right: 2.5rem;"
                hx-get="{{ path('app_channel_invite_search', {slug: activeChannel.slug}) }}"
                hx-trigger="keyup changed delay:300ms"
                hx-target="#modal-invite-members-list"

@@ -1,9 +1,9 @@
 <div class="subchannel-parent-header">
     <div class="subchannel-parent-header-label">
-        <span>🔗</span>
-        <span>{{ 'Sous-canal créé depuis'|trans }}</span>
-        <a href="{{ path('app_channel', {slug: parentMessage.channel.slug}) }}" class="subchannel-parent-channel-link">
-            #{{ parentMessage.channel.name }}
+        <a href="{{ path('app_channel', {slug: parentMessage.channel.slug}) }}" class="subchannel-parent-back-btn">
+            <span class="back-icon">←</span>
+            <span class="back-text">{{ 'Retour au canal parent'|trans }}</span>
+            <span class="parent-channel-name">#{{ parentMessage.channel.name }}</span>
         </a>
     </div>
     <div class="subchannel-parent-message">

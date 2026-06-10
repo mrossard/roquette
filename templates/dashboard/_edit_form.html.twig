@@ -22,14 +22,15 @@
                            value="{{ message.poll.question }}" required autofocus class="input-sidebar"/>
                 </div>
 
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(0, 0, 0, 0.2); padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-glass);">
+                <div
+                    style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--bg-input); padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-input);">
                     <label for="edit_allow_multiple_{{ message.id }}" style="font-size: 0.85rem; color: var(--text-color); cursor: pointer; user-select: none; margin-bottom: 0; font-weight: 500;">Autoriser plusieurs réponses</label>
                     <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; margin-bottom: 0;">
                         <input type="checkbox" id="edit_allow_multiple_{{ message.id }}" name="allow_multiple" value="1"
                                style="opacity: 0; width: 0; height: 0;"
                                {% if message.poll.allowMultiple %}checked{% endif %}>
                         <span class="slider round"
-                              style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.1); transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
+                              style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-input); transition: .3s; border-radius: 24px; border: 1px solid var(--border-input);"></span>
                     </label>
                 </div>
 
@@ -68,7 +69,7 @@
                 <div class="message-input-wrapper">
                     <textarea name="content" class="edit-message-textarea" required autofocus
                               aria-label="Modifier le message"
-                              style="width: 100%; min-height: 80px; padding: 0.6rem; padding-right: 2.5rem; border-radius: 0.5rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); color: var(--text-primary); font-family: inherit; font-size: 0.925rem; resize: vertical; outline: none; transition: var(--transition-smooth);"
+                              style="width: 100%; min-height: 80px; padding: 0.6rem; padding-right: 2.5rem; border-radius: 0.5rem; background: var(--bg-textarea-chat); border: 1px solid var(--border-input); color: var(--text-primary); font-family: inherit; font-size: 0.925rem; resize: vertical; outline: none; transition: var(--transition-smooth);"
                               onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.altKey) { event.preventDefault(); this.form.requestSubmit(); } else if(event.key === 'Escape') { this.form.querySelector('.btn-cancel').click(); }">{{ message.content }}</textarea>
                     <button type="button" class="btn-emoji-toggle" data-emoji-target="textarea" title="Ajouter un émoji" aria-label="Ajouter un émoji">
                         {{ ux_icon('heroicons:face-smile', {'aria-hidden': 'true'}) }}

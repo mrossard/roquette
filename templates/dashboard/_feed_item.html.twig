@@ -149,10 +149,44 @@
             {% if messageObject is defined and messageObject and messageObject.poll %}
                 {% include 'dashboard/_poll.html.twig' with { poll: messageObject.poll } %}
             {% elseif message is defined and message is not empty and message != '' %}
-                {% if is_html|default(false) %}
-                    {{ message|raw }}
+                {% set subChannel = messageObject and (messageChannel is null or not messageChannel.isTodoList()) ? get_subchannel(messageObject) : null %}
+                {% set hasSubChannel = subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}
+                {% set msgReplyCount = replyCounts[message_id]|default(0) %}
+                {% set hasReplies = msgReplyCount > 0 %}
+                {% if hasSubChannel or hasReplies %}
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; width: 100%;">
+                        <div style="flex-grow: 1; min-width: 0;">
+                            {% if is_html|default(false) %}
+                                {{ message|raw }}
+                            {% else %}
+                                <p>{{ message|format_message }}</p>
+                            {% endif %}
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-shrink: 0; align-items: center; margin-top: 0;">
+                            {% if hasSubChannel %}
+                                <a href="{{ path('app_channel', {slug: subChannel.slug}) }}" class="btn-todo-discussion"
+                                   hx-boost="false">
+                                    {{ 'discussion'|trans }}
+                                </a>
+                            {% endif %}
+                            {% if hasReplies %}
+                                <a href="#"
+                                   hx-get="{{ path('app_message_replies', {id: message_id}) }}"
+                                   hx-target="#live-feed"
+                                   hx-swap="innerHTML transition:false"
+                                   class="thread-link">
+                                    💬 {{ 'réponses (%count%)'|trans({'%count%': msgReplyCount}) }}
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 {% else %}
-                    <p>{{ message|format_message }}</p>
+                    {% if is_html|default(false) %}
+                        {{ message|raw }}
+                    {% else %}
+                        <p>{{ message|format_message }}</p>
+                    {% endif %}
                 {% endif %}
                 {% set links = message|extract_external_links %}
                 {% for link in links %}
@@ -230,21 +264,7 @@
                     </div>
                 {% endif %}
             {% endif %}
-            {% if messageObject and (messageChannel is null or not messageChannel.isTodoList()) %}
-                {% set subChannel = messageObject ? get_subchannel(messageObject) : null %}
-                {% if subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}
-                    <div class="subchannel-indicator"
-                         style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; background: var(--accent-cyan-glow); border: 1px solid var(--accent-cyan); padding: 0.5rem 0.75rem; border-radius: 0.375rem; width: fit-content; font-size: 0.85rem;">
-                        <span style="font-size: 1.1rem; line-height: 1; color: var(--accent-cyan);">⊞</span>
-                        <span>{{ 'Sous-canal existant :'|trans }} <strong>{{ subChannel.name }}</strong></span>
-                        <a href="{{ path('app_channel', {slug: subChannel.slug}) }}" class="btn-subchannel-join"
-                           hx-boost="false"
-                           style="margin-left: 0.5rem; background: var(--accent-cyan); color: var(--text-primary); text-decoration: none; padding: 0.25rem 0.6rem; border-radius: 0.25rem; font-weight: 600; font-size: 0.8rem; transition: background 0.2s;">
-                            {{ 'Rejoindre'|trans }}
-                        </a>
-                    </div>
-                {% endif %}
-            {% endif %}
+
             {% if messageChannel is null or not messageChannel.isTodoList() %}
                 {% include 'dashboard/_feed_item_reactions.html.twig' %}
             {% endif %}
@@ -260,16 +280,5 @@
             {% include 'dashboard/_feed_item_reactions.html.twig' %}
         {% endif %}
     {% endif %}
-    {% set msgReplyCount = replyCounts[message_id]|default(0) %}
-    {% if msgReplyCount > 0 %}
-        <div class="thread-link-container">
-            <a href="#"
-               hx-get="{{ path('app_message_replies', {id: message_id}) }}"
-               hx-target="#live-feed"
-               hx-swap="innerHTML transition:false"
-               class="thread-link">
-                💬 {{ 'Voir les réponses (%count%)'|trans({'%count%': msgReplyCount}) }}
-            </a>
-        </div>
-    {% endif %}
+
 </div>

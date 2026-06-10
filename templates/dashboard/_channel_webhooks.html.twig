@@ -9,7 +9,7 @@
         {% else %}
             {% for webhook in webhooks %}
                 <div class="webhook-item" id="webhook-{{ webhook.id }}"
-                     style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-glass); border-radius: 0.5rem; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                     style="background: var(--bg-input); border: 1px solid var(--border-input); border-radius: 0.5rem; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
 
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
                         <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">
@@ -43,12 +43,12 @@
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         {% set webhookUrl = url('app_webhook_incoming', {token: webhook.token}) %}
                         <input type="text" readonly value="{{ webhookUrl }}"
-                               style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); border-radius: 0.25rem; color: var(--text-muted); padding: 0.25rem 0.5rem; font-size: 0.75rem; flex: 1; font-family: monospace; outline: none;"
+                               style="background: var(--bg-input-focus); border: 1px solid var(--border-input); border-radius: 0.25rem; color: var(--text-muted); padding: 0.25rem 0.5rem; font-size: 0.75rem; flex: 1; font-family: monospace; outline: none;"
                                onclick="this.select();">
 
                         <button type="button" class="btn-copy-webhook"
                                 onclick="navigator.clipboard.writeText('{{ webhookUrl }}'); const b = this; b.textContent = 'Copié !'; setTimeout(() => b.textContent = '📋', 1500);"
-                                style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem;"
+                                style="background: var(--bg-input-sidebar); border: 1px solid var(--border-input); color: var(--text-primary); cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem;"
                                 title="{{ 'Copier l\'URL'|trans }}">
                             📋
                         </button>
@@ -67,7 +67,7 @@
             <label for="new-webhook-name"
                    style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">{{ 'Nouveau webhook (Nom)'|trans }}</label>
             <input type="text" id="new-webhook-name" name="name" required placeholder="Ex: GitHub, GitLab, Alerting..."
-                   style="background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-glass); border-radius: 0.25rem; color: var(--text-primary); padding: 0.35rem 0.5rem; font-size: 0.8rem; outline: none; width: 100%;">
+                   style="background: var(--bg-input-sidebar); border: 1px solid var(--border-input); border-radius: 0.25rem; color: var(--text-primary); padding: 0.35rem 0.5rem; font-size: 0.8rem; outline: none; width: 100%;">
         </div>
         <button type="submit"
                 style="background: var(--accent-cyan, #00e5ff); border: none; color: #1e1b4b; cursor: pointer; padding: 0.35rem 0.75rem; border-radius: 0.25rem; font-size: 0.8rem; font-weight: bold; height: fit-content; transition: opacity 0.2s;"

@@ -76,13 +76,14 @@
                        {% if pollComposerOpen|default(false) %}required{% endif %} />
             </div>
 
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(0, 0, 0, 0.2); padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-glass);">
+            <div
+                style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--bg-input); padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-input);">
                 <label for="allow_multiple" style="font-size: 0.85rem; color: var(--text-color); cursor: pointer; user-select: none; margin-bottom: 0; font-weight: 500;">Autoriser plusieurs réponses</label>
                 <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; margin-bottom: 0;">
                     <input type="checkbox" id="allow_multiple" name="allow_multiple" value="1" style="opacity: 0; width: 0; height: 0;"
                            {% if allowMultiple|default(false) %}checked{% endif %}>
                     <span class="slider round"
-                          style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.1); transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
+                          style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-input); transition: .3s; border-radius: 24px; border: 1px solid var(--border-input);"></span>
                 </label>
             </div>
 

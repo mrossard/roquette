@@ -6,11 +6,13 @@
         <form action="{{ path('app_channel_create') }}" method="POST" class="add-channel-form" hx-boost="false">
             <div class="input-group">
                 <label for="modal-name">Nom du canal</label>
-                <input type="text" id="modal-name" name="name" required placeholder="Nom du canal..." maxlength="20" class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;">
+                <input type="text" id="modal-name" name="name" required placeholder="Nom du canal..." maxlength="20"
+                       class="input-sidebar">
             </div>
             <div class="input-group" style="margin-top: 0.5rem;">
                 <label for="modal-description">Description</label>
-                <input type="text" id="modal-description" name="description" placeholder="Description (optionnelle)..." maxlength="50" class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;">
+                <input type="text" id="modal-description" name="description" placeholder="Description (optionnelle)..."
+                       maxlength="50" class="input-sidebar">
             </div>
             <div class="input-group" style="margin-top: 0.5rem;">
                 <label for="modal-retention">Rétention des messages</label>

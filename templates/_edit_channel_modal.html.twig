@@ -6,11 +6,14 @@
         <form action="{{ path('app_channel_edit', {slug: activeChannel.slug}) }}" method="POST" class="add-channel-form" hx-boost="false">
             <div class="input-group">
                 <label for="edit-modal-name">Nom du canal</label>
-                <input type="text" id="edit-modal-name" name="name" value="{{ activeChannel.name }}" required placeholder="Nom du canal..." maxlength="20" class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;">
+                <input type="text" id="edit-modal-name" name="name" value="{{ activeChannel.name }}" required
+                       placeholder="Nom du canal..." maxlength="20" class="input-sidebar">
             </div>
             <div class="input-group" style="margin-top: 0.5rem;">
                 <label for="edit-modal-description">Description</label>
-                <input type="text" id="edit-modal-description" name="description" value="{{ activeChannel.description }}" placeholder="Description (optionnelle)..." maxlength="50" class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;">
+                <input type="text" id="edit-modal-description" name="description"
+                       value="{{ activeChannel.description }}" placeholder="Description (optionnelle)..." maxlength="50"
+                       class="input-sidebar">
             </div>
             <div class="input-group" style="margin-top: 0.5rem;">
                 <label for="edit-modal-retention">Rétention des messages</label>
@@ -64,7 +67,7 @@
                 <div class="autocomplete-wrapper" style="position: relative; width: 100%;">
                     <input type="text" id="admin-autocomplete-input" name="search"
                            placeholder="Saisir le nom d'un membre..."
-                           class="input-sidebar" style="background: rgba(0, 0, 0, 0.3) !important;" autocomplete="off"
+                           class="input-sidebar" autocomplete="off"
                            hx-get="{{ path('app_channel_admin_autocomplete', {slug: activeChannel.slug}) }}"
                            hx-trigger="keyup changed delay:300ms"
                            hx-target="#admin-autocomplete-suggestions"
