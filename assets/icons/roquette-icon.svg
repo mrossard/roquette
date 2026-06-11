@@ -1,31 +1,74 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#00e5ff"/>
-      <stop offset="100%" stop-color="#0098a8"/>
+      <linearGradient id="bodyGrad" x1="0.2" y1="0" x2="0.8" y2="1">
+          <stop offset="0%" stop-color="#eaf4fa"/>
+          <stop offset="100%" stop-color="#c0d4e4"/>
     </linearGradient>
-    <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ff6b35"/>
-      <stop offset="50%" stop-color="#ffca28"/>
-      <stop offset="100%" stop-color="#ff6b35" stop-opacity="0"/>
+      <linearGradient id="flameGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e65100"/>
+          <stop offset="30%" stop-color="#ff6b35"/>
+          <stop offset="70%" stop-color="#ffca28"/>
+          <stop offset="100%" stop-color="#ffca28" stop-opacity="0"/>
     </linearGradient>
+      <clipPath id="bodyClip">
+          <path
+              d="M 256 110 C 200 140 180 210 180 264 L 180 370 C 180 400 196 416 210 420 C 228 424 284 424 302 420 C 316 416 332 400 332 370 L 332 264 C 332 210 312 140 256 110 Z"/>
+      </clipPath>
+      <path id="star4" d="M 0,-14 Q 0,0 14,0 Q 0,0 0,14 Q 0,0 -14,0 Q 0,0 0,-14 Z"/>
   </defs>
-  <!-- Fuselage -->
-  <path d="M256 32 L192 320 L256 288 L320 320 Z" fill="url(#body)"/>
-  <!-- Nose cone -->
-  <circle cx="256" cy="80" r="32" fill="url(#body)"/>
-  <!-- Left fin -->
-  <path d="M192 320 L160 400 L192 380 L208 320 Z" fill="#007a8a"/>
-  <!-- Right fin -->
-  <path d="M320 320 L352 400 L320 380 L304 320 Z" fill="#007a8a"/>
-  <!-- Center fin -->
-  <path d="M240 320 L256 420 L272 320 Z" fill="#0098a8"/>
-  <!-- Window -->
-  <circle cx="256" cy="160" r="28" fill="#0f172a"/>
-  <circle cx="256" cy="160" r="22" fill="#1e293b"/>
-  <ellipse cx="252" cy="155" rx="10" ry="8" fill="#38bdf8" opacity="0.6"/>
-  <!-- Flame -->
-  <path d="M232 400 Q256 480 280 400 Q256 430 232 400 Z" fill="url(#flame)" opacity="0.9"/>
-  <!-- Flame inner -->
-  <path d="M244 400 Q256 450 268 400 Q256 420 244 400 Z" fill="#ffca28" opacity="0.8"/>
+
+    <g transform="translate(256 256) scale(1.28) rotate(45) translate(-256 -320)">
+        <!-- Stars -->
+        <use href="#star4" transform="translate(170, 200) scale(0.55)" fill="#ffca28" opacity="0.85"/>
+        <use href="#star4" transform="translate(350, 200) scale(0.4)" fill="#ffca28" opacity="0.7"/>
+        <use href="#star4" transform="translate(380, 320) scale(0.6)" fill="#ffca28" opacity="0.9"/>
+        <use href="#star4" transform="translate(130, 320) scale(0.45)" fill="#ffca28" opacity="0.75"/>
+        <use href="#star4" transform="translate(360, 440) scale(0.35)" fill="#ffca28" opacity="0.65"/>
+        <use href="#star4" transform="translate(140, 440) scale(0.5)" fill="#ffca28" opacity="0.8"/>
+
+        <!-- Flame -->
+        <path d="M 202 420 C 188 460 210 505 256 530 C 302 505 324 460 310 420 Z" fill="url(#flameGrad)"
+              opacity="0.85"/>
+        <path d="M 218 420 C 210 450 228 485 256 505 C 284 485 302 450 294 420 Z" fill="#ffca28" opacity="0.9"/>
+        <path d="M 236 420 C 232 440 242 465 256 478 C 270 465 280 440 276 420 Z" fill="#fff8e1" opacity="0.85"/>
+
+        <!-- Left fin -->
+        <path d="M 180 340 Q 144 410 158 428 L 210 420 Z" fill="#e74c3c"/>
+        <path d="M 180 340 Q 165 390 172 428 L 210 420 Z" fill="#ffffff" opacity="0.12"/>
+
+        <!-- Right fin -->
+        <path d="M 332 340 Q 368 410 354 428 L 302 420 Z" fill="#e74c3c"/>
+        <path d="M 332 340 Q 347 390 340 428 L 302 420 Z" fill="#ffffff" opacity="0.12"/>
+
+        <!-- Rocket body -->
+        <path
+            d="M 256 110 C 200 140 180 210 180 264 L 180 370 C 180 400 196 416 210 420 C 228 424 284 424 302 420 C 316 416 332 400 332 370 L 332 264 C 332 210 312 140 256 110 Z"
+            fill="url(#bodyGrad)" stroke="#90a8b8" stroke-width="1.5"/>
+
+        <!-- Nose cone (red, short) -->
+        <rect x="0" y="110" width="512" height="62" fill="#e74c3c" clip-path="url(#bodyClip)"/>
+
+        <!-- Nose cone highlight -->
+        <path d="M 256 110 C 220 135 206 170 200 195 L 256 200 L 256 110 Z"
+              fill="#ffffff" opacity="0.25" clip-path="url(#bodyClip)"/>
+
+        <!-- Body left highlight -->
+        <path d="M 182 264 L 182 370 C 182 400 198 416 210 420 L 218 420 L 218 264 Z"
+              fill="#ffffff" opacity="0.35"/>
+
+        <!-- Center fin (edge-on, in front of body) -->
+        <path d="M 244 370 L 256 460 L 268 370 Z" fill="#a93226"/>
+        <path d="M 248 370 L 256 444 L 264 370 Z" fill="#c0392b"/>
+        <path d="M 250 370 L 256 434 L 262 370 Z" fill="#e74c3c" opacity="0.4"/>
+
+        <!-- Window outer -->
+        <circle cx="256" cy="250" r="34" fill="#2c3e50"/>
+        <circle cx="256" cy="250" r="29" fill="#34495e"/>
+
+        <!-- Window glass -->
+        <circle cx="256" cy="250" r="23" fill="#1a5276"/>
+
+        <!-- Window reflection -->
+        <ellipse cx="249" cy="243" rx="11" ry="7" fill="#85c1e9" opacity="0.6"/>
+    </g>
 </svg>
