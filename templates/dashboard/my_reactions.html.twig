@@ -42,7 +42,7 @@
                 'activeChannel': null
             } %}
 
-            <section class="card glass-panel chat-panel">
+            <section class="card glass-panel chat-panel" id="reactions-panel">
                 <div class="card-header chat-header">
                     <div>
                         <h2>💬 {{ 'Mes réactions'|trans }}</h2>
@@ -56,11 +56,17 @@
                     <div class="reaction-filter-bar"
                          style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
                         <a href="{{ path('app_my_reactions') }}"
+                           hx-target="#reactions-panel"
+                           hx-select="#reactions-panel"
+                           hx-swap="outerHTML"
                            style="text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.85rem; color: var(--text-muted); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); {% if activeEmoji is null %}background: var(--accent-primary); color: #fff; border-color: var(--accent-primary);{% endif %}">
                             {{ 'Tout'|trans }}
                         </a>
                         {% for emoji in userEmojis %}
                             <a href="{{ path(activeEmoji == emoji ? 'app_my_reactions' : 'app_my_reactions_filtered', activeEmoji == emoji ? {} : {emoji: emoji}) }}"
+                               hx-target="#reactions-panel"
+                               hx-select="#reactions-panel"
+                               hx-swap="outerHTML"
                                style="text-decoration: none; padding: 0.3rem 0.6rem; border-radius: 0.5rem; font-size: 1.2rem; line-height: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); {% if activeEmoji == emoji %}background: var(--accent-primary); border-color: var(--accent-primary);{% endif %}">
                                 {{ emoji }}
                             </a>

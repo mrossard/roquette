@@ -224,6 +224,11 @@
 
 
             <div class="input-actions-wrapper">
+                <button type="button" class="btn-format-toggle"
+                        onclick="this.closest('.chat-message-form').classList.toggle('show-formatting'); this.classList.toggle('active');"
+                        title="{{ 'Options de formatage'|trans }}" aria-label="{{ 'Options de formatage'|trans }}">
+                    {{ ux_icon('heroicons:document-text', {'aria-hidden': 'true'}) }}
+                </button>
                 <button type="button" class="btn-file-toggle" data-file-input="file-upload"
                         title="{{ 'Joindre un fichier'|trans }}" aria-label="{{ 'Joindre un fichier'|trans }}">
                     {{ ux_icon('heroicons:paper-clip', {class: 'btn-icon', 'aria-hidden': 'true'}) }}

@@ -386,7 +386,7 @@ export function initChannelReordering() {
     lists.forEach(list => {
         const sortable = new Sortable(list, {
             animation: 150,
-            draggable: '.channel-link:not(.subchannel-link)',
+            draggable: '.channel-group, #section-favorites > .channel-link:not(.subchannel-link)',
             disabled: !sidebarPanel.classList.contains('reorder-active'),
             ghostClass: 'dragging-ghost',
             onEnd: () => {
@@ -404,22 +404,42 @@ export function initChannelReordering() {
     // Initial check for cleanup (reset link drag states)
     const links = document.querySelectorAll('.channel-link');
     links.forEach(link => {
-        link.draggable = false;
         link.removeEventListener('click', preventNavigation, true);
+    });
+    lists.forEach(list => {
+        Array.from(list.children).forEach(child => {
+            child.draggable = false;
+        });
     });
 
     newToggleBtn.addEventListener('click', () => {
         const isActive = sidebarPanel.classList.toggle('reorder-active');
         newToggleBtn.classList.toggle('reorder-active-btn', isActive);
-        newToggleBtn.textContent = isActive ? '✔️' : '⇅';
+        const iconSpan = newToggleBtn.querySelector('.option-icon');
+        if (iconSpan) {
+            iconSpan.textContent = isActive ? '✔️' : '⇅';
+        } else {
+            newToggleBtn.textContent = isActive ? '✔️' : '⇅';
+        }
         newToggleBtn.title = isActive ? 'Terminer l\'organisation' : 'Ordonner les canaux';
 
-        const currentLinks = document.querySelectorAll('.channel-link');
         if (isActive) {
+            lists.forEach(list => {
+                Array.from(list.children).forEach(child => {
+                    child.draggable = true;
+                });
+            });
+            const currentLinks = document.querySelectorAll('.channel-link');
             currentLinks.forEach(link => {
                 link.addEventListener('click', preventNavigation, true);
             });
         } else {
+            lists.forEach(list => {
+                Array.from(list.children).forEach(child => {
+                    child.draggable = false;
+                });
+            });
+            const currentLinks = document.querySelectorAll('.channel-link');
             currentLinks.forEach(link => {
                 link.removeEventListener('click', preventNavigation, true);
             });

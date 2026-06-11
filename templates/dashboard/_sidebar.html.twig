@@ -13,24 +13,59 @@
     <div style="display:none;" hx-trigger="sse:invitation_received"></div>
     <div style="display:none;" hx-trigger="sse:channel_deleted"></div>
     <div class="card-header" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
-        <div class="sidebar-actions" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-            <button id="btn-filter-unread" class="btn-directory-trigger"
-                    title="{{ 'Filtrer par nouveaux messages'|trans }}"
-                    aria-label="{{ 'Filtrer par nouveaux messages'|trans }}">✉️
+        <div class="sidebar-actions"
+             style="display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end;">
+            <button id="btn-reorder-done" class="reorder-done-btn"
+                    style="display: none; background: var(--accent-cyan); color: #0f172a; border: 1px solid var(--accent-cyan); border-radius: 0.5rem; padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: bold; cursor: pointer; align-items: center; justify-content: center; gap: 0.25rem; height: 32px; width: auto;"
+                    onclick="document.getElementById('btn-edit-order-trigger').dispatchEvent(new MouseEvent('click', { bubbles: true }));">
+                ✔️ {{ 'Terminer'|trans }}
             </button>
-            {% if showReorder %}
-                <button id="btn-edit-order-trigger" class="btn-directory-trigger"
-                        title="{{ 'Ordonner les canaux'|trans }}" aria-label="{{ 'Ordonner les canaux'|trans }}">⇅
-                </button>
-            {% endif %}
-            <a href="{{ path('app_channels_directory') }}" class="btn-directory-trigger" style="text-decoration: none;"
-               title="{{ 'Parcourir les canaux'|trans }}" aria-label="{{ 'Parcourir les canaux'|trans }}">🔍</a>
-            <button hx-get="{{ path('app_channel_create_modal') }}"
-                    hx-target="#modal-container"
-                    hx-trigger="click"
-                    class="btn-add-channel-trigger"
-                    title="{{ 'Créer un canal'|trans }}" aria-label="{{ 'Créer un canal'|trans }}">＋
-            </button>
+            <details class="user-status-dropdown-container">
+                <summary class="user-status-trigger"
+                         style="list-style: none; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 0.5rem; height: 32px; cursor: pointer;">
+                    ⚙️ <span>{{ 'Options'|trans }}</span>
+                    <span class="dropdown-chevron">▼</span>
+                </summary>
+                <div class="user-status-dropdown-menu" role="menu" style="right: 0; min-width: 210px;">
+                    {# Create channel #}
+                    <button type="button" class="user-status-option"
+                            hx-get="{{ path('app_channel_create_modal') }}"
+                            hx-target="#modal-container"
+                            hx-trigger="click"
+                            style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;"
+                            role="menuitem">
+                        <span class="option-icon">＋</span>
+                        <span class="option-label">{{ 'Créer un canal'|trans }}</span>
+                    </button>
+
+                    <div class="user-menu-divider"></div>
+
+                    {# Filter unread #}
+                    <button id="btn-filter-unread" class="user-status-option"
+                            style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;"
+                            role="menuitem">
+                        <span class="option-icon">✉️</span>
+                        <span class="option-label">{{ 'Filtrer par non lus'|trans }}</span>
+                    </button>
+
+                    {# Reorder #}
+                    {% if showReorder %}
+                        <button id="btn-edit-order-trigger" class="user-status-option"
+                                style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;"
+                                role="menuitem">
+                            <span class="option-icon">⇅</span>
+                            <span class="option-label">{{ 'Ordonner les canaux'|trans }}</span>
+                        </button>
+                    {% endif %}
+
+                    {# Directory #}
+                    <a href="{{ path('app_channels_directory') }}" class="user-status-option"
+                       style="text-decoration: none;" role="menuitem">
+                        <span class="option-icon">🔍</span>
+                        <span class="option-label">{{ 'Parcourir les canaux'|trans }}</span>
+                    </a>
+                </div>
+            </details>
         </div>
     </div>
 
@@ -43,31 +78,42 @@
                 {% endif %}
             {% endfor %}
 
-            <div class="sidebar-saved-messages-link-wrapper" style="margin-bottom: 0.75rem;">
-                <a href="{{ path('app_saved_messages') }}" class="btn-sidebar-item {% if app.request.attributes.get('_route') == 'app_saved_messages' %}active{% endif %}" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 0.5rem; text-decoration: none; color: var(--text-primary); transition: var(--transition-smooth); font-size: 0.9rem; font-weight: 500; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass);">
-                    <span style="font-size: 1.1rem; line-height: 1;">⭐</span>
-                    <span>{{ 'Messages enregistrés'|trans }}</span>
-                </a>
-            </div>
+            <details class="sidebar-section-details" data-section="shortcuts" open
+                     style="margin-bottom: 1.5rem; display: block;">
+                <summary class="sidebar-section-header">
+                    <span>
+                        <span class="sidebar-section-toggle-icon">▼</span>
+                        {{ 'Raccourcis'|trans }}
+                    </span>
+                </summary>
+                <div class="channel-list" id="section-shortcuts">
+                    <div style="margin-bottom: 0.125rem;">
+                        <a href="{{ path('app_saved_messages') }}"
+                           class="btn-sidebar-item {% if app.request.attributes.get('_route') == 'app_saved_messages' %}active{% endif %}">
+                            <span style="font-size: 1.1rem; line-height: 1; margin-right: 0.5rem;">⭐</span>
+                            <span>{{ 'Messages enregistrés'|trans }}</span>
+                        </a>
+                    </div>
 
-            <div class="sidebar-reactions-link-wrapper" style="margin-bottom: 0.75rem;">
-                <a href="{{ path('app_my_reactions') }}"
-                   class="btn-sidebar-item {% if app.request.attributes.get('_route') == 'app_my_reactions' or app.request.attributes.get('_route') == 'app_my_reactions_filtered' %}active{% endif %}"
-                   style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 0.5rem; text-decoration: none; color: var(--text-primary); transition: var(--transition-smooth); font-size: 0.9rem; font-weight: 500; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass);">
-                    <span style="font-size: 1.1rem; line-height: 1;">💬</span>
-                    <span>{{ 'Mes réactions'|trans }}</span>
-                </a>
-            </div>
+                    <div style="margin-bottom: 0.125rem;">
+                        <a href="{{ path('app_my_reactions') }}"
+                           class="btn-sidebar-item {% if app.request.attributes.get('_route') == 'app_my_reactions' or app.request.attributes.get('_route') == 'app_my_reactions_filtered' %}active{% endif %}">
+                            <span style="font-size: 1.1rem; line-height: 1; margin-right: 0.5rem;">💬</span>
+                            <span>{{ 'Mes réactions'|trans }}</span>
+                        </a>
+                    </div>
 
-            {% if robotChannel %}
-                <div class="sidebar-robot-link-wrapper" style="margin-bottom: 1.5rem;">
-                    {% include 'dashboard/_channel_sidebar_item.html.twig' with {
-                        'channel': robotChannel,
-                        'unreadCounts': unreadCounts,
-                        'activeChannel': activeChannel
-                    } %}
+                    {% if robotChannel %}
+                        <div class="channel-group">
+                            {% include 'dashboard/_channel_sidebar_item.html.twig' with {
+                                'channel': robotChannel,
+                                'unreadCounts': unreadCounts,
+                                'activeChannel': activeChannel
+                            } %}
+                        </div>
+                    {% endif %}
                 </div>
-            {% endif %}
+            </details>
 
             {% set hasFavorites = false %}
             {% for channel in channels %}

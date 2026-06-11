@@ -64,33 +64,7 @@
                         {{ activeChannel.description|default('Aucune description pour ce canal.'|trans) }}
                     {% endif %}
                 </p>
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; flex-wrap: wrap;">
-                    {% if not activeChannel.isDm %}
-                        <button type="button" class="status-pill"
-                                hx-get="{{ path('app_channel_members_modal', {slug: activeChannel.slug}) }}"
-                                hx-target="#modal-container"
-                                hx-trigger="click"
-                                style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass); font-size: 0.75rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer; transition: background 0.2s, color 0.2s; outline: none; font-family: inherit;"
-                                onmouseover="this.style.background='rgba(255, 255, 255, 0.12)'; this.style.color='var(--text-primary)'"
-                                onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.color='var(--text-muted)'">
-                            👥 {{ activeChannel.members|length }} {{ (activeChannel.members|length > 1 ? 'membres' : 'membre')|trans }}
-                        </button>
-                    {% endif %}
 
-                    {% if not activeChannel.isDm %}
-                        <span class="status-pill"
-                              style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass); font-size: 0.75rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: default;">
-                            ⏱️ {{ 'Rétention :'|trans }}
-                            <span style="color: var(--text-primary);">
-                                {% if activeChannel.messageRetentionMonths is null %}
-                                    {{ 'Sans limite'|trans }}
-                                {% else %}
-                                    {{ activeChannel.messageRetentionMonths }} {{ 'mois'|trans }}
-                                {% endif %}
-                            </span>
-                        </span>
-                    {% endif %}
-                </div>
             </div>
 
             <div class="chat-header-actions">
@@ -152,48 +126,104 @@
                     'activeChannel': activeChannel,
                     'notificationsEnabled': notificationsEnabled
                 } %}
-                {% if isMember and not activeChannel.isSubChannel %}
-                    <button type="button" class="btn-delete-channel"
-                            id="btn-subchannels-toggle"
-                            onclick="toggleSubChannelsSidebar()"
-                            title="{{ 'Afficher les sous-canaux'|trans }}"
-                            style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;">
-                        🌿 {{ 'Sous-canaux'|trans }} ({{ activeSubChannels|length }})
-                    </button>
-                {% endif %}
-                {% if isMember and not activeChannel.isDm %}
-                    {% if activeChannel.isPrivate and activeChannel.creator == app.user and not activeChannel.isSubChannel %}
-                        {% include 'dashboard/_invite_section.html.twig' with {'activeChannel': activeChannel, 'usersToInvite': usersToInvite} %}
-                    {% endif %}
+                {% if isMember %}
+                    <details class="user-status-dropdown-container">
+                        <summary class="user-status-trigger"
+                                 style="list-style: none; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 0.5rem; height: 32px;">
+                            ⚙️ <span>{{ 'Actions'|trans }}</span>
+                            <span class="dropdown-chevron">▼</span>
+                        </summary>
+                        <div class="user-status-dropdown-menu" role="menu" style="right: 0; min-width: 190px;">
+                            {# 0. Membres #}
+                            {% if not activeChannel.isDm %}
+                                <button type="button" class="user-status-option"
+                                        hx-get="{{ path('app_channel_members_modal', {slug: activeChannel.slug}) }}"
+                                        hx-target="#modal-container"
+                                        hx-trigger="click"
+                                        role="menuitem"
+                                        style="cursor: pointer;">
+                                    <span class="option-icon">👥</span>
+                                    <span class="option-label">{{ 'Membres'|trans }} ({{ activeChannel.members|length }})</span>
+                                </button>
+                            {% endif %}
 
-                    {% if activeChannel.isAdministrator(app.user) %}
-                        <button type="button" class="btn-delete-channel"
-                                style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;"
-                                hx-get="{{ path('app_channel_edit_modal', {slug: activeChannel.slug}) }}"
-                                hx-target="#modal-container"
-                                hx-trigger="click">⚙️ {{ 'Paramètres'|trans }}</button>
-                    {% endif %}
+                            {# 1. Sous-canaux #}
+                            {% if not activeChannel.isSubChannel %}
+                                <button type="button" class="user-status-option"
+                                        id="btn-subchannels-toggle"
+                                        onclick="toggleSubChannelsSidebar()"
+                                        role="menuitem"
+                                        style="cursor: pointer;">
+                                    <span class="option-icon">🌿</span>
+                                    <span class="option-label">{{ 'Sous-canaux'|trans }} ({{ activeSubChannels|length }})</span>
+                                </button>
+                            {% endif %}
 
-                    {% if is_granted('ROLE_ADMIN') and not (activeChannel.creator and activeChannel.creator == app.user) %}
-                        <form action="{{ path('app_channel_delete', {slug: activeChannel.slug}) }}"
-                              method="POST"
-                              data-confirm="{{ 'Êtes-vous sûr de vouloir supprimer ce canal ? Tout l\'historique des messages sera perdu définitivement.'|trans }}"
-                              hx-boost="false">
-                            <button type="submit" class="btn-delete-channel">
-                                🗑️ {{ 'Supprimer'|trans }}</button>
-                        </form>
-                    {% endif %}
+                            {# 2. Inviter #}
+                            {% if not activeChannel.isDm and activeChannel.isPrivate and activeChannel.creator == app.user and not activeChannel.isSubChannel %}
+                                <button type="button" class="user-status-option"
+                                        hx-get="{{ path('app_channel_invite_modal', {slug: activeChannel.slug}) }}"
+                                        hx-target="#modal-container"
+                                        hx-trigger="click"
+                                        role="menuitem"
+                                        style="cursor: pointer;">
+                                    <span class="option-icon">✉️</span>
+                                    <span class="option-label">{{ 'Inviter'|trans }}</span>
+                                </button>
+                            {% endif %}
 
-                    {% if not activeChannel.isPrivate and activeChannel.slug != 'general' %}
-                        <form action="{{ path('app_channel_leave', {slug: activeChannel.slug}) }}"
-                              method="POST"
-                              data-confirm="{{ 'Êtes-vous sûr de vouloir quitter ce canal ?'|trans }}"
-                              hx-boost="false">
-                            <button type="submit" class="btn-delete-channel"
-                                    style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text-muted);">
-                                🚪 {{ 'Quitter'|trans }}</button>
-                        </form>
-                    {% endif %}
+                            {# 3. Paramètres #}
+                            {% if not activeChannel.isDm and activeChannel.isAdministrator(app.user) %}
+                                <button type="button" class="user-status-option"
+                                        hx-get="{{ path('app_channel_edit_modal', {slug: activeChannel.slug}) }}"
+                                        hx-target="#modal-container"
+                                        hx-trigger="click"
+                                        role="menuitem"
+                                        style="cursor: pointer;">
+                                    <span class="option-icon">⚙️</span>
+                                    <span class="option-label">{{ 'Paramètres'|trans }}</span>
+                                </button>
+                            {% endif %}
+
+                            {# Divider if there is leave or delete #}
+                            {% if not activeChannel.isDm and (is_granted('ROLE_ADMIN') and not (activeChannel.creator and activeChannel.creator == app.user) or (not activeChannel.isPrivate and activeChannel.slug != 'general')) %}
+                                <div class="user-menu-divider"></div>
+                            {% endif %}
+
+                            {# 4. Quitter #}
+                            {% if not activeChannel.isDm and not activeChannel.isPrivate and activeChannel.slug != 'general' %}
+                                <form action="{{ path('app_channel_leave', {slug: activeChannel.slug}) }}"
+                                      method="POST"
+                                      data-confirm="{{ 'Êtes-vous sûr de vouloir quitter ce canal ?'|trans }}"
+                                      hx-boost="false"
+                                      style="margin: 0; padding: 0; display: block; width: 100%;">
+                                    <button type="submit" class="user-status-option"
+                                            style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;"
+                                            role="menuitem">
+                                        <span class="option-icon">🚪</span>
+                                        <span class="option-label">{{ 'Quitter'|trans }}</span>
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            {# 5. Supprimer #}
+                            {% if not activeChannel.isDm and is_granted('ROLE_ADMIN') and not (activeChannel.creator and activeChannel.creator == app.user) %}
+                                <form action="{{ path('app_channel_delete', {slug: activeChannel.slug}) }}"
+                                      method="POST"
+                                      data-confirm="{{ 'Êtes-vous sûr de vouloir supprimer ce canal ? Tout l\'historique des messages sera perdu définitivement.'|trans }}"
+                                      hx-boost="false"
+                                      style="margin: 0; padding: 0; display: block; width: 100%;">
+                                    <button type="submit" class="user-status-option"
+                                            style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; color: var(--accent-red);"
+                                            role="menuitem">
+                                        <span class="option-icon">🗑️</span>
+                                        <span class="option-label"
+                                              style="color: var(--accent-red);">{{ 'Supprimer'|trans }}</span>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </details>
                 {% endif %}
             </div>
         </div>
