@@ -6116,7 +6116,60 @@ dialog.modal-backdrop-dialog#image-lightbox::backdrop {
     font-weight: 700;
 }
 
+.subchannel-parent-compact .feed-item {
+    padding: 0.15rem 0.5rem 0.15rem 1.2rem;
+    margin-bottom: 0;
+}
 
+.subchannel-parent-compact .feed-item .feed-item-body p {
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.subchannel-parent-compact .feed-item .message-reactions-container {
+    display: none;
+}
+
+.subchannel-parent-compact .feed-item .feed-item-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 1;
+    pointer-events: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.subchannel-parent-compact .feed-item .feed-item-user-container {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.subchannel-parent-compact .feed-item .feed-item-user-container .feed-item-avatar {
+    width: 18px;
+    height: 18px;
+    font-size: 0.65rem;
+    line-height: 18px;
+}
+
+.subchannel-parent-compact .feed-item .feed-item-user-container .feed-item-avatar-img {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+.subchannel-parent-compact .feed-item .feed-item-user {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.subchannel-parent-compact .feed-item .feed-item-time,
+.subchannel-parent-compact .feed-item .feed-item-edited-indicator,
+.subchannel-parent-compact .feed-item .feed-item-pinned-indicator,
+.subchannel-parent-compact .feed-item .feed-item-actions {
+    display: none;
+}
 
 
 

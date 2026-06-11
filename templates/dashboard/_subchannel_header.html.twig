@@ -6,7 +6,7 @@
             <span class="parent-channel-name">#{{ parentMessage.channel.name }}</span>
         </a>
     </div>
-    <div class="subchannel-parent-message">
+    <div class="subchannel-parent-message{{ activeChannel.isTodoList() ? ' subchannel-parent-compact' : '' }}">
         {% include 'dashboard/_feed_item.html.twig' with {
             'messageObject': parentMessage
         } %}
