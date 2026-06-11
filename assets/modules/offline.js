@@ -82,7 +82,7 @@ export function queueOfflineMessage(form) {
 
     // Clear textarea
     textarea.value = '';
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    textarea.dispatchEvent(new Event('input', {bubbles: true}));
 
 
     // Start sync retries
@@ -94,7 +94,11 @@ function renderOfflineMessage(msg) {
     if (document.querySelector(`[data-offline-id="${msg.id}"]`)) return;
 
     // Render HTML manually to match _feed_item.html.twig layout
-    const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
     const formattedContent = escapeHtml(msg.content).replace(/\n/g, '<br>');
 
     const feedItem = document.createElement('div');
@@ -167,59 +171,59 @@ export function syncOfflineMessages() {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: new URLSearchParams({ message: msg.content })
+            body: new URLSearchParams({message: msg.content})
         })
-        .then(res => {
-            if (!res.ok) {
-                throw new Error(`Sync failed: ${res.status}`);
-            }
-            return res.text();
-        })
-        .then(html => {
-            // Remove from queue
-            offlineQueue.shift();
-            saveOfflineQueue();
-
-            // Replace temporary message in the feed with actual HTML returned (if we are in the correct channel)
-            const tempEl = document.querySelector(`[data-offline-id="${msg.id}"]`);
-            if (tempEl) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html.trim();
-                const actualItem = tempDiv.firstChild;
-
-                if (actualItem && tempEl.parentNode) {
-                    if (window.Idiomorph) {
-                        window.Idiomorph.morph(tempEl, actualItem);
-                        if (window.htmx) window.htmx.process(tempEl);
-                    } else {
-                        tempEl.parentNode.replaceChild(actualItem, tempEl);
-                        if (window.htmx) window.htmx.process(actualItem);
-                    }
-                } else {
-                    tempEl.remove();
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`Sync failed: ${res.status}`);
                 }
-            }
+                return res.text();
+            })
+            .then(html => {
+                // Remove from queue
+                offlineQueue.shift();
+                saveOfflineQueue();
 
-            // Continue with next message
-            sendNext();
-        })
-        .catch(err => {
-            console.error('Failed to sync offline message:', err);
-            isSyncing = false;
+                // Replace temporary message in the feed with actual HTML returned (if we are in the correct channel)
+                const tempEl = document.querySelector(`[data-offline-id="${msg.id}"]`);
+                if (tempEl) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html.trim();
+                    const actualItem = tempDiv.firstChild;
 
-            // Revert status label back to waiting
-            const tempEl = document.querySelector(`[data-offline-id="${msg.id}"]`);
-            if (tempEl) {
-                const statusLabel = tempEl.querySelector('.offline-status-label');
-                if (statusLabel) {
-                    statusLabel.innerHTML = `
+                    if (actualItem && tempEl.parentNode) {
+                        if (window.Idiomorph) {
+                            window.Idiomorph.morph(tempEl, actualItem);
+                            if (window.htmx) window.htmx.process(tempEl);
+                        } else {
+                            tempEl.parentNode.replaceChild(actualItem, tempEl);
+                            if (window.htmx) window.htmx.process(actualItem);
+                        }
+                    } else {
+                        tempEl.remove();
+                    }
+                }
+
+                // Continue with next message
+                sendNext();
+            })
+            .catch(err => {
+                console.error('Failed to sync offline message:', err);
+                isSyncing = false;
+
+                // Revert status label back to waiting
+                const tempEl = document.querySelector(`[data-offline-id="${msg.id}"]`);
+                if (tempEl) {
+                    const statusLabel = tempEl.querySelector('.offline-status-label');
+                    if (statusLabel) {
+                        statusLabel.innerHTML = `
                         <span class="spinner-small" style="border: 2px solid rgba(245, 158, 11, 0.1); border-top-color: var(--accent-orange, #f59e0b); width: 10px; height: 10px; display: inline-block; border-radius: 50%; animation: spin 1s linear infinite;"></span>
                         Connexion perdue. Nouvel essai...
                     `;
-                    statusLabel.style.color = 'var(--accent-orange, #f59e0b)';
+                        statusLabel.style.color = 'var(--accent-orange, #f59e0b)';
+                    }
                 }
-            }
-        });
+            });
     };
 
     sendNext();

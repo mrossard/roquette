@@ -1,9 +1,10 @@
-{% embed '_modal_layout.html.twig' with {
+{% embed 'partials/_modal_layout.html.twig' with {
     id: 'edit-channel-modal',
     title: 'Modifier le canal'
 } %}
     {% block modal_body %}
-        <form action="{{ path('app_channel_edit', {slug: activeChannel.slug}) }}" method="POST" class="add-channel-form" hx-boost="false">
+        <form action="{{ path('app_channel_edit', {slug: activeChannel.slug}) }}" method="POST" class="add-channel-form"
+              hx-boost="false">
             <div class="input-group">
                 <label for="edit-modal-name">Nom du canal</label>
                 <input type="text" id="edit-modal-name" name="name" value="{{ activeChannel.name }}" required
@@ -19,11 +20,17 @@
                 <label for="edit-modal-retention">Rétention des messages</label>
                 <select id="edit-modal-retention" name="messageRetentionMonths" class="input-sidebar"
                         style="width: 100%; cursor: pointer;">
-                    <option value="1" {% if activeChannel.messageRetentionMonths == 1 %}selected{% endif %}>1 mois</option>
-                    <option value="3" {% if activeChannel.messageRetentionMonths == 3 %}selected{% endif %}>3 mois</option>
-                    <option value="6" {% if activeChannel.messageRetentionMonths == 6 %}selected{% endif %}>6 mois</option>
-                    <option value="12" {% if activeChannel.messageRetentionMonths == 12 %}selected{% endif %}>12 mois</option>
-                    <option value="0" {% if activeChannel.messageRetentionMonths is null %}selected{% endif %}>Sans limite</option>
+                    <option value="1" {% if activeChannel.messageRetentionMonths == 1 %}selected{% endif %}>1 mois
+                    </option>
+                    <option value="3" {% if activeChannel.messageRetentionMonths == 3 %}selected{% endif %}>3 mois
+                    </option>
+                    <option value="6" {% if activeChannel.messageRetentionMonths == 6 %}selected{% endif %}>6 mois
+                    </option>
+                    <option value="12" {% if activeChannel.messageRetentionMonths == 12 %}selected{% endif %}>12 mois
+                    </option>
+                    <option value="0" {% if activeChannel.messageRetentionMonths is null %}selected{% endif %}>Sans
+                        limite
+                    </option>
                 </select>
             </div>
             {% if activeChannel.isSubChannel() %}
@@ -77,16 +84,22 @@
                          style="display: none; top: 100%; bottom: auto; left: 0; right: 0; min-width: 100%; max-width: 100%; margin-top: 4px;"></div>
                 </div>
             </div>
-            <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Enregistrer les modifications</button>
+            <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Enregistrer les modifications
+            </button>
         </form>
 
         {% if webhooks is defined %}
             {% include 'dashboard/_channel_webhooks.html.twig' with {webhooks: webhooks, activeChannel: activeChannel} %}
         {% endif %}
         {% if activeChannel.creator == app.user or is_granted('ROLE_ADMIN') %}
-        <form action="{{ path('app_channel_delete', {slug: activeChannel.slug}) }}" method="POST" data-confirm="Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement." hx-boost="false" style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
-            <button type="submit" class="btn-delete-channel" style="width: 100%; justify-content: center; cursor: pointer;">🗑️ Supprimer le canal</button>
-        </form>
+            <form action="{{ path('app_channel_delete', {slug: activeChannel.slug}) }}" method="POST"
+                  data-confirm="Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement."
+                  hx-boost="false"
+                  style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+                <button type="submit" class="btn-delete-channel"
+                        style="width: 100%; justify-content: center; cursor: pointer;">🗑️ Supprimer le canal
+                </button>
+            </form>
         {% endif %}
     {% endblock %}
 {% endembed %}

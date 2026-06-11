@@ -107,7 +107,6 @@ export function adjustScrollForLinkPreview(previewCard) {
 }
 
 
-
 // Scroll and maintain data-last-message attribute on new SSE messages
 document.body.addEventListener('htmx:sseMessage', (event) => {
     if (event.detail.type && event.detail.type.startsWith('message_')) {

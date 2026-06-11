@@ -1,13 +1,18 @@
 const isProd = document.querySelector('meta[name="app-env"]')?.getAttribute('content') === 'prod';
 const console = {
-    log: (...args) => { if (!isProd) window.console.log(...args); },
-    warn: (...args) => { if (!isProd) window.console.warn(...args); },
+    log: (...args) => {
+        if (!isProd) window.console.log(...args);
+    },
+    warn: (...args) => {
+        if (!isProd) window.console.warn(...args);
+    },
     error: (...args) => {
         if (!isProd) window.console.error(...args);
     }
 };
 
 let isRedirecting = false;
+
 function safeRedirectToLogin(reason = '') {
     if (isRedirecting) return;
     isRedirecting = true;

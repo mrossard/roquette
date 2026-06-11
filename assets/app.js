@@ -2,7 +2,7 @@ import './styles/app.css';
 import htmx from 'htmx.org';
 window.htmx = htmx;
 import 'htmx-ext-sse';
-import {initializeChannelScroll, adjustScrollForLinkPreview} from './scroll.js';
+import {initializeChannelScroll, adjustScrollForLinkPreview} from './modules/scroll.js';
 
 import hljs from 'highlight.js';
 window.hljs = hljs;
@@ -41,14 +41,14 @@ if (document.querySelector('meta[name="frankenphp-hot-reload:url"]')) {
 }
 
 // Import our structured modules
-import './ui.js';
-import './mercure.js';
-import './notifications.js';
-import './editor.js';
-import './autocomplete.js';
-import { buildEmojiPickerDOM } from './emoji.js';
-import './offline.js';
-import './search-builder.js';
+import './modules/ui.js';
+import './modules/mercure.js';
+import './modules/notifications.js';
+import './modules/editor.js';
+import './modules/autocomplete.js';
+import {buildEmojiPickerDOM} from './modules/emoji.js';
+import './modules/offline.js';
+import './modules/search-builder.js';
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');

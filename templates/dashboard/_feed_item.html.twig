@@ -40,37 +40,10 @@
      data-author-username="{{ author ? author.username : '' }}" data-raw-content="{{ message|default('') }}"
      data-file-name="{{ fileName|default('') }}" data-file-size="{{ fileSize|default('') }}"
     data-poll-has-votes="{{ pollHasVotes ? '1' : '0' }}"
+    data-is-author="{% if app.user and author and author.username == app.user.username %}true{% else %}false{% endif %}"
     {% if isLast|default(false) %}data-last-message="true"{% endif %}>
     {% if isMeMessage %}
-        <div class="feed-item-header">
-            <div class="feed-item-me-content">
-                <span
-                    class="feed-item-time">{% if timestamp|date('Y-m-d') != 'now'|date('Y-m-d') %}{{ timestamp|date('d/m/Y') }} {% endif %}{{ timestamp|date('H:i') }}</span>
-                {% if author and author.username != constant('App\\Entity\\User::ROBOT_USERNAME') %}
-                    <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link"
-                       title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel}) }}">
-                        <span class="feed-item-user">{{ username|wrap_emojis }}</span>
-                    </a>
-                {% else %}
-                    <span class="feed-item-user">{{ username|wrap_emojis }}</span>
-                {% endif %}
-                <span class="feed-item-me-text">
-                    {% set me_content = message|slice(4) %}
-                    {{ me_content|format_message }}
-                </span>
-                {% if updated_at is defined and updated_at %}
-                    <span class="feed-item-edited-indicator"
-                          title="{{ 'Modifié le'|trans }} {{ updated_at|date('d/m/Y H:i') }}">(modifié)</span>
-                {% endif %}
-            </div>
-            {% include 'dashboard/_feed_item_actions.html.twig' %}
-        </div>
-        {% set message_reactions = messageObject is defined and messageObject ? messageObject.getGroupedReactions(app.user) : {} %}
-        {% if message_reactions is not empty %}
-            <div class="feed-item-body" style="padding: 0; border: none; background: none; box-shadow: none;">
-                {% include 'dashboard/_feed_item_reactions.html.twig' %}
-            </div>
-        {% endif %}
+        {% include 'dashboard/feed_item/_me.html.twig' %}
     {% else %}
         <div class="feed-item-header">
             {% if messageChannel is null or not messageChannel.isTodoList() %}
@@ -188,81 +161,11 @@
                         <p>{{ message|format_message }}</p>
                     {% endif %}
                 {% endif %}
-                {% set links = message|extract_external_links %}
-                {% for link in links %}
-                    {% set cachedResult = get_cached_link_preview(link) %}
-                    {% if cachedResult is not null %}
-                        {% if cachedResult.status == 'success' %}
-                            {% include 'dashboard/_link_preview.html.twig' with {
-                                url: cachedResult.preview.url,
-                                title: cachedResult.preview.title,
-                                description: cachedResult.preview.description,
-                                image: cachedResult.preview.image,
-                                siteName: cachedResult.preview.siteName
-                            } %}
-                        {% endif %}
-                    {% else %}
-                        <div hx-get="{{ path('app_api_link_preview', {url: link}) }}"
-                             hx-trigger="intersect once"
-                             hx-swap="outerHTML transition:false"
-                             class="link-preview-placeholder">
-                        </div>
-                    {% endif %}
-                {% endfor %}
+                {% include 'dashboard/feed_item/_link_previews.html.twig' %}
             {% endif %}
 
             {% if fileName is defined and fileName %}
-                <div class="message-attachment">
-                    <span class="attachment-icon">📎</span>
-                    <div class="attachment-details">
-                        <a href="{{ path('app_file_download', {id: message_id}) }}" class="attachment-link" hx-boost="false" target="_blank" download>
-                            {{ fileName }}
-                        </a>
-                        <span class="attachment-size">{{ fileSize|format_bytes }}</span>
-                    </div>
-                </div>
-                {% set fileExt = fileName|split('.')|last|lower %}
-                {% set isImage = (mimeType is defined and mimeType and mimeType starts with 'image/') or fileExt in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] %}
-                {% set isAudio = (mimeType is defined and mimeType and mimeType starts with 'audio/') or fileExt in ['mp3', 'wav', 'ogg', 'm4a', 'aac'] %}
-                {% set isVideo = (mimeType is defined and mimeType and mimeType starts with 'video/') or fileExt in ['mp4', 'webm', 'ogg', 'mov', 'avi'] %}
-                {% set isPdf = (mimeType is defined and mimeType and mimeType == 'application/pdf') or fileExt == 'pdf' %}
-                {% set isText = (mimeType is defined and mimeType and mimeType starts with 'text/') or fileExt in ['txt', 'log', 'md', 'html', 'css', 'js', 'json', 'php', 'yml', 'yaml', 'xml'] %}
-                {% if isImage %}
-                    <div class="attachment-preview image-preview-container">
-                        <img src="{{ path('app_file_preview', {id: message_id}) }}" alt="{{ fileName }}"
-                             class="preview-image" hx-get="{{ path('app_lightbox', {id: message_id}) }}"
-                             hx-target="#modal-container" hx-trigger="click" style="cursor:pointer">
-                    </div>
-                {% elseif isAudio %}
-                    <div class="attachment-preview audio-preview-container">
-                        <audio controls preload="none" class="preview-audio">
-                            <source src="{{ path('app_file_preview', {id: message_id}) }}" {% if mimeType is defined and mimeType %}type="{{ mimeType }}"{% endif %}>
-                            {{ 'Votre navigateur ne supporte pas la lecture audio.'|trans }}
-                        </audio>
-                    </div>
-                {% elseif isVideo %}
-                    <div class="attachment-preview video-preview-container">
-                        <video controls preload="metadata" class="preview-video">
-                            <source src="{{ path('app_file_preview', {id: message_id}) }}" {% if mimeType is defined and mimeType %}type="{{ mimeType }}"{% endif %}>
-                            {{ 'Votre navigateur ne supporte pas la lecture vidéo.'|trans }}
-                        </video>
-                    </div>
-                {% elseif isPdf %}
-                    <div class="attachment-preview pdf-preview-container">
-                        <a href="{{ path('app_file_preview', {id: message_id}) }}" target="_blank" class="btn-preview-link">
-                            <span class="btn-preview-icon">👁️</span> {{ 'Ouvrir le PDF'|trans }}
-                        </a>
-                    </div>
-                {% elseif isText %}
-                    <div class="attachment-preview text-preview-container" id="text-preview-wrapper-{{ message_id }}">
-                        <button type="button" class="btn-preview-link text-preview-toggle"
-                                hx-get="{{ path('app_file_text_preview', {id: message_id}) }}"
-                                hx-target="#text-preview-wrapper-{{ message_id }}"
-                                hx-swap="outerHTML">
-                            <span class="btn-preview-icon">👁️</span> {{ 'Prévisualiser le texte'|trans }}
-                        </button>
-                    </div>
-                {% endif %}
+                {% include 'dashboard/feed_item/_attachment.html.twig' %}
             {% endif %}
 
             {% if messageChannel is null or not messageChannel.isTodoList() %}

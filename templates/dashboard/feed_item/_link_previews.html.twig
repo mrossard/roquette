@@ -1,0 +1,21 @@
+{% set links = message|extract_external_links %}
+{% for link in links %}
+    {% set cachedResult = get_cached_link_preview(link) %}
+    {% if cachedResult is not null %}
+        {% if cachedResult.status == 'success' %}
+            {% include 'dashboard/_link_preview.html.twig' with {
+                url: cachedResult.preview.url,
+                title: cachedResult.preview.title,
+                description: cachedResult.preview.description,
+                image: cachedResult.preview.image,
+                siteName: cachedResult.preview.siteName
+            } %}
+        {% endif %}
+    {% else %}
+        <div hx-get="{{ path('app_api_link_preview', {url: link}) }}"
+             hx-trigger="intersect once"
+             hx-swap="outerHTML transition:false"
+             class="link-preview-placeholder">
+        </div>
+    {% endif %}
+{% endfor %}

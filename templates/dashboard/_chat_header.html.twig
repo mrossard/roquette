@@ -1,0 +1,201 @@
+<div class="card-header chat-header">
+    <div class="chat-header-layout">
+        <!-- Title area and Toggle button -->
+        <div class="chat-header-main">
+            <div class="title-with-pulse">
+                <h2>
+                    {% if activeChannel.isDm %}
+                        {% set partner = activeChannel.getDmPartner(app.user) %}
+                        {% if partner %}
+                            <span class="status-dot {{ partner.status }}"
+                                  style="width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 0.5rem;"
+                                  title="{{ partner.statusLabel }}"></span>
+                            <span
+                                style="color: hsl({{ partner.hue }}, 90%, var(--user-hue-lightness-hover));">{{ partner.displayName|default(partner.username) }} <span
+                                    style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); opacity: 0.8;">({{ partner.statusLabel }})</span></span>
+                        {% else %}
+                            <span
+                                style="color: var(--accent-purple); margin-right: 0.25rem;">👤</span> Conversation privée
+                        {% endif %}
+                    {% else %}
+                        {% if activeChannel.isPrivate %}
+                            <span style="color: var(--accent-purple); margin-right: 0.25rem;">🔒</span>
+                        {% else %}
+                            <span style="color: var(--accent-cyan); margin-right: 0.25rem;">#</span>
+                        {% endif %}
+                        {{ activeChannel.name }}
+                    {% endif %}
+                    {% if isMember %}
+                        <button class="btn-favorite-toggle"
+                                id="btn-favorite-toggle"
+                                hx-post="{{ path('app_channel_favorite_toggle', {slug: activeChannel.slug}) }}"
+                                hx-swap="none"
+                                title="{% if app.user.isChannelFavorite(activeChannel) %}{{ 'Retirer des favoris'|trans }}{% else %}{{ 'Ajouter aux favoris'|trans }}{% endif %}"
+                                style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: {% if app.user.isChannelFavorite(activeChannel) %}#f59e0b{% else %}var(--text-muted){% endif %}; transition: color 0.2s, transform 0.2s; margin-left: 0.5rem; line-height: 1; vertical-align: middle; padding: 0;">
+                            {% if app.user.isChannelFavorite(activeChannel) %}★{% else %}☆{% endif %}
+                        </button>
+                    {% endif %}
+                </h2>
+            </div>
+
+            <!-- Toggle button (mobile only) -->
+            <button type="button"
+                    class="btn-channel-details-toggle"
+                    id="btn-channel-details-toggle"
+                    onclick="toggleMobileChannelDetails()"
+                    title="{{ 'Afficher les détails du canal'|trans }}"
+                    aria-label="{{ 'Afficher les détails du canal'|trans }}">
+                ℹ️
+            </button>
+        </div>
+
+        <!-- Details dropdown (collapsible on mobile, side-by-side on desktop) -->
+        <div class="chat-header-details" id="chat-header-details">
+            <div class="chat-header-info">
+                <p class="card-description" style="margin: 0;">
+                    {% if activeChannel.isDm %}
+                        {% set partner = activeChannel.getDmPartner(app.user) %}
+                        {% if partner %}
+                            {{ 'Discussion directe et sécurisée avec'|trans }} {{ partner.displayName|default(partner.username) }}.
+                        {% else %}
+                            {{ 'Discussion directe privée.'|trans }}
+                        {% endif %}
+                    {% else %}
+                        {{ activeChannel.description|default('Aucune description pour ce canal.'|trans) }}
+                    {% endif %}
+                </p>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; flex-wrap: wrap;">
+                    {% if not activeChannel.isDm %}
+                        <button type="button" class="status-pill"
+                                hx-get="{{ path('app_channel_members_modal', {slug: activeChannel.slug}) }}"
+                                hx-target="#modal-container"
+                                hx-trigger="click"
+                                style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass); font-size: 0.75rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer; transition: background 0.2s, color 0.2s; outline: none; font-family: inherit;"
+                                onmouseover="this.style.background='rgba(255, 255, 255, 0.12)'; this.style.color='var(--text-primary)'"
+                                onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.color='var(--text-muted)'">
+                            👥 {{ activeChannel.members|length }} {{ (activeChannel.members|length > 1 ? 'membres' : 'membre')|trans }}
+                        </button>
+                    {% endif %}
+
+                    {% if not activeChannel.isDm %}
+                        <span class="status-pill"
+                              style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass); font-size: 0.75rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: default;">
+                            ⏱️ {{ 'Rétention :'|trans }}
+                            <span style="color: var(--text-primary);">
+                                {% if activeChannel.messageRetentionMonths is null %}
+                                    {{ 'Sans limite'|trans }}
+                                {% else %}
+                                    {{ activeChannel.messageRetentionMonths }} {{ 'mois'|trans }}
+                                {% endif %}
+                            </span>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="chat-header-actions">
+                {% if isMember %}
+                    <form id="channel-filters-form"
+                          hx-get="{{ path('app_channel_search', {slug: activeChannel.slug}) }}"
+                          hx-target="#live-feed"
+                          hx-swap="innerHTML transition:false"
+                          hx-trigger="input changed delay:400ms from:#channel-search-input, change from:#unread-filter-checkbox"
+                          style="display: inline-flex; align-items: center; gap: 0.5rem; margin: 0; padding: 0;">
+                        <div class="search-container">
+                            <span class="search-icon">🔍</span>
+                            <input type="search"
+                                   id="channel-search-input"
+                                   name="q"
+                                   placeholder="{{ 'Rechercher...'|trans }}"
+                                   class="input-search"
+                                   hx-indicator="#search-indicator"
+                                   aria-label="{{ 'Rechercher dans ce canal'|trans }}">
+                            <span id="search-indicator" class="htmx-indicator spinner-subtle"
+                                  style="display: none;"></span>
+                        </div>
+
+                        {% if activeChannel.isTodoList() %}
+                            <button type="button" class="btn-hide-completed"
+                                    onclick="document.getElementById('live-feed').classList.toggle('hide-todo-completed'); this.classList.toggle('active');">
+                                {{ 'Masquer les tâches terminées'|trans }}
+                            </button>
+                        {% else %}
+                            {% set channelUnread = unreadCounts[activeChannel.id] is defined ? unreadCounts[activeChannel.id].count : 0 %}
+                            <label class="btn-unread-filter-wrapper"
+                                   style="display: inline-flex; align-items: center; margin: 0; padding: 0;">
+                                <input type="checkbox"
+                                       name="unread"
+                                       value="1"
+                                       id="unread-filter-checkbox"
+                                       style="display: none;">
+                                <div id="btn-unread-filter"
+                                     class="btn-unread-filter"
+                                     title="{{ 'Afficher uniquement les messages non lus'|trans }}"
+                                     aria-label="{{ 'Filtrer les messages non lus'|trans }}"
+                                     style="cursor: pointer;">
+                                    <span class="unread-filter-icon">🔔</span>
+                                    <span>{{ 'Non lus'|trans }}</span>
+                                    {% if channelUnread > 0 %}
+                                        <span class="unread-filter-badge"
+                                              id="unread-filter-badge-count">{{ channelUnread }}</span>
+                                    {% else %}
+                                        <span class="unread-filter-badge unread-filter-badge-zero"
+                                              id="unread-filter-badge-count" style="display:none;">0</span>
+                                    {% endif %}
+                                </div>
+                            </label>
+                        {% endif %}
+                    </form>
+                {% endif %}
+
+                {% include 'dashboard/_notification_toggle.html.twig' with {
+                    'activeChannel': activeChannel,
+                    'notificationsEnabled': notificationsEnabled
+                } %}
+                {% if isMember and not activeChannel.isSubChannel %}
+                    <button type="button" class="btn-delete-channel"
+                            id="btn-subchannels-toggle"
+                            onclick="toggleSubChannelsSidebar()"
+                            title="{{ 'Afficher les sous-canaux'|trans }}"
+                            style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;">
+                        🌿 {{ 'Sous-canaux'|trans }} ({{ activeSubChannels|length }})
+                    </button>
+                {% endif %}
+                {% if isMember and not activeChannel.isDm %}
+                    {% if activeChannel.isPrivate and activeChannel.creator == app.user and not activeChannel.isSubChannel %}
+                        {% include 'dashboard/_invite_section.html.twig' with {'activeChannel': activeChannel, 'usersToInvite': usersToInvite} %}
+                    {% endif %}
+
+                    {% if activeChannel.isAdministrator(app.user) %}
+                        <button type="button" class="btn-delete-channel"
+                                style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;"
+                                hx-get="{{ path('app_channel_edit_modal', {slug: activeChannel.slug}) }}"
+                                hx-target="#modal-container"
+                                hx-trigger="click">⚙️ {{ 'Paramètres'|trans }}</button>
+                    {% endif %}
+
+                    {% if is_granted('ROLE_ADMIN') and not (activeChannel.creator and activeChannel.creator == app.user) %}
+                        <form action="{{ path('app_channel_delete', {slug: activeChannel.slug}) }}"
+                              method="POST"
+                              data-confirm="{{ 'Êtes-vous sûr de vouloir supprimer ce canal ? Tout l\'historique des messages sera perdu définitivement.'|trans }}"
+                              hx-boost="false">
+                            <button type="submit" class="btn-delete-channel">
+                                🗑️ {{ 'Supprimer'|trans }}</button>
+                        </form>
+                    {% endif %}
+
+                    {% if not activeChannel.isPrivate and activeChannel.slug != 'general' %}
+                        <form action="{{ path('app_channel_leave', {slug: activeChannel.slug}) }}"
+                              method="POST"
+                              data-confirm="{{ 'Êtes-vous sûr de vouloir quitter ce canal ?'|trans }}"
+                              hx-boost="false">
+                            <button type="submit" class="btn-delete-channel"
+                                    style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text-muted);">
+                                🚪 {{ 'Quitter'|trans }}</button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

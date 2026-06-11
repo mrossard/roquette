@@ -4,9 +4,7 @@ let historyIndex = -1; // -1 = not navigating
 let historyDraft = ''; // save current draft when entering history mode
 
 
-
 const isMobile = () => window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
 
 
 // Send message on Enter (without Shift or Alt) in the message textarea — with history & inline edit support via HTMX
@@ -31,7 +29,7 @@ document.addEventListener('keydown', (event) => {
             textarea.selectionStart = textarea.selectionEnd = start + 1;
 
             // Trigger input event to auto-resize textarea
-            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            textarea.dispatchEvent(new Event('input', {bubbles: true}));
         }
         return;
     }
@@ -64,7 +62,7 @@ document.addEventListener('keydown', (event) => {
             ? messageHistory.length - 1
             : Math.max(0, historyIndex - 1);
         textarea.value = messageHistory[historyIndex];
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.dispatchEvent(new Event('input', {bubbles: true}));
         textarea.selectionStart = textarea.selectionEnd = 0;
         return;
     }
@@ -82,7 +80,7 @@ document.addEventListener('keydown', (event) => {
             historyIndex = -1;
             textarea.value = historyDraft;
         }
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.dispatchEvent(new Event('input', {bubbles: true}));
         textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
         return;
     }
@@ -91,7 +89,7 @@ document.addEventListener('keydown', (event) => {
         if (historyIndex !== -1) {
             historyIndex = -1;
             textarea.value = historyDraft;
-            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            textarea.dispatchEvent(new Event('input', {bubbles: true}));
             textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
         }
         return;
@@ -210,7 +208,6 @@ export function saveMessageToHistory(text) {
     historyIndex = -1;
     historyDraft = '';
 }
-
 
 
 export function updateReactionBadges(currentUsername) {

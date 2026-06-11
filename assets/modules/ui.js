@@ -318,14 +318,10 @@ export function updateElementStatus(element, status, label) {
 }
 
 
-
-
-
-
 export function scrollToMessage(messageId) {
     const el = document.querySelector(`[data-message-id="${messageId}"]`);
     if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.scrollIntoView({behavior: 'smooth', block: 'center'});
         el.classList.add('highlight-pinned-message');
         setTimeout(() => {
             el.classList.remove('highlight-pinned-message');
@@ -601,22 +597,22 @@ export function showCustomAlert(message, title = 'Attention', icon = '⚠️', o
 
 export function initConfirmModals() {
     // Intercept HTMX confirm requests (only when hx-confirm is actually set)
-    document.body.addEventListener('htmx:confirm', function(evt) {
+    document.body.addEventListener('htmx:confirm', function (evt) {
         if (!evt.detail.question) return;
         evt.preventDefault();
-        showCustomConfirm(evt.detail.question, function() {
+        showCustomConfirm(evt.detail.question, function () {
             evt.detail.issueRequest(true);
         });
     });
 
     // Intercept standard form submissions with data-confirm
-    document.addEventListener('submit', function(evt) {
+    document.addEventListener('submit', function (evt) {
         const form = evt.target;
         if (form.hasAttribute('data-confirm')) {
             const message = form.getAttribute('data-confirm');
             if (!form.dataset.confirmed) {
                 evt.preventDefault();
-                showCustomConfirm(message, function() {
+                showCustomConfirm(message, function () {
                     form.dataset.confirmed = 'true';
                     form.submit();
                 });
@@ -849,6 +845,7 @@ export function toggleMobileChannelDetails() {
         }
     }
 }
+
 window.toggleMobileChannelDetails = toggleMobileChannelDetails;
 
 export function initSubChannelsSidebar() {

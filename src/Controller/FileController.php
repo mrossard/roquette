@@ -194,7 +194,7 @@ final class FileController extends AbstractController
             throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
         }
 
-        return $this->render('_lightbox_content.html.twig', [
+        return $this->render('modals/_lightbox_content.html.twig', [
             'message_id' => $message->getId(),
             'fileName' => $message->getFileName(),
             'previewUrl' => $this->generateUrl('app_file_preview', ['id' => $message->getId()]),

@@ -1,4 +1,4 @@
-{% embed '_modal_layout.html.twig' with {
+{% embed 'partials/_modal_layout.html.twig' with {
     id: 'channel-members-modal',
     content_style: 'max-width: 480px !important;'
 } %}
@@ -15,7 +15,8 @@
             <input type="text" id="member-search-input" placeholder="Rechercher un membre..." class="input-sidebar">
         </div>
 
-        <div id="modal-members-list" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.25rem;">
+        <div id="modal-members-list"
+             style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.25rem;">
             {% for member in activeChannel.members|sort((a, b) => (a.displayName|default(a.username))|lower <=> (b.displayName|default(b.username))|lower) %}
                 <div class="modal-member-item" data-username="{{ member.username|lower }}"
                      data-name="{{ (member.displayName|default(member.username))|lower }}"
@@ -23,10 +24,13 @@
                     <div style="display: flex; align-items: center; gap: 0.75rem; width: 100%;">
                         <div class="avatar-container"
                              style="position: relative; width: 36px; height: 36px; flex-shrink: 0;">
-                            <div class="user-avatar-circle" style="background-color: hsl({{ member.hue }}, 90%, var(--user-hue-lightness-border)); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1rem; box-shadow: 0 0 10px hsla({{ member.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
+                            <div class="user-avatar-circle"
+                                 style="background-color: hsl({{ member.hue }}, 90%, var(--user-hue-lightness-border)); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1rem; box-shadow: 0 0 10px hsla({{ member.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
                                 {{ member.username|slice(0,1)|upper }}
                             </div>
-                            <span class="status-dot-overlay {{ member.status }}" style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-card); display: block;" title="{{ member.statusLabel }}"></span>
+                            <span class="status-dot-overlay {{ member.status }}"
+                                  style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-card); display: block;"
+                                  title="{{ member.statusLabel }}"></span>
                         </div>
                         <div style="flex-grow: 1; min-width: 0;">
                             <div

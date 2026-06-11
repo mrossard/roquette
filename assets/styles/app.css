@@ -6171,6 +6171,48 @@ dialog.modal-backdrop-dialog#image-lightbox::backdrop {
     display: none;
 }
 
+/* Settings panel styles */
+.settings-panel select {
+    background-color: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-glass-hover);
+}
+
+/* Declarative visibility states based on current user session */
+.feed-item .btn-edit-subtle,
+.feed-item .btn-delete-subtle {
+    display: none !important;
+}
+
+.feed-item[data-is-author="true"]:not([data-poll-has-votes="1"]) .btn-edit-subtle {
+    display: inline-flex !important;
+}
+
+.feed-item[data-is-author="true"] .btn-delete-subtle {
+    display: inline-flex !important;
+}
+
+#live-feed[data-is-channel-creator="true"] .btn-delete-subtle {
+    display: inline-flex !important;
+}
+
+.feed-item[data-is-author="true"] .feed-item-user-link {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+
+.reaction-badge.active {
+    background: rgba(0, 229, 255, 0.08) !important;
+    border-color: var(--accent-cyan) !important;
+    color: var(--accent-cyan) !important;
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.15) !important;
+}
+
+.reaction-badge.active:hover {
+    background: rgba(0, 229, 255, 0.12) !important;
+    border-color: var(--accent-cyan) !important;
+}
+
+
 
 
 

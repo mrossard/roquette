@@ -1,4 +1,4 @@
-{% embed '_modal_layout.html.twig' with {
+{% embed 'partials/_modal_layout.html.twig' with {
     id: 'create-channel-modal',
     title: 'Créer un nouveau canal'
 } %}
@@ -25,9 +25,13 @@
                     <option value="0">Sans limite</option>
                 </select>
             </div>
-            <div class="input-group-checkbox" style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                <input type="checkbox" name="isPrivate" id="modal-isPrivate" class="input-checkbox" style="width: auto; cursor: pointer;">
-                <label for="modal-isPrivate" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">Canal privé</label>
+            <div class="input-group-checkbox"
+                 style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="isPrivate" id="modal-isPrivate" class="input-checkbox"
+                       style="width: auto; cursor: pointer;">
+                <label for="modal-isPrivate"
+                       style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">Canal
+                    privé</label>
             </div>
             <div class="input-group-checkbox"
                  style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">

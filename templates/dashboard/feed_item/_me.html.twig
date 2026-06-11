@@ -1,0 +1,29 @@
+<div class="feed-item-header">
+    <div class="feed-item-me-content">
+        <span
+            class="feed-item-time">{% if timestamp|date('Y-m-d') != 'now'|date('Y-m-d') %}{{ timestamp|date('d/m/Y') }} {% endif %}{{ timestamp|date('H:i') }}</span>
+        {% if author and author.username != constant('App\\Entity\\User::ROBOT_USERNAME') %}
+            <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link"
+               title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel}) }}">
+                <span class="feed-item-user">{{ username|wrap_emojis }}</span>
+            </a>
+        {% else %}
+            <span class="feed-item-user">{{ username|wrap_emojis }}</span>
+        {% endif %}
+        <span class="feed-item-me-text">
+            {% set me_content = message|slice(4) %}
+            {{ me_content|format_message }}
+        </span>
+        {% if updated_at is defined and updated_at %}
+            <span class="feed-item-edited-indicator"
+                  title="{{ 'Modifié le'|trans }} {{ updated_at|date('d/m/Y H:i') }}">(modifié)</span>
+        {% endif %}
+    </div>
+    {% include 'dashboard/_feed_item_actions.html.twig' %}
+</div>
+{% set message_reactions = messageObject is defined and messageObject ? messageObject.getGroupedReactions(app.user) : {} %}
+{% if message_reactions is not empty %}
+    <div class="feed-item-body" style="padding: 0; border: none; background: none; box-shadow: none;">
+        {% include 'dashboard/_feed_item_reactions.html.twig' %}
+    </div>
+{% endif %}

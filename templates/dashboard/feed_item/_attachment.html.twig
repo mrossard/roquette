@@ -1,0 +1,54 @@
+<div class="message-attachment">
+    <span class="attachment-icon">📎</span>
+    <div class="attachment-details">
+        <a href="{{ path('app_file_download', {id: message_id}) }}" class="attachment-link" hx-boost="false"
+           target="_blank" download>
+            {{ fileName }}
+        </a>
+        <span class="attachment-size">{{ fileSize|format_bytes }}</span>
+    </div>
+</div>
+{% set fileExt = fileName|split('.')|last|lower %}
+{% set isImage = (mimeType is defined and mimeType and mimeType starts with 'image/') or fileExt in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] %}
+{% set isAudio = (mimeType is defined and mimeType and mimeType starts with 'audio/') or fileExt in ['mp3', 'wav', 'ogg', 'm4a', 'aac'] %}
+{% set isVideo = (mimeType is defined and mimeType and mimeType starts with 'video/') or fileExt in ['mp4', 'webm', 'ogg', 'mov', 'avi'] %}
+{% set isPdf = (mimeType is defined and mimeType and mimeType == 'application/pdf') or fileExt == 'pdf' %}
+{% set isText = (mimeType is defined and mimeType and mimeType starts with 'text/') or fileExt in ['txt', 'log', 'md', 'html', 'css', 'js', 'json', 'php', 'yml', 'yaml', 'xml'] %}
+{% if isImage %}
+    <div class="attachment-preview image-preview-container">
+        <img src="{{ path('app_file_preview', {id: message_id}) }}" alt="{{ fileName }}"
+             class="preview-image" hx-get="{{ path('app_lightbox', {id: message_id}) }}"
+             hx-target="#modal-container" hx-trigger="click" style="cursor:pointer">
+    </div>
+{% elseif isAudio %}
+    <div class="attachment-preview audio-preview-container">
+        <audio controls preload="none" class="preview-audio">
+            <source src="{{ path('app_file_preview', {id: message_id}) }}"
+                    {% if mimeType is defined and mimeType %}type="{{ mimeType }}"{% endif %}>
+            {{ 'Votre navigateur ne supporte pas la lecture audio.'|trans }}
+        </audio>
+    </div>
+{% elseif isVideo %}
+    <div class="attachment-preview video-preview-container">
+        <video controls preload="metadata" class="preview-video">
+            <source src="{{ path('app_file_preview', {id: message_id}) }}"
+                    {% if mimeType is defined and mimeType %}type="{{ mimeType }}"{% endif %}>
+            {{ 'Votre navigateur ne supporte pas la lecture vidéo.'|trans }}
+        </video>
+    </div>
+{% elseif isPdf %}
+    <div class="attachment-preview pdf-preview-container">
+        <a href="{{ path('app_file_preview', {id: message_id}) }}" target="_blank" class="btn-preview-link">
+            <span class="btn-preview-icon">👁️</span> {{ 'Ouvrir le PDF'|trans }}
+        </a>
+    </div>
+{% elseif isText %}
+    <div class="attachment-preview text-preview-container" id="text-preview-wrapper-{{ message_id }}">
+        <button type="button" class="btn-preview-link text-preview-toggle"
+                hx-get="{{ path('app_file_text_preview', {id: message_id}) }}"
+                hx-target="#text-preview-wrapper-{{ message_id }}"
+                hx-swap="outerHTML">
+            <span class="btn-preview-icon">👁️</span> {{ 'Prévisualiser le texte'|trans }}
+        </button>
+    </div>
+{% endif %}

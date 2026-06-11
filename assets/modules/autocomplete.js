@@ -7,10 +7,10 @@ const autocompleteInitialized = new WeakSet();
 
 const SLASH_COMMANDS = [
     {name: 'help', icon: '🤖', description: 'Poser une question à l\'Assistant Roquette', usage: '/help <question>'},
-    { name: 'giphy',  icon: '🎞️',  description: 'Rechercher et envoyer un GIF animé',   usage: '/giphy <recherche>' },
-    { name: 'shrug',  icon: '🤷',  description: 'Envoyer le shrug ¯\\_(ツ)_/¯',         usage: '/shrug [texte]' },
-    { name: 'me',     icon: '💬',  description: 'Action',                                usage: '/me <message>' },
-    { name: 'color',  icon: '🎨',  description: 'Changer la couleur de votre pseudo',    usage: '/color [0-360]' },
+    {name: 'giphy', icon: '🎞️', description: 'Rechercher et envoyer un GIF animé', usage: '/giphy <recherche>'},
+    {name: 'shrug', icon: '🤷', description: 'Envoyer le shrug ¯\\_(ツ)_/¯', usage: '/shrug [texte]'},
+    {name: 'me', icon: '💬', description: 'Action', usage: '/me <message>'},
+    {name: 'color', icon: '🎨', description: 'Changer la couleur de votre pseudo', usage: '/color [0-360]'},
 ];
 
 function loadAutocompleteItems(type, query) {
@@ -259,7 +259,7 @@ function renderAutocompleteItems() {
         return;
     }
 
-    const { element, matches, activeIndex, type } = activeAutocomplete;
+    const {element, matches, activeIndex, type} = activeAutocomplete;
     element.innerHTML = '';
 
     if (type === 'command') {
@@ -335,7 +335,7 @@ function updateAutocompleteActiveIndex() {
 function selectAutocompleteEmoji(idx) {
     if (!activeAutocomplete) return;
 
-    const { textarea, startIndex, endIndex, matches } = activeAutocomplete;
+    const {textarea, startIndex, endIndex, matches} = activeAutocomplete;
     const selectedEmoji = matches[idx].emoji;
 
     const text = textarea.value;
@@ -346,7 +346,7 @@ function selectAutocompleteEmoji(idx) {
 
     textarea.focus();
 
-    const event = new Event('input', { bubbles: true });
+    const event = new Event('input', {bubbles: true});
     textarea.dispatchEvent(event);
 
     closeAutocomplete();
@@ -377,7 +377,7 @@ function selectAutocompleteUser(idx) {
 
     textarea.focus();
 
-    const event = new Event('input', { bubbles: true });
+    const event = new Event('input', {bubbles: true});
     textarea.dispatchEvent(event);
 
     closeAutocomplete();
@@ -411,7 +411,7 @@ function selectAutocompleteChannel(idx) {
 function selectAutocompleteCommand(idx) {
     if (!activeAutocomplete) return;
 
-    const { textarea, matches } = activeAutocomplete;
+    const {textarea, matches} = activeAutocomplete;
     const selectedCommand = matches[idx];
     const insertText = `/${selectedCommand.name} `;
 
@@ -419,7 +419,7 @@ function selectAutocompleteCommand(idx) {
     textarea.selectionStart = textarea.selectionEnd = insertText.length;
     textarea.focus();
 
-    const event = new Event('input', { bubbles: true });
+    const event = new Event('input', {bubbles: true});
     textarea.dispatchEvent(event);
 
     closeAutocomplete();
@@ -439,7 +439,7 @@ function handleTextareaKeydownForAutocomplete(textarea, e) {
         return;
     }
 
-    const { matches, activeIndex, type } = activeAutocomplete;
+    const {matches, activeIndex, type} = activeAutocomplete;
 
     if (e.key === 'ArrowDown') {
         e.preventDefault();

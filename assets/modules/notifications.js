@@ -50,13 +50,13 @@ export function sendDesktopNotification(title, body, icon = null, tag = null, ur
     try {
         const n = new Notification(title, options);
         if (url) {
-            n.onclick = function(e) {
+            n.onclick = function (e) {
                 e.preventDefault();
                 window.focus();
                 // Check if we are already on that URL to avoid reloading
                 if (window.location.pathname !== url) {
                     if (window.htmx) {
-                        window.htmx.ajax('GET', url, { target: 'body', pushUrl: true });
+                        window.htmx.ajax('GET', url, {target: 'body', pushUrl: true});
                     } else {
                         window.location.href = url;
                     }

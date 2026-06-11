@@ -34,7 +34,7 @@ final class ModalController extends AbstractController
 
         $webhooks = $webhookRepository->findBy(['channel' => $channel], ['createdAt' => 'ASC']);
 
-        return $this->render('_edit_channel_modal.html.twig', [
+        return $this->render('modals/_edit_channel_modal.html.twig', [
             'activeChannel' => $channel,
             'webhooks' => $webhooks,
         ]);
@@ -55,7 +55,7 @@ final class ModalController extends AbstractController
             return new Response('Accès refusé', 403);
         }
 
-        return $this->render('_invite_member_modal.html.twig', [
+        return $this->render('modals/_invite_member_modal.html.twig', [
             'activeChannel' => $channel,
             'usersToInvite' => [], // Starting empty, search is done via AJAX
         ]);
@@ -70,7 +70,7 @@ final class ModalController extends AbstractController
             return new Response('Canal non trouvé', 404);
         }
 
-        return $this->render('_channel_members_modal.html.twig', [
+        return $this->render('modals/_channel_members_modal.html.twig', [
             'activeChannel' => $channel,
         ]);
     }
@@ -78,6 +78,6 @@ final class ModalController extends AbstractController
     #[Route('/channels/create-modal', name: 'app_channel_create_modal', methods: ['GET'])]
     public function createModal(): Response
     {
-        return $this->render('_create_channel_modal.html.twig');
+        return $this->render('modals/_create_channel_modal.html.twig');
     }
 }

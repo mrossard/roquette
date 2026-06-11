@@ -1,4 +1,4 @@
-import { EMOJI_ALIASES } from './emoji-aliases.js';
+import {EMOJI_ALIASES} from './emoji-aliases.js';
 
 // Emoji definitions grouped by category
 export const EMOJI_CATEGORIES = [
@@ -220,7 +220,7 @@ export const EMOJI_KEYWORDS = {
     '👽': ['alien', 'extraterrestre', 'espace'],
     '👾': ['alien', 'monstre', 'pixel', 'jeu video', 'game'],
     '🤖': ['robot', 'technologie'],
-    
+
     // Gestes & Corps (Visages & Personnes)
     '👋': ['salut', 'coucou', 'au revoir', 'wave', 'bye', 'hello', 'main'],
     '👍': ['pouce', 'like', 'd\'accord', 'bravo', 'ok', 'super', 'cool', 'main'],
@@ -284,7 +284,7 @@ export const EMOJI_KEYWORDS = {
     '🐬': ['dauphin', 'dolphin', 'mer'],
     '🐟': ['poisson', 'fish', 'mer'],
     '🦖': ['dinosaure', 't-rex', 'dino'],
-    
+
     // Fleurs & Plantes
     '🌹': ['rose', 'fleur', 'flower', 'rouge'],
     '🌸': ['fleur cerisier', 'fleur', 'cherry blossom', 'rose'],
@@ -586,7 +586,7 @@ export const EMOJI_KEYWORDS = {
     '🆕': ['nouveau', 'new'],
     'FREE': ['gratuit', 'free'],
     '🆓': ['gratuit', 'free'],
-    
+
     // Drapeaux
     '🇫🇷': ['france', 'drapeau france', 'french', 'bleu blanc rouge'],
     '🇪🇺': ['europe', 'drapeau europe', 'ue'],

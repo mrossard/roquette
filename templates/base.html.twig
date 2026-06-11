@@ -49,59 +49,7 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
 
-        {% if app.user %}
-        <style>
-            :root {
-                --user-hue-primary: {{ app.user.hue }};
-                /* Override default accents with user custom hue settings */
-                --accent-cyan: hsl(var(--user-hue-primary), 100%, 45%);
-                --accent-cyan-glow: hsla(var(--user-hue-primary), 100%, 50%, 0.15);
-                --accent-purple: hsl(calc((var(--user-hue-primary) + 84) % 360), 91%, 65%);
-                --accent-purple-glow: hsla(calc((var(--user-hue-primary) + 84) % 360), 91%, 65%, 0.15);
-            }
-            [data-theme="light"] {
-                --accent-cyan: hsl(var(--user-hue-primary), 100%, 30%);
-                --accent-cyan-glow: hsla(var(--user-hue-primary), 100%, 30%, 0.15);
-                --accent-purple: hsl(calc((var(--user-hue-primary) + 84) % 360), 75%, 45%);
-                --accent-purple-glow: hsla(calc((var(--user-hue-primary) + 84) % 360), 75%, 45%, 0.15);
-            }
 
-            /* Declarative visibility states based on current user session */
-            .feed-item .btn-edit-subtle,
-            .feed-item .btn-delete-subtle {
-                display: none !important;
-            }
-
-            .feed-item[data-author-username="{{ app.user.username }}"]:not([data-poll-has-votes="1"]) .btn-edit-subtle {
-                display: inline-flex !important;
-            }
-
-            .feed-item[data-author-username="{{ app.user.username }}"] .btn-delete-subtle {
-                display: inline-flex !important;
-            }
-
-            #live-feed[data-is-channel-creator="true"] .btn-delete-subtle {
-                display: inline-flex !important;
-            }
-
-            .feed-item[data-author-username="{{ app.user.username }}"] .feed-item-user-link {
-                pointer-events: none !important;
-                cursor: default !important;
-            }
-
-            .reaction-badge[data-reactors~="{{ app.user.username }}"] {
-                background: rgba(0, 229, 255, 0.08) !important;
-                border-color: var(--accent-cyan) !important;
-                color: var(--accent-cyan) !important;
-                box-shadow: 0 0 8px rgba(0, 229, 255, 0.15) !important;
-            }
-
-            .reaction-badge[data-reactors~="{{ app.user.username }}"]:hover {
-                background: rgba(0, 229, 255, 0.12) !important;
-                border-color: var(--accent-cyan) !important;
-            }
-        </style>
-        {% endif %}
 
         {% block stylesheets %}
         {% endblock %}
@@ -119,9 +67,9 @@
         {% block body %}{% endblock %}
 
         {% if app.user %}
-            {% include '_global_search_modal.html.twig' %}
-            {% include '_busy_status_modal.html.twig' %}
-            {% include '_confirmation_dialogs.html.twig' %}
+            {% include 'modals/_global_search_modal.html.twig' %}
+            {% include 'modals/_busy_status_modal.html.twig' %}
+            {% include 'partials/_confirmation_dialogs.html.twig' %}
             <div id="modal-container" hx-target="this" hx-swap="innerHTML"></div>
             <div hx-post="{{ path('app_user_ping') }}"
                  hx-trigger="load delay:1s, every 60s"
