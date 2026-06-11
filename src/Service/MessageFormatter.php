@@ -186,7 +186,7 @@ class MessageFormatter
                     return (
                         '<a href="'
                         .$url
-                        .'" class="channel-ref">#'
+                        .'" class="channel-ref" hx-boost="false">#'
                         .htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8')
                         .'</a>'
                     );

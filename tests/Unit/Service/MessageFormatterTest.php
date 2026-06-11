@@ -464,6 +464,9 @@ class MessageFormatterTest extends TestCase
             ->willReturn($channel);
 
         $result = $this->formatter->format('Rejoignez #general pour discuter !');
-        $this->assertStringContainsString('<a href="/channels/general" class="channel-ref">#Général</a>', $result);
+        $this->assertStringContainsString(
+            '<a href="/channels/general" class="channel-ref" hx-boost="false">#Général</a>',
+            $result,
+        );
     }
 }
