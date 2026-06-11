@@ -1,3 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <text y="0.9em" font-size="100">🚀</text>
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="100%" stop-color="#0098a8"/>
+    </linearGradient>
+  </defs>
+  <path d="M64 8 L48 80 L64 72 L80 80 Z" fill="url(#b)"/>
+  <circle cx="64" cy="20" r="8" fill="url(#b)"/>
+  <path d="M48 80 L40 100 L48 95 L52 80 Z" fill="#007a8a"/>
+  <path d="M80 80 L88 100 L80 95 L76 80 Z" fill="#007a8a"/>
+  <path d="M60 80 L64 105 L68 80 Z" fill="#0098a8"/>
+  <circle cx="64" cy="40" r="7" fill="#0f172a"/>
+  <circle cx="64" cy="40" r="5.5" fill="#1e293b"/>
+  <ellipse cx="63" cy="38.8" rx="2.5" ry="2" fill="#38bdf8" opacity="0.6"/>
+  <path d="M58 100 Q64 120 70 100 Q64 108 58 100 Z" fill="#ff6b35" opacity="0.9"/>
+  <path d="M61 100 Q64 113 67 100 Q64 105 61 100 Z" fill="#ffca28" opacity="0.8"/>
 </svg>

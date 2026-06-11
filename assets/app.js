@@ -50,6 +50,10 @@ import { buildEmojiPickerDOM } from './emoji.js';
 import './offline.js';
 import './search-builder.js';
 
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+}
+
 console.log('Roquette application initialized! 🚀');
 
 function initAutoResizeTextarea() {

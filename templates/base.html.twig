@@ -43,6 +43,11 @@
         </script>
         <title>{% block title %}Welcome!{% endblock %}</title>
         <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+        <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+        <meta name="theme-color" content="#00e5ff">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
 
         {% if app.user %}
         <style>

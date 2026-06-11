@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="100%" stop-color="#0098a8"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff6b35"/>
+      <stop offset="50%" stop-color="#ffca28"/>
+      <stop offset="100%" stop-color="#ff6b35" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Fuselage -->
+  <path d="M256 32 L192 320 L256 288 L320 320 Z" fill="url(#body)"/>
+  <!-- Nose cone -->
+  <circle cx="256" cy="80" r="32" fill="url(#body)"/>
+  <!-- Left fin -->
+  <path d="M192 320 L160 400 L192 380 L208 320 Z" fill="#007a8a"/>
+  <!-- Right fin -->
+  <path d="M320 320 L352 400 L320 380 L304 320 Z" fill="#007a8a"/>
+  <!-- Center fin -->
+  <path d="M240 320 L256 420 L272 320 Z" fill="#0098a8"/>
+  <!-- Window -->
+  <circle cx="256" cy="160" r="28" fill="#0f172a"/>
+  <circle cx="256" cy="160" r="22" fill="#1e293b"/>
+  <ellipse cx="252" cy="155" rx="10" ry="8" fill="#38bdf8" opacity="0.6"/>
+  <!-- Flame -->
+  <path d="M232 400 Q256 480 280 400 Q256 430 232 400 Z" fill="url(#flame)" opacity="0.9"/>
+  <!-- Flame inner -->
+  <path d="M244 400 Q256 450 268 400 Q256 420 244 400 Z" fill="#ffca28" opacity="0.8"/>
+</svg>
