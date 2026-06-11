@@ -33,12 +33,12 @@
         <path d="M 236 420 C 232 440 242 465 256 478 C 270 465 280 440 276 420 Z" fill="#fff8e1" opacity="0.85"/>
 
         <!-- Left fin -->
-        <path d="M 180 340 Q 144 410 158 428 L 210 420 Z" fill="#e74c3c"/>
-        <path d="M 180 340 Q 165 390 172 428 L 210 420 Z" fill="#ffffff" opacity="0.12"/>
+        <path d="M 180 310 Q 132 410 148 452 L 210 420 Z" fill="#e74c3c"/>
+        <path d="M 180 310 Q 160 380 168 452 L 210 420 Z" fill="#ffffff" opacity="0.12"/>
 
         <!-- Right fin -->
-        <path d="M 332 340 Q 368 410 354 428 L 302 420 Z" fill="#e74c3c"/>
-        <path d="M 332 340 Q 347 390 340 428 L 302 420 Z" fill="#ffffff" opacity="0.12"/>
+        <path d="M 332 310 Q 380 410 364 452 L 302 420 Z" fill="#e74c3c"/>
+        <path d="M 332 310 Q 352 380 344 452 L 302 420 Z" fill="#ffffff" opacity="0.12"/>
 
         <!-- Rocket body -->
         <path
@@ -57,9 +57,9 @@
               fill="#ffffff" opacity="0.35"/>
 
         <!-- Center fin (edge-on, in front of body) -->
-        <path d="M 244 370 L 256 460 L 268 370 Z" fill="#a93226"/>
-        <path d="M 248 370 L 256 444 L 264 370 Z" fill="#c0392b"/>
-        <path d="M 250 370 L 256 434 L 262 370 Z" fill="#e74c3c" opacity="0.4"/>
+        <path d="M 240 360 L 256 480 L 272 360 Z" fill="#a93226"/>
+        <path d="M 245 360 L 256 462 L 267 360 Z" fill="#c0392b"/>
+        <path d="M 249 360 L 256 448 L 263 360 Z" fill="#e74c3c" opacity="0.4"/>
 
         <!-- Window outer -->
         <circle cx="256" cy="250" r="34" fill="#2c3e50"/>
