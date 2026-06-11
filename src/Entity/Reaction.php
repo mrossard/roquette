@@ -21,7 +21,7 @@ class Reaction
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Message $message = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(inversedBy: 'reactions')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?User $user = null;
 

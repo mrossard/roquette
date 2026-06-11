@@ -50,6 +50,15 @@
                 </a>
             </div>
 
+            <div class="sidebar-reactions-link-wrapper" style="margin-bottom: 0.75rem;">
+                <a href="{{ path('app_my_reactions') }}"
+                   class="btn-sidebar-item {% if app.request.attributes.get('_route') == 'app_my_reactions' or app.request.attributes.get('_route') == 'app_my_reactions_filtered' %}active{% endif %}"
+                   style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 0.5rem; text-decoration: none; color: var(--text-primary); transition: var(--transition-smooth); font-size: 0.9rem; font-weight: 500; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass);">
+                    <span style="font-size: 1.1rem; line-height: 1;">💬</span>
+                    <span>{{ 'Mes réactions'|trans }}</span>
+                </a>
+            </div>
+
             {% if robotChannel %}
                 <div class="sidebar-robot-link-wrapper" style="margin-bottom: 1.5rem;">
                     {% include 'dashboard/_channel_sidebar_item.html.twig' with {

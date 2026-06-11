@@ -11,6 +11,7 @@ use App\Entity\Message;
 use App\Message\LlmQueryMessage;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
+use App\Repository\ReactionRepository;
 use App\Service\FileUploadService;
 use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
@@ -481,6 +482,35 @@ final class MessageController extends AbstractController
         return $this->render('dashboard/saved_messages.html.twig', [
             'channels' => $channels,
             'savedMessages' => $savedMessages,
+            'activeChannel' => null,
+        ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // My reactions page
+    // -------------------------------------------------------------------------
+
+    #[Route('/my-reactions', name: 'app_my_reactions', methods: ['GET'])]
+    #[Route('/my-reactions/{emoji}', name: 'app_my_reactions_filtered', methods: ['GET'])]
+    public function myReactions(
+        ReactionRepository $reactionRepository,
+        ChannelRepository $channelRepository,
+        ?string $emoji = null,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        $channels = $channelRepository->findAllForUser($currentUser);
+        $messages = $emoji
+            ? $reactionRepository->findDistinctMessagesByUserAndEmoji($currentUser, $emoji)
+            : $reactionRepository->findDistinctMessagesByUser($currentUser);
+        $userEmojis = $reactionRepository->findUserEmojis($currentUser);
+
+        return $this->render('dashboard/my_reactions.html.twig', [
+            'channels' => $channels,
+            'reactedMessages' => $messages,
+            'userEmojis' => $userEmojis,
+            'activeEmoji' => $emoji,
             'activeChannel' => null,
         ]);
     }

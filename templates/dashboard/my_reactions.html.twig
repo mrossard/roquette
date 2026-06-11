@@ -1,0 +1,111 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Roquette - {{ 'Mes réactions'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+    {% set mercureTopics = [
+        mercure_topic_prefix ~ '/users/' ~ app.user.username,
+        mercure_topic_prefix ~ '/users/status'
+    ] %}
+    {% for ch in channels %}
+        {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
+    {% endfor %}
+    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
+    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
+        <header class="app-header">
+            <div class="logo-area">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+                <span class="logo-rocket">🚀</span>
+                <div class="logo-text">
+                    <h1>Roquette</h1>
+                    <p class="subtitle">Symfony + HTMX + Mercure + AssetMapper</p>
+                </div>
+            </div>
+
+            {% include 'dashboard/_header_controls.html.twig' %}
+        </header>
+
+        <main class="dashboard-grid">
+            {% include 'dashboard/_sidebar.html.twig' with {
+                'channels': channels,
+                'activeChannel': null
+            } %}
+
+            <section class="card glass-panel chat-panel">
+                <div class="card-header chat-header">
+                    <div>
+                        <h2>💬 {{ 'Mes réactions'|trans }}</h2>
+                        <p class="card-description" style="margin-top: 0.25rem;">
+                            Retrouvez ici tous les messages auxquels vous avez réagi.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card-body chat-body" style="padding: 1rem 1.5rem; overflow-y: auto;">
+                    <div class="reaction-filter-bar"
+                         style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <a href="{{ path('app_my_reactions') }}"
+                           style="text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.85rem; color: var(--text-muted); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); {% if activeEmoji is null %}background: var(--accent-primary); color: #fff; border-color: var(--accent-primary);{% endif %}">
+                            {{ 'Tout'|trans }}
+                        </a>
+                        {% for emoji in userEmojis %}
+                            <a href="{{ path(activeEmoji == emoji ? 'app_my_reactions' : 'app_my_reactions_filtered', activeEmoji == emoji ? {} : {emoji: emoji}) }}"
+                               style="text-decoration: none; padding: 0.3rem 0.6rem; border-radius: 0.5rem; font-size: 1.2rem; line-height: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); {% if activeEmoji == emoji %}background: var(--accent-primary); border-color: var(--accent-primary);{% endif %}">
+                                {{ emoji }}
+                            </a>
+                        {% endfor %}
+                    </div>
+
+                    <div class="messages-feed" id="live-feed">
+                        {% if reactedMessages is empty %}
+                            <div class="empty-state" id="feed-empty-state"
+                                 style="text-align: center; padding: 4rem 2rem;">
+                                <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">💬</span>
+                                <h3>{{ 'Aucune réaction'|trans }}</h3>
+                                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+                                    Réagissez à des messages dans vos canaux avec des émojis pour les retrouver ici.
+                                </p>
+                            </div>
+                        {% else %}
+                            {% for msg in reactedMessages %}
+                                <div
+                                    style="margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 1.5rem;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; background: rgba(255,255,255,0.02); padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.03);">
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">
+                                        Provenance :
+                                        {% if msg.channel.isDm %}
+                                            {% set partner = msg.channel.getDmPartner(app.user) %}
+                                            <strong>💬 Conversation privée avec {{ partner ? partner.displayName|default(partner.username) : 'un utilisateur' }}</strong>
+                                        {% else %}
+                                            <strong>#{{ msg.channel.name }}</strong>
+                                        {% endif %}
+                                    </span>
+                                        <a href="{{ path('app_channel', {slug: msg.channel.slug}) }}"
+                                           class="btn-reply-subtle" style="font-size: 0.75rem; text-decoration: none;">
+                                            Y aller →
+                                        </a>
+                                    </div>
+                                    {% include 'dashboard/_feed_item.html.twig' with {
+                                        'messageObject': msg
+                                    } %}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+{% endblock %}

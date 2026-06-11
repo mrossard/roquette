@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Message;
 use App\Entity\Reaction;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,5 +18,54 @@ class ReactionRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Reaction::class);
+    }
+
+    /**
+     * @return array<int, Message>
+     */
+    public function findDistinctMessagesByUser(User $user): array
+    {
+        return $this
+            ->getEntityManager()->createQuery(
+            'SELECT m FROM App\Entity\Message m
+             JOIN App\Entity\Reaction r WITH r.message = m
+             WHERE r.user = :user
+             GROUP BY m.id
+             ORDER BY MAX(m.createdAt) DESC',
+        )->setParameter('user', $user)
+            ->getResult();
+    }
+
+    /**
+     * @return array<int, Message>
+     */
+    public function findDistinctMessagesByUserAndEmoji(User $user, string $emoji): array
+    {
+        return $this
+            ->getEntityManager()->createQuery(
+            'SELECT m FROM App\Entity\Message m
+             JOIN App\Entity\Reaction r WITH r.message = m
+             WHERE r.user = :user AND r.emoji = :emoji
+             GROUP BY m.id
+             ORDER BY MAX(m.createdAt) DESC',
+        )->setParameter('user', $user)
+            ->setParameter('emoji', $emoji)
+            ->getResult();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function findUserEmojis(User $user): array
+    {
+        return $this
+            ->createQueryBuilder('r')
+            ->select('r.emoji')
+            ->where('r.user = :user')
+            ->groupBy('r.emoji')
+            ->orderBy('COUNT(r.id)', 'DESC')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleColumnResult();
     }
 }

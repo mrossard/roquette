@@ -98,10 +98,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\JoinTable(name: 'user_saved_messages')]
     private Collection $savedMessages;
 
+    /**
+     * @var Collection<int, Reaction>
+     */
+    #[ORM\OneToMany(targetEntity: Reaction::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $reactions;
+
     public function __construct()
     {
         $this->privateChannels = new ArrayCollection();
         $this->savedMessages = new ArrayCollection();
+        $this->reactions = new ArrayCollection();
     }
 
     public function getChannelOrder(): ?array
@@ -465,6 +472,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->savedMessages->removeElement($message);
 
         return $this;
+    }
+
+    /**
+     * @return Collection<int, Reaction>
+     */
+    public function getReactions(): Collection
+    {
+        return $this->reactions;
     }
 
     public function getSlug(): ?string
