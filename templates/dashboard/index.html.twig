@@ -173,30 +173,37 @@
                                               style="display: none;"></span>
                                     </div>
 
-                                    {% set channelUnread = unreadCounts[activeChannel.id] is defined ? unreadCounts[activeChannel.id].count : 0 %}
-                                    <label class="btn-unread-filter-wrapper"
-                                           style="display: inline-flex; align-items: center; margin: 0; padding: 0;">
-                                        <input type="checkbox"
-                                               name="unread"
-                                               value="1"
-                                               id="unread-filter-checkbox"
-                                               style="display: none;">
-                                        <div id="btn-unread-filter"
-                                             class="btn-unread-filter"
-                                             title="{{ 'Afficher uniquement les messages non lus'|trans }}"
-                                             aria-label="{{ 'Filtrer les messages non lus'|trans }}"
-                                             style="cursor: pointer;">
-                                            <span class="unread-filter-icon">🔔</span>
-                                            <span>{{ 'Non lus'|trans }}</span>
-                                            {% if channelUnread > 0 %}
-                                                <span class="unread-filter-badge"
-                                                      id="unread-filter-badge-count">{{ channelUnread }}</span>
-                                            {% else %}
-                                                <span class="unread-filter-badge unread-filter-badge-zero"
-                                                      id="unread-filter-badge-count" style="display:none;">0</span>
-                                            {% endif %}
-                                        </div>
-                                    </label>
+                                    {% if activeChannel.isTodoList() %}
+                                        <button type="button" class="btn-hide-completed"
+                                                onclick="document.getElementById('live-feed').classList.toggle('hide-todo-completed'); this.classList.toggle('active');">
+                                            {{ 'Masquer les tâches terminées'|trans }}
+                                        </button>
+                                    {% else %}
+                                        {% set channelUnread = unreadCounts[activeChannel.id] is defined ? unreadCounts[activeChannel.id].count : 0 %}
+                                        <label class="btn-unread-filter-wrapper"
+                                               style="display: inline-flex; align-items: center; margin: 0; padding: 0;">
+                                            <input type="checkbox"
+                                                   name="unread"
+                                                   value="1"
+                                                   id="unread-filter-checkbox"
+                                                   style="display: none;">
+                                            <div id="btn-unread-filter"
+                                                 class="btn-unread-filter"
+                                                 title="{{ 'Afficher uniquement les messages non lus'|trans }}"
+                                                 aria-label="{{ 'Filtrer les messages non lus'|trans }}"
+                                                 style="cursor: pointer;">
+                                                <span class="unread-filter-icon">🔔</span>
+                                                <span>{{ 'Non lus'|trans }}</span>
+                                                {% if channelUnread > 0 %}
+                                                    <span class="unread-filter-badge"
+                                                          id="unread-filter-badge-count">{{ channelUnread }}</span>
+                                                {% else %}
+                                                    <span class="unread-filter-badge unread-filter-badge-zero"
+                                                          id="unread-filter-badge-count" style="display:none;">0</span>
+                                                {% endif %}
+                                            </div>
+                                        </label>
+                                    {% endif %}
                                 </form>
                             {% endif %}
 

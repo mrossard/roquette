@@ -200,7 +200,7 @@ final class MessageController extends AbstractController
         $renderedHtml = $this->renderFeedItem($message);
 
         $previousMessages = $messageRepository->findLatestInChannel($activeChannel, 1, $message->getId());
-        if ($previousMessages !== []) {
+        if ($previousMessages !== [] && !$activeChannel->isTodoList()) {
             $previousDate = $previousMessages[0]->getCreatedAt()->format('Y-m-d');
             $newDate = $message->getCreatedAt()->format('Y-m-d');
             if ($previousDate !== $newDate) {

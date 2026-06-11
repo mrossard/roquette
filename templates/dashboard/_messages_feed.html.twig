@@ -13,7 +13,9 @@
     {% for message in messages %}
         {% set currentDate = message.createdAt|date('Y-m-d') %}
         {% if lastDate is null or currentDate != lastDate %}
-            {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+            {% if not activeChannel.isTodoList() %}
+                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+            {% endif %}
             {% set lastDate = currentDate %}
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
@@ -48,7 +50,9 @@
     {% for message in messages %}
         {% set currentDate = message.createdAt|date('Y-m-d') %}
         {% if lastDate is null or currentDate != lastDate %}
-            {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+            {% if not activeChannel.isTodoList() %}
+                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+            {% endif %}
             {% set lastDate = currentDate %}
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
@@ -79,7 +83,9 @@
     {% for message in messages %}
         {% set currentDate = message.createdAt|date('Y-m-d') %}
         {% if lastDate is null or currentDate != lastDate %}
-            {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+            {% if not activeChannel.isTodoList() %}
+                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+            {% endif %}
             {% set lastDate = currentDate %}
         {% endif %}
         {% include 'dashboard/_feed_item.html.twig' with {
@@ -107,7 +113,9 @@
     {% for message in messages %}
         {% set currentDate = message.createdAt|date('Y-m-d') %}
         {% if lastDate is null or currentDate != lastDate %}
-            {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+            {% if not activeChannel.isTodoList() %}
+                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+            {% endif %}
             {% set lastDate = currentDate %}
         {% endif %}
         {% if firstUnreadMessageId|default(null) and message.id >= firstUnreadMessageId and not separatorShown and message.author.id != app.user.id %}
