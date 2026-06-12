@@ -850,6 +850,43 @@ window.initConfirmModals = initConfirmModals;
 window.openModal = openModal;
 window.closeModal = closeModal;
 
+/**
+ * Ouvre le lightbox natif (dialog) pour une image externe (URL directe).
+ * Réutilise #image-lightbox s'il existe déjà dans le DOM, sinon le crée.
+ */
+export function openExternalImageLightbox(url) {
+    let dialog = document.getElementById('image-lightbox');
+    if (!dialog) {
+        dialog = document.createElement('dialog');
+        dialog.id = 'image-lightbox';
+        dialog.className = 'modal-backdrop-dialog';
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-label', "Aperçu de l'image");
+        document.body.appendChild(dialog);
+
+        // Fermer en cliquant sur le backdrop
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) closeModal('image-lightbox');
+        });
+    }
+
+    // Mettre à jour le contenu
+    dialog.innerHTML = `
+        <div class="lightbox-content">
+            <button type="button" onclick="closeModal('image-lightbox')" class="btn-close-lightbox" aria-label="Fermer l'aperçu">&times;</button>
+            <img src="${url}" alt="Image">
+            <div class="lightbox-caption">
+                <a href="${url}" class="btn-lightbox-download" target="_blank" rel="noopener noreferrer">Ouvrir</a>
+            </div>
+        </div>`;
+
+    dialog.showModal();
+}
+
+window.openExternalImageLightbox = openExternalImageLightbox;
+
+
 window.openGlobalSearch = openGlobalSearch;
 window.closeGlobalSearch = closeGlobalSearch;
 window.initGlobalSearch = initGlobalSearch;

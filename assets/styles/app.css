@@ -4711,7 +4711,7 @@ del {
     overflow: hidden;
 }
 
-/* Offline messages queue styling */
+
 .feed-item.offline-pending {
     position: relative;
     border-left: 3px solid var(--accent-orange, #f59e0b) !important;

@@ -27,18 +27,24 @@ final class LinkPreviewController extends AbstractController
             return new JsonResponse(['error' => 'URL parameter is missing'], 400);
         }
 
-        $preview = $this->linkPreviewService->getPreview($url);
-        if (!$preview) {
+        $result = $this->linkPreviewService->getPreviewWithType($url);
+        if (!$result) {
             // Return empty 200 response so HTMX replaces the placeholder with nothing, effectively removing it.
             return new Response('', 200);
         }
 
+        if ($result['type'] === 'direct_image') {
+            return $this->render('dashboard/_image_preview.html.twig', [
+                'url' => $result['url'],
+            ]);
+        }
+
         return $this->render('dashboard/_link_preview.html.twig', [
-            'url' => $preview['url'],
-            'title' => $preview['title'],
-            'description' => $preview['description'],
-            'image' => $preview['image'],
-            'siteName' => $preview['siteName'],
+            'url' => $result['url'],
+            'title' => $result['title'],
+            'description' => $result['description'],
+            'image' => $result['image'],
+            'siteName' => $result['siteName'],
         ]);
     }
 }

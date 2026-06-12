@@ -44,6 +44,7 @@ class AppExtension extends AbstractExtension
             new TwigFilter('format_bytes', [$this, 'formatBytes']),
             new TwigFilter('reaction_tooltip', [$this, 'formatReactionTooltip']),
             new TwigFilter('extract_external_links', [$this, 'extractExternalLinks']),
+            new TwigFilter('is_image_url', [$this, 'isImageUrl']),
         ];
     }
 
@@ -60,6 +61,21 @@ class AppExtension extends AbstractExtension
         }
 
         return array_values(array_unique($matches[0]));
+    }
+
+    /**
+     * Vérifie si une URL pointe vers une image en se basant uniquement sur l'extension.
+     * Utilisé dans les templates Twig pour éviter les placeholders HTMX pour les images directes.
+     */
+    public function isImageUrl(?string $url): bool
+    {
+        if (!$url) {
+            return false;
+        }
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'bmp', 'tiff', 'tif'];
+        $path = parse_url($url, PHP_URL_PATH) ?? '';
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        return in_array($ext, $imageExtensions, true);
     }
 
     public function formatBytes(int $bytes, int $precision = 2): string

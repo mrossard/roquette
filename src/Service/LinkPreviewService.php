@@ -15,8 +15,58 @@ class LinkPreviewService
         private readonly HttpClientInterface $httpClient,
     ) {}
 
+    private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'bmp', 'tiff', 'tif'];
+
     /**
-     * Obthient l'aperçu du lien (Open Graph) ou null s'il échoue.
+     * Vérifie si l'URL pointe directement vers une image (extension ou Content-Type).
+     */
+    public function isDirectImageUrl(string $url): bool
+    {
+        $path = parse_url($url, PHP_URL_PATH) ?? '';
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (in_array($ext, self::IMAGE_EXTENSIONS, true)) {
+            return true;
+        }
+
+        // Pas d'extension image : on fait un HEAD pour vérifier le Content-Type
+        try {
+            $response = $this->httpClient->request('HEAD', $url, [
+                'timeout' => 1.5,
+                'max_redirects' => 3,
+                'headers' => ['User-Agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)'],
+            ]);
+            $contentType = $response->getHeaders(false)['content-type'][0] ?? '';
+            return str_starts_with($contentType, 'image/');
+        } catch (\Exception) {
+            return false;
+        }
+    }
+
+    /**
+     * Retourne un tableau avec 'type' => 'direct_image' ou les métadonnées OG, ou null.
+     * Utilisé par le contrôleur pour choisir le template de rendu.
+     */
+    public function getPreviewWithType(string $url): ?array
+    {
+        $url = trim($url);
+        if (!$this->isSafeUrl($url)) {
+            return null;
+        }
+
+        if ($this->isDirectImageUrl($url)) {
+            return ['type' => 'direct_image', 'url' => $url];
+        }
+
+        $preview = $this->getPreview($url);
+        if ($preview === null) {
+            return null;
+        }
+
+        return array_merge(['type' => 'og_preview'], $preview);
+    }
+
+    /**
+     * Obtient l'aperçu du lien (Open Graph) ou null s'il échoue.
      */
     public function getPreview(string $url): ?array
     {
