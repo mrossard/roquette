@@ -283,7 +283,7 @@ class MessageFormatter
 
                 $emojisDir = $this->projectDir . '/public/uploads/emojis';
                 if (!is_dir($emojisDir)) {
-                    mkdir($emojisDir, 0777, true);
+                    mkdir($emojisDir, 0o777, true);
                 }
 
                 $localPath = $emojisDir . '/' . $filename;

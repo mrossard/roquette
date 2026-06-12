@@ -210,36 +210,34 @@ final class ChannelController extends AbstractController
         $typingUsers = [];
         if ($isMember && $activeChannel) {
             $cacheKey = 'channel_typing_' . $activeChannel->getSlug();
-            $typingUsersFromCache = $this->cache->get($cacheKey, function () {
-                return [];
-            });
+            $typingUsersFromCache = $this->cache->get($cacheKey, static fn() => []);
 
             $now = time();
             $changed = false;
             foreach ($typingUsersFromCache as $username => $info) {
-                if ($info['expires_at'] < $now) {
-                    unset($typingUsersFromCache[$username]);
-                    $changed = true;
+                if ($info['expires_at'] >= $now) {
+                    continue;
                 }
+
+                unset($typingUsersFromCache[$username]);
+                $changed = true;
             }
 
             if ($changed) {
                 $this->cache->delete($cacheKey);
-                $this->cache->get($cacheKey, function () use ($typingUsersFromCache) {
-                    return $typingUsersFromCache;
-                });
+                $this->cache->get($cacheKey, static fn() => $typingUsersFromCache);
             }
 
             if ($currentUser) {
                 unset($typingUsersFromCache[$currentUser->getUsername()]);
             }
 
-            $typingUsers = array_map(fn($info) => $info['name'], array_values($typingUsersFromCache));
+            $typingUsers = array_map(static fn($info) => $info['name'], array_values($typingUsersFromCache));
         }
 
         $subChannelsByParent = $this->buildSubChannelsByParent($channels);
 
-        $messageIds = array_map(fn(Message $m) => $m->getId(), $messages);
+        $messageIds = array_map(static fn(Message $m) => $m->getId(), $messages);
         $replyCounts = $messageRepository->findReplyCounts($messageIds);
 
         return $this->render('dashboard/index.html.twig', [
@@ -305,7 +303,7 @@ final class ChannelController extends AbstractController
         $hasMore = count($moreMessages) === 50;
         $nextBeforeId = count($moreMessages) > 0 ? $moreMessages[0]->getId() : null;
 
-        $messageIds = array_map(fn(Message $m) => $m->getId(), $moreMessages);
+        $messageIds = array_map(static fn(Message $m) => $m->getId(), $moreMessages);
         $replyCounts = $messageRepository->findReplyCounts($messageIds);
 
         return $this->render('dashboard/_more_messages.html.twig', [
@@ -770,9 +768,11 @@ final class ChannelController extends AbstractController
 
         // Remove existing administrators that are not in the submitted list
         foreach ($channel->getAdministrators() as $admin) {
-            if (!in_array((string) $admin->getId(), $adminIds, true)) {
-                $channel->removeAdministrator($admin);
+            if (in_array((string) $admin->getId(), $adminIds, true)) {
+                continue;
             }
+
+            $channel->removeAdministrator($admin);
         }
         // Add new administrators
         foreach ($adminIds as $adminId) {
@@ -969,10 +969,12 @@ final class ChannelController extends AbstractController
     {
         $map = [];
         foreach ($channels as $ch) {
-            if ($ch->isSubChannel() && $ch->getParentMessage()) {
-                $parentId = $ch->getParentMessage()->getChannel()->getId();
-                $map[$parentId][] = $ch;
+            if (!($ch->isSubChannel() && $ch->getParentMessage())) {
+                continue;
             }
+
+            $parentId = $ch->getParentMessage()->getChannel()->getId();
+            $map[$parentId][] = $ch;
         }
 
         return $map;

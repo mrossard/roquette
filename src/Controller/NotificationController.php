@@ -83,14 +83,15 @@ final class NotificationController extends AbstractController
             $messages = $messageRepository->findUnreadInChannel($activeChannel, $currentUser, $lastReadMessageId);
 
             if ($query !== '') {
-                $messages = array_filter($messages, function ($m) use ($query) {
-                    return (
+                $messages = array_filter(
+                    $messages,
+                    static fn($m) => (
                         mb_strpos(mb_strtolower($m->getContent(), 'UTF-8'), mb_strtolower($query, 'UTF-8')) !== false
-                    );
-                });
+                    ),
+                );
             }
 
-            $messageIds = array_map(fn(Message $m) => (int) $m->getId(), $messages);
+            $messageIds = array_map(static fn(Message $m) => (int) $m->getId(), $messages);
             $replyCounts = $messageRepository->findReplyCounts($messageIds);
 
             return $this->render('dashboard/_messages_feed.html.twig', [
@@ -107,7 +108,7 @@ final class NotificationController extends AbstractController
             $messages = $messageRepository->findLatestInChannel($activeChannel, 50);
             $messages = array_reverse($messages);
 
-            $messageIds = array_map(fn(Message $m) => (int) $m->getId(), $messages);
+            $messageIds = array_map(static fn(Message $m) => (int) $m->getId(), $messages);
             $replyCounts = $messageRepository->findReplyCounts($messageIds);
 
             return $this->render('dashboard/_messages_feed.html.twig', [
@@ -120,7 +121,7 @@ final class NotificationController extends AbstractController
 
         $messages = $messageRepository->searchInChannel($activeChannel, $query);
 
-        $messageIds = array_map(fn(Message $m) => (int) $m->getId(), $messages);
+        $messageIds = array_map(static fn(Message $m) => (int) $m->getId(), $messages);
         $replyCounts = $messageRepository->findReplyCounts($messageIds);
 
         return $this->render('dashboard/_messages_feed.html.twig', [
@@ -247,9 +248,7 @@ final class NotificationController extends AbstractController
 
         $cacheKey = 'channel_typing_' . $activeChannel->getSlug();
 
-        $typingUsers = $cache->get($cacheKey, function () {
-            return [];
-        });
+        $typingUsers = $cache->get($cacheKey, static fn() => []);
 
         $now = time();
         $displayName =
@@ -267,15 +266,15 @@ final class NotificationController extends AbstractController
         }
 
         foreach ($typingUsers as $username => $info) {
-            if ($info['expires_at'] < $now) {
-                unset($typingUsers[$username]);
+            if ($info['expires_at'] >= $now) {
+                continue;
             }
+
+            unset($typingUsers[$username]);
         }
 
         $cache->delete($cacheKey);
-        $cache->get($cacheKey, function () use ($typingUsers) {
-            return $typingUsers;
-        });
+        $cache->get($cacheKey, static fn() => $typingUsers);
 
         $mercurePublisher->publishToChannel($activeChannel, 'ping', 'typing_' . $activeChannel->getSlug());
 
@@ -296,31 +295,29 @@ final class NotificationController extends AbstractController
 
         $cacheKey = 'channel_typing_' . $activeChannel->getSlug();
 
-        $typingUsers = $cache->get($cacheKey, function () {
-            return [];
-        });
+        $typingUsers = $cache->get($cacheKey, static fn() => []);
 
         $now = time();
         $changed = false;
         foreach ($typingUsers as $username => $info) {
-            if ($info['expires_at'] < $now) {
-                unset($typingUsers[$username]);
-                $changed = true;
+            if ($info['expires_at'] >= $now) {
+                continue;
             }
+
+            unset($typingUsers[$username]);
+            $changed = true;
         }
 
         if ($changed) {
             $cache->delete($cacheKey);
-            $cache->get($cacheKey, function () use ($typingUsers) {
-                return $typingUsers;
-            });
+            $cache->get($cacheKey, static fn() => $typingUsers);
         }
 
         if ($currentUser) {
             unset($typingUsers[$currentUser->getUsername()]);
         }
 
-        $names = array_map(fn($info) => $info['name'], array_values($typingUsers));
+        $names = array_map(static fn($info) => $info['name'], array_values($typingUsers));
 
         return $this->render('dashboard/_typing_indicator.html.twig', [
             'typingUsers' => $names,

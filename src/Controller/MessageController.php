@@ -18,7 +18,6 @@ use App\Service\MessageFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -53,7 +52,8 @@ final class MessageController extends AbstractController
             $content = $data['content'] ?? '';
         }
         if (!$content) {
-            $content = $request->request->get('content') ?: $request->request->get('message', '');
+            $requestContent = $request->request->get('content');
+            $content = ($requestContent !== null && $requestContent !== '') ? $requestContent : $request->request->get('message', '');
         }
 
         if (str_starts_with(trim($content), '/shrug')) {
@@ -71,7 +71,7 @@ final class MessageController extends AbstractController
         $html = $messageFormatter->format($content);
 
         return new Response(
-            $html ?: '<span class="preview-empty">' . $this->translator->trans('Rien à prévisualiser') . '</span>',
+            ($html !== '') ? $html : '<span class="preview-empty">' . $this->translator->trans('Rien à prévisualiser') . '</span>',
         );
     }
 
@@ -126,7 +126,7 @@ final class MessageController extends AbstractController
         $messageText = $request->request->get('message', '');
         $uploadedFile = $request->files->get('file');
         $pollQuestion = $request->request->get('poll_question');
-        $isPoll = !empty($pollQuestion);
+        $isPoll = $pollQuestion !== null && $pollQuestion !== '';
 
         if (trim($messageText) === '' && !$uploadedFile && !$isPoll) {
             return $this->render('dashboard/_input_form.html.twig', [
@@ -305,7 +305,7 @@ final class MessageController extends AbstractController
             $pollQuestion = $request->request->get('poll_question');
             $optionsData = $this->getPollOptions($request);
 
-            if (empty($pollQuestion)) {
+            if ($pollQuestion === null || trim($pollQuestion) === '') {
                 return new Response($this->translator->trans('La question du sondage ne peut pas être vide.'), 400);
             }
             if (count($optionsData) < 2) {
@@ -319,7 +319,7 @@ final class MessageController extends AbstractController
             $existingOptions = $poll->getOptions()->getValues();
             $position = 0;
             foreach ($optionsData as $idx => $optText) {
-                if (isset($existingOptions[$idx])) {
+                if (array_key_exists($idx, $existingOptions)) {
                     if ($existingOptions[$idx]->getText() !== $optText) {
                         $existingOptions[$idx]->setText($optText);
                         $existingOptions[$idx]->getVotes()->clear();
@@ -635,6 +635,6 @@ final class MessageController extends AbstractController
             return [];
         }
 
-        return array_filter(array_map('trim', $optionsData), fn($val) => $val !== '');
+        return array_filter(array_map('trim', $optionsData), static fn($val) => $val !== '');
     }
 }

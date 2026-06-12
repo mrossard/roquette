@@ -117,10 +117,10 @@ class WebhookControllerTest extends WebTestCase
         $webhookRepository = $this->entityManager->getRepository(Webhook::class);
         $webhook = $webhookRepository->findOneBy(['name' => 'GitHub Production']);
 
-        $this->assertNotNull($webhook);
-        $this->assertEquals($this->channel->getId(), $webhook->getChannel()->getId());
-        $this->assertEquals($this->testUser->getId(), $webhook->getCreator()->getId());
-        $this->assertTrue($webhook->isActive());
+        static::assertNotNull($webhook);
+        static::assertEquals($this->channel->getId(), $webhook->getChannel()->getId());
+        static::assertEquals($this->testUser->getId(), $webhook->getCreator()->getId());
+        static::assertTrue($webhook->isActive());
     }
 
     #[Test]
@@ -134,7 +134,7 @@ class WebhookControllerTest extends WebTestCase
         $this->entityManager->persist($webhook);
         $this->entityManager->flush();
 
-        $this->assertTrue($webhook->isActive());
+        static::assertTrue($webhook->isActive());
 
         // Toggle active status (deactivate)
         $this->client->request('POST', sprintf('/webhooks/%d/toggle', $webhook->getId()));
@@ -144,7 +144,7 @@ class WebhookControllerTest extends WebTestCase
         $webhookRepository = $this->entityManager->getRepository(Webhook::class);
         $this->entityManager->clear(); // Clear entity manager cache
         $webhook = $webhookRepository->find($webhook->getId());
-        $this->assertFalse($webhook->isActive());
+        static::assertFalse($webhook->isActive());
 
         // Toggle again (activate)
         $this->client->request('POST', sprintf('/webhooks/%d/toggle', $webhook->getId()));
@@ -152,7 +152,7 @@ class WebhookControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $this->entityManager->clear(); // Clear entity manager cache
         $webhook = $webhookRepository->find($webhook->getId());
-        $this->assertTrue($webhook->isActive());
+        static::assertTrue($webhook->isActive());
     }
 
     #[Test]
@@ -172,7 +172,7 @@ class WebhookControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
 
         $webhookRepository = $this->entityManager->getRepository(Webhook::class);
-        $this->assertNull($webhookRepository->find($webhookId));
+        static::assertNull($webhookRepository->find($webhookId));
     }
 
     #[Test]
@@ -202,20 +202,20 @@ class WebhookControllerTest extends WebTestCase
             ]),
         );
 
-        $this->assertEquals(201, $this->client->getResponse()->getStatusCode());
+        static::assertSame(201, $this->client->getResponse()->getStatusCode());
 
         $responseContent = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertTrue($responseContent['success']);
-        $this->assertArrayHasKey('message_id', $responseContent);
+        static::assertTrue($responseContent['success']);
+        static::assertArrayHasKey('message_id', $responseContent);
 
         // Verify the message exists in database with custom name and avatar
         $messageRepository = $this->entityManager->getRepository(Message::class);
         $message = $messageRepository->find($responseContent['message_id']);
 
-        $this->assertNotNull($message);
-        $this->assertEquals('New deploy succeeded! 🚀', $message->getContent());
-        $this->assertEquals('Vercel Deployment', $message->getCustomAuthorName());
-        $this->assertEquals('https://example.com/vercel.png', $message->getCustomAuthorAvatar());
+        static::assertNotNull($message);
+        static::assertSame('New deploy succeeded! 🚀', $message->getContent());
+        static::assertSame('Vercel Deployment', $message->getCustomAuthorName());
+        static::assertSame('https://example.com/vercel.png', $message->getCustomAuthorAvatar());
     }
 
     #[Test]
@@ -240,7 +240,7 @@ class WebhookControllerTest extends WebTestCase
             json_encode(['text' => 'Hello World']),
         );
 
-        $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+        static::assertSame(403, $this->client->getResponse()->getStatusCode());
     }
 
     #[Test]
@@ -257,6 +257,6 @@ class WebhookControllerTest extends WebTestCase
             json_encode(['text' => 'Hello World']),
         );
 
-        $this->assertEquals(404, $this->client->getResponse()->getStatusCode());
+        static::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 }

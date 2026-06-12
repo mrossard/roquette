@@ -236,7 +236,7 @@ class FileControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('Content-Type', 'application/pdf');
         // Inline disposition (not attachment)
-        $this->assertStringContainsString('inline', $this->client->getResponse()->headers->get('Content-Disposition'));
+        static::assertStringContainsString('inline', $this->client->getResponse()->headers->get('Content-Disposition'));
     }
 
     #[Test]
@@ -269,7 +269,7 @@ class FileControllerTest extends WebTestCase
     {
         $message = $this->createMessageWithFile();
         // Content longer than 10000 chars
-        $longContent = str_repeat('A', 10001);
+        $longContent = str_repeat('A', 10_001);
         $this->mockFileUploadService(true, $longContent);
 
         $this->client->request('GET', sprintf('/messages/%d/text-preview', $message->getId()));

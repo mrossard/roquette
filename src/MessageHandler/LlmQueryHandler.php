@@ -73,22 +73,30 @@ final class LlmQueryHandler
                 $targetChannel = null;
                 foreach ($channels as $c) {
                     if (
-                        strtolower($c->getSlug()) === strtolower($targetChannelSlug)
-                        || strtolower($c->getName()) === strtolower($targetChannelSlug)
+                        !(
+                            strtolower($c->getSlug()) === strtolower($targetChannelSlug)
+                            || strtolower($c->getName()) === strtolower($targetChannelSlug)
+                        )
                     ) {
-                        $targetChannel = $c;
-                        break;
+                        continue;
                     }
+
+                    $targetChannel = $c;
+                    break;
                 }
                 if (!$targetChannel) {
                     foreach ($channels as $c) {
                         if (
-                            str_contains(strtolower($c->getName()), strtolower($targetChannelSlug))
-                            || str_contains(strtolower($c->getSlug()), strtolower($targetChannelSlug))
+                            !(
+                                str_contains(strtolower($c->getName()), strtolower($targetChannelSlug))
+                                || str_contains(strtolower($c->getSlug()), strtolower($targetChannelSlug))
+                            )
                         ) {
-                            $targetChannel = $c;
-                            break;
+                            continue;
                         }
+
+                        $targetChannel = $c;
+                        break;
                     }
                 }
                 $channelName = $targetChannel ? $targetChannel->getName() : $targetChannelSlug;
@@ -228,13 +236,15 @@ final class LlmQueryHandler
     {
         $accessibleChannels = [];
         foreach ($channels as $c) {
-            if ($c->getSlug() !== $currentChannelSlug) {
-                $accessibleChannels[] = [
-                    'name' => $c->getName(),
-                    'slug' => $c->getSlug(),
-                    'description' => $c->getDescription(),
-                ];
+            if ($c->getSlug() === $currentChannelSlug) {
+                continue;
             }
+
+            $accessibleChannels[] = [
+                'name' => $c->getName(),
+                'slug' => $c->getSlug(),
+                'description' => $c->getDescription(),
+            ];
         }
 
         $promptData = [
@@ -281,23 +291,31 @@ final class LlmQueryHandler
         $targetChannel = null;
         foreach ($channels as $c) {
             if (
-                strtolower($c->getSlug()) === strtolower($targetChannelSlug)
-                || strtolower($c->getName()) === strtolower($targetChannelSlug)
+                !(
+                    strtolower($c->getSlug()) === strtolower($targetChannelSlug)
+                    || strtolower($c->getName()) === strtolower($targetChannelSlug)
+                )
             ) {
-                $targetChannel = $c;
-                break;
+                continue;
             }
+
+            $targetChannel = $c;
+            break;
         }
 
         if (!$targetChannel) {
             foreach ($channels as $c) {
                 if (
-                    str_contains(strtolower($c->getName()), strtolower($targetChannelSlug))
-                    || str_contains(strtolower($c->getSlug()), strtolower($targetChannelSlug))
+                    !(
+                        str_contains(strtolower($c->getName()), strtolower($targetChannelSlug))
+                        || str_contains(strtolower($c->getSlug()), strtolower($targetChannelSlug))
+                    )
                 ) {
-                    $targetChannel = $c;
-                    break;
+                    continue;
                 }
+
+                $targetChannel = $c;
+                break;
             }
         }
 

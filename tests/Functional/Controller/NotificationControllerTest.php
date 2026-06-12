@@ -7,7 +7,6 @@ namespace App\Tests\Functional\Controller;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
-use App\Entity\UserChannelRead;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;

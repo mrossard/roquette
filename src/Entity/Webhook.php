@@ -64,7 +64,7 @@ class Webhook
         return $this->token;
     }
 
-    public function setToken(string $token): self
+    public function setToken(#[\SensitiveParameter] string $token): self
     {
         $this->token = $token;
 

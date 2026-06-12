@@ -33,7 +33,7 @@ class LlmQueryHandlerTest extends TestCase
         $parameterBag->expects($this->once())->method('get')->with('kernel.project_dir')->willReturn('/tmp');
 
         // Mock generator for streaming response
-        $generatorClosure = function () {
+        $generatorClosure = static function () {
             yield 'Hello ';
             yield 'world!';
         };
@@ -44,9 +44,9 @@ class LlmQueryHandlerTest extends TestCase
         $messageFormatter
             ->expects($this->any())
             ->method('format')
-            ->willReturnCallback(fn($text) => '<p>' . $text . '</p>');
+            ->willReturnCallback(static fn($text) => '<p>' . $text . '</p>');
 
-        $hub->expects($this->atLeastOnce())->method('publish')->with($this->isInstanceOf(Update::class));
+        $hub->expects($this->atLeastOnce())->method('publish')->with(static::isInstanceOf(Update::class));
 
         $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
         $messageRepository = $this->createMock(\App\Repository\MessageRepository::class);
@@ -97,7 +97,7 @@ class LlmQueryHandlerTest extends TestCase
         $llmService
             ->expects($this->exactly(3))
             ->method('generateText')
-            ->willReturnCallback(function (string $prompt, ?string $systemPrompt = null) {
+            ->willReturnCallback(static function (string $prompt, ?string $systemPrompt = null) {
                 if (str_contains($prompt, 'résume le canal général')) {
                     return json_encode(['intent' => 'resumer', 'channelSlug' => 'general']);
                 }
@@ -117,7 +117,7 @@ class LlmQueryHandlerTest extends TestCase
         $messages = [];
         for ($i = 1; $i <= 5; $i++) {
             $msg = new \App\Entity\Message();
-            $msg->setContent("Message $i");
+            $msg->setContent("Message {$i}");
             $msg->setAuthor($user);
             $msg->setCreatedAt(new \DateTimeImmutable());
             $messages[] = $msg;
@@ -129,11 +129,9 @@ class LlmQueryHandlerTest extends TestCase
         $llmService
             ->expects($this->once())
             ->method('generateTextStream')
-            ->with($this->callback(function (string $prompt) {
-                return str_contains($prompt, 'Résumé intermédiaire');
-            }))
+            ->with(static::callback(static fn(string $prompt) => str_contains($prompt, 'Résumé intermédiaire')))
             ->willReturn(
-                (function () {
+                (static function () {
                     yield 'Summary';
                 })(),
             );
@@ -203,7 +201,7 @@ class LlmQueryHandlerTest extends TestCase
         $unread = [];
         for ($i = 1; $i <= 3; $i++) {
             $msg = new \App\Entity\Message();
-            $msg->setContent("Unread $i");
+            $msg->setContent("Unread {$i}");
             $msg->setAuthor($user);
             $msg->setCreatedAt(new \DateTimeImmutable());
             $unread[] = $msg;
@@ -234,13 +232,13 @@ class LlmQueryHandlerTest extends TestCase
         $llmService
             ->expects($this->once())
             ->method('generateTextStream')
-            ->with($this->callback(function (string $prompt) {
+            ->with(static::callback(static function (string $prompt) {
                 $data = json_decode($prompt, true);
 
                 return is_array($data) && count($data) === 4 && $data[0]['contenu'] === 'Read context';
             }))
             ->willReturn(
-                (function () {
+                (static function () {
                     yield 'Summary';
                 })(),
             );

@@ -41,10 +41,12 @@ class ChannelRepository extends ServiceEntityRepository
 
         $isMemberOfGeneral = false;
         foreach ($joinedChannels as $channel) {
-            if ($channel->getId() === $general->getId()) {
-                $isMemberOfGeneral = true;
-                break;
+            if ($channel->getId() !== $general->getId()) {
+                continue;
             }
+
+            $isMemberOfGeneral = true;
+            break;
         }
 
         if (!$isMemberOfGeneral) {
@@ -75,15 +77,17 @@ class ChannelRepository extends ServiceEntityRepository
         $robotSlug = 'dm-robot-roquette-' . $user->getSlug();
         $hasRobotChannel = false;
         foreach ($joinedChannels as $channel) {
-            if ($channel->getSlug() === $robotSlug) {
-                if ($channel->getName() !== 'Assistant') {
-                    $channel->setName('Assistant');
-                    $channel->setDescription('Discussion privée avec l\'Assistant');
-                    $this->getEntityManager()->flush();
-                }
-                $hasRobotChannel = true;
-                break;
+            if ($channel->getSlug() !== $robotSlug) {
+                continue;
             }
+
+            if ($channel->getName() !== 'Assistant') {
+                $channel->setName('Assistant');
+                $channel->setDescription('Discussion privée avec l\'Assistant');
+                $this->getEntityManager()->flush();
+            }
+            $hasRobotChannel = true;
+            break;
         }
         if (!$hasRobotChannel) {
             $robotChannel = $this->findOneBy(['slug' => $robotSlug]);

@@ -75,9 +75,11 @@ readonly class LlmService
 
         $resultStream = $this->platform->invoke($this->model, $messageBag, $options)->asStream();
         foreach ($resultStream as $delta) {
-            if ($delta instanceof \Symfony\AI\Platform\Result\Stream\Delta\TextDelta) {
-                yield $delta->getText();
+            if (!$delta instanceof \Symfony\AI\Platform\Result\Stream\Delta\TextDelta) {
+                continue;
             }
+
+            yield $delta->getText();
         }
     }
 

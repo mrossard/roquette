@@ -97,7 +97,7 @@ class MessageControllerTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
         $responseContent = $this->client->getResponse()->getContent();
-        $this->assertStringContainsString('<em>is testing preview</em>', $responseContent);
+        static::assertStringContainsString('<em>is testing preview</em>', $responseContent);
     }
 
     #[Test]
@@ -112,8 +112,8 @@ class MessageControllerTest extends WebTestCase
         $messageRepository = $this->entityManager->getRepository(Message::class);
         $messages = $messageRepository->findBy(['author' => $this->testUser]);
 
-        $this->assertCount(1, $messages);
-        $this->assertSame('/me is typing a long message', $messages[0]->getContent());
+        static::assertCount(1, $messages);
+        static::assertSame('/me is typing a long message', $messages[0]->getContent());
     }
 
     #[Test]
@@ -132,23 +132,25 @@ class MessageControllerTest extends WebTestCase
         // Find the message with the poll
         $pollMessage = null;
         foreach ($messages as $msg) {
-            if ($msg->isPoll()) {
-                $pollMessage = $msg;
-                break;
+            if (!$msg->isPoll()) {
+                continue;
             }
+
+            $pollMessage = $msg;
+            break;
         }
 
-        $this->assertNotNull($pollMessage);
-        $this->assertTrue($pollMessage->isPoll());
+        static::assertNotNull($pollMessage);
+        static::assertTrue($pollMessage->isPoll());
 
         $poll = $pollMessage->getPoll();
-        $this->assertNotNull($poll);
-        $this->assertSame('Quel est votre langage préféré ?', $poll->getQuestion());
-        $this->assertFalse($poll->isAllowMultiple());
-        $this->assertCount(3, $poll->getOptions());
-        $this->assertSame('PHP', $poll->getOptions()[0]->getText());
-        $this->assertSame('TypeScript', $poll->getOptions()[1]->getText());
-        $this->assertSame('Rust', $poll->getOptions()[2]->getText());
+        static::assertNotNull($poll);
+        static::assertSame('Quel est votre langage préféré ?', $poll->getQuestion());
+        static::assertFalse($poll->isAllowMultiple());
+        static::assertCount(3, $poll->getOptions());
+        static::assertSame('PHP', $poll->getOptions()[0]->getText());
+        static::assertSame('TypeScript', $poll->getOptions()[1]->getText());
+        static::assertSame('Rust', $poll->getOptions()[2]->getText());
     }
 
     #[Test]
@@ -178,16 +180,18 @@ class MessageControllerTest extends WebTestCase
 
         $pollMessage = null;
         foreach ($messages as $msg) {
-            if ($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Choix multiples ?') {
-                $pollMessage = $msg;
-                break;
+            if (!($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Choix multiples ?')) {
+                continue;
             }
+
+            $pollMessage = $msg;
+            break;
         }
 
-        $this->assertNotNull($pollMessage);
+        static::assertNotNull($pollMessage);
         $poll = $pollMessage->getPoll();
-        $this->assertNotNull($poll);
-        $this->assertTrue($poll->isAllowMultiple());
+        static::assertNotNull($poll);
+        static::assertTrue($poll->isAllowMultiple());
     }
 
     #[Test]
@@ -205,12 +209,14 @@ class MessageControllerTest extends WebTestCase
 
         $pollMessage = null;
         foreach ($messages as $msg) {
-            if ($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Original Question?') {
-                $pollMessage = $msg;
-                break;
+            if (!($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Original Question?')) {
+                continue;
             }
+
+            $pollMessage = $msg;
+            break;
         }
-        $this->assertNotNull($pollMessage);
+        static::assertNotNull($pollMessage);
 
         // 2. Modify the poll
         $this->client->request('POST', sprintf('/messages/%d/edit', $pollMessage->getId()), [
@@ -222,16 +228,16 @@ class MessageControllerTest extends WebTestCase
 
         $this->entityManager->clear();
         $updatedMessage = $messageRepository->find($pollMessage->getId());
-        $this->assertNotNull($updatedMessage);
-        $this->assertTrue($updatedMessage->isPoll());
+        static::assertNotNull($updatedMessage);
+        static::assertTrue($updatedMessage->isPoll());
 
         $poll = $updatedMessage->getPoll();
-        $this->assertSame('Updated Question?', $poll->getQuestion());
-        $this->assertTrue($poll->isAllowMultiple());
-        $this->assertCount(3, $poll->getOptions());
-        $this->assertSame('New Opt1', $poll->getOptions()[0]->getText());
-        $this->assertSame('New Opt2', $poll->getOptions()[1]->getText());
-        $this->assertSame('Added Opt3', $poll->getOptions()[2]->getText());
+        static::assertSame('Updated Question?', $poll->getQuestion());
+        static::assertTrue($poll->isAllowMultiple());
+        static::assertCount(3, $poll->getOptions());
+        static::assertSame('New Opt1', $poll->getOptions()[0]->getText());
+        static::assertSame('New Opt2', $poll->getOptions()[1]->getText());
+        static::assertSame('Added Opt3', $poll->getOptions()[2]->getText());
     }
 
     #[Test]
@@ -250,12 +256,14 @@ class MessageControllerTest extends WebTestCase
 
         $pollMessage = null;
         foreach ($messages as $msg) {
-            if ($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Vote test?') {
-                $pollMessage = $msg;
-                break;
+            if (!($msg->isPoll() && $msg->getPoll()->getQuestion() === 'Vote test?')) {
+                continue;
             }
+
+            $pollMessage = $msg;
+            break;
         }
-        $this->assertNotNull($pollMessage);
+        static::assertNotNull($pollMessage);
         $optionA = $pollMessage->getPoll()->getOptions()[0];
 
         // 2. Vote on option A
@@ -292,8 +300,8 @@ class MessageControllerTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
         $responseContent = $this->client->getResponse()->getContent();
-        $this->assertStringContainsString('Assistant Roquette', $responseContent);
-        $this->assertStringContainsString('Comment fonctionne roquette ?', $responseContent);
-        $this->assertStringContainsString('En attente de l\'Assistant Roquette... ⏳', $responseContent);
+        static::assertStringContainsString('Assistant Roquette', $responseContent);
+        static::assertStringContainsString('Comment fonctionne roquette ?', $responseContent);
+        static::assertStringContainsString('En attente de l\'Assistant Roquette... ⏳', $responseContent);
     }
 }

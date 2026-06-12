@@ -42,9 +42,11 @@ class MessageFormatterTest extends TestCase
         $dir = $this->testEmojisDir . '/public/uploads/emojis';
         if (is_dir($dir)) {
             foreach (glob($dir . '/*') as $file) {
-                if (is_file($file)) {
-                    unlink($file);
+                if (!is_file($file)) {
+                    continue;
                 }
+
+                unlink($file);
             }
             rmdir($dir);
         }
@@ -446,8 +448,8 @@ class MessageFormatterTest extends TestCase
         ];
 
         foreach ($emoticons as $emoticon => $expectedEmoji) {
-            $result = $this->formatter->format("Hello $emoticon !");
-            $this->assertStringContainsString($expectedEmoji, $result, "Failed replacing emoticon: $emoticon");
+            $result = $this->formatter->format("Hello {$emoticon} !");
+            $this->assertStringContainsString($expectedEmoji, $result, "Failed replacing emoticon: {$emoticon}");
         }
     }
 

@@ -55,7 +55,7 @@ class AppExtension extends AbstractExtension
 
         // Match http/https URLs
         preg_match_all('/https?:\/\/[^\s\)<>"]+/i', $content, $matches);
-        if (empty($matches[0])) {
+        if ($matches[0] === []) {
             return [];
         }
 
@@ -80,7 +80,7 @@ class AppExtension extends AbstractExtension
         $shortcode = \App\Service\EmojiMapping::getShortcode($emoji);
         $reactionName = $shortcode ? ':' . $shortcode . ':' : $emoji;
 
-        if (empty($usernames)) {
+        if ($usernames === []) {
             return '';
         }
 

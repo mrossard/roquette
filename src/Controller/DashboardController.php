@@ -82,15 +82,17 @@ final class DashboardController extends AbstractController
         $allPublicChannels = $channelRepository->findAllPublic();
         $allUsers = array_filter(
             $userRepository->findAllExcept($currentUser),
-            fn(User $u) => $u->getUsername() !== User::ROBOT_USERNAME,
+            static fn(User $u) => $u->getUsername() !== User::ROBOT_USERNAME,
         );
 
         $subChannelsByParent = [];
         foreach ($channels as $ch) {
-            if ($ch->isSubChannel() && $ch->getParentMessage()) {
-                $parentId = $ch->getParentMessage()->getChannel()->getId();
-                $subChannelsByParent[$parentId][] = $ch;
+            if (!($ch->isSubChannel() && $ch->getParentMessage())) {
+                continue;
             }
+
+            $parentId = $ch->getParentMessage()->getChannel()->getId();
+            $subChannelsByParent[$parentId][] = $ch;
         }
 
         return $this->render('dashboard/directory.html.twig', [
@@ -115,7 +117,7 @@ final class DashboardController extends AbstractController
         if ($type === 'members') {
             $allUsers = array_filter(
                 $userRepository->findAllExcept($currentUser),
-                fn(User $u) => $u->getUsername() !== User::ROBOT_USERNAME,
+                static fn(User $u) => $u->getUsername() !== User::ROBOT_USERNAME,
             );
 
             return $this->render('dashboard/_directory_panel.html.twig', [

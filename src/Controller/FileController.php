@@ -139,7 +139,7 @@ final class FileController extends AbstractController
         }
 
         $stream = $fileUploadService->readStream($message->getFilePath());
-        $text = stream_get_contents($stream, 10000);
+        $text = stream_get_contents($stream, 10_000);
 
         $isTruncated = false;
         // If there is still at least one character to read, the content was truncated

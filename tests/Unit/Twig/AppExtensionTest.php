@@ -21,7 +21,7 @@ class AppExtensionTest extends TestCase
         $channelRepository = $this->createMock(ChannelRepository::class);
         $translator
             ->method('trans')
-            ->willReturnCallback(function (string $id, array $parameters = []) {
+            ->willReturnCallback(static function (string $id, array $parameters = []) {
                 if ($id === 'et') {
                     return 'et';
                 }
@@ -35,24 +35,24 @@ class AppExtensionTest extends TestCase
     public function testFormatReactionTooltipWithSingleUser(): void
     {
         $result = $this->extension->formatReactionTooltip(['Alice'], '😀');
-        $this->assertSame('Alice a réagi avec :grinning:', $result);
+        static::assertSame('Alice a réagi avec :grinning:', $result);
     }
 
     public function testFormatReactionTooltipWithMultipleUsers(): void
     {
         $result = $this->extension->formatReactionTooltip(['Alice', 'Bob'], '😀');
-        $this->assertSame('Alice et Bob ont réagi avec :grinning:', $result);
+        static::assertSame('Alice et Bob ont réagi avec :grinning:', $result);
     }
 
     public function testFormatReactionTooltipWithThreeUsers(): void
     {
         $result = $this->extension->formatReactionTooltip(['Alice', 'Bob', 'Charlie'], '😀');
-        $this->assertSame('Alice, Bob et Charlie ont réagi avec :grinning:', $result);
+        static::assertSame('Alice, Bob et Charlie ont réagi avec :grinning:', $result);
     }
 
     public function testFormatReactionTooltipWithUnknownEmoji(): void
     {
         $result = $this->extension->formatReactionTooltip(['Alice'], '🚀');
-        $this->assertSame('Alice a réagi avec :rocket:', $result);
+        static::assertSame('Alice a réagi avec :rocket:', $result);
     }
 }

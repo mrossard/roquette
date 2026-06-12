@@ -90,23 +90,27 @@ class LinkPreviewService
             $ipv4Records = @dns_get_record($cleanHost, DNS_A);
             if (is_array($ipv4Records)) {
                 foreach ($ipv4Records as $record) {
-                    if (isset($record['ip'])) {
-                        $ips[] = $record['ip'];
+                    if (($record['ip'] ?? null) === null) {
+                        continue;
                     }
+
+                    $ips[] = $record['ip'];
                 }
             }
             // Résolution DNS des enregistrements IPv6 (AAAA)
             $ipv6Records = @dns_get_record($cleanHost, DNS_AAAA);
             if (is_array($ipv6Records)) {
                 foreach ($ipv6Records as $record) {
-                    if (isset($record['ipv6'])) {
-                        $ips[] = $record['ipv6'];
+                    if (($record['ipv6'] ?? null) === null) {
+                        continue;
                     }
+
+                    $ips[] = $record['ipv6'];
                 }
             }
 
             // Repli vers gethostbynamel si aucune IP n'a été résolue (ex. fichiers hosts locaux)
-            if (empty($ips)) {
+            if ($ips === []) {
                 $fallbackIps = @gethostbynamel($cleanHost);
                 if (is_array($fallbackIps)) {
                     $ips = array_merge($ips, $fallbackIps);
@@ -114,7 +118,7 @@ class LinkPreviewService
             }
         }
 
-        if (empty($ips)) {
+        if ($ips === []) {
             return false;
         }
 
