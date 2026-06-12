@@ -24,14 +24,24 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    const url = new URL(event.request.url);
+
+    // Skip Mercure/SSE requests, non-GET requests, or external requests
+    if (
+        event.request.method !== 'GET' ||
+        !url.origin.startsWith(self.location.origin) ||
+        url.pathname.startsWith('/.well-known/mercure') ||
+        (event.request.headers.get('Accept') && event.request.headers.get('Accept').includes('text/event-stream'))
+    ) {
+        return;
+    }
+
     event.respondWith(
         fetch(event.request)
             .then((response) => {
                 const cloned = response.clone();
                 caches.open(CACHE_NAME).then((cache) => {
-                    if (event.request.method === 'GET' && event.request.url.startsWith(self.location.origin)) {
-                        cache.put(event.request, cloned);
-                    }
+                    cache.put(event.request, cloned);
                 });
                 return response;
             })
