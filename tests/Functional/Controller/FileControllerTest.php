@@ -131,6 +131,34 @@ class FileControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function testDownloadNonAsciiFilename(): void
+    {
+        $message = new Message();
+        $message->setChannel($this->channel);
+        $message->setAuthor($this->testUser);
+        $message->setContent('File attached');
+        $message->setFileName('décument_étonnant.pdf');
+        $message->setFilePath('uploads/document-abc123.pdf');
+        $message->setFileSize(1024);
+        $message->setMimeType('application/pdf');
+        $this->entityManager->persist($message);
+        $this->entityManager->flush();
+
+        $this->mockFileUploadService(true, 'fake pdf content');
+
+        $this->client->request('GET', sprintf('/messages/%d/download', $message->getId()));
+
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseHeaderSame('Content-Type', 'application/pdf');
+
+        $disposition = $this->client->getResponse()->headers->get('Content-Disposition');
+        static::assertStringContainsString('attachment', $disposition);
+        static::assertStringContainsString("filename*=utf-8''d%C3%A9cument_%C3%A9tonnant.pdf", $disposition);
+        // Expecting transliteration to make it decument_etonnant.pdf
+        static::assertStringContainsString('filename=decument_etonnant.pdf', $disposition);
+    }
+
+    #[Test]
     public function testDownloadMessageNotFound(): void
     {
         $this->client->request('GET', '/messages/999999/download');

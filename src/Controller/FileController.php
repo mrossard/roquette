@@ -62,6 +62,7 @@ final class FileController extends AbstractController
                 'Content-Disposition' => HeaderUtils::makeDisposition(
                     HeaderUtils::DISPOSITION_ATTACHMENT,
                     $message->getFileName(),
+                    $this->getFallbackFileName($message->getFileName()),
                 ),
             ],
         );
@@ -108,6 +109,7 @@ final class FileController extends AbstractController
                 'Content-Disposition' => HeaderUtils::makeDisposition(
                     HeaderUtils::DISPOSITION_INLINE,
                     $message->getFileName(),
+                    $this->getFallbackFileName($message->getFileName()),
                 ),
             ],
         );
@@ -200,5 +202,36 @@ final class FileController extends AbstractController
             'previewUrl' => $this->generateUrl('app_file_preview', ['id' => $message->getId()]),
             'downloadUrl' => $this->generateUrl('app_file_download', ['id' => $message->getId()]),
         ]);
+    }
+
+    private function getFallbackFileName(string $filename): string
+    {
+        $fallback = '';
+        if (function_exists('transliterator_transliterate')) {
+            $transliterated = transliterator_transliterate('Any-Latin; Latin-ASCII', $filename);
+            if ($transliterated !== false) {
+                $fallback = $transliterated;
+            }
+        }
+
+        if ($fallback === '' && function_exists('iconv')) {
+            $iconvFallback = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $filename);
+            if ($iconvFallback !== false) {
+                $fallback = $iconvFallback;
+            }
+        }
+
+        $fallback = preg_replace('/[^\x20-\x7E]/', '', $fallback === '' ? $filename : $fallback);
+        $fallback = trim($fallback);
+
+        if ($fallback === '' || preg_match('/^[.\s]*$/', $fallback)) {
+            $fallback = 'file';
+            $ext = pathinfo($filename, PATHINFO_EXTENSION);
+            if ($ext !== '') {
+                $fallback .= '.'.$ext;
+            }
+        }
+
+        return $fallback;
     }
 }

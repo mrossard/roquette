@@ -26,13 +26,15 @@ class ReactionRepository extends ServiceEntityRepository
     public function findDistinctMessagesByUser(User $user): array
     {
         return $this
-            ->getEntityManager()->createQuery(
-            'SELECT m FROM App\Entity\Message m
+            ->getEntityManager()
+            ->createQuery(
+                'SELECT m FROM App\Entity\Message m
              JOIN App\Entity\Reaction r WITH r.message = m
              WHERE r.user = :user
              GROUP BY m.id
-             ORDER BY MAX(m.createdAt) DESC',
-        )->setParameter('user', $user)
+             ORDER BY MAX(m.createdAt) DESC'
+            )
+            ->setParameter('user', $user)
             ->getResult();
     }
 
@@ -42,13 +44,15 @@ class ReactionRepository extends ServiceEntityRepository
     public function findDistinctMessagesByUserAndEmoji(User $user, string $emoji): array
     {
         return $this
-            ->getEntityManager()->createQuery(
-            'SELECT m FROM App\Entity\Message m
+            ->getEntityManager()
+            ->createQuery(
+                'SELECT m FROM App\Entity\Message m
              JOIN App\Entity\Reaction r WITH r.message = m
              WHERE r.user = :user AND r.emoji = :emoji
              GROUP BY m.id
-             ORDER BY MAX(m.createdAt) DESC',
-        )->setParameter('user', $user)
+             ORDER BY MAX(m.createdAt) DESC'
+            )
+            ->setParameter('user', $user)
             ->setParameter('emoji', $emoji)
             ->getResult();
     }
