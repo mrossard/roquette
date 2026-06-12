@@ -37,19 +37,30 @@ export function initializeChannelScroll() {
     }
 
     const unreadSeparator = feed.querySelector('.unread-separator');
-    if (unreadSeparator) {
-        unreadSeparator.scrollIntoView({block: 'start', behavior: 'auto'});
-        wasAtBottom = false;
-    } else {
-        const lastMessage = feed.querySelector('[data-last-message="true"]');
-        if (lastMessage) {
-            lastMessage.scrollIntoView({block: 'end', behavior: 'auto'});
-            wasAtBottom = true;
+    wasAtBottom = !unreadSeparator;
+
+    const performScroll = () => {
+        const currentFeed = document.getElementById('live-feed');
+        if (!currentFeed) return;
+        const currentUnread = currentFeed.querySelector('.unread-separator');
+        if (currentUnread) {
+            currentUnread.scrollIntoView({block: 'start', behavior: 'auto'});
         } else {
-            feed.scrollTop = feed.scrollHeight;
-            wasAtBottom = true;
+            const lastMessage = currentFeed.querySelector('[data-last-message="true"]');
+            if (lastMessage) {
+                lastMessage.scrollIntoView({block: 'end', behavior: 'auto'});
+            } else {
+                currentFeed.scrollTop = currentFeed.scrollHeight;
+            }
         }
-    }
+    };
+
+    // Perform scroll immediately
+    performScroll();
+
+    // Perform scroll after a delay to ensure layout settling and image cache hits
+    setTimeout(performScroll, 50);
+    setTimeout(performScroll, 150);
 
     // Bind capturing image load/error listeners once
     if (!feed.dataset.imageListenersBound) {
@@ -63,6 +74,15 @@ export function initializeChannelScroll() {
 
         feed.addEventListener('load', onImageLoad, true); // capturing phase captures non-bubbling events
         feed.addEventListener('error', onImageLoad, true);
+    }
+
+    // Bind scroll listener to track user scroll position
+    if (!feed.dataset.scrollListenersBound) {
+        feed.dataset.scrollListenersBound = 'true';
+        feed.addEventListener('scroll', () => {
+            const isAtBottom = (feed.scrollHeight - feed.scrollTop - feed.clientHeight) < 50;
+            wasAtBottom = isAtBottom;
+        }, {passive: true});
     }
 }
 
@@ -110,15 +130,18 @@ export function adjustScrollForLinkPreview(previewCard) {
 // Scroll and maintain data-last-message attribute on new SSE messages
 document.body.addEventListener('htmx:sseMessage', (event) => {
     if (event.detail.type && event.detail.type.startsWith('message_')) {
+        const feed = document.getElementById('live-feed');
+        const userWasAtBottom = wasAtBottom;
         setTimeout(() => {
-            const feed = document.getElementById('live-feed');
             if (feed) {
                 const oldLast = feed.querySelector('[data-last-message="true"]');
-                let shouldScroll = false;
+                let shouldScroll = userWasAtBottom;
                 if (oldLast) {
-                    const rect = oldLast.getBoundingClientRect();
-                    const feedRect = feed.getBoundingClientRect();
-                    shouldScroll = (rect.bottom <= feedRect.bottom + 50);
+                    if (!shouldScroll) {
+                        const rect = oldLast.getBoundingClientRect();
+                        const feedRect = feed.getBoundingClientRect();
+                        shouldScroll = (rect.bottom <= feedRect.bottom + 50);
+                    }
                     oldLast.removeAttribute('data-last-message');
                 } else {
                     shouldScroll = true;
@@ -133,5 +156,14 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                 }
             }
         }, 50);
+    }
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        const feed = document.getElementById('live-feed');
+        if (feed && wasAtBottom) {
+            feed.scrollTop = feed.scrollHeight;
+        }
     }
 });
