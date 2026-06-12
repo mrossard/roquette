@@ -66,8 +66,7 @@ class MercurePublisher
         array|string $payload,
         bool $private = false,
         ?string $type = null,
-    ): void
-    {
+    ): void {
         $data = is_array($payload) ? json_encode($payload) : $payload;
         $this->bus->dispatch(new Update($topicUrl, $data, $private, null, $type));
     }
@@ -91,7 +90,7 @@ class MercurePublisher
         string $renderedHtml,
         EntityManagerInterface $em,
     ): void {
-        $this->publishToChannel($channel, $renderedHtml, 'message_'.$channel->getSlug());
+        $this->publishToChannel($channel, $renderedHtml, 'message_' . $channel->getSlug());
 
         $this->publishMemberNotifications($channel, $message, $author, $messageText, $em);
     }
@@ -128,10 +127,10 @@ class MercurePublisher
 
             $content = $this->buildContentSummary($message);
 
-            $channelName = $channel->isDm() ? 'Message direct' : '#'.$channel->getName();
+            $channelName = $channel->isDm() ? 'Message direct' : '#' . $channel->getName();
             if ($channel->isSubChannel() && $channel->getParentMessage() !== null) {
-                $parentChannelName = '#'.$channel->getParentMessage()->getChannel()->getName();
-                $channelName .= ' (sous-canal de '.$parentChannelName.')';
+                $parentChannelName = '#' . $channel->getParentMessage()->getChannel()->getName();
+                $channelName .= ' (sous-canal de ' . $parentChannelName . ')';
             }
 
             $this->publishToUser(

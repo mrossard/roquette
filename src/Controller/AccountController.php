@@ -71,7 +71,7 @@ final class AccountController extends AbstractController
 
                 // Publish status change via Mercure
                 $update = new Update(
-                    $this->mercureTopicPrefix.'/users/status',
+                    $this->mercureTopicPrefix . '/users/status',
                     json_encode([
                         'type' => 'user_status_changed',
                         'username' => $currentUser->getUsername(),

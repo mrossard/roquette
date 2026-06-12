@@ -21,13 +21,10 @@ trait MessageRendererTrait
      */
     private function renderFeedItem(Message $message, array $extraParams = []): string
     {
-        return $this->renderView(
-            'dashboard/_feed_item.html.twig',
-            array_merge(
-                $this->feedItemParams($message),
-                $extraParams,
-            ),
-        );
+        return $this->renderView('dashboard/_feed_item.html.twig', array_merge(
+            $this->feedItemParams($message),
+            $extraParams,
+        ));
     }
 
     /**

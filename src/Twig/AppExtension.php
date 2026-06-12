@@ -78,7 +78,7 @@ class AppExtension extends AbstractExtension
     public function formatReactionTooltip(array $usernames, string $emoji): string
     {
         $shortcode = \App\Service\EmojiMapping::getShortcode($emoji);
-        $reactionName = $shortcode ? ':'.$shortcode.':' : $emoji;
+        $reactionName = $shortcode ? ':' . $shortcode . ':' : $emoji;
 
         if (empty($usernames)) {
             return '';
@@ -94,7 +94,7 @@ class AppExtension extends AbstractExtension
 
         $lastUser = array_pop($usernames);
         $and = $this->translator->trans('et');
-        $usersString = implode(', ', $usernames).' '.$and.' '.$lastUser;
+        $usersString = implode(', ', $usernames) . ' ' . $and . ' ' . $lastUser;
 
         return $this->translator->trans('%users% ont réagi avec %reaction%', [
             '%users%' => $usersString,

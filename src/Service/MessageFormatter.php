@@ -178,21 +178,21 @@ class MessageFormatter
                     $currentUser = $this->security->getUser();
                     if ($channel->isPrivate()) {
                         if (!$currentUser || !$channel->getMembers()->contains($currentUser)) {
-                            return '#'.htmlspecialchars($slug, ENT_QUOTES, 'UTF-8');
+                            return '#' . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8');
                         }
                     }
-                    $url = '/channels/'.$slug;
+                    $url = '/channels/' . $slug;
 
                     return (
                         '<a href="'
-                        .$url
-                        .'" class="channel-ref" hx-boost="false">#'
-                        .htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8')
-                        .'</a>'
+                        . $url
+                        . '" class="channel-ref" hx-boost="false">#'
+                        . htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8')
+                        . '</a>'
                     );
                 }
 
-                return '#'.htmlspecialchars($slug, ENT_QUOTES, 'UTF-8');
+                return '#' . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8');
             },
             $html,
         );
@@ -278,19 +278,19 @@ class MessageFormatter
             '/\[:([a-zA-Z0-9_\-\+: ]+)\]/',
             function ($matches) {
                 $code = $matches[1];
-                $filename = $code.'.gif';
+                $filename = $code . '.gif';
                 $filename = basename($filename);
 
-                $emojisDir = $this->projectDir.'/public/uploads/emojis';
+                $emojisDir = $this->projectDir . '/public/uploads/emojis';
                 if (!is_dir($emojisDir)) {
                     mkdir($emojisDir, 0777, true);
                 }
 
-                $localPath = $emojisDir.'/'.$filename;
-                $webPath = '/uploads/emojis/'.rawurlencode($filename);
+                $localPath = $emojisDir . '/' . $filename;
+                $webPath = '/uploads/emojis/' . rawurlencode($filename);
 
                 if (!file_exists($localPath)) {
-                    $url = rtrim($this->emojiBaseUrl, '/').'/'.rawurlencode($filename);
+                    $url = rtrim($this->emojiBaseUrl, '/') . '/' . rawurlencode($filename);
                     try {
                         $response = $this->httpClient->request('GET', $url, [
                             'timeout' => 2.0,
@@ -311,12 +311,12 @@ class MessageFormatter
 
                     return (
                         '<img src="'
-                        .htmlspecialchars($webPath, ENT_QUOTES, 'UTF-8')
-                        .'" alt="[:'
-                        .$title
-                        .']" title="[:'
-                        .$title
-                        .']" class="message-emoji" style="vertical-align: middle;" />'
+                        . htmlspecialchars($webPath, ENT_QUOTES, 'UTF-8')
+                        . '" alt="[:'
+                        . $title
+                        . ']" title="[:'
+                        . $title
+                        . ']" class="message-emoji" style="vertical-align: middle;" />'
                     );
                 }
 

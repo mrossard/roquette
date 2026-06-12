@@ -71,7 +71,7 @@ final class MessageController extends AbstractController
         $html = $messageFormatter->format($content);
 
         return new Response(
-            $html ?: '<span class="preview-empty">'.$this->translator->trans('Rien à prévisualiser').'</span>',
+            $html ?: '<span class="preview-empty">' . $this->translator->trans('Rien à prévisualiser') . '</span>',
         );
     }
 
@@ -158,7 +158,7 @@ final class MessageController extends AbstractController
 
         $replyToId = $request->request->get('replyTo');
         if ($replyToId && !$activeChannel->isTodoList()) {
-            $parentMessage = $messageRepository->find((int)$replyToId);
+            $parentMessage = $messageRepository->find((int) $replyToId);
             if ($parentMessage && $parentMessage->getChannel()->getId() === $activeChannel->getId()) {
                 $message->setParentMessage($parentMessage);
             }
@@ -213,7 +213,7 @@ final class MessageController extends AbstractController
                     default => $message->getCreatedAt()->format('d/m/Y'),
                 };
                 $separatorHtml = $this->renderView('dashboard/_day_separator.html.twig', ['label' => $label]);
-                $renderedHtml = $separatorHtml."\n".$renderedHtml;
+                $renderedHtml = $separatorHtml . "\n" . $renderedHtml;
             }
         }
 
@@ -227,11 +227,11 @@ final class MessageController extends AbstractController
         );
 
         if (
-            $activeChannel->getSlug() === 'dm-robot-roquette-'.$currentUser->getSlug()
+            $activeChannel->getSlug() === 'dm-robot-roquette-' . $currentUser->getSlug()
             && !$isPoll
             && !$uploadedFile
         ) {
-            $helpMessageId = 'help-'.uniqid();
+            $helpMessageId = 'help-' . uniqid();
 
             // Dispatch message to Symfony Messenger to run LLM query asynchronously
             $this->messageBus->dispatch(
@@ -353,16 +353,13 @@ final class MessageController extends AbstractController
 
         $renderedHtml = $this->renderFeedItem($message, ['no_fade' => true]);
 
-        $renderedHtmlOob = $this->renderView(
-            'dashboard/_feed_item.html.twig',
-            array_merge(
-                $this->feedItemParams($message),
-                ['oob' => true],
-            ),
-        );
+        $renderedHtmlOob = $this->renderView('dashboard/_feed_item.html.twig', array_merge(
+            $this->feedItemParams($message),
+            ['oob' => true],
+        ));
 
         $channel = $message->getChannel();
-        $mercurePublisher->publishToChannel($channel, $renderedHtmlOob, 'message_'.$channel->getSlug());
+        $mercurePublisher->publishToChannel($channel, $renderedHtmlOob, 'message_' . $channel->getSlug());
 
         return new Response($renderedHtml);
     }
@@ -398,7 +395,7 @@ final class MessageController extends AbstractController
             $mercurePublisher->publishToChannel(
                 $channel,
                 '<div id="pinned-banner-container" hx-swap-oob="true"></div>',
-                'message_'.$channel->getSlug(),
+                'message_' . $channel->getSlug(),
             );
         }
 
@@ -409,8 +406,8 @@ final class MessageController extends AbstractController
         $entityManager->remove($message);
         $entityManager->flush();
 
-        $deleteOob = '<div id="feed-item-'.$id.'" hx-swap-oob="delete"></div>';
-        $mercurePublisher->publishToChannel($channel, $deleteOob, 'message_'.$channel->getSlug());
+        $deleteOob = '<div id="feed-item-' . $id . '" hx-swap-oob="delete"></div>';
+        $mercurePublisher->publishToChannel($channel, $deleteOob, 'message_' . $channel->getSlug());
 
         return new Response('', 204);
     }
@@ -545,7 +542,7 @@ final class MessageController extends AbstractController
                 );
             }
         } elseif ($command === 'help') {
-            $helpMessageId = 'help-'.uniqid();
+            $helpMessageId = 'help-' . uniqid();
 
             if ($args === '') {
                 $oobHtml = $this->renderView('dashboard/_help_message_oob.html.twig', [
@@ -577,7 +574,7 @@ final class MessageController extends AbstractController
                 'activeChannel' => $activeChannel,
             ]);
 
-            return new Response($formHtml."\n".$oobHtml);
+            return new Response($formHtml . "\n" . $oobHtml);
         } elseif ($command === 'shrug') {
             // Mutate messageText so the caller sends the formatted shrug text
             $messageText = ($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯';

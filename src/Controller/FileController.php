@@ -154,8 +154,8 @@ final class FileController extends AbstractController
         if ($isTruncated) {
             $text .=
                 "\n\n... ["
-                .$this->translator->trans('Contenu tronqué, téléchargez le fichier pour le lire en entier')
-                .']';
+                . $this->translator->trans('Contenu tronqué, téléchargez le fichier pour le lire en entier')
+                . ']';
         }
 
         $fileExt = pathinfo($message->getFileName(), PATHINFO_EXTENSION);
@@ -228,7 +228,7 @@ final class FileController extends AbstractController
             $fallback = 'file';
             $ext = pathinfo($filename, PATHINFO_EXTENSION);
             if ($ext !== '') {
-                $fallback .= '.'.$ext;
+                $fallback .= '.' . $ext;
             }
         }
 

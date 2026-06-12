@@ -63,15 +63,13 @@ final class AdminController extends AbstractController
         $user->setBannedReason('Banni par un administrateur');
         $entityManager->flush();
 
-        $this->logger->info(
-            sprintf(
-                'User "%s" (ID: %d) has been banned by admin "%s" (ID: %d)',
-                $user->getUsername(),
-                $user->getId(),
-                $currentUser->getUsername(),
-                $currentUser->getId(),
-            ),
-        );
+        $this->logger->info(sprintf(
+            'User "%s" (ID: %d) has been banned by admin "%s" (ID: %d)',
+            $user->getUsername(),
+            $user->getId(),
+            $currentUser->getUsername(),
+            $currentUser->getId(),
+        ));
 
         $this->addFlash('success', $this->translator->trans('L\'utilisateur "%username%" a été banni.', [
             '%username%' => $user->getUsername(),
@@ -98,15 +96,13 @@ final class AdminController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $this->logger->info(
-            sprintf(
-                'User "%s" (ID: %d) has been unbanned by admin "%s" (ID: %d)',
-                $user->getUsername(),
-                $user->getId(),
-                $currentUser->getUsername(),
-                $currentUser->getId(),
-            ),
-        );
+        $this->logger->info(sprintf(
+            'User "%s" (ID: %d) has been unbanned by admin "%s" (ID: %d)',
+            $user->getUsername(),
+            $user->getId(),
+            $currentUser->getUsername(),
+            $currentUser->getId(),
+        ));
 
         $this->addFlash('success', $this->translator->trans('L\'utilisateur "%username%" a été réhabilité.', [
             '%username%' => $user->getUsername(),

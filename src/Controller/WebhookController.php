@@ -47,7 +47,7 @@ final class WebhookController extends AbstractController
         $data = json_decode($request->getContent(), true) ?? [];
 
         $content = $data['text'] ?? $data['content'] ?? null;
-        if (null === $content || trim((string)$content) === '') {
+        if (null === $content || trim((string) $content) === '') {
             return new JsonResponse([
                 'error' => 'Missing message content ("text" or "content")',
             ], Response::HTTP_BAD_REQUEST);
@@ -64,10 +64,10 @@ final class WebhookController extends AbstractController
         $message = new Message();
         $message->setChannel($webhook->getChannel());
         $message->setAuthor($robotUser);
-        $message->setContent(trim((string)$content));
-        $message->setCustomAuthorName((string)$customName);
+        $message->setContent(trim((string) $content));
+        $message->setCustomAuthorName((string) $customName);
         if ($customAvatar !== null) {
-            $message->setCustomAuthorAvatar((string)$customAvatar);
+            $message->setCustomAuthorAvatar((string) $customAvatar);
         }
 
         $entityManager->persist($message);
@@ -79,7 +79,7 @@ final class WebhookController extends AbstractController
             $webhook->getChannel(),
             $message,
             $robotUser,
-            (string)$content,
+            (string) $content,
             $renderedHtml,
             $entityManager,
         );
@@ -111,7 +111,7 @@ final class WebhookController extends AbstractController
             return new Response('Accès refusé', Response::HTTP_FORBIDDEN);
         }
 
-        $name = trim((string)$request->request->get('name', ''));
+        $name = trim((string) $request->request->get('name', ''));
         if ($name === '') {
             return new Response('Le nom du webhook est requis', Response::HTTP_BAD_REQUEST);
         }

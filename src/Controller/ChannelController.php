@@ -209,7 +209,7 @@ final class ChannelController extends AbstractController
 
         $typingUsers = [];
         if ($isMember && $activeChannel) {
-            $cacheKey = 'channel_typing_'.$activeChannel->getSlug();
+            $cacheKey = 'channel_typing_' . $activeChannel->getSlug();
             $typingUsersFromCache = $this->cache->get($cacheKey, function () {
                 return [];
             });
@@ -507,16 +507,14 @@ final class ChannelController extends AbstractController
         $isCreator = $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
 
         if (!$isAdmin && !$isCreator) {
-            throw $this->createAccessDeniedException(
-                $this->translator->trans(
-                    'Vous n\'êtes pas autorisé à supprimer ce canal.',
-                ),
-            );
+            throw $this->createAccessDeniedException($this->translator->trans(
+                'Vous n\'êtes pas autorisé à supprimer ce canal.',
+            ));
         }
 
         $parentChannel = $channel->getParentMessage()?->getChannel();
 
-        $redirectSlug = $parentChannel ? '/channels/'.$parentChannel->getSlug() : '/';
+        $redirectSlug = $parentChannel ? '/channels/' . $parentChannel->getSlug() : '/';
 
         $this->mercurePublisher->publishToChannel(
             $channel,
@@ -681,11 +679,9 @@ final class ChannelController extends AbstractController
         $isCreatorOrAdmin = $channel->isAdministrator($currentUser);
 
         if (!$isAdmin && !$isCreatorOrAdmin) {
-            throw $this->createAccessDeniedException(
-                $this->translator->trans(
-                    'Vous n\'êtes pas autorisé à modifier la rétention de ce canal.',
-                ),
-            );
+            throw $this->createAccessDeniedException($this->translator->trans(
+                'Vous n\'êtes pas autorisé à modifier la rétention de ce canal.',
+            ));
         }
 
         $retention = $request->request->get('messageRetentionMonths');
@@ -698,12 +694,9 @@ final class ChannelController extends AbstractController
 
         $entityManager->flush();
 
-        $this->addFlash(
-            'success',
-            $this->translator->trans('La durée de rétention du canal "%channelName%" a été mise à jour.', [
-                '%channelName%' => $channel->getName(),
-            ]),
-        );
+        $this->addFlash('success', $this->translator->trans('La durée de rétention du canal "%channelName%" a été mise à jour.', [
+            '%channelName%' => $channel->getName(),
+        ]));
 
         return new Response(null, 204, ['HX-Refresh' => 'true']);
     }
@@ -726,11 +719,9 @@ final class ChannelController extends AbstractController
         $isAdmin = $this->isGranted('ROLE_ADMIN');
         $isCreatorOrAdmin = $channel->isAdministrator($currentUser);
         if (!$isAdmin && !$isCreatorOrAdmin) {
-            throw $this->createAccessDeniedException(
-                $this->translator->trans(
-                    'Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.',
-                ),
-            );
+            throw $this->createAccessDeniedException($this->translator->trans(
+                'Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.',
+            ));
         }
 
         $name = trim($request->request->get('name', ''));
@@ -779,13 +770,13 @@ final class ChannelController extends AbstractController
 
         // Remove existing administrators that are not in the submitted list
         foreach ($channel->getAdministrators() as $admin) {
-            if (!in_array((string)$admin->getId(), $adminIds, true)) {
+            if (!in_array((string) $admin->getId(), $adminIds, true)) {
                 $channel->removeAdministrator($admin);
             }
         }
         // Add new administrators
         foreach ($adminIds as $adminId) {
-            $adminUser = $userRepository->find((int)$adminId);
+            $adminUser = $userRepository->find((int) $adminId);
             if ($adminUser && $adminUser !== $channel->getCreator()) {
                 if ($channel->getMembers()->contains($adminUser)) {
                     $channel->addAdministrator($adminUser);
@@ -808,7 +799,7 @@ final class ChannelController extends AbstractController
         ChannelRepository $channelRepository,
     ): Response {
         $userId = $request->request->get('userId');
-        $user = $userRepository->find((int)$userId);
+        $user = $userRepository->find((int) $userId);
         if (!$user) {
             return new Response('', 400);
         }
@@ -821,8 +812,8 @@ final class ChannelController extends AbstractController
         if (!$channel->getMembers()->contains($user)) {
             return new Response(
                 '<script>alert("'
-                .$this->translator->trans("Cet utilisateur n'est pas membre de ce canal.")
-                .'");</script>',
+                . $this->translator->trans("Cet utilisateur n'est pas membre de ce canal.")
+                . '");</script>',
                 200,
             );
         }
@@ -915,13 +906,13 @@ final class ChannelController extends AbstractController
 
         $slug =
             'sc-'
-            .preg_replace('/[^a-z0-9]+/i', '-', mb_strtolower($name))
-            .'-'
-            .substr(bin2hex(random_bytes(3)), 0, 6);
+            . preg_replace('/[^a-z0-9]+/i', '-', mb_strtolower($name))
+            . '-'
+            . substr(bin2hex(random_bytes(3)), 0, 6);
         $slug = trim($slug, '-');
 
         if ($entityManager->getRepository(Channel::class)->findOneBy(['slug' => $slug])) {
-            $slug .= '-'.rand(100, 999);
+            $slug .= '-' . rand(100, 999);
         }
 
         $channel = new Channel();
@@ -941,15 +932,13 @@ final class ChannelController extends AbstractController
         $entityManager->persist($channel);
         $entityManager->flush();
 
-        $this->logger->info(
-            sprintf(
-                'Sub-channel created: "%s" (slug: "%s") from message #%d by user "%s"',
-                $channel->getName(),
-                $channel->getSlug(),
-                $parentMessage->getId(),
-                $currentUser->getUsername(),
-            ),
-        );
+        $this->logger->info(sprintf(
+            'Sub-channel created: "%s" (slug: "%s") from message #%d by user "%s"',
+            $channel->getName(),
+            $channel->getSlug(),
+            $parentMessage->getId(),
+            $currentUser->getUsername(),
+        ));
 
         $this->addFlash('success', $this->translator->trans('Sous-canal "%channelName%" créé.', [
             '%channelName%' => $channel->getName(),

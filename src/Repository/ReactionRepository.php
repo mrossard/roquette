@@ -27,13 +27,11 @@ class ReactionRepository extends ServiceEntityRepository
     {
         return $this
             ->getEntityManager()
-            ->createQuery(
-                'SELECT m FROM App\Entity\Message m
+            ->createQuery('SELECT m FROM App\Entity\Message m
              JOIN App\Entity\Reaction r WITH r.message = m
              WHERE r.user = :user
              GROUP BY m.id
-             ORDER BY MAX(m.createdAt) DESC'
-            )
+             ORDER BY MAX(m.createdAt) DESC')
             ->setParameter('user', $user)
             ->getResult();
     }
@@ -45,13 +43,11 @@ class ReactionRepository extends ServiceEntityRepository
     {
         return $this
             ->getEntityManager()
-            ->createQuery(
-                'SELECT m FROM App\Entity\Message m
+            ->createQuery('SELECT m FROM App\Entity\Message m
              JOIN App\Entity\Reaction r WITH r.message = m
              WHERE r.user = :user AND r.emoji = :emoji
              GROUP BY m.id
-             ORDER BY MAX(m.createdAt) DESC'
-            )
+             ORDER BY MAX(m.createdAt) DESC')
             ->setParameter('user', $user)
             ->setParameter('emoji', $emoji)
             ->getResult();

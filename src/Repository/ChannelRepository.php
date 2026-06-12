@@ -72,7 +72,7 @@ class ChannelRepository extends ServiceEntityRepository
             }
         }
 
-        $robotSlug = 'dm-robot-roquette-'.$user->getSlug();
+        $robotSlug = 'dm-robot-roquette-' . $user->getSlug();
         $hasRobotChannel = false;
         foreach ($joinedChannels as $channel) {
             if ($channel->getSlug() === $robotSlug) {
@@ -253,6 +253,6 @@ class ChannelRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
 
-        return (int)$count > 0;
+        return (int) $count > 0;
     }
 }

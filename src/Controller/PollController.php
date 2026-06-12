@@ -23,12 +23,12 @@ final class PollController extends AbstractController
     #[Route('/poll/option-field', name: 'app_poll_option_field', methods: ['POST'])]
     public function getOptionField(Request $request): Response
     {
-        $count = (int)$request->request->get('count', 0);
+        $count = (int) $request->request->get('count', 0);
         if ($count >= 8) {
             return new Response('<script>alert("Un maximum de 8 options est autorisé.");</script>', 200);
         }
 
-        $isRequired = (bool)$request->request->get('isRequired', false);
+        $isRequired = (bool) $request->request->get('isRequired', false);
         $inputClass = $request->request->get('inputClass', 'poll-option-input');
 
         return $this->render('dashboard/_poll_option_field.html.twig', [
@@ -116,15 +116,12 @@ final class PollController extends AbstractController
 
         $renderedHtml = $this->renderFeedItem($message, ['no_fade' => true]);
 
-        $renderedHtmlOob = $this->renderView(
-            'dashboard/_feed_item.html.twig',
-            array_merge(
-                $this->feedItemParams($message),
-                ['oob' => true],
-            ),
-        );
+        $renderedHtmlOob = $this->renderView('dashboard/_feed_item.html.twig', array_merge(
+            $this->feedItemParams($message),
+            ['oob' => true],
+        ));
 
-        $mercurePublisher->publishToChannel($channel, $renderedHtmlOob, 'message_'.$channel->getSlug());
+        $mercurePublisher->publishToChannel($channel, $renderedHtmlOob, 'message_' . $channel->getSlug());
 
         return new Response($renderedHtml);
     }
@@ -137,11 +134,11 @@ final class PollController extends AbstractController
             throw $this->createNotFoundException('Canal non trouvé.');
         }
 
-        $open = (bool)($request->query->get('open') ?? $request->request->get('open', false));
+        $open = (bool) ($request->query->get('open') ?? $request->request->get('open', false));
         $messageValue = $request->query->get('message') ?? $request->request->get('message', '');
         $pollQuestion = $request->query->get('poll_question') ?? $request->request->get('poll_question', '');
         $pollOptions = $request->query->all('poll_options') ?: $request->request->all('poll_options') ?: [];
-        $allowMultiple = (bool)(
+        $allowMultiple = (bool) (
             $request->query->get('allow_multiple') ?? $request->request->get('allow_multiple', false)
         );
 

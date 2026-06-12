@@ -129,7 +129,7 @@ final class UserSettingsController extends AbstractController
         if ($q !== '') {
             $qb->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')->setParameter(
                 'q',
-                '%'.mb_strtolower($q).'%',
+                '%' . mb_strtolower($q) . '%',
             );
         }
         $users = $qb->getQuery()->getResult();
@@ -182,7 +182,7 @@ final class UserSettingsController extends AbstractController
         if ($q !== '') {
             $qb->andWhere('LOWER(c.name) LIKE :q OR LOWER(c.slug) LIKE :q')->setParameter(
                 'q',
-                '%'.mb_strtolower($q).'%',
+                '%' . mb_strtolower($q) . '%',
             );
         }
 
@@ -215,7 +215,7 @@ final class UserSettingsController extends AbstractController
             if ($q !== '') {
                 $qb->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')->setParameter(
                     'q',
-                    '%'.mb_strtolower($q).'%',
+                    '%' . mb_strtolower($q) . '%',
                 );
             }
 
@@ -237,7 +237,7 @@ final class UserSettingsController extends AbstractController
         if ($q !== '') {
             $qb->andWhere('LOWER(c.name) LIKE :q OR LOWER(c.slug) LIKE :q')->setParameter(
                 'q',
-                '%'.mb_strtolower($q).'%',
+                '%' . mb_strtolower($q) . '%',
             );
         }
 
@@ -279,7 +279,7 @@ final class UserSettingsController extends AbstractController
             'pinnedMessage' => $message,
             'activeChannel' => $channel,
         ]);
-        $bannerOob = '<div id="pinned-banner-container" hx-swap-oob="true">'.$bannerHtml.'</div>';
+        $bannerOob = '<div id="pinned-banner-container" hx-swap-oob="true">' . $bannerHtml . '</div>';
         $messageHtml = $this->renderMessageItem($message, true);
 
         $previousMessageHtml = '';
@@ -289,8 +289,8 @@ final class UserSettingsController extends AbstractController
 
         $mercurePublisher->publishToChannel(
             $channel,
-            $bannerOob.$messageHtml.$previousMessageHtml,
-            'message_'.$channel->getSlug(),
+            $bannerOob . $messageHtml . $previousMessageHtml,
+            'message_' . $channel->getSlug(),
         );
 
         return new Response($bannerHtml);
@@ -326,7 +326,7 @@ final class UserSettingsController extends AbstractController
             $bannerOob = '<div id="pinned-banner-container" hx-swap-oob="true"></div>';
             $messageHtml = $this->renderMessageItem($message, true);
 
-            $mercurePublisher->publishToChannel($channel, $bannerOob.$messageHtml, 'message_'.$channel->getSlug());
+            $mercurePublisher->publishToChannel($channel, $bannerOob . $messageHtml, 'message_' . $channel->getSlug());
         }
 
         return new Response('');

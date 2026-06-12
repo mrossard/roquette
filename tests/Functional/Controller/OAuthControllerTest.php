@@ -19,7 +19,7 @@ class OAuthControllerTest extends WebTestCase
         $this->client = self::createClient();
         $container = $this->client->getContainer();
         $projectDir = $container->getParameter('kernel.project_dir');
-        $this->mockStorePath = $projectDir.'/var/oauth_mock_store.json';
+        $this->mockStorePath = $projectDir . '/var/oauth_mock_store.json';
         $this->cleanupMockStore();
     }
 
@@ -216,7 +216,7 @@ class OAuthControllerTest extends WebTestCase
         $accessToken = $tokenData['access_token'];
 
         // Use Bearer header
-        $this->client->request('GET', '/oauth/mock/user', [], [], ['HTTP_AUTHORIZATION' => 'Bearer '.$accessToken]);
+        $this->client->request('GET', '/oauth/mock/user', [], [], ['HTTP_AUTHORIZATION' => 'Bearer ' . $accessToken]);
 
         $this->assertResponseIsSuccessful();
         $userData = json_decode($this->client->getResponse()->getContent(), true);
@@ -267,7 +267,7 @@ class OAuthControllerTest extends WebTestCase
         $code = $params['code'];
 
         // Exchange with query parameter
-        $this->client->request('POST', '/oauth/mock/token?code='.urlencode($code));
+        $this->client->request('POST', '/oauth/mock/token?code=' . urlencode($code));
 
         $this->assertResponseIsSuccessful();
         $data = json_decode($this->client->getResponse()->getContent(), true);

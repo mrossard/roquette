@@ -90,7 +90,7 @@ final class NotificationController extends AbstractController
                 });
             }
 
-            $messageIds = array_map(fn(Message $m) => (int)$m->getId(), $messages);
+            $messageIds = array_map(fn(Message $m) => (int) $m->getId(), $messages);
             $replyCounts = $messageRepository->findReplyCounts($messageIds);
 
             return $this->render('dashboard/_messages_feed.html.twig', [
@@ -107,7 +107,7 @@ final class NotificationController extends AbstractController
             $messages = $messageRepository->findLatestInChannel($activeChannel, 50);
             $messages = array_reverse($messages);
 
-            $messageIds = array_map(fn(Message $m) => (int)$m->getId(), $messages);
+            $messageIds = array_map(fn(Message $m) => (int) $m->getId(), $messages);
             $replyCounts = $messageRepository->findReplyCounts($messageIds);
 
             return $this->render('dashboard/_messages_feed.html.twig', [
@@ -120,7 +120,7 @@ final class NotificationController extends AbstractController
 
         $messages = $messageRepository->searchInChannel($activeChannel, $query);
 
-        $messageIds = array_map(fn(Message $m) => (int)$m->getId(), $messages);
+        $messageIds = array_map(fn(Message $m) => (int) $m->getId(), $messages);
         $replyCounts = $messageRepository->findReplyCounts($messageIds);
 
         return $this->render('dashboard/_messages_feed.html.twig', [
@@ -245,7 +245,7 @@ final class NotificationController extends AbstractController
             $isTyping = filter_var($data['isTyping'] ?? false, FILTER_VALIDATE_BOOLEAN);
         }
 
-        $cacheKey = 'channel_typing_'.$activeChannel->getSlug();
+        $cacheKey = 'channel_typing_' . $activeChannel->getSlug();
 
         $typingUsers = $cache->get($cacheKey, function () {
             return [];
@@ -277,7 +277,7 @@ final class NotificationController extends AbstractController
             return $typingUsers;
         });
 
-        $mercurePublisher->publishToChannel($activeChannel, 'ping', 'typing_'.$activeChannel->getSlug());
+        $mercurePublisher->publishToChannel($activeChannel, 'ping', 'typing_' . $activeChannel->getSlug());
 
         return $this->typingIndicator($slug, $channelRepository, $cache);
     }
@@ -294,7 +294,7 @@ final class NotificationController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        $cacheKey = 'channel_typing_'.$activeChannel->getSlug();
+        $cacheKey = 'channel_typing_' . $activeChannel->getSlug();
 
         $typingUsers = $cache->get($cacheKey, function () {
             return [];

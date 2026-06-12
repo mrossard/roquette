@@ -69,7 +69,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         if ($searchQuery !== null && $searchQuery !== '') {
             $qb->andWhere(
                 'LOWER(u.username) LIKE :searchQuery OR LOWER(u.displayName) LIKE :searchQuery',
-            )->setParameter('searchQuery', '%'.strtolower($searchQuery).'%');
+            )->setParameter('searchQuery', '%' . strtolower($searchQuery) . '%');
         }
 
         return $qb->getQuery()->getResult();

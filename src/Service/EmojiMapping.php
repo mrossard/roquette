@@ -6245,6 +6245,6 @@ class EmojiMapping
     {
         $shortcode = array_search($emoji, self::MAPPING, true);
 
-        return $shortcode ? (string)$shortcode : null;
+        return $shortcode ? (string) $shortcode : null;
     }
 }

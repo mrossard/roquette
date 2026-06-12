@@ -46,7 +46,7 @@ class ActivitySubscriber implements EventSubscriberInterface
 
             $newStatus = $user->getStatus();
             $update = new Update(
-                $this->mercureTopicPrefix.'/users/status',
+                $this->mercureTopicPrefix . '/users/status',
                 json_encode([
                     'type' => 'user_status_changed',
                     'username' => $user->getUsername(),

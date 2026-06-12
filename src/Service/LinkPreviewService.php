@@ -258,7 +258,7 @@ class LinkPreviewService
     public function getCachedPreview(string $url): ?array
     {
         $url = trim($url);
-        $cacheKey = 'link_preview_'.md5($url);
+        $cacheKey = 'link_preview_' . md5($url);
 
         if (method_exists($this->cache, 'getItem')) {
             try {

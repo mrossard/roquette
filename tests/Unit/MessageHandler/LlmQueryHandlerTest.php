@@ -44,7 +44,7 @@ class LlmQueryHandlerTest extends TestCase
         $messageFormatter
             ->expects($this->any())
             ->method('format')
-            ->willReturnCallback(fn($text) => '<p>'.$text.'</p>');
+            ->willReturnCallback(fn($text) => '<p>' . $text . '</p>');
 
         $hub->expects($this->atLeastOnce())->method('publish')->with($this->isInstanceOf(Update::class));
 
@@ -129,11 +129,9 @@ class LlmQueryHandlerTest extends TestCase
         $llmService
             ->expects($this->once())
             ->method('generateTextStream')
-            ->with(
-                $this->callback(function (string $prompt) {
-                    return str_contains($prompt, 'Résumé intermédiaire');
-                }),
-            )
+            ->with($this->callback(function (string $prompt) {
+                return str_contains($prompt, 'Résumé intermédiaire');
+            }))
             ->willReturn(
                 (function () {
                     yield 'Summary';
@@ -236,13 +234,11 @@ class LlmQueryHandlerTest extends TestCase
         $llmService
             ->expects($this->once())
             ->method('generateTextStream')
-            ->with(
-                $this->callback(function (string $prompt) {
-                    $data = json_decode($prompt, true);
+            ->with($this->callback(function (string $prompt) {
+                $data = json_decode($prompt, true);
 
-                    return is_array($data) && count($data) === 4 && $data[0]['contenu'] === 'Read context';
-                })
-            )
+                return is_array($data) && count($data) === 4 && $data[0]['contenu'] === 'Read context';
+            }))
             ->willReturn(
                 (function () {
                     yield 'Summary';

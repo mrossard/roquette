@@ -177,7 +177,7 @@ class MessageRepository extends ServiceEntityRepository
 
         $counts = [];
         foreach ($results as $row) {
-            $counts[(int)$row['parent_id']] = (int)$row['reply_count'];
+            $counts[(int) $row['parent_id']] = (int) $row['reply_count'];
         }
 
         return $counts;
