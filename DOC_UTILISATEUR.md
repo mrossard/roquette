@@ -10,8 +10,8 @@ les exploiter au quotidien.
 
 1. [Prise en main](#1-prise-en-main)
 2. [Gestion du profil et personnalisation](#2-gestion-du-profil-et-personnalisation)
-3. [Canaux de discussion, sous-canaux et messages directs](#3-canaux-de-discussion-sous-canaux-et-messages-directs)
-4. [Messagerie, réactions et fils de discussion (Threads)](#4-messagerie-réactions-et-fils-de-discussion-threads)
+3. [Canaux de discussion, sous-canaux, messages directs et todo lists](#3-canaux-de-discussion-sous-canaux-messages-directs-et-todo-lists)
+4. [Messagerie, réactions, formatage et fils de discussion (Threads)](#4-messagerie-réactions-formatage-et-fils-de-discussion-threads)
 5. [Épinglage de messages](#5-épinglage-de-messages)
 6. [Sondages, fichiers et aperçus](#6-sondages-fichiers-et-aperçus)
 7. [Webhooks entrants](#7-webhooks-entrants)
@@ -19,6 +19,7 @@ les exploiter au quotidien.
 9. [Notifications, mise en sourdine et recherche](#9-notifications-mise-en-sourdine-et-recherche)
 10. [Assistant virtuel & Synthèse (IA)](#10-assistant-virtuel--synthèse-ia)
 11. [Messages enregistrés](#11-messages-enregistrés)
+12. [Mes réactions](#12-mes-réactions)
 
 ---
 
@@ -70,7 +71,7 @@ Indiquez votre disponibilité. Choisissez parmi :
 
 ---
 
-## 3. Canaux de discussion, sous-canaux et messages directs
+## 3. Canaux de discussion, sous-canaux, messages directs et todo lists
 
 Les discussions sont organisées en canaux de communication :
 
@@ -78,8 +79,16 @@ Les discussions sont organisées en canaux de communication :
 * **Canaux privés** : Restreints et invisibles pour les non-membres. L'accès requiert une invitation par un membre
   existant.
 * **Messages directs (DM)** : Discussions privées en tête-à-tête avec un autre utilisateur.
-* **Canal Assistant** : Un canal de discussion privé avec l'**Assistant** (indiqué par un emoji 🤖 dans la barre laérale)
+* **Canal Assistant** : Un canal de discussion privé avec l'**Assistant** (indiqué par un emoji 🤖 dans la barre latérale)
   est disponible pour poser des questions ou demander des synthèses de canaux.
+
+### Les canaux Todo list (Tâches)
+
+Vous pouvez créer des canaux dédiés à la gestion de tâches collaboratives :
+* **Création & Édition** : Cochez l'option **Canal todo list** lors de la création d'un canal, ou cochez **Transformer en todo list** dans les paramètres d'un sous-canal pour en faire un gestionnaire de tâches.
+* **Gestion des tâches** : Chaque message envoyé dans ce canal devient une tâche.
+* **Validation d'une tâche** : Cliquez sur le menu d'actions (•••) du message/tâche et réagissez avec l'émoji coche verte `✅` (disponible dans le sélecteur rapide). Le message s'affichera alors barré pour signaler sa réalisation.
+* **Discussion associée** : Vous pouvez cliquer sur le bouton **Discussion** associé à chaque tâche pour ouvrir un sous-canal de discussion dédié.
 
 ### Les Sous-canaux (Sub-channels)
 
@@ -92,46 +101,49 @@ Pour approfondir un sujet particulier mentionné dans un message sans encombrer 
 * **Navigation** : Les sous-canaux actifs du canal en cours apparaissent dans le panneau latéral droit pour une
   navigation rapide.
 
-### Actions sur les canaux :
+### Actions et configuration des canaux :
 
 * **Favoris (Étoile)** : Cliquez sur l'étoile à côté du nom d'un canal pour l'épingler dans la section "Favoris" en haut
   de la barre latérale.
-* **Réorganisation** : Vous pouvez réorganisation vos canaux dans la barre latérale par glisser-déposer.
-* **Rétention des messages** : Si vous êtes le créateur du canal, vous pouvez configurer une politique de rétention (en
-  mois) pour purger automatiquement les anciens messages.
+* **Réorganisation** : Vous pouvez réorganiser vos canaux dans la barre latérale en cliquant sur le bouton d'organisation (`⇅` ou `✔️`) à côté de la section des canaux dans la barre latérale. Une fois le mode activé, glissez-déposez les canaux pour changer leur ordre, puis recliquez sur le bouton pour enregistrer.
+* **Administrateurs du canal** : Les administrateurs (le créateur d'origine ainsi que tous les membres désignés comme tels) peuvent modifier les paramètres du canal (nom, description, politique de rétention, type de canal) et désigner d'autres membres comme administrateurs via l'interface de modification.
+* **Rétention des messages** : Si vous êtes administrateur du canal, vous pouvez configurer une politique de rétention (de 1, 3, 6, 12 mois ou sans limite) pour purger automatiquement les anciens messages.
 * **Invitations** : Invitez d'autres membres à rejoindre un canal privé depuis le bouton d'invitation.
 
 ---
 
 ## 4. Messagerie, réactions et fils de discussion (Threads)
 
-### Écrire des messages
+### Écrire et formater des messages
 
-Saisissez votre texte dans la barre de message et appuyez sur **Entrée** (ou utilisez le bouton d'envoi). Utilisez *
-*Shift + Entrée** pour aller à la ligne.
+Saisissez votre texte dans la barre de message et appuyez sur **Entrée** (ou utilisez le bouton d'envoi). Utilisez **Shift + Entrée** pour aller à la ligne.
 
-* **Modification et suppression** : Modifiez ou supprimez vos propres messages depuis le menu d'actions (•••) du
-  message.
+* **Formatage (Markdown)** : L'application supporte le formatage standard Markdown et GitHub Flavored Markdown (GFM). Vous pouvez ajouter :
+  * Du code en ligne en entourant le texte d'accents graves (ex: `` `code` ``).
+  * Des blocs de code multilignes avec triple accent grave (ex: ` ```php ` ... ` ``` `).
+  * Du texte en gras (`**texte**`), en italique (`*texte*`), des listes à puces (`-` ou `*`), des listes ordonnées (`1.`) et des citations (`>`).
+* **Mentions et Références** :
+  * `@nom_utilisateur` : Permet de mentionner un utilisateur. Le message sera surligné en bleu pour l'intéressé et des notifications spécifiques lui seront envoyées.
+  * `#nom_canal` : Si vous tapez le slug d'un canal précédé de `#`, cela se transformera automatiquement en un lien cliquable redirigeant vers ce canal (si vous y avez accès).
+* **Conversion d'émoticones et codes d'émojis** :
+  * Les émoticones textuelles simples sont automatiquement converties en émojis (ex: `:)` devient 🙂, `<3` devient ❤️, `:D` devient 😀, `;)` devient 😉, etc.).
+  * Les codes d'émojis standard (ex: `:rocket:`, `:fire:`, `:chat:`) sont traduits en émojis correspondants.
+  * Les émojis animés/spécifiques sont supportés via la syntaxe `[:code]` (ex: `[:commence-a-plaire]`), s'ils sont configurés sur le serveur d'émojis.
+* **Aperçu des images (Lightbox)** : Cliquez sur n'importe quelle image insérée ou téléversée dans la discussion pour l'ouvrir dans un aperçu en grand (Lightbox). Vous pouvez le refermer en recliquant à côté ou sur le bouton de fermeture.
+* **Modification et suppression** : Modifiez ou supprimez vos propres messages depuis le menu d'actions (•••) du message.
 * **Indicateur de saisie** : Lorsqu'un membre écrit, un indicateur discret s'affiche en bas du flux de discussion.
 
 ### Fils de discussion (Threads)
 
 Pour répondre de manière ciblée à un message et suivre une discussion spécifique :
 
-* **Répondre à un message** : Survolez le message en question, cliquez sur le menu d'actions (•••) et sélectionnez *
-  *Répondre** (ou cliquez sur le bouton de réponse rapide). Une bannière de contexte s'affiche au-dessus de votre champ
-  de saisie (`↩ nom_utilisateur`). Saisissez votre texte et envoyez : votre message sera enregistré comme une réponse à
-  ce message parent.
-* **Consulter les réponses** : Sous un message ayant reçu des réponses, un lien apparaît (ex:
-  `💬 Voir les réponses (3)`). Cliquez dessus pour charger l'intégralité du fil de discussion directement au centre de l'
-  interface, dans le flux de messages principal.
-* **Retourner au canal** : Cliquez sur le bouton **Retour au direct** en haut du fil de discussion pour revenir à
-  l'affichage normal de tous les messages du canal.
+* **Répondre à un message** : Survolez le message en question, cliquez sur le menu d'actions (•••) et sélectionnez **Répondre** (ou cliquez sur le bouton de réponse rapide). Une bannière de contexte s'affiche au-dessus de votre champ de saisie (`↩ nom_utilisateur`). Saisissez votre texte et envoyez : votre message sera enregistré comme une réponse à ce message parent.
+* **Consulter les réponses** : Sous un message ayant reçu des réponses, un lien apparaît (ex: `💬 Voir les réponses (3)`). Cliquez dessus pour charger l'intégralité du fil de discussion directement au centre de l'interface, dans le flux de messages principal.
+* **Retourner au canal** : Cliquez sur le bouton **Retour au direct** en haut du fil de discussion pour revenir à l'affichage normal de tous les messages du canal.
 
 ### Réactions (Émojis)
 
-* Survolez un message, cliquez sur le sélecteur d'émojis (icône de smiley) et choisissez une réaction rapide (👍, ❤️, 😂,
-  😮, 😢, 🎉) ou tout autre emoji.
+* Survolez un message, cliquez sur le sélecteur d'émojis (icône de smiley) et choisissez une réaction rapide (👍, ❤️, 😂, 😮, 😢, 🎉) ou tout autre emoji. Dans un canal de type *Todo list*, l'émoji `✅` est également disponible en tête de liste.
 * Cliquez sur une réaction existante sous un message pour ajouter votre vote (+1).
 * Survolez une réaction pour voir la liste des utilisateurs qui l'ont ajoutée.
 
@@ -255,8 +267,8 @@ Accédez au canal privé de l'Assistant depuis la barre latérale pour dialoguer
 canaux :
 
 * **Aide à l'utilisation** : Posez des questions sur l'application (ex: *"Comment configurer un webhook ?"*).
-* **Résumer un canal** : Demandez un compte-rendu des échanges récents d'un canal (ex: *"Résume le canal général"*, *"
-  Fais-moi un résumé du canal #projet-x"*).
+* **Résumer un canal** : Demandez un compte-rendu des échanges récents d'un canal (ex: *"Résume le canal général"*, *"Fais-moi un résumé du canal #projet-x"*).
+  * *Fonctionnement du résumé* : L'Assistant résume en priorité les messages non lus dans le canal désigné pour vous permettre de rattraper votre retard. S'il n'y a aucun message non lu, il génère une synthèse thématique des derniers messages échangés (jusqu'à 100 messages).
 
 *Note : Lors d'une demande complexe, l'Assistant affiche des étapes de feedback en temps réel ("Analyse de la demande...
 🔍", puis "Recherche dans la documentation... ⏳" ou "Résumé du canal... ⏳") avant d'afficher sa réponse définitive. Si
@@ -271,6 +283,14 @@ signaler que la réponse est disponible.*
 Sauvegardez des messages importants pour les consulter plus tard :
 
 * **Enregistrer un message** : Survolez un message et cliquez sur l'étoile (⭐) dans la barre d'actions.
-* **Consulter vos messages** : Cliquez sur **Messages enregistrés** tout en haut de la barre latérale pour afficher la
-  liste de vos messages sauvegardés.
+* **Consulter vos messages** : Cliquez sur **Messages enregistrés** sous la section **Raccourcis** tout en haut de la barre latérale pour afficher la liste de vos messages sauvegardés.
 * **Retirer des favoris** : Cliquez de nouveau sur l'étoile (⭐) d'un message enregistré pour le retirer de votre liste.
+
+---
+
+## 12. Mes réactions
+
+Retrouvez facilement les discussions auxquelles vous avez participé activement :
+
+* **Consulter vos réactions** : Cliquez sur **Mes réactions** sous la section **Raccourcis** en haut de la barre latérale pour afficher tous les messages sur lesquels vous avez ajouté une réaction.
+* **Filtrer par émoji** : Une fois sur la page de vos réactions, utilisez la liste d'émojis en haut pour filtrer les messages contenant un type de réaction spécifique (ex: afficher uniquement les messages où vous avez réagi avec `✅`).
