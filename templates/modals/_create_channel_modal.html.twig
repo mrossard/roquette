@@ -25,6 +25,39 @@
                     <option value="0">Sans limite</option>
                 </select>
             </div>
+
+            {# Canal type selector #}
+            <div class="channel-type-selector" style="margin-top: 1rem;">
+                <label class="channel-type-label-title">Type de canal</label>
+                <div class="channel-type-options">
+                    <label class="channel-type-option {% if not defaultTodo %}channel-type-option-selected{% endif %}"
+                           id="channel-type-discussion-label"
+                           for="modal-type-discussion">
+                        <input type="radio" id="modal-type-discussion" name="channelType" value="discussion"
+                               class="channel-type-radio" {% if not defaultTodo %}checked{% endif %}>
+                        <span class="channel-type-icon">💬</span>
+                        <span class="channel-type-content">
+                            <span class="channel-type-title">Discussion</span>
+                            <span class="channel-type-desc">Canal de messagerie classique avec historique</span>
+                        </span>
+                    </label>
+                    <label class="channel-type-option {% if defaultTodo %}channel-type-option-selected{% endif %}"
+                           id="channel-type-todo-label"
+                           for="modal-type-todo">
+                        <input type="radio" id="modal-type-todo" name="channelType" value="todo"
+                               class="channel-type-radio" {% if defaultTodo %}checked{% endif %}>
+                        <span class="channel-type-icon">✅</span>
+                        <span class="channel-type-content">
+                            <span class="channel-type-title">Todo list</span>
+                            <span class="channel-type-desc">Chaque message devient une tâche à cocher</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            {# Hidden checkboxes mapped from the radio buttons #}
+            <input type="hidden" name="isTodoList" id="modal-isTodoList-hidden" value="{{ defaultTodo ? '1' : '' }}">
+
             <div class="input-group-checkbox"
                  style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
                 <input type="checkbox" name="isPrivate" id="modal-isPrivate" class="input-checkbox"
@@ -33,15 +66,32 @@
                        style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">Canal
                     privé</label>
             </div>
-            <div class="input-group-checkbox"
-                 style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                <input type="checkbox" name="isTodoList" id="modal-isTodoList" class="input-checkbox"
-                       style="width: auto; cursor: pointer;">
-                <label for="modal-isTodoList"
-                       style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">Canal
-                    todo list</label>
-            </div>
+
             <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Créer le canal</button>
         </form>
+
+        <script>
+            (function () {
+                const radios = document.querySelectorAll('.channel-type-radio');
+                const hiddenInput = document.getElementById('modal-isTodoList-hidden');
+                const labels = document.querySelectorAll('.channel-type-option');
+
+                function updateSelection() {
+                    radios.forEach(function (radio) {
+                        const label = radio.closest('.channel-type-option');
+                        if (radio.checked) {
+                            label.classList.add('channel-type-option-selected');
+                            hiddenInput.value = radio.value === 'todo' ? '1' : '';
+                        } else {
+                            label.classList.remove('channel-type-option-selected');
+                        }
+                    });
+                }
+
+                radios.forEach(function (radio) {
+                    radio.addEventListener('change', updateSelection);
+                });
+            })();
+        </script>
     {% endblock %}
 {% endembed %}

@@ -76,8 +76,10 @@ final class ModalController extends AbstractController
     }
 
     #[Route('/channels/create-modal', name: 'app_channel_create_modal', methods: ['GET'])]
-    public function createModal(): Response
+    public function createModal(\Symfony\Component\HttpFoundation\Request $request): Response
     {
-        return $this->render('modals/_create_channel_modal.html.twig');
+        return $this->render('modals/_create_channel_modal.html.twig', [
+            'defaultTodo' => $request->query->getBoolean('defaultTodo', false),
+        ]);
     }
 }

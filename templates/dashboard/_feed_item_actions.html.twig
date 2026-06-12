@@ -41,9 +41,15 @@
         {% if message_id|default(0) > 0 and messageChannel and (not messageChannel.isSubChannel() or messageChannel.isTodoList()) %}
             <button class="btn-reply-subtle btn-subchannel-subtle"
                     hx-post="{{ path('app_message_create_subchannel', {id: message_id}) }}"
-                    title="{{ 'Créer un sous-canal'|trans }}">
+                    title="{{ 'Créer une discussion'|trans }}">
                 {{ ux_icon('heroicons:rectangle-stack', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
-                <span>{{ 'Sous-canal'|trans }}</span>
+                <span>{{ 'Discussion'|trans }}</span>
+            </button>
+            <button class="btn-reply-subtle btn-subchannel-todo-subtle"
+                    hx-post="{{ path('app_message_create_subchannel_todo', {id: message_id}) }}"
+                    title="{{ 'Créer une discussion todo'|trans }}">
+                <span class="action-icon" style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">✅</span>
+                <span>{{ 'Todo'|trans }}</span>
             </button>
         {% endif %}
         {% if message_id|default(0) > 0 %}

@@ -10,7 +10,7 @@ les exploiter au quotidien.
 
 1. [Prise en main](#1-prise-en-main)
 2. [Gestion du profil et personnalisation](#2-gestion-du-profil-et-personnalisation)
-3. [Canaux de discussion, sous-canaux, messages directs et todo lists](#3-canaux-de-discussion-sous-canaux-messages-directs-et-todo-lists)
+3. [Canaux de discussion, discussions, messages directs et todo lists](#3-canaux-de-discussion-discussions-messages-directs-et-todo-lists)
 4. [Messagerie, réactions, formatage et fils de discussion (Threads)](#4-messagerie-réactions-formatage-et-fils-de-discussion-threads)
 5. [Épinglage de messages](#5-épinglage-de-messages)
 6. [Sondages, fichiers et aperçus](#6-sondages-fichiers-et-aperçus)
@@ -34,8 +34,8 @@ Pour commencer à utiliser Roquette :
       la liste des canaux, les messages directs et vos invitations.
     * La **fenêtre de discussion** au centre : elle affiche les messages du canal actif, le champ de saisie et les
       options de partage.
-    * Le **panneau des sous-canaux** à droite (si le canal actif possède des sous-canaux) : affiche la liste des
-      sous-canaux associés au canal actuel.
+    * Le **panneau des discussions** à droite (si le canal actif possède des discussions) : affiche la liste des
+      discussions associées au canal actuel.
 
 ---
 
@@ -71,7 +71,7 @@ Indiquez votre disponibilité. Choisissez parmi :
 
 ---
 
-## 3. Canaux de discussion, sous-canaux, messages directs et todo lists
+## 3. Canaux de discussion, discussions, messages directs et todo lists
 
 Les discussions sont organisées en canaux de communication :
 
@@ -85,20 +85,20 @@ Les discussions sont organisées en canaux de communication :
 ### Les canaux Todo list (Tâches)
 
 Vous pouvez créer des canaux dédiés à la gestion de tâches collaboratives :
-* **Création & Édition** : Cochez l'option **Canal todo list** lors de la création d'un canal, ou cochez **Transformer en todo list** dans les paramètres d'un sous-canal pour en faire un gestionnaire de tâches.
+* **Création & Édition** : Cochez l'option **Canal todo list** lors de la création d'un canal, ou cochez **Transformer en todo list** dans les paramètres d'une discussion pour en faire un gestionnaire de tâches.
 * **Gestion des tâches** : Chaque message envoyé dans ce canal devient une tâche.
 * **Validation d'une tâche** : Cliquez sur le menu d'actions (•••) du message/tâche et réagissez avec l'émoji coche verte `✅` (disponible dans le sélecteur rapide). Le message s'affichera alors barré pour signaler sa réalisation.
-* **Discussion associée** : Vous pouvez cliquer sur le bouton **Discussion** associé à chaque tâche pour ouvrir un sous-canal de discussion dédié.
+* **Discussion associée** : Vous pouvez cliquer sur le bouton **Discussion** associé à chaque tâche pour ouvrir une discussion dédiée.
 
-### Les Sous-canaux (Sub-channels)
+### Les Discussions
 
-Pour approfondir un sujet particulier mentionné dans un message sans encombrer le canal principal, vous pouvez créer un
-**sous-canal** dédié :
+Pour approfondir un sujet particulier mentionné dans un message sans encombrer le canal principal, vous pouvez créer une
+**discussion** dédiée :
 
-* **Création** : Survolez un message, cliquez sur le menu d'actions (•••) et sélectionnez **Sous-canal**.
-* **Propriétés** : Le sous-canal prend automatiquement pour nom le début du message source (jusqu'à 40 caractères) et
+* **Création** : Survolez un message, cliquez sur le menu d'actions (•••) et sélectionnez **Discussion**.
+* **Propriétés** : La discussion prend automatiquement pour nom le début du message source (jusqu'à 40 caractères) et
   copie la liste des membres, le niveau de confidentialité (public/privé) et la politique de rétention du canal parent.
-* **Navigation** : Les sous-canaux actifs du canal en cours apparaissent dans le panneau latéral droit pour une
+* **Navigation** : Les discussions actives du canal en cours apparaissent dans le panneau latéral droit pour une
   navigation rapide.
 
 ### Actions et configuration des canaux :

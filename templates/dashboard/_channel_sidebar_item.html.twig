@@ -6,7 +6,7 @@
 {% set isRobotDm = channel.slug starts with 'dm-robot-roquette-' %}
 <a href="{{ path('app_channel', {slug: channel.slug}) }}"
    id="sidebar-channel-{{ channel.slug }}"
-   class="channel-link {% if activeChannel and channel.id == activeChannel.id %}active{% endif %} {% if count > 0 and (not activeChannel or channel.id != activeChannel.id) %}unread{% endif %} {% if hasMention and (not activeChannel or channel.id != activeChannel.id) %}has-mention{% endif %} {% if isRobotDm %}assistant-dm{% endif %}"
+   class="channel-link {% if activeChannel and channel.id == activeChannel.id %}active{% endif %} {% if count > 0 and (not activeChannel or channel.id != activeChannel.id) %}unread{% endif %} {% if hasMention and (not activeChannel or channel.id != activeChannel.id) %}has-mention{% endif %} {% if isRobotDm %}assistant-dm{% endif %} {% if channel.isTodoList() %}is-todo-channel{% endif %}"
    data-channel-slug="{{ channel.slug }}"
    data-channel-id="{{ channel.id }}"
    draggable="false"
@@ -31,7 +31,9 @@
             <span class="channel-name">{{ channel.name }}</span>
         {% endif %}
     {% else %}
-        {% if channel.isPrivate %}
+        {% if channel.isTodoList() %}
+            <span class="channel-hash todo-channel-icon" title="{{ 'Canal todo list'|trans }}">✅</span>
+        {% elseif channel.isPrivate %}
             <span class="channel-hash" style="color: var(--accent-purple); opacity: 1;">🔒</span>
         {% else %}
             <span class="channel-hash" style="color: var(--accent-cyan); opacity: 1;">#</span>

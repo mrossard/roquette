@@ -147,7 +147,7 @@
                                 </button>
                             {% endif %}
 
-                            {# 1. Sous-canaux #}
+                            {# 1. Discussions #}
                             {% if not activeChannel.isSubChannel %}
                                 <button type="button" class="user-status-option"
                                         id="btn-subchannels-toggle"
@@ -155,7 +155,7 @@
                                         role="menuitem"
                                         style="cursor: pointer;">
                                     <span class="option-icon">🌿</span>
-                                    <span class="option-label">{{ 'Sous-canaux'|trans }} ({{ activeSubChannels|length }})</span>
+                                    <span class="option-label">{{ 'Discussions'|trans }} ({{ activeSubChannels|length }})</span>
                                 </button>
                             {% endif %}
 

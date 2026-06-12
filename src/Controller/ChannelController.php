@@ -871,6 +871,26 @@ final class ChannelController extends AbstractController
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
     ): Response {
+        return $this->doCreateSubChannel($id, $request, $messageRepository, $entityManager, false);
+    }
+
+    #[Route('/messages/{id}/sub-channel-todo', name: 'app_message_create_subchannel_todo', methods: ['POST'])]
+    public function createSubChannelTodo(
+        int $id,
+        Request $request,
+        MessageRepository $messageRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        return $this->doCreateSubChannel($id, $request, $messageRepository, $entityManager, true);
+    }
+
+    private function doCreateSubChannel(
+        int $id,
+        Request $request,
+        MessageRepository $messageRepository,
+        EntityManagerInterface $entityManager,
+        bool $isTodoList,
+    ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
@@ -901,7 +921,7 @@ final class ChannelController extends AbstractController
         }
 
         // Build sub-channel name from the message
-        $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Sous-canal';
+        $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Discussion';
         $name = mb_substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 40);
 
         $slug =
@@ -918,11 +938,14 @@ final class ChannelController extends AbstractController
         $channel = new Channel();
         $channel->setName($name);
         $channel->setSlug($slug);
-        $channel->setDescription($this->translator->trans('Sous-canal créé depuis un message.'));
+        $channel->setDescription($this->translator->trans('Discussion créée depuis un message.'));
         $channel->setParentMessage($parentMessage);
         $channel->setCreator($currentUser);
         $channel->setIsPrivate($parentChannel->isPrivate());
         $channel->setMessageRetentionMonths($parentChannel->getMessageRetentionMonths());
+        if ($isTodoList) {
+            $channel->setIsTodoList(true);
+        }
 
         // Copy all members from the parent channel
         foreach ($parentChannel->getMembers() as $member) {
@@ -933,14 +956,15 @@ final class ChannelController extends AbstractController
         $entityManager->flush();
 
         $this->logger->info(sprintf(
-            'Sub-channel created: "%s" (slug: "%s") from message #%d by user "%s"',
+            'Sub-channel created: "%s" (slug: "%s", todo: %s) from message #%d by user "%s"',
             $channel->getName(),
             $channel->getSlug(),
+            $isTodoList ? 'yes' : 'no',
             $parentMessage->getId(),
             $currentUser->getUsername(),
         ));
 
-        $this->addFlash('success', $this->translator->trans('Sous-canal "%channelName%" créé.', [
+        $this->addFlash('success', $this->translator->trans('Discussion "%channelName%" créée.', [
             '%channelName%' => $channel->getName(),
         ]));
 

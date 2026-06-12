@@ -1,6 +1,6 @@
 <aside class="card glass-panel subchannels-sidebar-panel" id="subchannels-sidebar-panel">
     <div class="subchannels-sidebar-header">
-        <h3>🌿 {{ 'Sous-canaux'|trans }}</h3>
+        <h3>🌿 {{ 'Discussions'|trans }}</h3>
         <button type="button" class="subchannels-sidebar-close" onclick="toggleSubChannelsSidebar()"
                 title="{{ 'Fermer'|trans }}">✕
         </button>
@@ -33,7 +33,7 @@
             {% endfor %}
         {% else %}
             <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; text-align: center; margin-top: 2rem;">
-                {{ 'Aucun sous-canal existant.'|trans }}
+                {{ 'Aucune discussion existante.'|trans }}
             </p>
         {% endif %}
     </div>

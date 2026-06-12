@@ -130,7 +130,7 @@ class MercurePublisher
             $channelName = $channel->isDm() ? 'Message direct' : '#' . $channel->getName();
             if ($channel->isSubChannel() && $channel->getParentMessage() !== null) {
                 $parentChannelName = '#' . $channel->getParentMessage()->getChannel()->getName();
-                $channelName .= ' (sous-canal de ' . $parentChannelName . ')';
+                $channelName .= ' (discussion de ' . $parentChannelName . ')';
             }
 
             $this->publishToUser(
