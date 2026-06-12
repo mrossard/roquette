@@ -74,11 +74,21 @@ class Channel
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'channel', cascade: ['remove'])]
     private Collection $messages;
 
+    /**
+     * @var Collection<int, GroupSubscription>
+     */
+    #[ORM\OneToMany(targetEntity: GroupSubscription::class, mappedBy: 'channel', cascade: ['all'], orphanRemoval: true)]
+    private Collection $groupSubscriptions;
+
+    #[ORM\OneToOne(mappedBy: 'channel', targetEntity: UserGroup::class)]
+    private ?UserGroup $userGroup = null;
+
     public function __construct()
     {
         $this->messages = new ArrayCollection();
         $this->members = new ArrayCollection();
         $this->administrators = new ArrayCollection();
+        $this->groupSubscriptions = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -322,7 +332,15 @@ class Channel
             return true;
         }
 
-        return $this->administrators->contains($user);
+        if ($this->administrators->contains($user)) {
+            return true;
+        }
+
+        if ($this->userGroup && $this->userGroup->isAdministrator($user)) {
+            return true;
+        }
+
+        return false;
     }
 
     public function hasUserParticipated(User $user): bool
@@ -347,5 +365,44 @@ class Channel
         }
 
         return false;
+    }
+
+    /**
+     * @return Collection<int, GroupSubscription>
+     */
+    public function getGroupSubscriptions(): Collection
+    {
+        return $this->groupSubscriptions;
+    }
+
+    public function addGroupSubscription(GroupSubscription $groupSubscription): static
+    {
+        if (!$this->groupSubscriptions->contains($groupSubscription)) {
+            $this->groupSubscriptions->add($groupSubscription);
+            $groupSubscription->setChannel($this);
+        }
+        return $this;
+    }
+
+    public function removeGroupSubscription(GroupSubscription $groupSubscription): static
+    {
+        if ($this->groupSubscriptions->removeElement($groupSubscription)) {
+            // set the owning side to null (unless already changed)
+            if ($groupSubscription->getChannel() === $this) {
+                $groupSubscription->setChannel(null);
+            }
+        }
+        return $this;
+    }
+
+    public function getUserGroup(): ?UserGroup
+    {
+        return $this->userGroup;
+    }
+
+    public function setUserGroup(?UserGroup $userGroup): static
+    {
+        $this->userGroup = $userGroup;
+        return $this;
     }
 }

@@ -14,17 +14,36 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ChannelRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(
+        ManagerRegistry $registry,
+        private readonly \App\Service\Group\GroupProviderInterface $groupProvider,
+        private readonly UserGroupRepository $userGroupRepository,
+    ) {
         parent::__construct($registry, Channel::class);
     }
 
     public function findAllForUser(\App\Entity\User $user): array
     {
-        $joinedChannels = $this
-            ->createQueryBuilder('c')
-            ->join('c.members', 'm')
-            ->where('m.id = :userId')
+        $providerGroups = $this->groupProvider->getGroupsForUser($user);
+        $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
+
+        $localGroups = $this->userGroupRepository->findGroupsForUser($user);
+        $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
+
+        $groupIdentifiers = array_unique(array_merge($providerGroupIdentifiers, $localGroupIdentifiers));
+
+        $qb = $this->createQueryBuilder('c')
+            ->leftJoin('c.members', 'm');
+
+        if (!empty($groupIdentifiers)) {
+            $qb->leftJoin('c.groupSubscriptions', 'gs')
+                ->where('m.id = :userId OR gs.groupIdentifier IN (:groupIdentifiers)')
+                ->setParameter('groupIdentifiers', $groupIdentifiers);
+        } else {
+            $qb->where('m.id = :userId');
+        }
+
+        $joinedChannels = $qb
             ->setParameter('userId', $user->getId())
             ->orderBy('c.createdAt', 'ASC')
             ->getQuery()
@@ -196,18 +215,73 @@ class ChannelRepository extends ServiceEntityRepository
 
     public function searchByName(string $query, \App\Entity\User $user): array
     {
-        return $this
-            ->createQueryBuilder('c')
+        $providerGroups = $this->groupProvider->getGroupsForUser($user);
+        $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
+
+        $localGroups = $this->userGroupRepository->findGroupsForUser($user);
+        $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
+
+        $groupIdentifiers = array_unique(array_merge($providerGroupIdentifiers, $localGroupIdentifiers));
+
+        $qb = $this->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
             ->where('c.isDm = false')
             ->andWhere('c.parentMessage IS NULL')
-            ->andWhere('LOWER(c.name) LIKE :query OR LOWER(c.description) LIKE :query')
-            ->andWhere('c.isPrivate = false OR m.id = :userId')
+            ->andWhere('LOWER(c.name) LIKE :query OR LOWER(c.description) LIKE :query');
+
+        if (!empty($groupIdentifiers)) {
+            $qb->leftJoin('c.groupSubscriptions', 'gs')
+                ->andWhere('c.isPrivate = false OR m.id = :userId OR gs.groupIdentifier IN (:groupIdentifiers)')
+                ->setParameter('groupIdentifiers', $groupIdentifiers);
+        } else {
+            $qb->andWhere('c.isPrivate = false OR m.id = :userId');
+        }
+
+        return $qb
             ->setParameter('query', '%' . strtolower($query) . '%')
             ->setParameter('userId', $user->getId())
             ->setMaxResults(5)
             ->getQuery()
             ->getResult();
+    }
+
+    public function canUserAccess(Channel $channel, User $user): bool
+    {
+        if (!$channel->isPrivate()) {
+            return true;
+        }
+
+        // Direct member
+        if ($channel->getMembers()->contains($user)) {
+            return true;
+        }
+
+        // Creator is always allowed
+        if ($channel->getCreator() && $channel->getCreator()->getId() === $user->getId()) {
+            return true;
+        }
+
+        // Check group subscriptions
+        $subscriptions = $channel->getGroupSubscriptions();
+        if ($subscriptions->isEmpty()) {
+            return false;
+        }
+
+        $providerGroups = $this->groupProvider->getGroupsForUser($user);
+        $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
+
+        $localGroups = $this->userGroupRepository->findGroupsForUser($user);
+        $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
+
+        $userGroupIdentifiers = array_unique(array_merge($providerGroupIdentifiers, $localGroupIdentifiers));
+
+        foreach ($subscriptions as $subscription) {
+            if (in_array($subscription->getGroupIdentifier(), $userGroupIdentifiers, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @return Channel[] */

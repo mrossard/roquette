@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Channel;
+use App\Entity\GroupSubscription;
 use App\Entity\Message;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
@@ -77,6 +78,28 @@ final class ChannelController extends AbstractController
         $isPrivate = $request->request->getBoolean('isPrivate', false);
         if ($isPrivate) {
             $channel->setIsPrivate(true);
+
+            $groupIdentifier = $request->request->get('groupIdentifier');
+            if ($groupIdentifier !== null && $groupIdentifier !== '') {
+                $isGroupChannel = $request->request->getBoolean('isGroupChannel', false);
+
+                if ($isGroupChannel) {
+                    $existingGroupSub = $entityManager->getRepository(GroupSubscription::class)->findOneBy([
+                        'groupIdentifier' => $groupIdentifier,
+                        'isGroupChannel' => true,
+                    ]);
+                    if ($existingGroupSub) {
+                        $this->addFlash('error', $this->translator->trans('Ce groupe possède déjà un canal officiel.'));
+                        return $this->redirectToRoute('app_dashboard');
+                    }
+                }
+
+                $groupSubscription = new GroupSubscription();
+                $groupSubscription->setGroupIdentifier($groupIdentifier);
+                $groupSubscription->setIsGroupChannel($isGroupChannel);
+                $channel->addGroupSubscription($groupSubscription);
+                $entityManager->persist($groupSubscription);
+            }
         }
 
         $isTodoList = $request->request->getBoolean('isTodoList', false);
@@ -329,7 +352,7 @@ final class ChannelController extends AbstractController
             return new Response($this->translator->trans('Canal non trouvé.'), 404);
         }
 
-        if ($channel->isPrivate() && !$channel->getMembers()->contains($currentUser)) {
+        if (!$channelRepository->canUserAccess($channel, $currentUser)) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 
@@ -916,7 +939,7 @@ final class ChannelController extends AbstractController
         if ($parentChannel->isSubChannel() && !$parentChannel->isTodoList()) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
-        if ($parentChannel->isPrivate() && !$parentChannel->getMembers()->contains($currentUser)) {
+        if (!$channelRepository->canUserAccess($parentChannel, $currentUser)) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 
@@ -974,6 +997,87 @@ final class ChannelController extends AbstractController
         }
 
         return $this->redirect($url);
+    }
+
+    #[Route('/channels/{slug}/subscribe-group', name: 'app_channel_subscribe_group', methods: ['POST'])]
+    public function subscribeGroup(
+        string $slug,
+        Request $request,
+        ChannelRepository $channelRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+        $channel = $channelRepository->findOneBy(['slug' => $slug]);
+
+        if (!$channel) {
+            return new Response('Canal non trouvé', 404);
+        }
+
+        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
+            return new Response('Accès refusé', 403);
+        }
+
+        $newGroupIdentifier = $request->request->get('newGroupIdentifier');
+        if ($newGroupIdentifier !== null && $newGroupIdentifier !== '') {
+            $isOfficial = $request->request->getBoolean('newGroupIsOfficial', false);
+
+            if ($isOfficial) {
+                $existingGroupSub = $entityManager->getRepository(GroupSubscription::class)->findOneBy([
+                    'groupIdentifier' => $newGroupIdentifier,
+                    'isGroupChannel' => true,
+                ]);
+                if ($existingGroupSub) {
+                    $this->addFlash('error', $this->translator->trans('Ce groupe possède déjà un canal officiel.'));
+                    return $this->forward(ModalController::class . '::editModal', ['slug' => $slug]);
+                }
+            }
+
+            $existingSub = $entityManager->getRepository(GroupSubscription::class)->findOneBy([
+                'channel' => $channel,
+                'groupIdentifier' => $newGroupIdentifier,
+            ]);
+
+            if (!$existingSub) {
+                $sub = new GroupSubscription();
+                $sub->setGroupIdentifier($newGroupIdentifier);
+                $sub->setIsGroupChannel($isOfficial);
+                $channel->addGroupSubscription($sub);
+                $entityManager->persist($sub);
+                $entityManager->flush();
+            }
+        }
+
+        return $this->forward(ModalController::class . '::editModal', ['slug' => $slug]);
+    }
+
+    #[Route('/channels/{slug}/unsubscribe-group/{subscriptionId}', name: 'app_channel_unsubscribe_group', methods: ['POST'])]
+    public function unsubscribeGroup(
+        string $slug,
+        int $subscriptionId,
+        ChannelRepository $channelRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+        $channel = $channelRepository->findOneBy(['slug' => $slug]);
+
+        if (!$channel) {
+            return new Response('Canal non trouvé', 404);
+        }
+
+        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
+            return new Response('Accès refusé', 403);
+        }
+
+        $subscription = $entityManager->getRepository(GroupSubscription::class)->find($subscriptionId);
+        if ($subscription && $subscription->getChannel() === $channel) {
+            $channel->removeGroupSubscription($subscription);
+            $entityManager->remove($subscription);
+            $entityManager->flush();
+        }
+
+        return $this->forward(ModalController::class . '::editModal', ['slug' => $slug]);
     }
 
     // -------------------------------------------------------------------------

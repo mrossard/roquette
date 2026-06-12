@@ -17,6 +17,12 @@
 
         <div id="modal-members-list"
              style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.25rem;">
+            {% if groupMembers|length > 0 %}
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; padding: 0.25rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    Membres directs
+                </div>
+            {% endif %}
+
             {% for member in activeChannel.members|sort((a, b) => (a.displayName|default(a.username))|lower <=> (b.displayName|default(b.username))|lower) %}
                 <div class="modal-member-item" data-username="{{ member.username|lower }}"
                      data-name="{{ (member.displayName|default(member.username))|lower }}"
@@ -54,6 +60,100 @@
                     </div>
                 </div>
             {% endfor %}
+
+            {% if groupMembers|length > 0 %}
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; padding: 0.75rem 0.5rem 0.25rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); margin-top: 0.5rem;">
+                    Membres via groupes abonnés
+                </div>
+
+                {% for key, item in groupMembers %}
+                    {% if item.isRegistered %}
+                        {% set member = item.user %}
+                        <div class="modal-member-item" data-username="{{ member.username|lower }}"
+                             data-name="{{ (member.displayName|default(member.username))|lower }}"
+                             style="display: flex; align-items: center; justify-content: justify; gap: 1rem; padding: 0.5rem 0.75rem; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); transition: background 0.2s;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem; width: 100%;">
+                                <div class="avatar-container"
+                                     style="position: relative; width: 36px; height: 36px; flex-shrink: 0;">
+                                    <div class="user-avatar-circle"
+                                         style="background-color: hsl({{ member.hue }}, 90%, var(--user-hue-lightness-border)); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1rem; box-shadow: 0 0 10px hsla({{ member.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
+                                        {{ member.username|slice(0,1)|upper }}
+                                    </div>
+                                    <span class="status-dot-overlay {{ member.status }}"
+                                          style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-card); display: block;"
+                                          title="{{ member.statusLabel }}"></span>
+                                </div>
+                                <div style="flex-grow: 1; min-width: 0;">
+                                    <div
+                                        style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        <span>{{ member.displayName|default(member.username) }}</span>
+                                        {% if member == app.user %}
+                                            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(vous)</span>
+                                        {% endif %}
+                                    </div>
+                                    <div
+                                        style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 0.35rem;">
+                                        <span>@{{ member.username }}</span>
+                                        <span style="font-size: 0.65rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 0.05rem 0.3rem; border-radius: 0.25rem;">{{ item.viaGroup }}</span>
+                                    </div>
+                                </div>
+                                {% if member != app.user %}
+                                    <a href="{{ path('app_dm_open', {username: member.username}) }}" class="btn-account"
+                                       style="padding: 0.4rem 0.75rem; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); border-radius: 0.5rem; color: var(--text-primary); flex-shrink: 0;"
+                                       hx-boost="false" title="Lui envoyer un message direct">
+                                        💬
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="modal-member-item" data-username="{{ item.username|lower }}"
+                             data-name="{{ item.username|lower }}"
+                             style="display: flex; align-items: center; justify-content: justify; gap: 1rem; padding: 0.5rem 0.75rem; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.01); border: 1px dashed var(--border-glass); transition: background 0.2s; opacity: 0.7;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem; width: 100%;">
+                                <div class="avatar-container"
+                                     style="position: relative; width: 36px; height: 36px; flex-shrink: 0;">
+                                    <div class="user-avatar-circle"
+                                         style="background-color: #4b5563; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #9ca3af; font-size: 1rem;">
+                                        {{ item.username|slice(0, 1)|upper }}
+                                    </div>
+                                </div>
+                                <div style="flex-grow: 1; min-width: 0;">
+                                    <div
+                                        style="font-weight: 500; color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        <span>{{ item.username }}</span>
+                                        <span style="font-size: 0.75rem; color: var(--accent-orange); background: rgba(249,115,22,0.1); padding: 0.05rem 0.3rem; border-radius: 0.25rem;">Non inscrit</span>
+                                    </div>
+                                    <div
+                                        style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 0.35rem;">
+                                        <span style="font-size: 0.65rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 0.05rem 0.3rem; border-radius: 0.25rem;">{{ item.viaGroup }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
         </div>
+
+        {% if resolvedSubscriptions|length > 0 %}
+            <div style="margin-top: 1.25rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+                    Groupes abonnés à ce canal
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    {% for sub in resolvedSubscriptions %}
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass);">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-size: 0.9rem; font-weight: 500;">
+                                👥 {{ sub.name }}
+                                {% if sub.isGroupChannel %}
+                                    <span style="font-size: 0.75rem; color: #6366f1; background: rgba(99, 102, 241, 0.1); padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-weight: normal;">Officiel</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
     {% endblock %}
 {% endembed %}

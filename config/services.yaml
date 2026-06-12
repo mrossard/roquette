@@ -7,6 +7,19 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    group_provider_type_default: 'in_memory'
+    ldap_default_host: '127.0.0.1'
+    ldap_default_port: 389
+    ldap_default_encryption: 'none'
+    ldap_default_base_dn: ''
+    ldap_default_bind_dn: null
+    ldap_default_bind_password: null
+    ldap_default_group_search_base: ''
+    ldap_default_group_search_filter: '(objectClass=groupOfNames)'
+    ldap_default_group_membership_attribute: 'member'
+    ldap_default_group_membership_value: 'dn'
+    ldap_default_user_search_base: ''
+    ldap_default_user_search_filter: '(uid={username})'
 
 services:
     # default configuration for services in *this* file
@@ -20,6 +33,37 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+
+    App\Service\Group\LdapGroupProvider:
+        arguments:
+            $config:
+                host: '%env(default:ldap_default_host:LDAP_HOST)%'
+                port: '%env(int:default:ldap_default_port:LDAP_PORT)%'
+                encryption: '%env(default:ldap_default_encryption:LDAP_ENCRYPTION)%'
+                base_dn: '%env(default:ldap_default_base_dn:LDAP_BASE_DN)%'
+                bind_dn: '%env(default:ldap_default_bind_dn:LDAP_BIND_DN)%'
+                bind_password: '%env(default:ldap_default_bind_password:LDAP_BIND_PASSWORD)%'
+                group_search_base: '%env(default:ldap_default_group_search_base:LDAP_GROUP_SEARCH_BASE)%'
+                group_search_filter: '%env(default:ldap_default_group_search_filter:LDAP_GROUP_SEARCH_FILTER)%'
+                group_membership_attribute: '%env(default:ldap_default_group_membership_attribute:LDAP_GROUP_MEMBERSHIP_ATTRIBUTE)%'
+                group_membership_value: '%env(default:ldap_default_group_membership_value:LDAP_GROUP_MEMBERSHIP_VALUE)%'
+                user_search_base: '%env(default:ldap_default_user_search_base:LDAP_USER_SEARCH_BASE)%'
+                user_search_filter: '%env(default:ldap_default_user_search_filter:LDAP_USER_SEARCH_FILTER)%'
+
+    App\Service\Group\GroupProviderFactory:
+        arguments:
+            $providerType: '%env(default:group_provider_type_default:GROUP_PROVIDER_TYPE)%'
+
+    App\Service\Group\InnerGroupProvider:
+        class: App\Service\Group\GroupProviderInterface
+        factory: ['@App\Service\Group\GroupProviderFactory', 'getProvider']
+
+    App\Service\Group\GroupProviderInterface:
+        class: App\Service\Group\CachedGroupProvider
+        arguments:
+            $delegate: '@App\Service\Group\InnerGroupProvider'
+            $cache: '@cache.app'
+            $ttl: 300
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

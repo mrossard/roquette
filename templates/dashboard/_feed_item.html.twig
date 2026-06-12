@@ -138,9 +138,11 @@
                         </div>
                         <div style="display: flex; gap: 0.5rem; flex-shrink: 0; align-items: center; margin-top: 0;">
                             {% if hasSubChannel %}
+                                {% set subUnread = unreadCounts[subChannel.id]|default(null) %}
+                                {% set subCount = subUnread ? subUnread.count : 0 %}
                                 <a href="{{ path('app_channel', {slug: subChannel.slug}) }}" class="btn-todo-discussion"
                                    hx-boost="false">
-                                    {{ 'discussion'|trans }}
+                                    {{ 'discussion'|trans }}{% if subCount > 0 %} <span class="unread-badge" style="position: static; margin-left: 0.25rem; font-size: 0.65rem; padding: 0.1rem 0.35rem; display: inline-flex; align-items: center; justify-content: center; min-width: auto; height: auto;">{{ subCount }}</span>{% endif %}
                                 </a>
                             {% endif %}
                             {% if hasReplies %}
@@ -175,9 +177,11 @@
         {% if messageChannel and messageChannel.isTodoList() %}
             {% set subChannel = messageObject ? get_subchannel(messageObject) : null %}
             {% if subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}
+                {% set subUnread = unreadCounts[subChannel.id]|default(null) %}
+                {% set subCount = subUnread ? subUnread.count : 0 %}
                 <a href="{{ path('app_channel', {slug: subChannel.slug}) }}" class="btn-todo-discussion"
                    hx-boost="false">
-                    {{ 'discussion'|trans }}
+                    {{ 'discussion'|trans }}{% if subCount > 0 %} <span class="unread-badge" style="position: static; margin-left: 0.25rem; font-size: 0.65rem; padding: 0.1rem 0.35rem; display: inline-flex; align-items: center; justify-content: center; min-width: auto; height: auto;">{{ subCount }}</span>{% endif %}
                 </a>
             {% endif %}
             {% include 'dashboard/_feed_item_reactions.html.twig' %}

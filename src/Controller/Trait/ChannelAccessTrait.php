@@ -28,7 +28,7 @@ trait ChannelAccessTrait
             throw new NotFoundHttpException('Canal non trouvé.');
         }
 
-        if ($channel->isPrivate() && (!$currentUser || !$channel->getMembers()->contains($currentUser))) {
+        if (!$currentUser || !$channelRepository->canUserAccess($channel, $currentUser)) {
             throw new AccessDeniedHttpException('Non autorisé.');
         }
 

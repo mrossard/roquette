@@ -27,12 +27,56 @@
                     <option value="6" {% if activeChannel.messageRetentionMonths == 6 %}selected{% endif %}>6 mois
                     </option>
                     <option value="12" {% if activeChannel.messageRetentionMonths == 12 %}selected{% endif %}>12 mois
-                    </option>
-                    <option value="0" {% if activeChannel.messageRetentionMonths is null %}selected{% endif %}>Sans
-                        limite
-                    </option>
                 </select>
             </div>
+
+            {% if activeChannel.isPrivate() %}
+                <div class="input-group" style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+                    <label>Groupes abonnés</label>
+                    <div id="group-subscriptions-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                        {% for sub in resolvedSubscriptions %}
+                            <div class="admin-chip" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); padding: 0.4rem 0.75rem; border-radius: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; color: var(--text-primary);">
+                                <span>👥 {{ sub.name }} {% if sub.isGroupChannel %}<span style="font-size: 0.75rem; color: #6366f1; background: rgba(99, 102, 241, 0.1); padding: 0.1rem 0.4rem; border-radius: 0.25rem; margin-left: 0.25rem;">Officiel</span>{% endif %}</span>
+                                <button type="button" 
+                                        hx-post="{{ path('app_channel_unsubscribe_group', {slug: activeChannel.slug, subscriptionId: sub.id}) }}"
+                                        hx-target="#edit-channel-modal"
+                                        hx-swap="outerHTML"
+                                        style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 1.1rem; line-height: 1; display: flex; align-items: center; margin-left: auto;">
+                                    &times;
+                                </button>
+                            </div>
+                        {% else %}
+                            <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Aucun groupe abonné.</div>
+                        {% endfor %}
+                    </div>
+
+                    <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: flex-end;">
+                        <div style="flex-grow: 1;">
+                            <label for="edit-modal-add-group" style="font-size: 0.75rem;">Abonner un groupe</label>
+                            <select id="edit-modal-add-group" name="newGroupIdentifier" class="input-sidebar" style="width: 100%; cursor: pointer;">
+                                <option value="">-- Sélectionner un groupe --</option>
+                                {% for group in groups %}
+                                    <option value="{{ group.identifier }}">{{ group.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                            <input type="checkbox" name="newGroupIsOfficial" id="edit-modal-group-official" class="input-checkbox" style="width: auto; cursor: pointer;">
+                            <label for="edit-modal-group-official" style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer; white-space: nowrap;">Officiel</label>
+                        </div>
+                        <button type="button" 
+                                hx-post="{{ path('app_channel_subscribe_group', {slug: activeChannel.slug}) }}"
+                                hx-include="#edit-modal-add-group, #edit-modal-group-official"
+                                hx-target="#edit-channel-modal"
+                                hx-swap="outerHTML"
+                                class="btn-publish" 
+                                style="padding: 0.5rem 1rem; margin-top: 0; font-size: 0.85rem; border-radius: 0.5rem; cursor: pointer;">
+                            Ajouter
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+
             {% if activeChannel.isSubChannel() %}
                 <div class="input-group-checkbox"
                      style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">

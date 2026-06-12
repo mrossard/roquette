@@ -1,0 +1,22 @@
+<div id="member-autocomplete-suggestions" class="emoji-autocomplete-dropdown"
+     style="display: block; position: absolute; top: 100%; bottom: auto; left: 0; right: 0; min-width: 100%; max-width: 100%; margin-top: 4px; z-index: 1000;">
+    <div class="autocomplete-suggestions-list"
+         style="background: #1e1e24; border: 1px solid var(--border-glass); border-radius: 0.5rem; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.5); width: 100%;">
+        {% for user in matches %}
+            <button type="button"
+                    hx-on:click="document.getElementById('member-user-id').value='{{ user.id }}'; document.getElementById('member-search-input-field').value='{{ user.displayName|default(user.username) }} (@{{ user.username }})'; document.getElementById('member-autocomplete-suggestions').style.display='none';"
+                    class="autocomplete-suggestion-item"
+                    style="background: transparent; border: none; padding: 0.5rem 1rem; color: var(--text-primary); text-align: left; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s; font-family: inherit; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05);"
+                    onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+                    onmouseout="this.style.background='transparent'">
+                <span class="avatar-container"
+                      style="width: 24px; height: 24px; font-size: 0.75rem; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border-radius: 50%; color: var(--text-primary);">
+                    {{ user.username|slice(0, 1)|upper }}
+                </span>
+                <span>{{ user.displayName ?: user.username }} (@{{ user.username }})</span>
+            </button>
+        {% else %}
+            <div style="padding: 0.5rem 1rem; color: var(--text-muted); font-size: 0.85rem; background: #1e1e24;">Aucun utilisateur correspondant</div>
+        {% endfor %}
+    </div>
+</div>

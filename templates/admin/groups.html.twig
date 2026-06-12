@@ -1,0 +1,191 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Roquette - Gestion des groupes{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+    {% set mercureTopics = [
+        mercure_topic_prefix ~ '/users/' ~ app.user.username,
+        mercure_topic_prefix ~ '/users/status'
+    ] %}
+    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
+    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
+        <header class="app-header">
+            <div class="logo-area">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+                <span class="logo-rocket">🚀</span>
+                <div class="logo-text">
+                    <h1>Roquette</h1>
+                    <p class="subtitle">Administration</p>
+                </div>
+            </div>
+
+            {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
+        </header>
+
+        <main class="dashboard-grid" style="grid-template-columns: 1fr; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Group Tabs & Actions Panel -->
+            <section class="card glass-panel settings-panel">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem;">
+                    <div>
+                        <h2>Gestion des groupes</h2>
+                        <p class="card-description">Créer des groupes locaux ou importer des groupes depuis l'annuaire.</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <a href="{{ path('app_admin_users') }}" class="btn-publish" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Utilisateurs</a>
+                        {% endif %}
+                        <a href="{{ path('app_admin_groups') }}" class="btn-publish" style="background: rgba(99, 102, 241, 0.2); border: 1px solid #6366f1; text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: #fff;">Groupes</a>
+                    </div>
+                </div>
+
+                <div class="card-body" style="padding-top: 1.5rem;">
+                    {% for label, messages in app.flashes %}
+                        {% for msg in messages %}
+                            <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in" style="margin-bottom: 1.25rem;">
+                                {{ msg }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    {% if is_granted('ROLE_ADMIN') %}
+                    <!-- Search and Creation Row -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <!-- Local Group Creation -->
+                        <div class="glass-panel" style="padding: 1.25rem; border-radius: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass);">
+                            <h3 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1.05rem; font-weight: 600; color: var(--text-primary);">🆕 Créer un groupe local</h3>
+                            <form action="{{ path('app_admin_group_create') }}" method="POST" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                                <div style="flex-grow: 1;">
+                                    <label for="group-name-input" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Nom du groupe</label>
+                                    <input type="text" id="group-name-input" name="name" required placeholder="Ex: Équipe Support" class="input-sidebar" style="width: 100%;">
+                                </div>
+                                <button type="submit" class="btn-publish" style="margin-top: 0; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; height: 38px;">Créer</button>
+                            </form>
+                        </div>
+
+                        <!-- Provider Search -->
+                        <div class="glass-panel" style="padding: 1.25rem; border-radius: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass);">
+                            <h3 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1.05rem; font-weight: 600; color: var(--text-primary);">🔍 Rechercher un groupe (Annuaire)</h3>
+                            <form action="{{ path('app_admin_groups') }}" method="GET" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                                <div style="flex-grow: 1;">
+                                    <label for="provider-search-input" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Nom du groupe ou identifiant</label>
+                                    <input type="text" id="provider-search-input" name="search" value="{{ searchQuery }}" placeholder="Ex: devs" class="input-sidebar" style="width: 100%;">
+                                </div>
+                                <button type="submit" class="btn-publish" style="margin-top: 0; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; height: 38px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass);">Rechercher</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if searchQuery is not empty %}
+                        <div class="glass-panel" style="padding: 1.25rem; border-radius: 0.75rem; margin-bottom: 1.5rem; background: rgba(99, 102, 241, 0.03); border: 1px solid rgba(99, 102, 241, 0.15);">
+                            <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.05rem; font-weight: 600; color: var(--text-primary);">Résultats de la recherche dans l'annuaire</h3>
+                            {% if providerResults|length > 0 %}
+                                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                    {% for group in providerResults %}
+                                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-radius: 0.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass);">
+                                            <div>
+                                                <div style="font-weight: 600; color: var(--text-primary);">👥 {{ group.name }}</div>
+                                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ group.identifier }}</div>
+                                                {% if group.description %}
+                                                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">{{ group.description }}</div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                {% if group.isImported %}
+                                                    <span style="font-size: 0.8rem; color: var(--accent-green); background: rgba(16, 185, 129, 0.1); padding: 0.25rem 0.75rem; border-radius: 2rem; border: 1px solid rgba(16, 185, 129, 0.2);">Importé</span>
+                                                {% else %}
+                                                    <form action="{{ path('app_admin_group_import') }}" method="POST" style="margin: 0;">
+                                                        <input type="hidden" name="identifier" value="{{ group.identifier }}">
+                                                        <input type="hidden" name="name" value="{{ group.name }}">
+                                                        <button type="submit" class="btn-publish" style="margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; cursor: pointer; height: auto;">Importer</button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div style="font-size: 0.9rem; color: var(--text-muted); font-style: italic;">Aucun groupe trouvé pour "{{ searchQuery }}".</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Local Groups Table -->
+                    <h3 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1.15rem; font-weight: 600; color: var(--text-primary);">Groupes enregistrés</h3>
+                    {% if localGroups|length > 0 %}
+                        <div class="admin-users-table-wrapper" style="overflow-x: auto;">
+                            <table class="admin-users-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid var(--border-glass); text-align: left;">
+                                        <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Nom du groupe</th>
+                                        <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Identifiant / DN</th>
+                                        <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Canal officiel</th>
+                                        <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Administrateurs</th>
+                                        <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600; text-align: center;">Membres locaux</th>
+                                        <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600; text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for group in localGroups %}
+                                        <tr style="border-bottom: 1px solid var(--border-glass); transition: background 0.2s;">
+                                            <td style="padding: 0.75rem 0.5rem; font-weight: 500; color: var(--text-primary);">
+                                                👥 {{ group.name }}
+                                            </td>
+                                            <td style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-family: monospace; font-size: 0.8rem; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ group.groupIdentifier }}">
+                                                {{ group.groupIdentifier }}
+                                            </td>
+                                            <td style="padding: 0.75rem 0.5rem;">
+                                                <a href="{{ path('app_channel', {slug: group.channel.slug}) }}" style="color: #6366f1; text-decoration: none; font-weight: 500;" hx-boost="false">
+                                                    #{{ group.channel.name }}
+                                                </a>
+                                            </td>
+                                            <td style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-size: 0.85rem;">
+                                                {% for admin in group.administrators %}
+                                                    <span style="display: inline-block; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); color: #818cf8; padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.75rem; margin-right: 0.25rem;" title="@{{ admin.username }}">
+                                                        {{ admin.displayName|default(admin.username) }}
+                                                    </span>
+                                                {% else %}
+                                                    <span style="font-style: italic; color: var(--text-muted); font-size: 0.8rem;">Aucun</span>
+                                                {% endfor %}
+                                            </td>
+                                            <td style="padding: 0.75rem 0.5rem; text-align: center; color: var(--text-primary); font-weight: 500;">
+                                                {{ group.members|length }}
+                                            </td>
+                                            <td style="padding: 0.75rem 0.5rem; text-align: right;">
+                                                <div style="display: inline-flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                                                    <a href="{{ path('app_admin_group_members', {id: group.id}) }}" class="btn-publish" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); text-decoration: none; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; display: inline-flex; align-items: center; color: var(--text-primary);" hx-boost="false">
+                                                        👤 Membres
+                                                    </a>
+                                                    {% if is_granted('ROLE_ADMIN') %}
+                                                    <form action="{{ path('app_admin_group_delete', {id: group.id}) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce groupe ? Son canal officiel sera supprimé définitivement.');" style="margin: 0;">
+                                                        <button type="submit" class="btn-publish" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--accent-red); margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; cursor: pointer; height: auto;">
+                                                            Supprimer
+                                                        </button>
+                                                    </form>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div style="font-size: 0.9rem; color: var(--text-muted); font-style: italic; padding: 1rem 0.5rem; border: 1px dashed var(--border-glass); border-radius: 0.5rem; text-align: center;">Aucun groupe enregistré localement.</div>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+{% endblock %}

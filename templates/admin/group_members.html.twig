@@ -1,0 +1,200 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Roquette - Membres du groupe {{ group.name }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+    {% set mercureTopics = [
+        mercure_topic_prefix ~ '/users/' ~ app.user.username,
+        mercure_topic_prefix ~ '/users/status'
+    ] %}
+    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
+    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
+        <header class="app-header">
+            <div class="logo-area">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+                <span class="logo-rocket">🚀</span>
+                <div class="logo-text">
+                    <h1>Roquette</h1>
+                    <p class="subtitle">Administration</p>
+                </div>
+            </div>
+
+            {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
+        </header>
+
+        <main class="dashboard-grid" style="grid-template-columns: 1fr; padding: 1.5rem;">
+            <section class="card glass-panel settings-panel">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <a href="{{ path('app_admin_groups') }}" style="text-decoration: none; font-size: 1.1rem; color: var(--text-muted);" hx-boost="false">⬅️</a>
+                            <h2>Membres de {{ group.name }}</h2>
+                        </div>
+                        <p class="card-description">Ajouter ou retirer manuellement des membres de ce groupe.</p>
+                    </div>
+                </div>
+
+                <div class="card-body" style="padding-top: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem;">
+                    {% for label, messages in app.flashes %}
+                        {% for msg in messages %}
+                            <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in">
+                                {{ msg }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    {% if isExternal %}
+                        <!-- External Sync Notice -->
+                        <div class="glass-panel" style="padding: 1.25rem; border-radius: 0.75rem; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.15);">
+                            <h3 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 1.05rem; font-weight: 600; color: var(--text-primary);">🌐 Groupe synchronisé (Annuaire externe)</h3>
+                            <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
+                                Ce groupe est géré dans l'annuaire externe (LDAP). La liste des membres est synchronisée automatiquement et ne peut pas être modifiée manuellement.
+                            </p>
+                        </div>
+                    {% else %}
+                        <!-- Add Member Section -->
+                        <div class="glass-panel" style="padding: 1.25rem; border-radius: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass);">
+                            <h3 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1.05rem; font-weight: 600; color: var(--text-primary);">➕ Ajouter un membre</h3>
+                            <form action="{{ path('app_admin_group_member_add', {id: group.id}) }}" method="POST" style="display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;">
+                                <div style="position: relative; flex-grow: 1; min-width: 200px;">
+                                    <label for="member-search-input-field" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Rechercher un utilisateur</label>
+                                    <input type="text" id="member-search-input-field" placeholder="Saisir le nom ou l'identifiant..." class="input-sidebar" style="width: 100%;" autocomplete="off"
+                                           hx-get="{{ path('app_admin_group_member_autocomplete', {id: group.id}) }}"
+                                           hx-trigger="keyup changed delay:300ms"
+                                           hx-target="#member-autocomplete-suggestions"
+                                           hx-swap="outerHTML"
+                                           onkeydown="if(event.key === 'Enter') event.preventDefault();">
+                                    <input type="hidden" name="userId" id="member-user-id" required>
+                                    <div id="member-autocomplete-suggestions" class="emoji-autocomplete-dropdown" style="display: none; top: 100%; left: 0; right: 0; min-width: 100%; max-width: 100%; margin-top: 4px; z-index: 1000;"></div>
+                                </div>
+                                <button type="submit" class="btn-publish" style="margin-top: 0; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; height: 38px;">Ajouter</button>
+                            </form>
+                        </div>
+                    {% endif %}
+
+                    <!-- Current Members List -->
+                    <div>
+                        {% if isExternal %}
+                            <h3 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1.15rem; font-weight: 600; color: var(--text-primary);">Membres de l'annuaire ({{ externalMembers|length }})</h3>
+                            {% if externalMembers|length > 0 %}
+                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                    {% for item in externalMembers %}
+                                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-radius: 0.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); {% if not item.isRegistered %}opacity: 0.75;{% endif %}">
+                                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                                <div class="user-avatar-circle" style="background-color: {% if item.isRegistered %}hsl({{ item.user.hue }}, 90%, var(--user-hue-lightness-border)){% else %}#4b5563{% endif %}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1rem;">
+                                                    {{ item.username|slice(0,1)|upper }}
+                                                </div>
+                                                <div>
+                                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                        <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">
+                                                            {% if item.isRegistered %}
+                                                                {{ item.user.displayName|default(item.user.username) }}
+                                                            {% else %}
+                                                                {{ item.username }}
+                                                            {% endif %}
+                                                        </span>
+                                                        {% if item.isRegistered and group.isAdministrator(item.user) %}
+                                                            <span style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); color: #818cf8; padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.65rem; font-weight: 600; text-transform: uppercase;">Admin</span>
+                                                        {% endif %}
+                                                        {% if not item.isRegistered %}
+                                                            <span style="background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.3); color: var(--accent-orange); padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.65rem; font-weight: 600;">Non inscrit</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                                        @{{ item.username }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                                {% if item.isRegistered %}
+                                                    {% if group.isAdministrator(item.user) %}
+                                                        <form action="{{ path('app_admin_group_administrator_remove', {id: group.id, userId: item.user.id}) }}" method="POST" onsubmit="return confirm('Retirer les droits administrateur de cet utilisateur ?');" style="margin: 0;">
+                                                            <button type="submit" class="btn-publish" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-muted); margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; cursor: pointer; height: auto;">
+                                                                Retirer Admin
+                                                            </button>
+                                                        </form>
+                                                    {% else %}
+                                                        <form action="{{ path('app_admin_group_administrator_add', {id: group.id}) }}" method="POST" style="margin: 0;">
+                                                            <input type="hidden" name="userId" value="{{ item.user.id }}">
+                                                            <button type="submit" class="btn-publish" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); color: #818cf8; margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; cursor: pointer; height: auto;">
+                                                                Nommer Admin
+                                                            </button>
+                                                        </form>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div style="font-size: 0.9rem; color: var(--text-muted); font-style: italic; padding: 1rem; border: 1px dashed var(--border-glass); border-radius: 0.5rem; text-align: center;">Aucun membre dans l'annuaire pour ce groupe.</div>
+                            {% endif %}
+                        {% else %}
+                            <h3 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1.15rem; font-weight: 600; color: var(--text-primary);">Membres actuels ({{ group.members|length }})</h3>
+                            {% if group.members|length > 0 %}
+                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                    {% for member in group.members|sort((a, b) => (a.displayName|default(a.username))|lower <=> (b.displayName|default(b.username))|lower) %}
+                                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-radius: 0.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass);">
+                                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                                <div class="user-avatar-circle" style="background-color: hsl({{ member.hue }}, 90%, var(--user-hue-lightness-border)); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1rem; box-shadow: 0 0 10px hsla({{ member.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
+                                                    {{ member.username|slice(0,1)|upper }}
+                                                </div>
+                                                <div>
+                                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                        <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">
+                                                            {{ member.displayName|default(member.username) }}
+                                                        </span>
+                                                        {% if group.isAdministrator(member) %}
+                                                            <span style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); color: #818cf8; padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.65rem; font-weight: 600; text-transform: uppercase;">Admin</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                                        @{{ member.username }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                                {% if group.isAdministrator(member) %}
+                                                    <form action="{{ path('app_admin_group_administrator_remove', {id: group.id, userId: member.id}) }}" method="POST" onsubmit="return confirm('Retirer les droits administrateur de cet utilisateur ?');" style="margin: 0;">
+                                                        <button type="submit" class="btn-publish" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-muted); margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; cursor: pointer; height: auto;">
+                                                            Retirer Admin
+                                                        </button>
+                                                    </form>
+                                                {% else %}
+                                                    <form action="{{ path('app_admin_group_administrator_add', {id: group.id}) }}" method="POST" style="margin: 0;">
+                                                        <input type="hidden" name="userId" value="{{ member.id }}">
+                                                        <button type="submit" class="btn-publish" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); color: #818cf8; margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; cursor: pointer; height: auto;">
+                                                            Nommer Admin
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                                <form action="{{ path('app_admin_group_member_remove', {id: group.id, userId: member.id}) }}" method="POST" onsubmit="return confirm('Retirer cet utilisateur du groupe ?');" style="margin: 0;">
+                                                    <button type="submit" class="btn-publish" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--accent-red); margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; cursor: pointer; height: auto;">
+                                                        Retirer
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div style="font-size: 0.9rem; color: var(--text-muted); font-style: italic; padding: 1rem; border: 1px dashed var(--border-glass); border-radius: 0.5rem; text-align: center;">Ce groupe n'a pas encore de membre local.</div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+{% endblock %}
