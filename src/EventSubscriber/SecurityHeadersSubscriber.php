@@ -58,10 +58,10 @@ readonly class SecurityHeadersSubscriber implements EventSubscriberInterface
         $imgSrc = "'self' data: https://media.tenor.com " . $emojiHost . " https://*"; // Allow remote custom user avatars via https
         $styleSrc = "'self' 'unsafe-inline' https://fonts.googleapis.com";
         $fontSrc = "'self' https://fonts.gstatic.com";
-        $scriptSrc = "'self' 'unsafe-inline'"; // Keep unsafe-inline for inline translations and theme scripts
+        $scriptSrc = "'self' 'unsafe-inline' data:"; // Keep unsafe-inline for inline translations and theme scripts
 
         $csp = sprintf(
-            "default-src 'self'; script-src %s; style-src %s; img-src %s; font-src %s; connect-src %s; media-src 'self' data:; frame-ancestors 'none'; object-src 'none';",
+            "default-src 'self'; script-src %s; worker-src 'self' data:; style-src %s; img-src %s; font-src %s; connect-src %s; media-src 'self' data:; frame-ancestors 'none'; object-src 'none';",
             $scriptSrc,
             $styleSrc,
             $imgSrc,

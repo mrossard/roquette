@@ -26,8 +26,19 @@
     {% include 'dashboard/_feed_item_actions.html.twig' %}
 </div>
 {% set message_reactions = messageObject is defined and messageObject ? messageObject.getGroupedReactions(app.user) : {} %}
-{% if message_reactions is not empty %}
+{% set links = message|extract_external_links %}
+{% set hasAttachment = fileName is defined and fileName %}
+
+{% if links is not empty or hasAttachment or message_reactions is not empty %}
     <div class="feed-item-body" style="padding: 0; border: none; background: none; box-shadow: none;">
-        {% include 'dashboard/_feed_item_reactions.html.twig' %}
+        {% if links is not empty %}
+            {% include 'dashboard/feed_item/_link_previews.html.twig' %}
+        {% endif %}
+        {% if hasAttachment %}
+            {% include 'dashboard/feed_item/_attachment.html.twig' %}
+        {% endif %}
+        {% if message_reactions is not empty %}
+            {% include 'dashboard/_feed_item_reactions.html.twig' %}
+        {% endif %}
     </div>
 {% endif %}
