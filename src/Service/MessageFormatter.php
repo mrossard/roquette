@@ -276,51 +276,23 @@ class MessageFormatter
 
         return preg_replace_callback(
             '/\[:([a-zA-Z0-9_\-\+: ]+)\]/',
-            function ($matches) {
+            static function ($matches) {
                 $code = $matches[1];
                 $filename = $code . '.gif';
                 $filename = basename($filename);
 
-                $emojisDir = $this->projectDir . '/public/uploads/emojis';
-                if (!is_dir($emojisDir)) {
-                    mkdir($emojisDir, 0o777, true);
-                }
+                $webPath = '/emojis/' . rawurlencode($filename);
+                $title = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
 
-                $localPath = $emojisDir . '/' . $filename;
-                $webPath = '/uploads/emojis/' . rawurlencode($filename);
-
-                if (!file_exists($localPath)) {
-                    $url = rtrim($this->emojiBaseUrl, '/') . '/' . rawurlencode($filename);
-                    try {
-                        $response = $this->httpClient->request('GET', $url, [
-                            'timeout' => 2.0,
-                        ]);
-                        if ($response->getStatusCode() === 200) {
-                            $content = $response->getContent();
-                            file_put_contents($localPath, $content);
-                        } else {
-                            file_put_contents($localPath, '');
-                        }
-                    } catch (\Exception $e) {
-                        file_put_contents($localPath, '');
-                    }
-                }
-
-                if (file_exists($localPath) && filesize($localPath) > 0) {
-                    $title = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
-
-                    return (
-                        '<img src="'
-                        . htmlspecialchars($webPath, ENT_QUOTES, 'UTF-8')
-                        . '" alt="[:'
-                        . $title
-                        . ']" title="[:'
-                        . $title
-                        . ']" class="message-emoji" style="vertical-align: middle;" />'
-                    );
-                }
-
-                return $matches[0];
+                return (
+                    '<img src="'
+                    . htmlspecialchars($webPath, ENT_QUOTES, 'UTF-8')
+                    . '" alt="[:'
+                    . $title
+                    . ']" title="[:'
+                    . $title
+                    . ']" class="message-emoji" style="vertical-align: middle;" />'
+                );
             },
             $text,
         );

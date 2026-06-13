@@ -322,67 +322,28 @@ class MessageFormatterTest extends TestCase
     // -------------------------------------------------------------------------
 
     #[Test]
-    public function formatRendersCustomEmojiSuccessfullyDownloaded(): void
+    public function formatRendersCustomEmoji(): void
     {
-        $response = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
-        $response->method('getStatusCode')->willReturn(200);
-        $response->method('getContent')->willReturn('fake_gif_content');
-
-        $this->httpClient
-            ->expects($this->once())
-            ->method('request')
-            ->with('GET', 'http://example.com/emojis/smile.gif')
-            ->willReturn($response);
-
         $result = $this->formatter->format('Hello [:smile] !');
         $this->assertStringContainsString(
-            '<img src="/uploads/emojis/smile.gif" alt="[:smile]" title="[:smile]" class="message-emoji"',
+            '<img src="/emojis/smile.gif" alt="[:smile]" title="[:smile]" class="message-emoji"',
             $result,
         );
     }
 
     #[Test]
-    public function formatRendersCustomEmojiWithSpacesSuccessfullyDownloaded(): void
+    public function formatRendersCustomEmojiWithSpaces(): void
     {
-        $response = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
-        $response->method('getStatusCode')->willReturn(200);
-        $response->method('getContent')->willReturn('fake_gif_content');
-
-        $this->httpClient
-            ->expects($this->once())
-            ->method('request')
-            ->with('GET', 'http://example.com/emojis/doc%20petrus.gif')
-            ->willReturn($response);
-
         $result = $this->formatter->format('Hello [:doc petrus] !');
         $this->assertStringContainsString(
-            '<img src="/uploads/emojis/doc%20petrus.gif" alt="[:doc petrus]" title="[:doc petrus]" class="message-emoji"',
+            '<img src="/emojis/doc%20petrus.gif" alt="[:doc petrus]" title="[:doc petrus]" class="message-emoji"',
             $result,
         );
-    }
-
-    #[Test]
-    public function formatDoesNotRenderCustomEmojiWhenDownloadFails(): void
-    {
-        $response = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
-        $response->method('getStatusCode')->willReturn(404);
-
-        $this->httpClient
-            ->expects($this->once())
-            ->method('request')
-            ->with('GET', 'http://example.com/emojis/notfound.gif')
-            ->willReturn($response);
-
-        $result = $this->formatter->format('Hello [:notfound] !');
-        $this->assertStringContainsString('Hello [:notfound] !', $result);
-        $this->assertStringNotContainsString('<img', $result);
     }
 
     #[Test]
     public function formatDoesNotReplaceEmojiInCodeOrPreBlocks(): void
     {
-        $this->httpClient->expects($this->never())->method('request');
-
         $result = $this->formatter->format("Voici du code `[:smile]` et un bloc :\n```\n[:smile]\n```");
         $this->assertStringContainsString('<code class="message-inline-code">[:smile]</code>', $result);
         $this->assertStringContainsString('[:smile]', $result);
