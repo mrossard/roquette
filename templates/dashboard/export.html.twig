@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Export Roquette - #{{ channel.name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-card: #111827;
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-normal: #cbd5e1;
+            --text-muted: #64748b;
+            --accent-cyan: #00e5ff;
+            --accent-purple: #a855f7;
+            --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-normal);
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .export-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .channel-symbol {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .channel-symbol.private {
+            color: var(--accent-purple);
+        }
+
+        .header-desc {
+            font-size: 0.95rem;
+            color: var(--text-normal);
+            margin: 0;
+            font-style: italic;
+        }
+
+        .header-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .meta-item strong {
+            color: var(--text-normal);
+        }
+
+        /* Message feed styles */
+        .feed {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .day-separator {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.5rem 0;
+        }
+
+        .day-separator::before,
+        .day-separator::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .day-separator:not(:empty)::before {
+            margin-right: .75em;
+        }
+
+        .day-separator:not(:empty)::after {
+            margin-left: .75em;
+        }
+
+        .message {
+            display: flex;
+            gap: 1rem;
+            padding: 0.5rem 0;
+            border-radius: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .message:hover {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: hsl(var(--hue, 200), 70%, 40%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            text-transform: uppercase;
+        }
+
+        .message-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 0;
+            flex-grow: 1;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .author-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: hsl(var(--hue, 200), 80%, 75%);
+            text-decoration: none;
+        }
+
+        .timestamp {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .edited-indicator {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .message-body {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-normal);
+            word-break: break-word;
+        }
+
+        .message-body p {
+            margin: 0 0 0.5rem 0;
+        }
+
+        .message-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Code highlight minimal replacement for offline */
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-glass);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+
+        code {
+            font-family: Consolas, Monaco, "Andale Mono", monospace;
+            font-size: 0.85rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.1rem 0.3rem;
+            border-radius: 0.25rem;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+        }
+
+        /* Blockquotes */
+        blockquote {
+            border-left: 3px solid var(--accent-cyan);
+            margin: 0.5rem 0;
+            padding-left: 0.75rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* File attachments */
+        .attachment {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-glass);
+            border-radius: 0.75rem;
+            margin-top: 0.5rem;
+            max-width: 450px;
+        }
+
+        .attachment-icon {
+            font-size: 1.25rem;
+        }
+
+        .attachment-details {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex-grow: 1;
+        }
+
+        .attachment-link {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .attachment-link:hover {
+            text-decoration: underline;
+        }
+
+        .attachment-size {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .attachment-preview {
+            margin-top: 0.5rem;
+            max-width: 350px;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            border: 1px solid var(--border-glass);
+        }
+
+        .attachment-preview img {
+            width: 100%;
+            display: block;
+        }
+
+        footer.export-footer {
+            border-top: 1px solid var(--border-glass);
+            padding-top: 1rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="export-container">
+        <header>
+            <div class="header-title">
+                <span class="channel-symbol {% if channel.isPrivate %}private{% endif %}">
+                    {% if channel.isPrivate %}🔒{% else %}#{% endif %}
+                </span>
+                <h1>{{ channel.name }}</h1>
+            </div>
+            {% if channel.description %}
+                <p class="header-desc">{{ channel.description }}</p>
+            {% endif %}
+            <div class="header-meta">
+                <span class="meta-item">Type : <strong>{% if channel.isDm %}Direct Message{% elseif channel.isPrivate %}Privé{% else %}Public{% endif %}</strong></span>
+                <span class="meta-item">Messages : <strong>{{ messages|length }}</strong></span>
+                <span class="meta-item">Exporté le : <strong>{{ exportData.exportedAt|date('d/m/Y H:i:s') }}</strong></span>
+                <span class="meta-item">Par : <strong>{{ exportData.exportedBy }}</strong></span>
+            </div>
+        </header>
+
+        <main class="feed">
+            {% set last_date = '' %}
+            {% for msg in messages %}
+                {% set msg_date = msg.createdAt|date('d/m/Y') %}
+                {% if msg_date != last_date %}
+                    <div class="day-separator">{{ msg.createdAt|date('l d F Y') }}</div>
+                    {% set last_date = msg_date %}
+                {% endif %}
+
+                {% set author_hue = msg.author.customHue|default(200) %}
+                <div class="message">
+                    <div class="avatar" style="--hue: {{ author_hue }}">
+                        {{ msg.author.displayName|default(msg.author.username)|first|upper }}
+                    </div>
+                    <div class="message-content-wrapper">
+                        <div class="message-header">
+                            <span class="author-name" style="--hue: {{ author_hue }}">
+                                {{ msg.author.displayName|default(msg.author.username) }}
+                            </span>
+                            <span class="timestamp">{{ msg.createdAt|date('H:i') }}</span>
+                            {% if msg.updatedAt %}
+                                <span class="edited-indicator" title="Modifié le {{ msg.updatedAt|date('d/m/Y H:i:s') }}">(modifié)</span>
+                            {% endif %}
+                        </div>
+                        <div class="message-body">
+                            {% if msg.formattedContent %}
+                                {{ msg.formattedContent|raw }}
+                            {% else %}
+                                <p>{{ msg.content }}</p>
+                            {% endif %}
+                        </div>
+
+                        {% if msg.fileName %}
+                            {% set fileExt = msg.fileName|split('.')|last|lower %}
+                            {% set isImage = msg.mimeType starts with 'image/' or fileExt in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] %}
+                            <div class="attachment">
+                                <span class="attachment-icon">{% if isImage %}🖼️{% else %}📎{% endif %}</span>
+                                <div class="attachment-details">
+                                    <a href="files/{{ msg.filePath|split('/')|last }}" class="attachment-link" target="_blank" download>
+                                        {{ msg.fileName }}
+                                    </a>
+                                    <span class="attachment-size">{{ msg.fileSize|format_bytes }}</span>
+                                </div>
+                            </div>
+                            {% if isImage %}
+                                <div class="attachment-preview">
+                                    <a href="files/{{ msg.filePath|split('/')|last }}" target="_blank">
+                                        <img src="files/{{ msg.filePath|split('/')|last }}" alt="{{ msg.fileName }}">
+                                    </a>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </main>
+
+        <footer class="export-footer">
+            Généré automatiquement par Roquette 🚀
+        </footer>
+    </div>
+</body>
+</html>

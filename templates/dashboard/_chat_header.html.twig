@@ -127,6 +127,9 @@
                     'notificationsEnabled': notificationsEnabled
                 } %}
                 {% if isMember %}
+                    <button type="button" class="btn-notifications" id="btn-files-sidebar-toggle" onclick="toggleFilesSidebar()" title="{{ 'Médiathèque'|trans }}">
+                        📂 {{ 'Médiathèque'|trans }}
+                    </button>
                     <details class="user-status-dropdown-container">
                         <summary class="user-status-trigger"
                                  style="list-style: none; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 0.5rem; height: 32px;">
@@ -159,6 +162,16 @@
                                 </button>
                             {% endif %}
 
+                            {# 1b. Médiathèque #}
+                            <button type="button" class="user-status-option"
+                                    id="btn-files-toggle"
+                                    onclick="toggleFilesSidebar()"
+                                    role="menuitem"
+                                    style="cursor: pointer;">
+                                <span class="option-icon">📂</span>
+                                <span class="option-label">{{ 'Médiathèque'|trans }}</span>
+                            </button>
+
                             {# 2. Inviter #}
                             {% if not activeChannel.isDm and activeChannel.isPrivate and activeChannel.creator == app.user and not activeChannel.isSubChannel %}
                                 <button type="button" class="user-status-option"
@@ -183,6 +196,19 @@
                                     <span class="option-icon">⚙️</span>
                                     <span class="option-label">{{ 'Paramètres'|trans }}</span>
                                 </button>
+                            {% endif %}
+
+                            {# 3b. Exporter #}
+                            {% if not activeChannel.isDm and (activeChannel.isAdministrator(app.user) or is_granted('ROLE_ADMIN')) %}
+                                <a href="{{ path('app_channel_export', {slug: activeChannel.slug}) }}"
+                                   class="user-status-option"
+                                   hx-boost="false"
+                                   target="_blank"
+                                   role="menuitem"
+                                   style="cursor: pointer; text-decoration: none; color: inherit; display: flex; align-items: center; width: 100%;">
+                                    <span class="option-icon">📤</span>
+                                    <span class="option-label">{{ 'Exporter l\'historique'|trans }}</span>
+                                </a>
                             {% endif %}
 
                             {# Divider if there is leave or delete #}

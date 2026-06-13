@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\ChannelAccessTrait;
+use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Service\FileUploadService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,6 +19,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_USER')]
 final class FileController extends AbstractController
 {
+    use ChannelAccessTrait;
+
     public function __construct(
         private TranslatorInterface $translator,
     ) {}
@@ -253,4 +257,25 @@ final class FileController extends AbstractController
             );
         }
     }
+
+    #[Route('/channels/{slug}/files-list', name: 'app_channel_files_list', methods: ['GET'])]
+    public function channelFilesList(
+        string $slug,
+        ChannelRepository $channelRepository,
+        MessageRepository $messageRepository,
+    ): Response {
+        try {
+            $channel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            return new Response($e->getMessage(), $e->getStatusCode());
+        }
+
+        $messagesWithFiles = $messageRepository->findFilesByChannel($channel);
+
+        return $this->render('dashboard/_files_list.html.twig', [
+            'activeChannel' => $channel,
+            'messagesWithFiles' => $messagesWithFiles,
+        ]);
+    }
 }
+

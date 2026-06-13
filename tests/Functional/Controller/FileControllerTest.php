@@ -381,4 +381,50 @@ class FileControllerTest extends WebTestCase
 
         $this->assertResponseStatusCodeSame(403);
     }
+
+    // -------------------------------------------------------------------------
+    // channelFilesList
+    // -------------------------------------------------------------------------
+
+    #[Test]
+    public function testChannelFilesListSuccess(): void
+    {
+        $this->createMessageWithFile();
+
+        $this->client->request('GET', sprintf('/channels/%s/files-list', $this->channel->getSlug()));
+
+        $this->assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        static::assertStringContainsString('document.pdf', $content);
+        static::assertStringContainsString('test_file_user', $content);
+    }
+
+    #[Test]
+    public function testChannelFilesListNotFound(): void
+    {
+        $this->client->request('GET', '/channels/non-existent-slug/files-list');
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    #[Test]
+    public function testChannelFilesListAccessDenied(): void
+    {
+        $privateChannel = new Channel();
+        $privateChannel->setName('Private Channel');
+        $privateChannel->setSlug('test-file-private-list');
+        $privateChannel->setCreator($this->testUser);
+        $privateChannel->addMember($this->testUser);
+        $privateChannel->setIsPrivate(true);
+        $this->entityManager->persist($privateChannel);
+        $this->entityManager->flush();
+
+        $otherUser = $this->createOtherUser();
+        $this->client->loginUser($otherUser);
+
+        $this->client->request('GET', sprintf('/channels/%s/files-list', $privateChannel->getSlug()));
+
+        $this->assertResponseStatusCodeSame(403);
+    }
 }
+

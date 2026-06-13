@@ -76,6 +76,15 @@ class ChannelControllerTest extends WebTestCase
             $channelRepository->findBy(['slug' => 'unique-edit-channel-name']),
         );
 
+        $messageRepository = $this->entityManager->getRepository(\App\Entity\Message::class);
+        foreach ($channels as $channel) {
+            $messages = $messageRepository->findBy(['channel' => $channel]);
+            foreach ($messages as $message) {
+                $this->entityManager->remove($message);
+            }
+        }
+        $this->entityManager->flush();
+
         foreach ($channels as $channel) {
             $this->entityManager->remove($channel);
         }
@@ -278,4 +287,56 @@ class ChannelControllerTest extends WebTestCase
         }
         $this->entityManager->flush();
     }
+
+    #[Test]
+    public function testExportChannelSuccess(): void
+    {
+        // 1. Create a test message in the channel
+        $msg = new \App\Entity\Message();
+        $msg->setAuthor($this->testUser);
+        $msg->setChannel($this->channel);
+        $msg->setContent('Hello World');
+        $this->entityManager->persist($msg);
+        $this->entityManager->flush();
+
+        // Mock FileUploadService to prevent S3 connection errors
+        $mock = $this->createMock(\App\Service\FileUploadService::class);
+        $this->client->getContainer()->set(\App\Service\FileUploadService::class, $mock);
+
+        // 2. Request export
+        $this->client->request('GET', sprintf('/channels/%s/export', $this->channel->getSlug()));
+
+        $this->assertResponseIsSuccessful();
+        $response = $this->client->getResponse();
+
+        if (class_exists(\ZipArchive::class)) {
+            static::assertSame('application/zip', $response->headers->get('Content-Type'));
+            static::assertStringStartsWith('PK', $response->getContent()); // ZIP file signature
+        } else {
+            static::assertSame('application/x-tar', $response->headers->get('Content-Type'));
+        }
+    }
+
+    #[Test]
+    public function testExportChannelAccessDenied(): void
+    {
+        // Create another user who is NOT a member/admin of the channel
+        $container = $this->client->getContainer();
+        $otherUser = new User();
+        $otherUser->setUsername('test_channel_user_2');
+        $otherUser->setRoles(['ROLE_USER']);
+        $passwordHasher = $container->get('security.user_password_hasher');
+        $otherUser->setPassword($passwordHasher->hashPassword($otherUser, 'password123'));
+        $this->entityManager->persist($otherUser);
+        $this->entityManager->flush();
+
+        // Log in as the other user
+        $this->client->loginUser($otherUser);
+
+        // Try to export
+        $this->client->request('GET', sprintf('/channels/%s/export', $this->channel->getSlug()));
+
+        $this->assertResponseStatusCodeSame(403);
+    }
 }
+

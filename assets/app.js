@@ -384,6 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initUnreadFilter) window.initUnreadFilter();
     if (window.initSidebarToggles) window.initSidebarToggles();
     if (window.initSubChannelsSidebar) window.initSubChannelsSidebar();
+    if (window.initFilesSidebar) window.initFilesSidebar();
     if (window.initConfirmModals) window.initConfirmModals();
     if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
     if (window.initOfflineQueue) window.initOfflineQueue();
@@ -482,6 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initUnreadFilter) window.initUnreadFilter();
         if (window.initSidebarToggles) window.initSidebarToggles();
         if (window.initSubChannelsSidebar) window.initSubChannelsSidebar();
+        if (window.initFilesSidebar) window.initFilesSidebar();
         if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
         if (window.renderChannelOfflineMessages) window.renderChannelOfflineMessages();
         if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();

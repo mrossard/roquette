@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
+use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\Channel;
+use App\Entity\ChannelExport;
 use App\Entity\GroupSubscription;
 use App\Entity\Message;
 use App\Entity\UserChannelRead;
+use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use App\Service\MercurePublisher;
 use App\Service\ReadTrackingService;
+use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,6 +33,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class ChannelController extends AbstractController
 {
     use MessageRendererTrait;
+    use ChannelAccessTrait;
 
     public function __construct(
         private MercurePublisher $mercurePublisher,
@@ -1078,6 +1083,227 @@ final class ChannelController extends AbstractController
         }
 
         return $this->forward(ModalController::class . '::editModal', ['slug' => $slug]);
+    }
+
+    #[Route('/channels/{slug}/export', name: 'app_channel_export', methods: ['GET'])]
+    public function exportChannel(
+        string $slug,
+        ChannelRepository $channelRepository,
+        EntityManagerInterface $entityManager,
+        FileUploadService $fileUploadService,
+    ): Response {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+
+        try {
+            $channel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            return new Response($e->getMessage(), $e->getStatusCode());
+        }
+
+        // Only admins or channel administrators can export
+        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
+            throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à exporter l\'historique de ce canal.'));
+        }
+
+        $messages = $entityManager->getRepository(Message::class)->findBy(
+            ['channel' => $channel],
+            ['createdAt' => 'ASC']
+        );
+
+        // Build data structure
+        $exportData = [
+            'channel' => [
+                'id' => $channel->getId(),
+                'name' => $channel->getName(),
+                'slug' => $channel->getSlug(),
+                'description' => $channel->getDescription(),
+                'createdAt' => $channel->getCreatedAt()->format(\DateTimeInterface::ATOM),
+                'isPrivate' => $channel->isPrivate(),
+                'isTodoList' => $channel->isTodoList(),
+            ],
+            'exportedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            'exportedBy' => $currentUser->getUsername(),
+            'messages' => [],
+        ];
+
+        foreach ($messages as $msg) {
+            $msgData = [
+                'id' => $msg->getId(),
+                'author' => [
+                    'username' => $msg->getAuthor()?->getUsername(),
+                    'displayName' => $msg->getAuthor()?->getDisplayName(),
+                ],
+                'content' => $msg->getContent(),
+                'formattedContent' => $msg->getFormattedContent(),
+                'createdAt' => $msg->getCreatedAt()->format(\DateTimeInterface::ATOM),
+                'updatedAt' => $msg->getUpdatedAt() ? $msg->getUpdatedAt()->format(\DateTimeInterface::ATOM) : null,
+            ];
+
+            if ($msg->getFileName()) {
+                $msgData['file'] = [
+                    'name' => $msg->getFileName(),
+                    'size' => $msg->getFileSize(),
+                    'mimeType' => $msg->getMimeType(),
+                    'path' => 'files/' . basename($msg->getFilePath()),
+                ];
+            }
+
+            $exportData['messages'][] = $msgData;
+        }
+
+        // Generate HTML content
+        $htmlContent = $this->renderView('dashboard/export.html.twig', [
+            'channel' => $channel,
+            'messages' => $messages,
+            'exportData' => $exportData,
+        ]);
+
+        if (class_exists(\ZipArchive::class)) {
+            return $this->exportAsZip($channel, $currentUser, $exportData, $htmlContent, $messages, $fileUploadService, $entityManager);
+        }
+
+        return $this->exportAsTar($channel, $currentUser, $exportData, $htmlContent, $messages, $fileUploadService, $entityManager);
+    }
+
+    private function saveAndCreateExportEntity(
+        Channel $channel,
+        User $currentUser,
+        string $filename,
+        string $fileContentResult,
+        string $extension,
+        EntityManagerInterface $entityManager,
+        FileUploadService $fileUploadService,
+    ): void {
+        $uniqueFilename = $channel->getSlug() . '-' . uniqid() . '.' . $extension;
+        $storagePath = 'exports/' . $uniqueFilename;
+
+        $fileUploadService->write($storagePath, $fileContentResult);
+
+        $export = new ChannelExport();
+        $export->setChannel($channel);
+        $export->setExportedBy($currentUser);
+        $export->setFileName($filename);
+        $export->setFilePath($storagePath);
+        $export->setFileSize(strlen($fileContentResult));
+        $export->setChannelName($channel->getName());
+
+        $entityManager->persist($export);
+        $entityManager->flush();
+    }
+
+    private function exportAsZip(
+        Channel $channel,
+        User $currentUser,
+        array $exportData,
+        string $htmlContent,
+        array $messages,
+        FileUploadService $fileUploadService,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        $zip = new \ZipArchive();
+        $zipFile = tempnam(sys_get_temp_dir(), 'export-');
+        if ($zipFile === false || $zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            throw new \RuntimeException('Impossible de créer l\'archive ZIP.');
+        }
+
+        $zip->addFromString('channel.json', json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $zip->addFromString('channel.html', $htmlContent);
+
+        foreach ($messages as $msg) {
+            $filePath = $msg->getFilePath();
+            if (!$filePath) {
+                continue;
+            }
+            try {
+                if ($fileUploadService->exists($filePath)) {
+                    $fileStream = $fileUploadService->readStream($filePath);
+                    $fileContent = stream_get_contents($fileStream);
+                    if (is_resource($fileStream)) {
+                        fclose($fileStream);
+                    }
+                    $zip->addFromString('files/' . basename($filePath), $fileContent);
+                }
+            } catch (\Exception) {
+                // Ignore missing files or read errors to ensure zip continues
+                continue;
+            }
+        }
+
+        $zip->close();
+        $fileContentResult = file_get_contents($zipFile);
+        unlink($zipFile);
+
+        $filename = $channel->getSlug() . '-export.zip';
+
+        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $fileContentResult, 'zip', $entityManager, $fileUploadService);
+
+        $response = new Response($fileContentResult);
+        $response->headers->set('Content-Type', 'application/zip');
+        $response->headers->set(
+            'Content-Disposition',
+            \Symfony\Component\HttpFoundation\HeaderUtils::makeDisposition(
+                \Symfony\Component\HttpFoundation\HeaderUtils::DISPOSITION_ATTACHMENT,
+                $filename
+            )
+        );
+
+        return $response;
+    }
+
+    private function exportAsTar(
+        Channel $channel,
+        User $currentUser,
+        array $exportData,
+        string $htmlContent,
+        array $messages,
+        FileUploadService $fileUploadService,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        $tarFile = tempnam(sys_get_temp_dir(), 'export-') . '.tar';
+        $tar = new \PharData($tarFile);
+
+        $tar->addFromString('channel.json', json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $tar->addFromString('channel.html', $htmlContent);
+
+        foreach ($messages as $msg) {
+            $filePath = $msg->getFilePath();
+            if (!$filePath) {
+                continue;
+            }
+            try {
+                if ($fileUploadService->exists($filePath)) {
+                    $fileStream = $fileUploadService->readStream($filePath);
+                    $fileContent = stream_get_contents($fileStream);
+                    if (is_resource($fileStream)) {
+                        fclose($fileStream);
+                    }
+                    $tar->addFromString('files/' . basename($filePath), $fileContent);
+                }
+            } catch (\Exception) {
+                // Ignore missing files or read errors to ensure tar continues
+                continue;
+            }
+        }
+
+        $fileContentResult = file_get_contents($tarFile);
+        unlink($tarFile);
+
+        $filename = $channel->getSlug() . '-export.tar';
+
+        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $fileContentResult, 'tar', $entityManager, $fileUploadService);
+
+        $response = new Response($fileContentResult);
+        $response->headers->set('Content-Type', 'application/x-tar');
+        $response->headers->set(
+            'Content-Disposition',
+            \Symfony\Component\HttpFoundation\HeaderUtils::makeDisposition(
+                \Symfony\Component\HttpFoundation\HeaderUtils::DISPOSITION_ATTACHMENT,
+                $filename
+            )
+        );
+
+        return $response;
     }
 
     // -------------------------------------------------------------------------

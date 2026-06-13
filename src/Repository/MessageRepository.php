@@ -273,4 +273,21 @@ class MessageRepository extends ServiceEntityRepository
 
         return iterator_to_array($paginator);
     }
+
+    /**
+     * @return Message[]
+     */
+    public function findFilesByChannel(Channel $channel): array
+    {
+        return $this->createQueryBuilder('m')
+            ->select('m', 'author')
+            ->join('m.author', 'author')
+            ->where('m.channel = :channel')
+            ->andWhere('m.filePath IS NOT NULL')
+            ->orderBy('m.id', 'DESC')
+            ->setParameter('channel', $channel)
+            ->getQuery()
+            ->getResult();
+    }
 }
+

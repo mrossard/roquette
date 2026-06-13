@@ -933,6 +933,15 @@ export function toggleSubChannelsSidebar() {
             panel.classList.add('open');
             grid.classList.add('show-subchannels');
             localStorage.setItem('subchannels_sidebar_open', 'true');
+
+            // Close files sidebar if open
+            const filesPanel = document.getElementById('files-sidebar-panel');
+            if (filesPanel) {
+                filesPanel.style.display = 'none';
+                filesPanel.classList.remove('open');
+                grid.classList.remove('show-files');
+                localStorage.setItem('files_sidebar_open', 'false');
+            }
         } else {
             panel.style.display = 'none';
             panel.classList.remove('open');
@@ -943,6 +952,83 @@ export function toggleSubChannelsSidebar() {
 }
 
 window.toggleSubChannelsSidebar = toggleSubChannelsSidebar;
+
+export function initFilesSidebar() {
+    const panel = document.getElementById('files-sidebar-panel');
+    const grid = document.getElementById('dashboard-grid');
+    if (panel && grid) {
+        const isOpen = localStorage.getItem('files_sidebar_open') === 'true';
+        if (isOpen) {
+            panel.style.display = 'flex';
+            panel.classList.add('open');
+            grid.classList.add('show-files');
+            const contentContainer = document.getElementById('files-sidebar-list-container');
+            if (contentContainer && !contentContainer.querySelector('[data-loaded="true"]')) {
+                htmx.trigger(contentContainer, 'load-files');
+            }
+        } else {
+            panel.style.display = 'none';
+            panel.classList.remove('open');
+            grid.classList.remove('show-files');
+        }
+    }
+}
+
+window.initFilesSidebar = initFilesSidebar;
+
+export function toggleFilesSidebar() {
+    const filesPanel = document.getElementById('files-sidebar-panel');
+    const subchannelsPanel = document.getElementById('subchannels-sidebar-panel');
+    const grid = document.getElementById('dashboard-grid');
+    if (filesPanel && grid) {
+        const isOpening = filesPanel.style.display === 'none' || filesPanel.style.display === '';
+        
+        // Close other sidebar
+        if (subchannelsPanel) {
+            subchannelsPanel.style.display = 'none';
+            subchannelsPanel.classList.remove('open');
+            grid.classList.remove('show-subchannels');
+            localStorage.setItem('subchannels_sidebar_open', 'false');
+        }
+
+        if (isOpening) {
+            filesPanel.style.display = 'flex';
+            filesPanel.classList.add('open');
+            grid.classList.add('show-files');
+            localStorage.setItem('files_sidebar_open', 'true');
+            const contentContainer = document.getElementById('files-sidebar-list-container');
+            if (contentContainer && !contentContainer.querySelector('[data-loaded="true"]')) {
+                htmx.trigger(contentContainer, 'load-files');
+            }
+        } else {
+            filesPanel.style.display = 'none';
+            filesPanel.classList.remove('open');
+            grid.classList.remove('show-files');
+            localStorage.setItem('files_sidebar_open', 'false');
+        }
+    }
+}
+
+window.toggleFilesSidebar = toggleFilesSidebar;
+
+window.filterFiles = function(category) {
+    document.querySelectorAll('.files-sidebar-tab').forEach(tab => {
+        if (tab.getAttribute('data-tab') === category) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+
+    document.querySelectorAll('.files-sidebar-item').forEach(item => {
+        if (category === 'all' || item.getAttribute('data-category') === category) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+};
+
 
 window.clearSearchFilters = function () {
     const input = document.getElementById('channel-search-input');

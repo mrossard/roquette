@@ -1,0 +1,130 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Roquette - Administration - Exports{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+    <div class="app-container" hx-boost="true">
+        <header class="app-header">
+            <div class="logo-area">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+                <span class="logo-rocket">🚀</span>
+                <div class="logo-text">
+                    <h1>Roquette</h1>
+                    <p class="subtitle">Administration</p>
+                </div>
+            </div>
+
+            {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
+        </header>
+
+        <main class="dashboard-grid" style="grid-template-columns: 1fr;">
+            <section class="card glass-panel settings-panel" style="flex-grow: 1;">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <h2>Gestion des exports de canaux</h2>
+                        <p class="card-description">Liste des exports d'historiques archivés, téléchargement et suppression.</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="{{ path('app_admin_users') }}" class="btn-publish" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Utilisateurs</a>
+                        <a href="{{ path('app_admin_groups') }}" class="btn-publish" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Groupes</a>
+                        <a href="{{ path('app_admin_exports') }}" class="btn-publish" style="background: rgba(99, 102, 241, 0.2); border: 1px solid #6366f1; text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: #fff;">Exports</a>
+                    </div>
+                </div>
+
+                <div class="card-body" style="gap: 1rem;">
+                    {% for label, messages in app.flashes %}
+                        {% for msg in messages %}
+                            <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in">
+                                {{ msg }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <div class="admin-users-table-wrapper" style="overflow-x: auto;">
+                        <table class="admin-users-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-glass); text-align: left;">
+                                    <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Canal</th>
+                                    <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Date d'export</th>
+                                    <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Exporté par</th>
+                                    <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Nom du fichier / Taille</th>
+                                    <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600; text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for e in exports %}
+                                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                                    <td style="padding: 0.75rem 0.5rem;">
+                                        {% if e.channel %}
+                                            <strong style="color: var(--accent-cyan);">#{{ e.channel.name }}</strong>
+                                            <span style="display: block; font-size: 0.8rem; color: var(--text-muted);">slug: {{ e.channel.slug }}</span>
+                                        {% else %}
+                                            <strong style="color: var(--text-muted);">{{ e.channelName }}</strong>
+                                            <span class="status-pill" style="display: inline-block; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.15); font-size: 0.75rem; padding: 0.1rem 0.4rem; margin-top: 0.25rem;">Supprimé</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 0.75rem 0.5rem;">
+                                        <span>{{ e.createdAt|date('d/m/Y H:i:s') }}</span>
+                                    </td>
+                                    <td style="padding: 0.75rem 0.5rem;">
+                                        {% if e.exportedBy %}
+                                            <span>{{ e.exportedBy.displayName|default(e.exportedBy.username) }}</span>
+                                            <span style="display: block; font-size: 0.8rem; color: var(--text-muted);">@{{ e.exportedBy.username }}</span>
+                                        {% else %}
+                                            <span style="color: var(--text-muted); font-style: italic;">Inconnu</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 0.75rem 0.5rem;">
+                                        <code style="color: var(--text-normal); font-size: 0.85rem;">{{ e.fileName }}</code>
+                                        <span style="display: block; font-size: 0.8rem; color: var(--text-muted);">{{ e.fileSize|format_bytes }}</span>
+                                    </td>
+                                    <td style="padding: 0.75rem 0.5rem; text-align: right;">
+                                        <div style="display: inline-flex; gap: 0.5rem; justify-content: flex-end;">
+                                            <a href="{{ path('app_admin_export_download', {id: e.id}) }}" 
+                                               class="btn-submit" 
+                                               hx-boost="false"
+                                               style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.2); padding: 0.35rem 0.75rem; font-size: 0.85rem; text-decoration: none; border-radius: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                                📥 Télécharger
+                                            </a>
+                                            <form action="{{ path('app_admin_export_delete', {id: e.id}) }}" 
+                                                  method="POST" 
+                                                  style="display: inline;" 
+                                                  hx-boost="false"
+                                                  data-confirm="Êtes-vous sûr de vouloir supprimer cet export ? Le fichier physique sera également détruit.">
+                                                <button type="submit" 
+                                                        class="btn-delete-channel" 
+                                                        style="padding: 0.35rem 0.75rem; font-size: 0.85rem; border-radius: 0.35rem;">
+                                                    🗑️ Supprimer
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                                        Aucun export archivé pour le moment.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        {% include 'partials/_footer.html.twig' %}
+    </div>
+{% endblock %}

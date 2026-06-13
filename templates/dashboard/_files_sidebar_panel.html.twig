@@ -1,0 +1,31 @@
+<aside class="card glass-panel files-sidebar-panel" id="files-sidebar-panel" style="display: none;">
+    <div class="files-sidebar-header">
+        <h3>📂 {{ 'Médiathèque'|trans }}</h3>
+        <button type="button" class="files-sidebar-refresh" onclick="htmx.trigger(document.getElementById('files-sidebar-list-container'), 'load-files')"
+                title="{{ 'Actualiser'|trans }}">🔄
+        </button>
+        <button type="button" class="files-sidebar-close" onclick="toggleFilesSidebar()"
+                title="{{ 'Fermer'|trans }}">✕
+        </button>
+    </div>
+    
+    <!-- Tabs for filtering file types -->
+    <div class="files-sidebar-tabs">
+        <button class="files-sidebar-tab active" data-tab="all" onclick="filterFiles('all')">{{ 'Tous'|trans }}</button>
+        <button class="files-sidebar-tab" data-tab="image" onclick="filterFiles('image')">{{ 'Images'|trans }}</button>
+        <button class="files-sidebar-tab" data-tab="doc" onclick="filterFiles('doc')">{{ 'Docs'|trans }}</button>
+        <button class="files-sidebar-tab" data-tab="media" onclick="filterFiles('media')">{{ 'Médias'|trans }}</button>
+    </div>
+
+    <!-- This will load files asynchronously -->
+    <div class="files-sidebar-list" 
+         id="files-sidebar-list-container"
+         hx-get="{{ path('app_channel_files_list', {slug: activeChannel.slug}) }}"
+         hx-trigger="load-files"
+         hx-swap="innerHTML">
+         <div class="files-sidebar-loading" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+             <span class="spinner-subtle" style="display: inline-block; margin-bottom: 0.5rem;"></span>
+             <p>{{ 'Chargement des fichiers...'|trans }}</p>
+         </div>
+    </div>
+</aside>

@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Entity\ChannelExport;
 use App\Repository\UserRepository;
+use App\Repository\ChannelExportRepository;
+use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -109,5 +112,65 @@ final class AdminController extends AbstractController
         ]));
 
         return $this->redirectToRoute('app_admin_users');
+    }
+
+    #[Route('/admin/exports', name: 'app_admin_exports')]
+    public function exports(ChannelExportRepository $exportRepository): Response
+    {
+        $exports = $exportRepository->findBy([], ['createdAt' => 'DESC']);
+
+        return $this->render('admin/exports.html.twig', [
+            'exports' => $exports,
+        ]);
+    }
+
+    #[Route('/admin/exports/{id}/download', name: 'app_admin_export_download')]
+    public function downloadExport(
+        ChannelExport $export,
+        FileUploadService $fileUploadService,
+    ): Response {
+        if (!$fileUploadService->exists($export->getFilePath())) {
+            throw $this->createNotFoundException($this->translator->trans('Le fichier d\'export n\'existe pas dans le stockage.'));
+        }
+
+        $fileStream = $fileUploadService->readStream($export->getFilePath());
+        $fileContent = stream_get_contents($fileStream);
+        if (is_resource($fileStream)) {
+            fclose($fileStream);
+        }
+
+        $contentType = str_ends_with($export->getFileName(), '.tar') ? 'application/x-tar' : 'application/zip';
+
+        $response = new Response($fileContent);
+        $response->headers->set('Content-Type', $contentType);
+        $response->headers->set(
+            'Content-Disposition',
+            \Symfony\Component\HttpFoundation\HeaderUtils::makeDisposition(
+                \Symfony\Component\HttpFoundation\HeaderUtils::DISPOSITION_ATTACHMENT,
+                $export->getFileName()
+            )
+        );
+
+        return $response;
+    }
+
+    #[Route('/admin/exports/{id}/delete', name: 'app_admin_export_delete', methods: ['POST'])]
+    public function deleteExport(
+        ChannelExport $export,
+        EntityManagerInterface $entityManager,
+        FileUploadService $fileUploadService,
+    ): Response {
+        try {
+            $fileUploadService->delete($export->getFilePath());
+        } catch (\Exception $e) {
+            $this->logger->error(sprintf('Failed to delete export file "%s": %s', $export->getFilePath(), $e->getMessage()));
+        }
+
+        $entityManager->remove($export);
+        $entityManager->flush();
+
+        $this->addFlash('success', $this->translator->trans('L\'export a été supprimé.'));
+
+        return $this->redirectToRoute('app_admin_exports');
     }
 }

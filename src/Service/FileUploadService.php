@@ -211,6 +211,14 @@ class FileUploadService
     }
 
     /**
+     * Writes raw contents to a stored file path.
+     */
+    public function write(string $filePath, string $contents): void
+    {
+        $this->defaultStorage->write($filePath, $contents);
+    }
+
+    /**
      * Uploads an UploadedFile and populates metadata on a Message entity.
      *
      * @throws \InvalidArgumentException if the file is invalid or not allowed
