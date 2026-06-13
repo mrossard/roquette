@@ -56,6 +56,27 @@ if ('serviceWorker' in navigator) {
 
 console.log('Roquette application initialized! 🚀');
 
+// ── Draft persistence: save the textarea content on every keystroke ──────────
+// Uses a delegated listener so it works even after the textarea is re-created.
+function getActiveChannelSlug() {
+    const badge = document.getElementById('mercure-status');
+    return badge ? badge.getAttribute('data-active-channel-slug') : null;
+}
+
+document.addEventListener('input', (e) => {
+    if (e.target.id !== 'message') return;
+    const slug = getActiveChannelSlug();
+    if (!slug) return;
+    const text = e.target.value;
+    if (text.trim()) {
+        console.log('[Draft] 💾 SAVE on input, slug=' + slug + ', length=' + text.length);
+        sessionStorage.setItem('draft:' + slug, text);
+    } else {
+        console.log('[Draft] 🗑️ REMOVE on input (empty), slug=' + slug);
+        sessionStorage.removeItem('draft:' + slug);
+    }
+});
+
 function initAutoResizeTextarea() {
     // Managed natively by CSS field-sizing: content
 }
@@ -294,6 +315,14 @@ document.body.addEventListener('htmx:afterRequest', (evt) => {
         if (evt.detail.successful) {
             const isMainForm = elt.classList.contains('chat-message-form');
             if (isMainForm) {
+                // Clear draft after successful publish
+                const statusBadge = document.getElementById('mercure-status');
+                const slug = statusBadge ? statusBadge.getAttribute('data-active-channel-slug') : null;
+                if (slug) {
+                    console.log('[Draft] 🧹 CLEAR after publish, slug=' + slug);
+                    sessionStorage.removeItem('draft:' + slug);
+                }
+
                 const fileInput = document.getElementById('file-upload');
                 if (fileInput) {
                     fileInput.value = '';
@@ -353,6 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener('htmx:afterSettle', (evt) => {
         const target = evt.detail.target;
         const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
+        console.log('[Draft] 🔄 htmx:afterSettle fired, target=' + (target ? (target.tagName + '#' + target.id + '.' + target.className.split(' ').slice(0,2).join('.')) : 'null') + ', isChannelSwitch=' + isChannelSwitch);
 
         // ── Skip / early-return cases ──────────────────────────────────────────
         if (target && target.id === 'global-search-results') {
@@ -400,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ── Text preview swap ─────────────────────────────────────────────────
-        if (target && (target.classList.contains('text-preview-container') || target.querySelector('.text-preview-code'))) {
+        if (!isChannelSwitch && target && (target.classList.contains('text-preview-container') || target.querySelector('.text-preview-code'))) {
             const activeTarget = target.id ? (document.getElementById(target.id) || target) : target;
             if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks(activeTarget);
             setTimeout(() => {
@@ -410,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ── Link preview swap ──────────────────────────────────────────────────
-        if (target && (target.classList.contains('link-preview-card') || target.querySelector('.link-preview-card'))) {
+        if (!isChannelSwitch && target && (target.classList.contains('link-preview-card') || target.querySelector('.link-preview-card'))) {
             const previewCard = target.classList.contains('link-preview-card') ? target : target.querySelector('.link-preview-card');
             adjustScrollForLinkPreview(previewCard);
             return;
@@ -434,10 +464,49 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
 
 
-        // Refocus appropriate input after channel switches
+        // Refocus appropriate input and restore draft after channel switches
         if (isChannelSwitch) {
+            // Dump all drafts in sessionStorage
+            const allDrafts = [];
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (key.startsWith('draft:')) {
+                    allDrafts.push(key + ' (' + sessionStorage.getItem(key).length + ' chars)');
+                }
+            }
+            console.log('[Draft] 🔀 CHANNEL SWITCH detected. Drafts in storage: [' + allDrafts.join(', ') + ']');
             const messageInputAfterSettle = document.getElementById('message');
-            if (messageInputAfterSettle) messageInputAfterSettle.focus();
+            console.log('[Draft] 🔀 #message textarea found=' + !!messageInputAfterSettle);
+            if (messageInputAfterSettle) {
+                messageInputAfterSettle.focus();
+                const slugNow = getActiveChannelSlug();
+                console.log('[Draft] 🔀 Active slug=' + slugNow + ', scheduling rAF...');
+                // Restore draft after all init functions have finished and DOM is stable
+                requestAnimationFrame(() => {
+                    const slug = getActiveChannelSlug();
+                    console.log('[Draft] 📥 RESTORE in rAF, slug=' + slug);
+                    if (slug) {
+                        const draft = sessionStorage.getItem('draft:' + slug);
+                        const textarea = document.getElementById('message');
+                        console.log('[Draft] 📥 draft=' + (draft ? '"' + draft.substring(0, 30) + '"' : 'null') + ', textarea=' + !!textarea + ', currentValue="' + (textarea ? textarea.value : '') + '"');
+                        if (draft && textarea) {
+                            textarea.value = draft;
+                            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                            console.log('[Draft] ✅ RESTORED OK');
+                            setTimeout(() => {
+                                const ta = document.getElementById('message');
+                                console.log('[Draft] ⏰ 50ms check: value="' + (ta ? ta.value.substring(0, 50) : 'TEXTAREA GONE') + '"');
+                            }, 50);
+                            setTimeout(() => {
+                                const ta = document.getElementById('message');
+                                console.log('[Draft] ⏰ 500ms check: value="' + (ta ? ta.value.substring(0, 50) : 'TEXTAREA GONE') + '"');
+                            }, 500);
+                        }
+                    }
+                });
+            } else {
+                console.log('[Draft] ⚠️ No #message textarea found after channel switch');
+            }
             initializeChannelScroll();
         }
         checkJumpToMessage();
