@@ -114,7 +114,7 @@ class FileUploadService
             $ext = 'bin';
         }
         $extension = strtolower($ext);
-        $mimeType = $file->getClientMimeType();
+        $mimeType = $file->getMimeType() ?? $file->getClientMimeType();
 
         if ($file->getSize() > self::MAX_FILE_SIZE) {
             $this->logger->warning(sprintf(
