@@ -1,3 +1,33 @@
+{% set scanStatus = messageObject ? messageObject.virusScanStatus : null %}
+
+{% if scanStatus == 'pending' %}
+    <div class="message-attachment security-scanning" style="border-color: var(--border-glass); background: rgba(255, 255, 255, 0.02);">
+        <span class="attachment-icon">🔄</span>
+        <div class="attachment-details">
+            <span class="attachment-scanning-label" style="font-style: italic; color: var(--text-muted);">
+                {{ 'Analyse antivirus en cours...'|trans }}
+            </span>
+        </div>
+    </div>
+{% elseif scanStatus == 'infected' %}
+    <div class="message-attachment security-blocked" style="border-color: var(--accent-red, #ff5b5b); background: rgba(239, 68, 68, 0.05);">
+        <span class="attachment-icon">❌</span>
+        <div class="attachment-details">
+            <span class="attachment-blocked-label" style="font-weight: bold; color: var(--accent-red, #ff5b5b);">
+                {{ 'Fichier bloqué : Contenu malveillant détecté.'|trans }}
+            </span>
+        </div>
+    </div>
+{% elseif scanStatus == 'failed' %}
+    <div class="message-attachment security-failed" style="border-color: var(--text-muted); background: rgba(128, 128, 128, 0.05);">
+        <span class="attachment-icon">⚠️</span>
+        <div class="attachment-details">
+            <span class="attachment-failed-label" style="font-style: italic; color: var(--text-muted);">
+                {{ 'Échec de l\'analyse antivirus. Fichier inaccessible.'|trans }}
+            </span>
+        </div>
+    </div>
+{% else %}
 <div class="message-attachment">
     <span class="attachment-icon">📎</span>
     <div class="attachment-details">
@@ -51,4 +81,5 @@
             <span class="btn-preview-icon">👁️</span> {{ 'Prévisualiser le texte'|trans }}
         </button>
     </div>
+{% endif %}
 {% endif %}

@@ -35,6 +35,8 @@ final class FileController extends AbstractController
             throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
         }
 
+        $this->checkVirusScanStatus($message);
+
         $channel = $message->getChannel();
         if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
             throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
@@ -82,6 +84,8 @@ final class FileController extends AbstractController
             throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
         }
 
+        $this->checkVirusScanStatus($message);
+
         $channel = $message->getChannel();
         if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
             throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
@@ -128,6 +132,8 @@ final class FileController extends AbstractController
         if (!$message || !$message->getFilePath()) {
             throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
         }
+
+        $this->checkVirusScanStatus($message);
 
         $channel = $message->getChannel();
         if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
@@ -191,6 +197,8 @@ final class FileController extends AbstractController
             throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
         }
 
+        $this->checkVirusScanStatus($message);
+
         $channel = $message->getChannel();
         if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
             throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
@@ -233,5 +241,16 @@ final class FileController extends AbstractController
         }
 
         return $fallback;
+    }
+
+    private function checkVirusScanStatus(\App\Entity\Message $message): void
+    {
+        if ($message->getVirusScanStatus() !== null && $message->getVirusScanStatus() !== 'clean') {
+            throw $this->createAccessDeniedException(
+                $message->getVirusScanStatus() === 'pending'
+                    ? $this->translator->trans('L\'analyse antivirus de ce fichier est en cours.')
+                    : $this->translator->trans('L\'accès à ce fichier a été bloqué par l\'antivirus.')
+            );
+        }
     }
 }

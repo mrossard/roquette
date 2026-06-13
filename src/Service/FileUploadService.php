@@ -150,13 +150,7 @@ class FileUploadService
             throw new \InvalidArgumentException(sprintf('Le type MIME "%s" n\'est pas autorisé.', $mimeType));
         }
 
-        if (!$this->clamavService->scanFile($file)) {
-            $this->logger->warning(sprintf(
-                'File upload blocked: ClamAV detected a threat in "%s".',
-                $file->getClientOriginalName(),
-            ));
-            throw new \InvalidArgumentException('Le fichier contient un virus ou un logiciel malveillant.');
-        }
+
 
         $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
         $safeFilename = preg_replace('/[^A-Za-z0-9_\-]/', '_', $originalFilename);

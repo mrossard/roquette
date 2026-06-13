@@ -106,26 +106,4 @@ class FileUploadServiceTest extends TestCase
         $this->service->upload($file);
     }
 
-    #[Test]
-    public function uploadRejectsInfectedFile(): void
-    {
-        $file = $this->createMock(UploadedFile::class);
-        $file->method('isValid')->willReturn(true);
-        $file->method('getClientOriginalName')->willReturn('infected.jpg');
-        $file->method('getClientOriginalExtension')->willReturn('jpg');
-        $file->method('getClientMimeType')->willReturn('image/jpeg');
-        $file->method('getSize')->willReturn(1024);
-
-        // Make ClamAV find a virus
-        $this->clamavService = $this->createMock(ClamavService::class);
-        $this->clamavService->method('scanFile')->willReturn(false);
-        $this->service = new FileUploadService($this->storage, $this->clamavService, $this->logger);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Le fichier contient un virus ou un logiciel malveillant.');
-
-        $this->storage->expects($this->never())->method('writeStream');
-
-        $this->service->upload($file);
-    }
 }

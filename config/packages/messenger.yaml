@@ -13,6 +13,7 @@ framework:
             # Route your messages to the transports
             'Symfony\Component\Mercure\Update': async
             'App\Message\LlmQueryMessage': async
+            'App\Message\ScanFileMessage': async
 
 # when@test:
 #    framework:

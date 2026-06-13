@@ -185,6 +185,7 @@ final class MessageController extends AbstractController
             if ($uploadedFile) {
                 try {
                     $fileUploadService->uploadAndAttachToMessage($uploadedFile, $message);
+                    $message->setVirusScanStatus('pending');
                 } catch (\InvalidArgumentException $e) {
                     $this->addFlash('error', $e->getMessage());
 
@@ -197,6 +198,10 @@ final class MessageController extends AbstractController
 
         $entityManager->persist($message);
         $entityManager->flush();
+
+        if ($uploadedFile) {
+            $this->messageBus->dispatch(new \App\Message\ScanFileMessage($message->getId()));
+        }
 
         $renderedHtml = $this->renderFeedItem($message);
 

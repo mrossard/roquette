@@ -14,6 +14,7 @@ use Doctrine\ORM\Mapping\JoinColumn;
 #[ORM\Table(name: '`message`')]
 #[ORM\Index(name: 'idx_message_created_at', columns: ['created_at'])]
 #[ORM\Index(name: 'idx_message_author', columns: ['author_id'])]
+#[ORM\Index(name: 'idx_message_channel_id', columns: ['channel_id', 'id'])]
 class Message
 {
     #[ORM\Id]
@@ -26,6 +27,9 @@ class Message
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $formattedContent = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $virusScanStatus = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
@@ -297,6 +301,18 @@ class Message
     public function setFormattedContent(?string $formattedContent): static
     {
         $this->formattedContent = $formattedContent;
+
+        return $this;
+    }
+
+    public function getVirusScanStatus(): ?string
+    {
+        return $this->virusScanStatus;
+    }
+
+    public function setVirusScanStatus(?string $virusScanStatus): static
+    {
+        $this->virusScanStatus = $virusScanStatus;
 
         return $this;
     }

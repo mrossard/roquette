@@ -24,6 +24,25 @@ class ClamavService
      */
     public function scanFile(UploadedFile $file): bool
     {
+        $handle = fopen($file->getPathname(), 'rb');
+        if (!$handle) {
+            throw new \RuntimeException('Impossible d\'ouvrir le fichier pour l\'analyse antivirus.');
+        }
+        try {
+            return $this->scanStream($handle, $file->getClientOriginalName());
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    /**
+     * Scans a readable stream resource. Returns true if clean, false if a virus is found.
+     * Throws an exception on connection/communication errors.
+     *
+     * @param resource $stream
+     */
+    public function scanStream(mixed $stream, string $originalFileName): bool
+    {
         try {
             set_error_handler(static function ($severity, $message, $file, $line) {
                 throw new \ErrorException($message, 0, $severity, $file, $line);
@@ -57,16 +76,10 @@ class ClamavService
         // Send INSTREAM command (nINSTREAM\n is standard for TCP)
         fwrite($socket, "nINSTREAM\n");
 
-        $handle = fopen($file->getPathname(), 'rb');
-        if (!$handle) {
-            fclose($socket);
-            throw new \RuntimeException('Impossible d\'ouvrir le fichier pour l\'analyse antivirus.');
-        }
-
         // Stream the file in chunks
         $chunkSize = 8192;
-        while (!feof($handle)) {
-            $chunk = fread($handle, $chunkSize);
+        while (!feof($stream)) {
+            $chunk = fread($stream, $chunkSize);
             if ($chunk === false) {
                 break;
             }
@@ -76,7 +89,6 @@ class ClamavService
                 fwrite($socket, $chunk);
             }
         }
-        fclose($handle);
 
         // Terminate stream
         fwrite($socket, pack('N', 0));
@@ -97,7 +109,7 @@ class ClamavService
         if (str_contains($response, 'FOUND')) {
             $this->logger->warning(sprintf(
                 'Virus detected in uploaded file "%s": %s',
-                $file->getClientOriginalName(),
+                $originalFileName,
                 $response,
             ));
             return false;
@@ -105,7 +117,7 @@ class ClamavService
 
         $this->logger->error(sprintf(
             'ClamAV returned an unexpected response for "%s": %s',
-            $file->getClientOriginalName(),
+            $originalFileName,
             $response,
         ));
         throw new \RuntimeException('Une erreur est survenue lors de l\'analyse antivirus du fichier.');
