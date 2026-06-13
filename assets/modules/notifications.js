@@ -138,6 +138,11 @@ export function setupNotificationHeaderButton() {
 
     updateButtonUI();
 
+    if (btn.dataset.notificationInitialized === 'true') {
+        return;
+    }
+    btn.dataset.notificationInitialized = 'true';
+
     btn.addEventListener('click', (e) => {
         e.preventDefault();
         const permission = Notification.permission;
