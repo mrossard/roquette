@@ -5781,6 +5781,18 @@ details.sidebar-section-details:not([open]) .sidebar-section-toggle-icon {
     animation: none;
 }
 
+@media (max-width: 576px) {
+    .reaction-picker {
+        max-width: calc(100vw - 24px);
+        box-sizing: border-box;
+    }
+    .reaction-picker .emoji-picker {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+
 /* /me messages styling */
 .feed-item.is-me-message {
     position: relative !important;

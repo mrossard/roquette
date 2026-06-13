@@ -239,7 +239,6 @@ export const EMOJI_KEYWORDS = {
     '✌️': ['victoire', 'peace', 'main', 'deux'],
     '👌': ['ok', 'parfait', 'main'],
     '🤌': ['italien', 'quoi', 'main'],
-    '🤝': ['poignee', 'shake', 'main'],
 
     // Animaux & Nature
     '🐶': ['chien', 'dog', 'chiot', 'animal', 'compagnie'],
@@ -371,7 +370,6 @@ export const EMOJI_KEYWORDS = {
     // Activités & Loisirs
     '🎮': ['jeu', 'console', 'manette', 'gaming', 'playstation', 'xbox', 'switch'],
     '🕹️': ['joystick', 'arcade', 'jeu'],
-    '👾': ['invader', 'pixel', 'jeu', 'retro'],
     '🎯': ['cible', 'target', 'flechette', 'but'],
     '🎲': ['de', 'dice', 'jeu', 'hasard'],
     '🧩': ['puzzle', 'casse-tete'],
@@ -609,6 +607,41 @@ export const EMOJI_KEYWORDS = {
     '🏳️‍⚧️': ['drapeau trans', 'transgender'],
     '🏴': ['drapeau noir', 'black flag']
 };
+
+// Clean categories and keywords dynamically to remove text labels
+const isEmojiChar = s => !/[a-zA-Z\u4e00-\u9fa5\s]/.test(s);
+for (const cat of EMOJI_CATEGORIES) {
+    cat.emojis = cat.emojis.filter(isEmojiChar);
+}
+for (const key of Object.keys(EMOJI_KEYWORDS)) {
+    if (!isEmojiChar(key)) {
+        const cleanKey = key.trim().toLowerCase().replace(/\s+/g, '_');
+        let emoji = EMOJI_ALIASES[cleanKey];
+        if (!emoji) {
+            const manualMapping = {
+                'palm': '🌴', 'bonbon': '🍬', ' wine': '🍷', 'school': '🏫', '学校': '🏫',
+                '键盘': '⌨️', '鼠标': '🖱️', 'trash': '🗑️', 'free': '🆓', 'popcorn': '🍿',
+                'kiwi': '🥝', 'basketball': '🏀', 'swimming': '🏊', 'bus': '🚌', 'train': '🚋',
+                'helicopter': '🚁', 'ship': '🚢', 'camping': '🏕️', 'desert': '🏜️',
+                'desert island': '🏝️', 'castle': '🏰', 'office': '🏢', 'camera': '📷',
+                'phone': '📞', 'tv': '📺', 'radio': '📻', 'battery': '🔋', 'plug': '🔌',
+                'flashlight': '🔦', 'candle': '🕯️', 'key': '🔑', 'hammer': '🔨',
+                'shield': '🛡️', 'sword': '⚔️', 'package': '📦', 'envelope': '✉️',
+                'inbox': '📥', 'outbox': '📤', 'scissors': '✂️', 'paperclip': '📎',
+                'syringe': '💉', 'pill': '💊', 'adhesive bandage': '🩹', 'stethoscope': '🩺',
+                'microscope': '🔬', 'telescope': '🔭', 'FREE': '🆓'
+            };
+            emoji = manualMapping[key] || manualMapping[cleanKey];
+        }
+        if (emoji) {
+            if (!EMOJI_KEYWORDS[emoji]) {
+                EMOJI_KEYWORDS[emoji] = [];
+            }
+            EMOJI_KEYWORDS[emoji] = [...new Set([...EMOJI_KEYWORDS[emoji], ...EMOJI_KEYWORDS[key]])];
+        }
+        delete EMOJI_KEYWORDS[key];
+    }
+}
 
 // Inject JoyPixels emoji shortnames into the keyword list
 for (const [shortname, emoji] of Object.entries(EMOJI_ALIASES)) {

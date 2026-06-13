@@ -151,9 +151,23 @@ document.addEventListener('click', (e) => {
         picker.style.marginBottom = '0';
 
         let rect = picker.getBoundingClientRect();
+        const triggerRect = picker.parentElement.getBoundingClientRect();
+
         if (rect.right > window.innerWidth) {
             picker.style.left = 'auto';
             picker.style.right = '0';
+            rect = picker.getBoundingClientRect();
+            
+            if (rect.left < 0) {
+                // If it overflows both sides, align it to have 12px margin/padding on the left
+                picker.style.left = `${-triggerRect.left + 12}px`;
+                picker.style.right = 'auto';
+                rect = picker.getBoundingClientRect();
+            }
+        } else if (rect.left < 0) {
+            picker.style.left = `${-triggerRect.left + 12}px`;
+            picker.style.right = 'auto';
+            rect = picker.getBoundingClientRect();
         }
 
         let bottomThreshold = window.innerHeight;
@@ -170,6 +184,15 @@ document.addEventListener('click', (e) => {
             picker.style.bottom = '100%';
             picker.style.marginTop = '0';
             picker.style.marginBottom = '8px';
+            rect = picker.getBoundingClientRect();
+            
+            // If it now overflows the top of the viewport, position it 12px from top
+            if (rect.top < 0) {
+                picker.style.top = `${-triggerRect.top + 12}px`;
+                picker.style.bottom = 'auto';
+                picker.style.marginTop = '0';
+                picker.style.marginBottom = '0';
+            }
         }
 
         if (emojiPickerContainer.focusSearch) {
