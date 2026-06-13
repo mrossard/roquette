@@ -58,7 +58,7 @@ function insertEmoji(textarea, emoji) {
     const newCursorPos = start + emoji.length;
     textarea.selectionStart = textarea.selectionEnd = newCursorPos;
 
-    const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const isMobile = window.matchMedia('(max-width: 1024px)').matches && window.matchMedia('(pointer: coarse)').matches;
     if (!isMobile) {
         textarea.focus();
     }

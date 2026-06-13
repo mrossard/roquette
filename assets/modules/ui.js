@@ -743,7 +743,7 @@ export function closeGlobalSearch() {
     if (modal && modal.open) {
         modal.close();
         const messageInput = document.getElementById('message');
-        const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const isMobile = window.matchMedia('(max-width: 1024px)').matches && window.matchMedia('(pointer: coarse)').matches;
         if (messageInput && !isMobile) messageInput.focus();
     }
 }

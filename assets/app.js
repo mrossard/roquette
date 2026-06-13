@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Focus message input on load (unless on mobile)
     const messageInput = document.getElementById('message');
-    const isMobile = window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const isMobile = window.matchMedia('(max-width: 1024px)').matches && window.matchMedia('(pointer: coarse)').matches;
     if (messageInput && !isMobile) {
         messageInput.focus();
     }
@@ -477,8 +477,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('[Draft] 🔀 CHANNEL SWITCH detected. Drafts in storage: [' + allDrafts.join(', ') + ']');
             const messageInputAfterSettle = document.getElementById('message');
             console.log('[Draft] 🔀 #message textarea found=' + !!messageInputAfterSettle);
-            if (messageInputAfterSettle) {
+            if (messageInputAfterSettle && !isMobile) {
                 messageInputAfterSettle.focus();
+            }
+            if (messageInputAfterSettle) {
                 const slugNow = getActiveChannelSlug();
                 console.log('[Draft] 🔀 Active slug=' + slugNow + ', scheduling rAF...');
                 // Restore draft after all init functions have finished and DOM is stable

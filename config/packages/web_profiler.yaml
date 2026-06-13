@@ -1,6 +1,7 @@
 when@dev:
     web_profiler:
         toolbar: true
+        excluded_ajax_paths: '^/((index|app(_[\w]+)?)\.php/)?_wdt|^/channel/[^/]+/typing|^/user/ping'
 
     framework:
         profiler:

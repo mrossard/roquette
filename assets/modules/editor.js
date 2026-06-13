@@ -4,7 +4,7 @@ let historyIndex = -1; // -1 = not navigating
 let historyDraft = ''; // save current draft when entering history mode
 
 
-const isMobile = () => window.matchMedia('(max-width: 1024px)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+const isMobile = () => window.matchMedia('(max-width: 1024px)').matches && window.matchMedia('(pointer: coarse)').matches;
 
 
 // Send message on Enter (without Shift or Alt) in the message textarea — with history & inline edit support via HTMX
@@ -242,9 +242,7 @@ document.addEventListener('click', (e) => {
     label.textContent = `↩ ${author}`;
     banner.style.display = 'flex';
 
-    if (!isMobile()) {
-        textarea.focus();
-    }
+    textarea.focus();
 
     textarea.dispatchEvent(new Event('input', {bubbles: true}));
 });
