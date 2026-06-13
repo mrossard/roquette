@@ -11,6 +11,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
@@ -26,14 +27,22 @@ class BackfillMessageFormattingCommand extends Command
         parent::__construct();
     }
 
+    protected function configure(): void
+    {
+        $this->addOption('force', 'f', InputOption::VALUE_NONE, 'Forcer le reformatage de tous les messages.');
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+        $force = $input->getOption('force');
 
         $qb = $this->em->createQueryBuilder();
         $qb->select('COUNT(m.id)')
-            ->from(Message::class, 'm')
-            ->where('m.formattedContent IS NULL');
+            ->from(Message::class, 'm');
+        if (!$force) {
+            $qb->where('m.formattedContent IS NULL');
+        }
 
         $total = (int) $qb->getQuery()->getSingleScalarResult();
 
@@ -50,9 +59,13 @@ class BackfillMessageFormattingCommand extends Command
         while ($processed < $total) {
             $qbFetch = $this->em->createQueryBuilder();
             $qbFetch->select('m')
-                ->from(Message::class, 'm')
-                ->where('m.formattedContent IS NULL')
-                ->setMaxResults($batchSize);
+                ->from(Message::class, 'm');
+            if (!$force) {
+                $qbFetch->where('m.formattedContent IS NULL');
+            } else {
+                $qbFetch->setFirstResult($processed);
+            }
+            $qbFetch->setMaxResults($batchSize);
 
             /** @var Message[] $messages */
             $messages = $qbFetch->getQuery()->getResult();

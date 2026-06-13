@@ -1,10 +1,7 @@
 <div class="header-controls">
-    <div class="status-badge" id="mercure-status"
+    <div id="mercure-status"
          data-active-channel-slug="{{ activeChannel is defined and activeChannel ? activeChannel.slug : '' }}"
-         data-current-username="{{ app.user.username }}">
-        <span class="status-dot disconnected"></span>
-        <span class="status-text">{{ 'Connexion au Hub...'|trans }}</span>
-    </div>
+         data-current-username="{{ app.user.username }}"></div>
 
     {% if show_back_button|default(false) %}
         {% if channels is defined and channels is not empty %}

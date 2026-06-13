@@ -191,7 +191,11 @@ body {
     color: var(--text-muted);
 }
 
-/* Connection Status Badge */
+/* Connection Status Badge (Hidden) */
+#mercure-status {
+    display: none !important;
+}
+
 .status-badge {
     display: flex;
     align-items: center;
