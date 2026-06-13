@@ -8,7 +8,10 @@ use App\Entity\User;
 use App\Entity\ChannelExport;
 use App\Repository\UserRepository;
 use App\Repository\ChannelExportRepository;
+use App\Repository\AuditLogRepository;
 use App\Service\FileUploadService;
+use App\Service\AuditLoggerService;
+use App\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -38,7 +41,7 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/users/{id}/ban', name: 'app_admin_user_ban', methods: ['POST'])]
-    public function banUser(User $user, EntityManagerInterface $entityManager): Response
+    public function banUser(User $user, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
     {
         if ($user->isBanned()) {
             $this->addFlash('error', $this->translator->trans('L\'utilisateur "%username%" est déjà banni.', [
@@ -66,6 +69,12 @@ final class AdminController extends AbstractController
         $user->setBannedReason('Banni par un administrateur');
         $entityManager->flush();
 
+        $auditLogger->log(AuditAction::USER_BAN, $currentUser, [
+            'banned_user_id' => $user->getId(),
+            'username' => $user->getUsername(),
+            'reason' => 'Banni par un administrateur',
+        ]);
+
         $this->logger->info(sprintf(
             'User "%s" (ID: %d) has been banned by admin "%s" (ID: %d)',
             $user->getUsername(),
@@ -82,7 +91,7 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/users/{id}/unban', name: 'app_admin_user_unban', methods: ['POST'])]
-    public function unbanUser(User $user, EntityManagerInterface $entityManager): Response
+    public function unbanUser(User $user, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
     {
         if (!$user->isBanned()) {
             $this->addFlash('error', $this->translator->trans('L\'utilisateur "%username%" n\'est pas banni.', [
@@ -98,6 +107,11 @@ final class AdminController extends AbstractController
 
         /** @var User $currentUser */
         $currentUser = $this->getUser();
+
+        $auditLogger->log(AuditAction::USER_UNBAN, $currentUser, [
+            'unbanned_user_id' => $user->getId(),
+            'username' => $user->getUsername(),
+        ]);
 
         $this->logger->info(sprintf(
             'User "%s" (ID: %d) has been unbanned by admin "%s" (ID: %d)',
@@ -128,6 +142,7 @@ final class AdminController extends AbstractController
     public function downloadExport(
         ChannelExport $export,
         FileUploadService $fileUploadService,
+        AuditLoggerService $auditLogger,
     ): Response {
         if (!$fileUploadService->exists($export->getFilePath())) {
             throw $this->createNotFoundException($this->translator->trans('Le fichier d\'export n\'existe pas dans le stockage.'));
@@ -138,6 +153,14 @@ final class AdminController extends AbstractController
         if (is_resource($fileStream)) {
             fclose($fileStream);
         }
+
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        $auditLogger->log(AuditAction::EXPORT_DOWNLOAD, $currentUser, [
+            'export_id' => $export->getId(),
+            'file_name' => $export->getFileName(),
+            'channel_name' => $export->getChannelName(),
+        ]);
 
         $contentType = str_ends_with($export->getFileName(), '.tar') ? 'application/x-tar' : 'application/zip';
 
@@ -159,7 +182,16 @@ final class AdminController extends AbstractController
         ChannelExport $export,
         EntityManagerInterface $entityManager,
         FileUploadService $fileUploadService,
+        AuditLoggerService $auditLogger,
     ): Response {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        $auditLogger->log(AuditAction::EXPORT_DELETE, $currentUser, [
+            'export_id' => $export->getId(),
+            'file_name' => $export->getFileName(),
+            'channel_name' => $export->getChannelName(),
+        ]);
+
         try {
             $fileUploadService->delete($export->getFilePath());
         } catch (\Exception $e) {
@@ -172,5 +204,15 @@ final class AdminController extends AbstractController
         $this->addFlash('success', $this->translator->trans('L\'export a été supprimé.'));
 
         return $this->redirectToRoute('app_admin_exports');
+    }
+
+    #[Route('/admin/audit-logs', name: 'app_admin_audit_logs')]
+    public function auditLogs(AuditLogRepository $auditLogRepository): Response
+    {
+        $logs = $auditLogRepository->findBy([], ['createdAt' => 'DESC']);
+
+        return $this->render('admin/audit_logs.html.twig', [
+            'logs' => $logs,
+        ]);
     }
 }

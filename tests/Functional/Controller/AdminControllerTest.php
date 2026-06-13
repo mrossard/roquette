@@ -8,6 +8,8 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use App\Entity\User;
 use App\Entity\Channel;
 use App\Entity\ChannelExport;
+use App\Entity\AuditLog;
+use App\Enum\AuditAction;
 use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Test;
@@ -60,6 +62,11 @@ class AdminControllerTest extends WebTestCase
 
     private function cleanup(): void
     {
+        $logRepo = $this->entityManager->getRepository(AuditLog::class);
+        foreach ($logRepo->findAll() as $log) {
+            $this->entityManager->remove($log);
+        }
+
         $exportRepo = $this->entityManager->getRepository(ChannelExport::class);
         foreach ($exportRepo->findAll() as $export) {
             $this->entityManager->remove($export);
@@ -106,6 +113,9 @@ class AdminControllerTest extends WebTestCase
 
         $this->client->request('GET', '/admin/exports');
         $this->assertResponseStatusCodeSame(403);
+
+        $this->client->request('GET', '/admin/audit-logs');
+        $this->assertResponseStatusCodeSame(403);
     }
 
     #[Test]
@@ -130,6 +140,11 @@ class AdminControllerTest extends WebTestCase
         $updatedUser = $this->entityManager->getRepository(User::class)->find($this->normalUser->getId());
         static::assertNotNull($updatedUser->getBannedAt());
 
+        // Verify AuditLog was created for ban
+        $logs = $this->entityManager->getRepository(AuditLog::class)->findBy(['action' => AuditAction::USER_BAN]);
+        static::assertCount(1, $logs);
+        static::assertSame($this->normalUser->getUsername(), $logs[0]->getDetails()['username']);
+
         // Unban user
         $this->client->request('POST', sprintf('/admin/users/%d/unban', $this->normalUser->getId()));
         $this->assertResponseRedirects('/admin/users');
@@ -137,6 +152,11 @@ class AdminControllerTest extends WebTestCase
         $this->entityManager->clear();
         $updatedUser = $this->entityManager->getRepository(User::class)->find($this->normalUser->getId());
         static::assertNull($updatedUser->getBannedAt());
+
+        // Verify AuditLog was created for unban
+        $logsUnban = $this->entityManager->getRepository(AuditLog::class)->findBy(['action' => AuditAction::USER_UNBAN]);
+        static::assertCount(1, $logsUnban);
+        static::assertSame($this->normalUser->getUsername(), $logsUnban[0]->getDetails()['username']);
     }
 
     #[Test]
@@ -206,5 +226,27 @@ class AdminControllerTest extends WebTestCase
         $this->entityManager->clear();
         $dbExport = $this->entityManager->getRepository(ChannelExport::class)->find($exportId);
         static::assertNull($dbExport);
+    }
+
+    #[Test]
+    public function testListAuditLogs(): void
+    {
+        $this->client->loginUser($this->adminUser);
+
+        // Create a mock audit log record
+        $log = new AuditLog();
+        $log->setAction(AuditAction::USER_BAN);
+        $log->setPerformedBy($this->adminUser);
+        $log->setDetails(['username' => 'some_banned_user']);
+        $log->setIpAddress('127.0.0.1');
+        $this->entityManager->persist($log);
+        $this->entityManager->flush();
+
+        $this->client->request('GET', '/admin/audit-logs');
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('h2', 'Logs d\'audit de sécurité');
+        $content = $this->client->getResponse()->getContent();
+        static::assertStringContainsString('Bannissement', $content);
+        static::assertStringContainsString('some_banned_user', $content);
     }
 }

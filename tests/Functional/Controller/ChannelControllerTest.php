@@ -9,6 +9,8 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 use App\Entity\Channel;
 use App\Entity\User;
+use App\Entity\AuditLog;
+use App\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -237,10 +239,21 @@ class ChannelControllerTest extends WebTestCase
         static::assertNotNull($channel);
         static::assertTrue($channel->isTodoList());
 
+        // Assert AuditLog was created
+        $auditLog = $this->entityManager->getRepository(AuditLog::class)->findOneBy([
+            'action' => AuditAction::CHANNEL_CREATE,
+            'performedBy' => $this->testUser,
+        ]);
+        static::assertNotNull($auditLog);
+        static::assertSame('ma-todo-list', $auditLog->getDetails()['slug']);
+
+        if ($auditLog) {
+            $this->entityManager->remove($auditLog);
+        }
         if ($channel) {
             $this->entityManager->remove($channel);
-            $this->entityManager->flush();
         }
+        $this->entityManager->flush();
     }
 
     #[Test]
@@ -337,6 +350,40 @@ class ChannelControllerTest extends WebTestCase
         $this->client->request('GET', sprintf('/channels/%s/export', $this->channel->getSlug()));
 
         $this->assertResponseStatusCodeSame(403);
+    }
+
+    #[Test]
+    public function testDeleteChannelSuccess(): void
+    {
+        // 1. Create a channel to delete
+        $channelToDelete = new Channel();
+        $channelToDelete->setName('Channel to Delete');
+        $channelToDelete->setSlug('channel-to-delete');
+        $channelToDelete->setCreator($this->testUser);
+        $channelToDelete->addMember($this->testUser);
+        $this->entityManager->persist($channelToDelete);
+        $this->entityManager->flush();
+
+        // 2. Request delete
+        $this->client->request('POST', '/channels/channel-to-delete/delete');
+        $this->assertResponseRedirects('/');
+
+        $this->entityManager->clear();
+        $dbChannel = $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => 'channel-to-delete']);
+        static::assertNull($dbChannel);
+
+        // 3. Assert AuditLog was created
+        $auditLog = $this->entityManager->getRepository(AuditLog::class)->findOneBy([
+            'action' => 'channel_delete',
+            'performedBy' => $this->testUser,
+        ]);
+        static::assertNotNull($auditLog);
+        static::assertSame('channel-to-delete', $auditLog->getDetails()['slug']);
+
+        if ($auditLog) {
+            $this->entityManager->remove($auditLog);
+            $this->entityManager->flush();
+        }
     }
 }
 

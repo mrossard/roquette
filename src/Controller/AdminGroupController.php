@@ -18,6 +18,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use App\Service\AuditLoggerService;
+use App\Enum\AuditAction;
 
 final class AdminGroupController extends AbstractController
 {
@@ -67,7 +69,7 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/create', name: 'app_admin_group_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager): Response
+    public function create(Request $request, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
@@ -95,6 +97,12 @@ final class AdminGroupController extends AbstractController
         $entityManager->persist($userGroup);
         $entityManager->flush();
 
+        $auditLogger->log(AuditAction::GROUP_CREATE, $currentUser, [
+            'group_id' => $userGroup->getId(),
+            'group_name' => $name,
+            'group_identifier' => $groupIdentifier,
+        ]);
+
         $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été créé avec son canal officiel.', [
             '%name%' => $name,
         ]));
@@ -103,7 +111,7 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/import', name: 'app_admin_group_import', methods: ['POST'])]
-    public function import(Request $request, EntityManagerInterface $entityManager): Response
+    public function import(Request $request, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
@@ -137,6 +145,13 @@ final class AdminGroupController extends AbstractController
         $entityManager->persist($userGroup);
         $entityManager->flush();
 
+        $auditLogger->log(AuditAction::GROUP_CREATE, $currentUser, [
+            'group_id' => $userGroup->getId(),
+            'group_name' => $name,
+            'group_identifier' => $identifier,
+            'imported' => true,
+        ]);
+
         $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été importé avec son canal officiel.', [
             '%name%' => $name,
         ]));
@@ -145,16 +160,27 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/{id}/delete', name: 'app_admin_group_delete', methods: ['POST'])]
-    public function delete(UserGroup $userGroup, EntityManagerInterface $entityManager): Response
+    public function delete(UserGroup $userGroup, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $name = $userGroup->getName();
+        $groupId = $userGroup->getId();
+        $groupIdentifier = $userGroup->getGroupIdentifier();
 
         // Cascade delete on Channel is configured at DB level,
         // but we explicitly clean up subscriptions as well
         $entityManager->remove($userGroup);
         $entityManager->flush();
+
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+
+        $auditLogger->log(AuditAction::GROUP_DELETE, $currentUser, [
+            'group_id' => $groupId,
+            'group_name' => $name,
+            'group_identifier' => $groupIdentifier,
+        ]);
 
         $this->addFlash('success', $this->translator->trans('Le groupe "%name%" et son canal officiel ont été supprimés.', [
             '%name%' => $name,

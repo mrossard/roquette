@@ -7,6 +7,8 @@ namespace App\Tests\Functional\Controller;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 
+use App\Entity\AuditLog;
+use App\Enum\AuditAction;
 use App\Entity\Channel;
 use App\Entity\GroupSubscription;
 use App\Entity\User;
@@ -62,6 +64,11 @@ class AdminGroupControllerTest extends WebTestCase
 
     private function cleanup(): void
     {
+        $logRepo = $this->entityManager->getRepository(AuditLog::class);
+        foreach ($logRepo->findAll() as $log) {
+            $this->entityManager->remove($log);
+        }
+
         $groupRepo = $this->entityManager->getRepository(UserGroup::class);
         foreach ($groupRepo->findAll() as $group) {
             $this->entityManager->remove($group);
@@ -114,10 +121,18 @@ class AdminGroupControllerTest extends WebTestCase
         $this->client->followRedirect();
 
         // Verify group and channel were created in DB
+        $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
         $group = $this->entityManager->getRepository(UserGroup::class)->findOneBy(['name' => 'Marketing Team']);
         static::assertNotNull($group);
         static::assertNotNull($group->getChannel());
         static::assertSame('Marketing Team', $group->getChannel()->getName());
+
+        // Verify AuditLog was created for group creation
+        $logRepo = $this->entityManager->getRepository(AuditLog::class);
+        $logs = $logRepo->findBy(['action' => AuditAction::GROUP_CREATE]);
+        static::assertCount(1, $logs);
+        static::assertSame('Marketing Team', $logs[0]->getDetails()['group_name']);
+        static::assertSame($group->getId(), $logs[0]->getDetails()['group_id']);
 
         // Verify group subscription was created
         $sub = $this->entityManager->getRepository(GroupSubscription::class)->findOneBy([
@@ -139,7 +154,8 @@ class AdminGroupControllerTest extends WebTestCase
         $this->client->followRedirect();
 
         // Verify member was added
-        $this->entityManager->refresh($group);
+        $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
+        $group = $this->entityManager->getRepository(UserGroup::class)->find($group->getId());
         static::assertCount(1, $group->getMembers());
         static::assertSame('normal_user', $group->getMembers()->first()->getUsername());
 
@@ -155,7 +171,8 @@ class AdminGroupControllerTest extends WebTestCase
         $this->client->followRedirect();
 
         // Verify member was removed
-        $this->entityManager->refresh($group);
+        $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
+        $group = $this->entityManager->getRepository(UserGroup::class)->find($group->getId());
         static::assertCount(0, $group->getMembers());
     }
 
@@ -178,10 +195,25 @@ class AdminGroupControllerTest extends WebTestCase
         $this->client->followRedirect();
 
         // Verify group import in DB
+        $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
         $group = $this->entityManager->getRepository(UserGroup::class)->findOneBy(['groupIdentifier' => 'group-dev']);
         static::assertNotNull($group);
         static::assertSame('Développeurs', $group->getName());
         static::assertNotNull($group->getChannel());
+
+        // Verify AuditLog was created for group import
+        $logRepo = $this->entityManager->getRepository(AuditLog::class);
+        $logs = $logRepo->findBy(['action' => AuditAction::GROUP_CREATE]);
+        $found = false;
+        foreach ($logs as $log) {
+            if ($log->getDetails()['group_identifier'] !== 'group-dev') {
+                continue;
+            }
+            $found = true;
+            static::assertTrue($log->getDetails()['imported'] ?? false);
+            static::assertSame('Développeurs', $log->getDetails()['group_name']);
+        }
+        static::assertTrue($found, 'Audit log for group import not found');
     }
 
     #[Test]
@@ -340,5 +372,39 @@ class AdminGroupControllerTest extends WebTestCase
         ]);
         $this->assertResponseIsSuccessful();
         $this->assertSelectorTextContains('body', 'normal_user');
+    }
+
+    #[Test]
+    public function testAdminCanDeleteGroupAndLogsAudit(): void
+    {
+        $this->client->loginUser($this->adminUser);
+
+        // Create a local group
+        $this->client->request('POST', '/admin/groups/create', [
+            'name' => 'Support to Delete',
+        ]);
+        $this->assertResponseRedirects('/admin/groups');
+        $this->client->followRedirect();
+
+        $group = $this->entityManager->getRepository(UserGroup::class)->findOneBy(['name' => 'Support to Delete']);
+        static::assertNotNull($group);
+        $groupId = $group->getId();
+
+        // Delete the group
+        $this->client->request('POST', sprintf('/admin/groups/%d/delete', $groupId));
+        $this->assertResponseRedirects('/admin/groups');
+        $this->client->followRedirect();
+
+        // Verify group was deleted
+        $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
+        $deletedGroup = $this->entityManager->getRepository(UserGroup::class)->find($groupId);
+        static::assertNull($deletedGroup);
+
+        // Verify AuditLog was created for group deletion
+        $logRepo = $this->entityManager->getRepository(AuditLog::class);
+        $logs = $logRepo->findBy(['action' => AuditAction::GROUP_DELETE]);
+        static::assertCount(1, $logs);
+        static::assertSame('Support to Delete', $logs[0]->getDetails()['group_name']);
+        static::assertSame($groupId, $logs[0]->getDetails()['group_id']);
     }
 }

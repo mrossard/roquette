@@ -28,23 +28,15 @@
             {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
         </header>
 
-        <main class="dashboard-grid" style="grid-template-columns: 1fr; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem;">
+        <main class="dashboard-grid" style="grid-template-columns: 1fr;">
             <!-- Group Tabs & Actions Panel -->
-            <section class="card glass-panel settings-panel">
+            <section class="card glass-panel settings-panel" style="flex-grow: 1;">
                 <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem;">
                     <div>
                         <h2>Gestion des groupes</h2>
                         <p class="card-description">Créer des groupes locaux ou importer des groupes depuis l'annuaire.</p>
                     </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        {% if is_granted('ROLE_ADMIN') %}
-                            <a href="{{ path('app_admin_users') }}" class="btn-publish" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Utilisateurs</a>
-                        {% endif %}
-                        <a href="{{ path('app_admin_groups') }}" class="btn-publish" style="background: rgba(99, 102, 241, 0.2); border: 1px solid #6366f1; text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: #fff;">Groupes</a>
-                        {% if is_granted('ROLE_ADMIN') %}
-                            <a href="{{ path('app_admin_exports') }}" class="btn-publish" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Exports</a>
-                        {% endif %}
-                    </div>
+                    {% include 'admin/_nav.html.twig' %}
                 </div>
 
                 <div class="card-body" style="padding-top: 1.5rem;">

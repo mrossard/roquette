@@ -28,8 +28,8 @@
             {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
         </header>
 
-        <main class="dashboard-grid" style="grid-template-columns: 1fr; padding: 1.5rem;">
-            <section class="card glass-panel settings-panel">
+        <main class="dashboard-grid" style="grid-template-columns: 1fr;">
+            <section class="card glass-panel settings-panel" style="flex-grow: 1;">
                 <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem;">
                     <div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -38,6 +38,7 @@
                         </div>
                         <p class="card-description">Ajouter ou retirer manuellement des membres de ce groupe.</p>
                     </div>
+                    {% include 'admin/_nav.html.twig' %}
                 </div>
 
                 <div class="card-body" style="padding-top: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem;">

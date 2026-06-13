@@ -35,11 +35,7 @@
                         <h2>Gestion des exports de canaux</h2>
                         <p class="card-description">Liste des exports d'historiques archivés, téléchargement et suppression.</p>
                     </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <a href="{{ path('app_admin_users') }}" class="btn-publish" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Utilisateurs</a>
-                        <a href="{{ path('app_admin_groups') }}" class="btn-publish" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Groupes</a>
-                        <a href="{{ path('app_admin_exports') }}" class="btn-publish" style="background: rgba(99, 102, 241, 0.2); border: 1px solid #6366f1; text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; color: #fff;">Exports</a>
-                    </div>
+                    {% include 'admin/_nav.html.twig' %}
                 </div>
 
                 <div class="card-body" style="gap: 1rem;">

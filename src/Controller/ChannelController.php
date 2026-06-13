@@ -19,6 +19,8 @@ use App\Repository\UserRepository;
 use App\Service\MercurePublisher;
 use App\Service\ReadTrackingService;
 use App\Service\FileUploadService;
+use App\Service\AuditLoggerService;
+use App\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -48,7 +50,7 @@ final class ChannelController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/channels/create', name: 'app_channel_create', methods: ['POST'])]
-    public function createChannel(Request $request, EntityManagerInterface $entityManager): Response
+    public function createChannel(Request $request, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
     {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -122,6 +124,13 @@ final class ChannelController extends AbstractController
 
         $entityManager->persist($channel);
         $entityManager->flush();
+
+        $auditLogger->log(AuditAction::CHANNEL_CREATE, $currentUser, [
+            'channel_id' => $channel->getId(),
+            'channel_name' => $channel->getName(),
+            'slug' => $channel->getSlug(),
+            'is_private' => $channel->isPrivate(),
+        ]);
 
         $this->logger->info(sprintf(
             'Channel created: "%s" (slug: "%s", private: %s) by user "%s"',
@@ -520,6 +529,7 @@ final class ChannelController extends AbstractController
         string $slug,
         ChannelRepository $channelRepository,
         EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -550,6 +560,13 @@ final class ChannelController extends AbstractController
             ],
             'channel_deleted',
         );
+
+        $auditLogger->log(AuditAction::CHANNEL_DELETE, $currentUser, [
+            'channel_id' => $channel->getId(),
+            'channel_name' => $channel->getName(),
+            'slug' => $channel->getSlug(),
+            'is_subchannel' => $channel->isSubChannel(),
+        ]);
 
         $this->logger->info(sprintf(
             'Channel deleted: "%s" (slug: "%s") by user "%s"',
@@ -898,8 +915,9 @@ final class ChannelController extends AbstractController
         Request $request,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
     ): Response {
-        return $this->doCreateSubChannel($id, $request, $messageRepository, $entityManager, false);
+        return $this->doCreateSubChannel($id, $request, $messageRepository, $entityManager, $auditLogger, false);
     }
 
     #[Route('/messages/{id}/sub-channel-todo', name: 'app_message_create_subchannel_todo', methods: ['POST'])]
@@ -908,8 +926,9 @@ final class ChannelController extends AbstractController
         Request $request,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
     ): Response {
-        return $this->doCreateSubChannel($id, $request, $messageRepository, $entityManager, true);
+        return $this->doCreateSubChannel($id, $request, $messageRepository, $entityManager, $auditLogger, true);
     }
 
     private function doCreateSubChannel(
@@ -917,6 +936,7 @@ final class ChannelController extends AbstractController
         Request $request,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
         bool $isTodoList,
     ): Response {
         /** @var \App\Entity\User $currentUser */
@@ -944,6 +964,8 @@ final class ChannelController extends AbstractController
         if ($parentChannel->isSubChannel() && !$parentChannel->isTodoList()) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
+
+        $channelRepository = $entityManager->getRepository(Channel::class);
         if (!$channelRepository->canUserAccess($parentChannel, $currentUser)) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
@@ -982,6 +1004,15 @@ final class ChannelController extends AbstractController
 
         $entityManager->persist($channel);
         $entityManager->flush();
+
+        $auditLogger->log(AuditAction::CHANNEL_CREATE, $currentUser, [
+            'channel_id' => $channel->getId(),
+            'channel_name' => $channel->getName(),
+            'slug' => $channel->getSlug(),
+            'is_private' => $channel->isPrivate(),
+            'parent_channel_id' => $parentChannel->getId(),
+            'parent_message_id' => $parentMessage->getId(),
+        ]);
 
         $this->logger->info(sprintf(
             'Sub-channel created: "%s" (slug: "%s", todo: %s) from message #%d by user "%s"',
@@ -1091,6 +1122,7 @@ final class ChannelController extends AbstractController
         ChannelRepository $channelRepository,
         EntityManagerInterface $entityManager,
         FileUploadService $fileUploadService,
+        AuditLoggerService $auditLogger,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -1160,10 +1192,10 @@ final class ChannelController extends AbstractController
         ]);
 
         if (class_exists(\ZipArchive::class)) {
-            return $this->exportAsZip($channel, $currentUser, $exportData, $htmlContent, $messages, $fileUploadService, $entityManager);
+            return $this->exportAsZip($channel, $currentUser, $exportData, $htmlContent, $messages, $fileUploadService, $entityManager, $auditLogger);
         }
 
-        return $this->exportAsTar($channel, $currentUser, $exportData, $htmlContent, $messages, $fileUploadService, $entityManager);
+        return $this->exportAsTar($channel, $currentUser, $exportData, $htmlContent, $messages, $fileUploadService, $entityManager, $auditLogger);
     }
 
     private function saveAndCreateExportEntity(
@@ -1174,6 +1206,7 @@ final class ChannelController extends AbstractController
         string $extension,
         EntityManagerInterface $entityManager,
         FileUploadService $fileUploadService,
+        AuditLoggerService $auditLogger,
     ): void {
         $uniqueFilename = $channel->getSlug() . '-' . uniqid() . '.' . $extension;
         $storagePath = 'exports/' . $uniqueFilename;
@@ -1190,6 +1223,18 @@ final class ChannelController extends AbstractController
 
         $entityManager->persist($export);
         $entityManager->flush();
+
+        $auditLogger->log(
+            AuditAction::CHANNEL_EXPORT,
+            $currentUser,
+            [
+                'channel_id' => $channel->getId(),
+                'channel_name' => $channel->getName(),
+                'slug' => $channel->getSlug(),
+                'export_id' => $export->getId(),
+                'file_name' => $filename,
+            ]
+        );
     }
 
     private function exportAsZip(
@@ -1200,6 +1245,7 @@ final class ChannelController extends AbstractController
         array $messages,
         FileUploadService $fileUploadService,
         EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
     ): Response {
         $zip = new \ZipArchive();
         $zipFile = tempnam(sys_get_temp_dir(), 'export-');
@@ -1236,7 +1282,7 @@ final class ChannelController extends AbstractController
 
         $filename = $channel->getSlug() . '-export.zip';
 
-        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $fileContentResult, 'zip', $entityManager, $fileUploadService);
+        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $fileContentResult, 'zip', $entityManager, $fileUploadService, $auditLogger);
 
         $response = new Response($fileContentResult);
         $response->headers->set('Content-Type', 'application/zip');
@@ -1259,6 +1305,7 @@ final class ChannelController extends AbstractController
         array $messages,
         FileUploadService $fileUploadService,
         EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
     ): Response {
         $tarFile = tempnam(sys_get_temp_dir(), 'export-') . '.tar';
         $tar = new \PharData($tarFile);
@@ -1291,7 +1338,7 @@ final class ChannelController extends AbstractController
 
         $filename = $channel->getSlug() . '-export.tar';
 
-        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $fileContentResult, 'tar', $entityManager, $fileUploadService);
+        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $fileContentResult, 'tar', $entityManager, $fileUploadService, $auditLogger);
 
         $response = new Response($fileContentResult);
         $response->headers->set('Content-Type', 'application/x-tar');
