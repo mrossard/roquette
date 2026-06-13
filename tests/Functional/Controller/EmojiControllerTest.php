@@ -75,4 +75,50 @@ class EmojiControllerTest extends WebTestCase
 
         $this->assertResponseRedirects('http://127.0.0.1:8000/uploads/emojis/smile.gif');
     }
+
+    #[Test]
+    public function testAutocompleteCustomEmojis(): void
+    {
+        $user = new User();
+        $user->setUsername('test_emoji_user');
+        $user->setRoles(['ROLE_USER']);
+        $container = $this->client->getContainer();
+        $passwordHasher = $container->get('security.user_password_hasher');
+        $user->setPassword($passwordHasher->hashPassword($user, 'password123'));
+
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+
+        $this->client->loginUser($user);
+        $this->client->disableReboot();
+
+        $container = $this->client->getContainer();
+
+        // Mock Flysystem listing
+        $mockStorage = $this->createMock(FilesystemOperator::class);
+        $mockStorage->expects($this->exactly(2))->method('listContents')->with('emojis')->willReturn(new \League\Flysystem\DirectoryListing([
+            new \League\Flysystem\FileAttributes('emojis/smile.gif', 1024),
+            new \League\Flysystem\FileAttributes('emojis/sad.gif', 2048),
+            new \League\Flysystem\FileAttributes('emojis/invalid.gif', 0), // empty file / negative cache
+        ]));
+
+        $container->set(FilesystemOperator::class, $mockStorage);
+        $container->set('default.storage', $mockStorage);
+
+        // Request with query matching "sm"
+        $this->client->request('GET', '/api/autocomplete/custom-emojis?q=sm');
+        $this->assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        $this->assertStringContainsString('smile', $content);
+        $this->assertStringNotContainsString('sad', $content);
+        $this->assertStringNotContainsString('invalid', $content);
+
+        // Request with empty query
+        $this->client->request('GET', '/api/autocomplete/custom-emojis');
+        $this->assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        $this->assertStringContainsString('smile', $content);
+        $this->assertStringContainsString('sad', $content);
+        $this->assertStringNotContainsString('invalid', $content);
+    }
 }

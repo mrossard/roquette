@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use League\Flysystem\FilesystemOperator;
 use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,6 +20,7 @@ final class UserSettingsController extends AbstractController
 {
     public function __construct(
         private TranslatorInterface $translator,
+        private readonly FilesystemOperator $defaultStorage,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -209,6 +211,42 @@ final class UserSettingsController extends AbstractController
     public function apiAutocomplete(string $type, Request $request, EntityManagerInterface $entityManager): Response
     {
         $q = $request->query->get('q', '');
+
+        if ($type === 'custom-emojis') {
+            $matchingEmojis = [];
+            try {
+                $contents = $this->defaultStorage->listContents('emojis');
+                foreach ($contents as $attributes) {
+                    if ($attributes->isFile()) {
+                        $path = $attributes->path();
+                        $filename = basename($path);
+                        if (str_ends_with($filename, '.gif')) {
+                            // Skip empty files (negative cache of failed downloads)
+                            if ($attributes->fileSize() === 0) {
+                                continue;
+                            }
+                            $name = substr($filename, 0, -4);
+                            if ($q === '' || str_contains(mb_strtolower($name), mb_strtolower($q))) {
+                                $matchingEmojis[] = [
+                                    'name' => $name,
+                                    'filename' => $filename,
+                                ];
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // Ignore if storage fails or folder doesn't exist
+            }
+
+            usort($matchingEmojis, static fn($a, $b) => strcmp($a['name'], $b['name']));
+            $matchingEmojis = array_slice($matchingEmojis, 0, 10);
+
+            return $this->render('api/_autocomplete_items.html.twig', [
+                'type' => 'custom-emojis',
+                'emojis' => $matchingEmojis,
+            ]);
+        }
 
         if ($type === 'users') {
             $qb = $entityManager->getRepository(\App\Entity\User::class)->createQueryBuilder('u');

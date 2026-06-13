@@ -94,6 +94,7 @@ async function handleTextareaInputForAutocomplete(textarea) {
     const text = textarea.value;
 
     const textBeforeCursor = text.substring(0, cursor);
+    const matchCustomEmoji = textBeforeCursor.match(/\[:([a-zA-Z0-9_\-\+: ]{0,})$/);
     const matchEmoji = textBeforeCursor.match(/:([a-zA-Z0-9_à-ÿÀ-Ÿ]{1,})$/);
     const matchMention = textBeforeCursor.match(/(?:^|\s|:)@([a-zA-Z0-9_à-ÿÀ-Ÿ]{0,})$/);
     const matchChannel = textBeforeCursor.match(/(?:^|\s|:)#([a-zA-Z0-9_à-ÿÀ-Ÿ-]{0,})$/);
@@ -131,6 +132,13 @@ async function handleTextareaInputForAutocomplete(textarea) {
 
         showAutocompleteDropdown(textarea, 'command', query, 0, cursor, matches);
         renderAutocompleteItems();
+    } else if (matchCustomEmoji) {
+        const query = matchCustomEmoji[1].toLowerCase();
+        const queryStartIndex = textBeforeCursor.lastIndexOf('[:');
+        const queryEndIndex = cursor;
+
+        showAutocompleteDropdown(textarea, 'custom-emoji', query, queryStartIndex, queryEndIndex, []);
+        loadAutocompleteItems('custom-emojis', query);
     } else if (matchEmoji) {
         const query = matchEmoji[1].toLowerCase();
         const queryStartIndex = cursor - matchEmoji[0].length;
@@ -243,6 +251,8 @@ function onAutocompleteClick(e) {
 
     if (activeAutocomplete.type === 'emoji') {
         selectAutocompleteEmoji(idx);
+    } else if (activeAutocomplete.type === 'custom-emoji') {
+        selectAutocompleteCustomEmoji(idx);
     } else if (activeAutocomplete.type === 'mention') {
         selectAutocompleteUser(idx);
     } else if (activeAutocomplete.type === 'channel') {
@@ -342,6 +352,31 @@ function selectAutocompleteEmoji(idx) {
     textarea.value = text.substring(0, startIndex) + selectedEmoji + text.substring(endIndex);
 
     const newCursorPos = startIndex + selectedEmoji.length;
+    textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+
+    textarea.focus();
+
+    const event = new Event('input', {bubbles: true});
+    textarea.dispatchEvent(event);
+
+    closeAutocomplete();
+}
+
+function selectAutocompleteCustomEmoji(idx) {
+    if (!activeAutocomplete) return;
+
+    const {textarea, startIndex, endIndex, element} = activeAutocomplete;
+    const items = element.querySelectorAll('.emoji-autocomplete-item[data-shortcode]');
+    const selectedItem = items[idx];
+    if (!selectedItem) return;
+
+    const shortcode = selectedItem.dataset.shortcode;
+    const insertText = shortcode + ' ';
+
+    const text = textarea.value;
+    textarea.value = text.substring(0, startIndex) + insertText + text.substring(endIndex);
+
+    const newCursorPos = startIndex + insertText.length;
     textarea.selectionStart = textarea.selectionEnd = newCursorPos;
 
     textarea.focus();
@@ -478,6 +513,8 @@ function handleTextareaKeydownForAutocomplete(textarea, e) {
         e.stopPropagation();
         if (type === 'emoji') {
             selectAutocompleteEmoji(activeIndex);
+        } else if (type === 'custom-emoji') {
+            selectAutocompleteCustomEmoji(activeIndex);
         } else if (type === 'mention') {
             selectAutocompleteUser(activeIndex);
         } else if (type === 'channel') {
