@@ -23,6 +23,7 @@ class AppExtension extends AbstractExtension
         private readonly MessageFormatter $formatter,
         private readonly TranslatorInterface $translator,
         private readonly ChannelRepository $channelRepository,
+        private readonly string $mercureTopicPrefix,
     ) {}
 
     public function getFunctions(): array
@@ -33,6 +34,7 @@ class AppExtension extends AbstractExtension
                 'getCachedLinkPreview',
             ]),
             new \Twig\TwigFunction('get_subchannel', [$this, 'getSubchannel']),
+            new \Twig\TwigFunction('get_user_mercure_topics', [$this, 'getUserMercureTopics']),
         ];
     }
 
@@ -121,5 +123,20 @@ class AppExtension extends AbstractExtension
     public function getSubchannel(\App\Entity\Message $message): ?Channel
     {
         return $this->channelRepository->findOneBy(['parentMessage' => $message]);
+    }
+
+    public function getUserMercureTopics(\App\Entity\User $user): array
+    {
+        $topics = [
+            $this->mercureTopicPrefix . '/users/' . $user->getUsername(),
+            $this->mercureTopicPrefix . '/users/status',
+        ];
+
+        $channels = $this->channelRepository->findAllForUser($user);
+        foreach ($channels as $ch) {
+            $topics[] = $this->mercureTopicPrefix . '/channels/' . $ch->getSlug();
+        }
+
+        return $topics;
     }
 }

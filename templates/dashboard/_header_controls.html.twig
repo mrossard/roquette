@@ -1,8 +1,7 @@
 <div class="header-controls">
     <div class="status-badge" id="mercure-status"
          data-active-channel-slug="{{ activeChannel is defined and activeChannel ? activeChannel.slug : '' }}"
-         data-current-username="{{ app.user.username }}"
-         data-hub="{{ hubUrl }}">
+         data-current-username="{{ app.user.username }}">
         <span class="status-dot disconnected"></span>
         <span class="status-text">{{ 'Connexion au Hub...'|trans }}</span>
     </div>

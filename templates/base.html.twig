@@ -63,7 +63,7 @@
         <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
         {% endif %}
     </head>
-    <body hx-ext="morph">
+    <body hx-ext="morph,sse" {% if app.user %}{% set userTopics = get_user_mercure_topics(app.user) %}sse-connect="{{ mercure(userTopics, { subscribe: userTopics }) }}"{% endif %}>
         {% block body %}{% endblock %}
 
         {% if app.user %}

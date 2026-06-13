@@ -12,7 +12,11 @@
         {% endif %}
         <span class="feed-item-me-text">
             {% set me_content = message|slice(4) %}
-            {{ me_content|format_message }}
+            {% if messageObject and messageObject.formattedContent is not null %}
+                {{ messageObject.formattedContent|raw }}
+            {% else %}
+                {{ me_content|format_message }}
+            {% endif %}
         </span>
         {% if updated_at is defined and updated_at %}
             <span class="feed-item-edited-indicator"

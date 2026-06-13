@@ -132,6 +132,8 @@
                         <div style="flex-grow: 1; min-width: 0;">
                             {% if is_html|default(false) %}
                                 {{ message|raw }}
+                            {% elseif messageObject and messageObject.formattedContent is not null %}
+                                {{ messageObject.formattedContent|raw }}
                             {% else %}
                                 <p>{{ message|format_message }}</p>
                             {% endif %}
@@ -159,6 +161,8 @@
                 {% else %}
                     {% if is_html|default(false) %}
                         {{ message|raw }}
+                    {% elseif messageObject and messageObject.formattedContent is not null %}
+                        {{ messageObject.formattedContent|raw }}
                     {% else %}
                         <p>{{ message|format_message }}</p>
                     {% endif %}

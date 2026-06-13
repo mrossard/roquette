@@ -24,6 +24,9 @@ class Message
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $content = null;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $formattedContent = null;
+
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -282,6 +285,18 @@ class Message
     public function setCustomAuthorAvatar(?string $customAuthorAvatar): static
     {
         $this->customAuthorAvatar = $customAuthorAvatar;
+
+        return $this;
+    }
+
+    public function getFormattedContent(): ?string
+    {
+        return $this->formattedContent;
+    }
+
+    public function setFormattedContent(?string $formattedContent): static
+    {
+        $this->formattedContent = $formattedContent;
 
         return $this;
     }

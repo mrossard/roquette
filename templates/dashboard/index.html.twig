@@ -16,15 +16,7 @@
             {% set activeSubChannels = activeSubChannels|merge([sub]) %}
         {% endif %}
     {% endfor %}
-    {% set mercureTopics = [
-        mercure_topic_prefix ~ '/users/' ~ app.user.username,
-        mercure_topic_prefix ~ '/users/status'
-    ] %}
-    {% for ch in channels %}
-        {% set mercureTopics = mercureTopics|merge([mercure_topic_prefix ~ '/channels/' ~ ch.slug]) %}
-    {% endfor %}
-    {% set hubUrl = mercure(mercureTopics, { subscribe: mercureTopics }) %}
-    <div class="app-container" hx-boost="true" hx-ext="sse" sse-connect="{{ hubUrl }}">
+    <div class="app-container" hx-boost="true">
         <div sse-swap="channel_deleted" hx-swap="none" style="display: none;"></div>
     {% include 'dashboard/_header.html.twig' with {
         'channels': channels,

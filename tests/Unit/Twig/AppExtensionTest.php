@@ -29,7 +29,7 @@ class AppExtensionTest extends TestCase
                 return strtr($id, $parameters);
             });
 
-        $this->extension = new AppExtension($formatter, $translator, $channelRepository);
+        $this->extension = new AppExtension($formatter, $translator, $channelRepository, 'roquette');
     }
 
     public function testFormatReactionTooltipWithSingleUser(): void
