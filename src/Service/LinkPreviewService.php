@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -215,56 +216,26 @@ class LinkPreviewService
      */
     private function parseMetadata(string $url, string $html): array
     {
+        $crawler = new Crawler($html);
+
         // 1. Titre
-        $title = '';
-        if (
-            preg_match('/<meta[^>]*property=["\']og:title["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:title["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*name=["\']twitter:title["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']twitter:title["\']/is', $html, $matches)
-        ) {
-            $title = $matches[1];
-        } elseif (preg_match('/<title>(.*?)<\/title>/is', $html, $matches)) {
-            $title = $matches[1];
+        $titleNode = $crawler->filter('meta[property="og:title"], meta[name="twitter:title"]');
+        if ($titleNode->count() > 0) {
+            $title = $titleNode->first()->attr('content') ?? '';
+        } else {
+            $titleNode = $crawler->filter('title');
+            $title = $titleNode->count() > 0 ? $titleNode->first()->text() : '';
         }
         $title = html_entity_decode(trim(strip_tags($title)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         // 2. Description
-        $description = '';
-        if (
-            preg_match('/<meta[^>]*property=["\']og:description["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
-            || preg_match(
-                '/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:description["\']/is',
-                $html,
-                $matches,
-            )
-            || preg_match('/<meta[^>]*name=["\']description["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']description["\']/is', $html, $matches)
-            || preg_match(
-                '/<meta[^>]*name=["\']twitter:description["\'][^>]*content=["\'](.*?)["\']/is',
-                $html,
-                $matches,
-            )
-            || preg_match(
-                '/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']twitter:description["\']/is',
-                $html,
-                $matches,
-            )
-        ) {
-            $description = $matches[1];
-        }
+        $descriptionNode = $crawler->filter('meta[property="og:description"], meta[name="description"], meta[name="twitter:description"]');
+        $description = $descriptionNode->count() > 0 ? ($descriptionNode->first()->attr('content') ?? '') : '';
         $description = html_entity_decode(trim(strip_tags($description)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         // 3. Image
-        $image = '';
-        if (
-            preg_match('/<meta[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*name=["\']twitter:image["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']twitter:image["\']/is', $html, $matches)
-        ) {
-            $image = trim($matches[1]);
-        }
+        $imageNode = $crawler->filter('meta[property="og:image"], meta[name="twitter:image"]');
+        $image = $imageNode->count() > 0 ? trim($imageNode->first()->attr('content') ?? '') : '';
 
         // Résoudre l'URL de l'image si elle est relative
         if ($image && !preg_match('/^https?:\/\//i', $image)) {
@@ -283,12 +254,9 @@ class LinkPreviewService
         }
 
         // 4. Nom du site
-        $siteName = '';
-        if (
-            preg_match('/<meta[^>]*property=["\']og:site_name["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)
-            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:site_name["\']/is', $html, $matches)
-        ) {
-            $siteName = html_entity_decode(trim(strip_tags($matches[1])), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $siteNameNode = $crawler->filter('meta[property="og:site_name"]');
+        if ($siteNameNode->count() > 0) {
+            $siteName = html_entity_decode(trim(strip_tags($siteNameNode->first()->attr('content') ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         } else {
             $siteName = parse_url($url, PHP_URL_HOST);
         }
