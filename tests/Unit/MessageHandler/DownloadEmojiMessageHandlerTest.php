@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\MessageHandler;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Message\DownloadEmojiMessage;
 use App\MessageHandler\DownloadEmojiMessageHandler;
 use League\Flysystem\FilesystemOperator;
@@ -13,6 +16,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class DownloadEmojiMessageHandlerTest extends TestCase
 {
     #[Test]

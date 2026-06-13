@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Tests\Unit\Service\ClamavMockStream;
 use App\Tests\Unit\Service\ClamavServiceTestState;
 
@@ -43,11 +46,13 @@ function fopen(string $filename, string $mode)
 namespace App\Tests\Unit\Service;
 
 use App\Service\ClamavService;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
+#[AllowMockObjectsWithoutExpectations]
 class ClamavServiceTest extends TestCase
 {
     private LoggerInterface $logger;

@@ -7,6 +7,8 @@ namespace App\Entity;
 use App\Repository\ChannelRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\Criteria;
+use Doctrine\Common\Collections\Order;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ChannelRepository::class)]
@@ -279,10 +281,10 @@ class Channel
 
     public function getLastMessage(): ?Message
     {
-        $criteria = \Doctrine\Common\Collections\Criteria::create()
+        $criteria = Criteria::create()
             ->orderBy([
-                'createdAt' => \Doctrine\Common\Collections\Criteria::DESC,
-                'id' => \Doctrine\Common\Collections\Criteria::DESC,
+                'createdAt' => Order::Descending,
+                'id' => Order::Descending,
             ])
             ->setMaxResults(1);
 

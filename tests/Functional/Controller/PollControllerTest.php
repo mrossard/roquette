@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\Poll;
@@ -14,6 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class PollControllerTest extends WebTestCase
 {
     private EntityManagerInterface $entityManager;

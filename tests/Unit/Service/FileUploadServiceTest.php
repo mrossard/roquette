@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Service\ClamavService;
 use App\Service\FileUploadService;
 use League\Flysystem\FilesystemOperator;
@@ -13,6 +16,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
+#[AllowMockObjectsWithoutExpectations]
 class FileUploadServiceTest extends TestCase
 {
     private FilesystemOperator&MockObject $storage;

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
@@ -16,6 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class ReadTrackingServiceTest extends TestCase
 {
     private EntityManagerInterface&MockObject $entityManager;

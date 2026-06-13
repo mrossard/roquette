@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\EventSubscriber;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\EventSubscriber\SecurityHeadersSubscriber;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -11,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class SecurityHeadersSubscriberTest extends TestCase
 {
     public function testOnKernelResponseSetsHeaders(): void

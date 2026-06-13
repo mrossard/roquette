@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\MessageHandler;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Entity\Message;
 use App\Message\ScanFileMessage;
 use App\MessageHandler\ScanFileMessageHandler;
@@ -16,6 +19,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
 
+#[AllowMockObjectsWithoutExpectations]
 class ScanFileMessageHandlerTest extends TestCase
 {
     public function testInvokeProcessesCleanFile(): void
@@ -36,11 +40,11 @@ class ScanFileMessageHandlerTest extends TestCase
         $dbMessage->method('getFileName')->willReturn('test.jpg');
         $dbMessage->method('getChannel')->willReturn($channel);
 
-        $messageRepository->method('find')->with(42)->willReturn($dbMessage);
-        $fileUploadService->method('exists')->with('test.jpg')->willReturn(true);
+        $messageRepository->expects($this->once())->method('find')->with(42)->willReturn($dbMessage);
+        $fileUploadService->expects($this->once())->method('exists')->with('test.jpg')->willReturn(true);
 
         $stream = fopen('php://memory', 'r+');
-        $fileUploadService->method('readStream')->with('test.jpg')->willReturn($stream);
+        $fileUploadService->expects($this->once())->method('readStream')->with('test.jpg')->willReturn($stream);
 
         $clamavService->method('scanStream')->willReturn(true);
 
@@ -82,11 +86,11 @@ class ScanFileMessageHandlerTest extends TestCase
         $dbMessage->method('getFileName')->willReturn('virus.jpg');
         $dbMessage->method('getChannel')->willReturn($channel);
 
-        $messageRepository->method('find')->with(42)->willReturn($dbMessage);
-        $fileUploadService->method('exists')->with('virus.jpg')->willReturn(true);
+        $messageRepository->expects($this->once())->method('find')->with(42)->willReturn($dbMessage);
+        $fileUploadService->expects($this->once())->method('exists')->with('virus.jpg')->willReturn(true);
 
         $stream = fopen('php://memory', 'r+');
-        $fileUploadService->method('readStream')->with('virus.jpg')->willReturn($stream);
+        $fileUploadService->expects($this->once())->method('readStream')->with('virus.jpg')->willReturn($stream);
 
         $clamavService->method('scanStream')->willReturn(false);
 

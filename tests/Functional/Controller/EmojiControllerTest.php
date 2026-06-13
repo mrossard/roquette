@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class EmojiControllerTest extends WebTestCase
 {
     private EntityManagerInterface $entityManager;
@@ -59,7 +63,7 @@ class EmojiControllerTest extends WebTestCase
 
         // Mock Flysystem to simulate missing file
         $mockStorage = $this->createMock(FilesystemOperator::class);
-        $mockStorage->method('has')->with('emojis/smile.gif')->willReturn(false);
+        $mockStorage->expects($this->once())->method('has')->with('emojis/smile.gif')->willReturn(false);
 
         // Replace Flysystem service in test container
         $container->set(FilesystemOperator::class, $mockStorage);

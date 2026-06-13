@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
@@ -18,6 +21,7 @@ use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class MercurePublisherTest extends TestCase
 {
     private MessageBusInterface&MockObject $bus;

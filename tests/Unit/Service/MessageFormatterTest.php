@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Service\MessageFormatter;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -11,6 +14,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class MessageFormatterTest extends TestCase
 {
     private MessageFormatter $formatter;
@@ -422,6 +426,7 @@ class MessageFormatterTest extends TestCase
         $channel->method('isPrivate')->willReturn(false);
 
         $this->channelRepository
+            ->expects($this->once())
             ->method('findOneBy')
             ->with(['slug' => 'general', 'isDm' => false])
             ->willReturn($channel);

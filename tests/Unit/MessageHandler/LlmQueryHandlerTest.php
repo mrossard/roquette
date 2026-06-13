@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\MessageHandler;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
 use App\MessageHandler\LlmQueryHandler;
@@ -15,16 +18,16 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 
+#[AllowMockObjectsWithoutExpectations]
 class LlmQueryHandlerTest extends TestCase
 {
     public function testHandlerInvokesLlmAndPublishesToMercure(): void
     {
         $userRepository = $this->createMock(UserRepository::class);
         $llmService = $this->createMock(LlmService::class);
-        $messageFormatter = $this->createMock(MessageFormatter::class);
+        $messageFormatter = $this->createStub(MessageFormatter::class);
         $hub = $this->createMock(HubInterface::class);
         $parameterBag = $this->createMock(ParameterBagInterface::class);
-
         $user = new User();
         $user->setUsername('test_user');
 
@@ -42,7 +45,6 @@ class LlmQueryHandlerTest extends TestCase
         $llmService->expects($this->once())->method('generateTextStream')->willReturn($generator);
 
         $messageFormatter
-            ->expects($this->any())
             ->method('format')
             ->willReturnCallback(static fn($text) => '<p>' . $text . '</p>');
 

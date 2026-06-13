@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
@@ -11,6 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class MessageControllerTest extends WebTestCase
 {
     private EntityManagerInterface $entityManager;
@@ -282,7 +286,7 @@ class MessageControllerTest extends WebTestCase
     {
         $messageBusMock = $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class);
         $messageBusMock
-            ->expects($this->any())
+            ->expects($this->exactly(2))
             ->method('dispatch')
             ->willReturnCallback(function ($message) {
                 if ($message instanceof \App\Message\LlmQueryMessage) {

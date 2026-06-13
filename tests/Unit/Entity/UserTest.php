@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Entity;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use App\Entity\User;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class UserTest extends TestCase
 {
     // -------------------------------------------------------------------------

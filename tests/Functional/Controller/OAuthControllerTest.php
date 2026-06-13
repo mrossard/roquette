@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class OAuthControllerTest extends WebTestCase
 {
     private $client;
