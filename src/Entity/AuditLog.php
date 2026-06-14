@@ -10,6 +10,7 @@ use App\Enum\AuditAction;
 
 #[ORM\Entity(repositoryClass: AuditLogRepository::class)]
 #[ORM\Table(name: '`audit_log`')]
+#[ORM\Index(name: 'idx_audit_log_created_at', columns: ['created_at'])]
 class AuditLog
 {
     #[ORM\Id]
