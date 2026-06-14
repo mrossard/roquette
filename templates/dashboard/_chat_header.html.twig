@@ -89,8 +89,7 @@
                         </div>
 
                         {% if activeChannel.isTodoList() %}
-                            <button type="button" class="btn-hide-completed"
-                                    onclick="document.getElementById('live-feed').classList.toggle('hide-todo-completed'); this.classList.toggle('active');">
+                            <button type="button" class="btn-hide-completed" data-channel-slug="{{ activeChannel.slug }}">
                                 {{ 'Masquer les tâches terminées'|trans }}
                             </button>
                         {% else %}

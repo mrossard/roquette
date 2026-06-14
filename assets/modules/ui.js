@@ -512,6 +512,45 @@ export function initUnreadFilter() {
     });
 }
 
+function getActiveChannelSlug() {
+    const badge = document.getElementById('mercure-status');
+    return badge ? badge.getAttribute('data-active-channel-slug') : null;
+}
+
+export function initHideCompletedTasks() {
+    const btn = document.querySelector('.btn-hide-completed');
+    const feed = document.getElementById('live-feed');
+    if (!btn || !feed) return;
+
+    const slug = btn.getAttribute('data-channel-slug') || getActiveChannelSlug();
+    if (!slug) {
+        console.error("Could not find active channel slug for todo filter");
+        return;
+    }
+
+    const storageKey = `hide-completed-tasks:${slug}`;
+    const isHidden = localStorage.getItem(storageKey) === 'true';
+
+    if (isHidden) {
+        feed.classList.add('hide-todo-completed');
+        btn.classList.add('active');
+    } else {
+        feed.classList.remove('hide-todo-completed');
+        btn.classList.remove('active');
+    }
+
+    // Bind event listener (using dataset to avoid duplicate registrations without cloning)
+    if (btn.dataset.listenerBound === 'true') return;
+    btn.dataset.listenerBound = 'true';
+
+    btn.addEventListener('click', () => {
+        const active = feed.classList.toggle('hide-todo-completed');
+        btn.classList.toggle('active', active);
+        localStorage.setItem(storageKey, active ? 'true' : 'false');
+    });
+}
+
+
 export function initSidebarToggles() {
     // Restore sidebar details state on load
     document.querySelectorAll('details.sidebar-section-details').forEach(details => {
@@ -843,6 +882,7 @@ window.updateChannelLastMessageDate = updateChannelLastMessageDate;
 window.initChannelReordering = initChannelReordering;
 window.initUnreadFilter = initUnreadFilter;
 window.initSidebarToggles = initSidebarToggles;
+window.initHideCompletedTasks = initHideCompletedTasks;
 window.showCustomConfirm = showCustomConfirm;
 window.showCustomAlert = showCustomAlert;
 window.initConfirmModals = initConfirmModals;

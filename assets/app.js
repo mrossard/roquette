@@ -378,6 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initChannelReordering) window.initChannelReordering();
     if (window.initUnreadFilter) window.initUnreadFilter();
     if (window.initSidebarToggles) window.initSidebarToggles();
+    if (window.initHideCompletedTasks) window.initHideCompletedTasks();
     if (window.initSubChannelsSidebar) window.initSubChannelsSidebar();
     if (window.initFilesSidebar) window.initFilesSidebar();
     if (window.initConfirmModals) window.initConfirmModals();
@@ -476,6 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initChannelReordering) window.initChannelReordering();
         if (window.initUnreadFilter) window.initUnreadFilter();
         if (window.initSidebarToggles) window.initSidebarToggles();
+        if (window.initHideCompletedTasks) window.initHideCompletedTasks();
         if (window.initSubChannelsSidebar) window.initSubChannelsSidebar();
         if (window.initFilesSidebar) window.initFilesSidebar();
         if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
