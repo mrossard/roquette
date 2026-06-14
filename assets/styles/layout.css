@@ -1,0 +1,196 @@
+@layer base {
+.app-container {
+        max-width: 100%;
+        width: 100%;
+        margin: 0 auto;
+        padding: 1rem;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 1rem;
+        height: 100vh;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .app-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-glass);
+        margin-bottom: 2.5rem;
+    }
+
+    .logo-area {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .logo-rocket {
+        font-size: 2.5rem;
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .logo-area:hover .logo-rocket {
+        animation: float 4s ease-in-out infinite;
+    }
+
+    .logo-text h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-cyan));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    #mercure-status {
+        display: none !important;
+    }
+
+    .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-glass);
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        backdrop-filter: blur(10px);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        position: relative;
+    }
+
+    .status-dot.connected {
+        background-color: var(--accent-green);
+        box-shadow: 0 0 10px var(--accent-green);
+    }
+
+    .status-dot.connected::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 50%;
+        border: 2px solid var(--accent-green);
+        animation: pulse 1.5s 3;
+    }
+
+    .status-dot.disconnected {
+        background-color: var(--accent-red);
+        box-shadow: 0 0 10px var(--accent-red);
+    }
+
+    .status-dot.connecting {
+        background-color: var(--accent-orange);
+        box-shadow: 0 0 10px var(--accent-orange);
+    }
+
+    .status-dot.connecting::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 50%;
+        border: 2px solid var(--accent-orange);
+        animation: pulse 1.5s infinite;
+    }
+
+    .status-dot.online,
+    .status-dot-overlay.online {
+        background-color: var(--accent-green);
+        box-shadow: 0 0 6px var(--accent-green);
+    }
+
+    .status-dot.away,
+    .status-dot-overlay.away {
+        background-color: #f59e0b;
+        box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+    }
+
+    .status-dot.busy,
+    .status-dot-overlay.busy {
+        background-color: var(--accent-red);
+        box-shadow: 0 0 6px var(--accent-red);
+    }
+
+    .status-dot.offline,
+    .status-dot-overlay.offline {
+        background-color: #6b7280;
+        box-shadow: none;
+    }
+
+    .app-footer {
+        text-align: center;
+        padding-top: 0;
+        padding-bottom: 0;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .app-footer p {
+        margin: 0;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        flex-grow: 1;
+        height: 100%;
+        min-height: 0;
+    }
+
+    @media (min-width: 768px) {
+        body {
+            overflow: hidden;
+            height: 100vh;
+        }
+        .app-container {
+            height: 100vh;
+            padding: 1rem;
+            overflow: hidden;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 1rem;
+        }
+        .app-header {
+            margin-bottom: 0;
+            padding-bottom: 0.75rem;
+            flex-shrink: 0;
+        }
+        .app-footer {
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+            flex-shrink: 0;
+        }
+        .dashboard-grid {
+            grid-template-columns: 280px 1fr;
+            height: 100%;
+            min-height: 0;
+        }
+        .chat-panel, .sidebar-panel {
+            height: 100%;
+            min-height: 0;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .app-container {
+            padding: 0.75rem !important;
+            gap: 0.75rem !important;
+        }
+    }
+}
+

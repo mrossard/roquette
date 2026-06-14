@@ -1,0 +1,106 @@
+@layer components {
+    @keyframes bell-ring {
+        0%, 100% { transform: rotate(0); }
+        10%, 30%, 50%, 70%, 90% { transform: rotate(12deg); }
+        20%, 40%, 60%, 80% { transform: rotate(-12deg); }
+    }
+
+    .bell-ring-active {
+        display: inline-block;
+        animation: bell-ring 2.5s ease infinite;
+        transform-origin: top center;
+    }
+
+    #header-notification-btn {
+        transition: var(--transition-smooth);
+    }
+
+    .notification-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 0.85rem;
+        border-radius: 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 1.25rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .notification-status-badge.granted {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        color: #34d399;
+    }
+
+    .notification-status-badge.default {
+        background: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+        color: #60a5fa;
+    }
+
+    .notification-status-badge.denied {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #f87171;
+    }
+
+    .switch {
+        user-select: none;
+    }
+
+    .switch input:checked + .slider {
+        background-color: var(--accent-cyan);
+    }
+
+    .switch input:checked + .slider::before {
+        transform: translateX(20px);
+        background-color: #0f172a;
+    }
+
+    .switch .slider::before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
+        background-color: var(--text-primary);
+        transition: .3s;
+        border-radius: 50%;
+    }
+
+    .btn-notifications {
+        background: rgba(14, 165, 233, 0.1);
+        border: 1px solid rgba(14, 165, 233, 0.2);
+        color: var(--accent-cyan);
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .btn-notifications:hover {
+        background: var(--accent-cyan);
+        color: #0f172a;
+        box-shadow: 0 0 12px rgba(14, 165, 233, 0.3);
+    }
+
+    .btn-notifications.muted {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-glass);
+        color: var(--text-muted);
+    }
+
+    .btn-notifications.muted:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: var(--text-normal);
+        box-shadow: none;
+    }
+}

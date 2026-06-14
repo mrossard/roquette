@@ -1,0 +1,117 @@
+@layer base {
+    :root {
+        --bg-base: hsl(222, 47%, 9%);
+        --bg-card: hsla(223, 47%, 14%, 0.6);
+        --border-glass: rgba(255, 255, 255, 0.06);
+        --border-glass-hover: rgba(255, 255, 255, 0.12);
+        --text-primary: hsl(210, 40%, 98%);
+        --text-secondary: hsl(215, 15%, 70%);
+        --text-muted: hsl(215, 20%, 65%);
+        --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+        --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+        --bg-code: rgba(0, 0, 0, 0.4);
+        --text-code: hsl(200, 30%, 90%);
+        --bg-inline-code: rgba(255, 255, 255, 0.08);
+
+        --accent-cyan: hsl(187, 100%, 45%);
+        --accent-cyan-glow: rgba(0, 229, 255, 0.2);
+        --accent-purple: hsl(271, 91%, 65%);
+        --accent-purple-glow: rgba(168, 85, 247, 0.2);
+        --accent-green: hsl(142, 76%, 45%);
+        --accent-red: hsl(0, 84%, 60%);
+        --accent-orange: hsl(35, 100%, 55%);
+        --accent-orange-glow: rgba(255, 165, 0, 0.2);
+        --text-warning: #ffca28;
+
+        --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-monospace: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        --user-hue-lightness-text: 70%;
+        --user-hue-lightness-hover: 80%;
+        --user-hue-lightness-border: 60%;
+
+        --bg-dropdown: hsla(223, 47%, 14%, 0.95);
+        --bg-dropdown-opaque: hsl(223, 47%, 14%);
+        --bg-dropdown-hover: rgba(255, 255, 255, 0.08);
+        --dropdown-inset: rgba(255, 255, 255, 0.1);
+        --dropdown-shadow: rgba(0, 0, 0, 0.5);
+        --dropdown-border: rgba(255, 255, 255, 0.08);
+
+        --bg-input: rgba(0, 0, 0, 0.2);
+        --bg-input-sidebar: rgba(0, 0, 0, 0.3);
+        --bg-input-search: rgba(255, 255, 255, 0.05);
+        --bg-input-focus: rgba(0, 0, 0, 0.35);
+        --bg-textarea-chat: rgba(0, 0, 0, 0.25);
+        --bg-textarea-chat-focus: rgba(0, 0, 0, 0.35);
+        --border-input: var(--border-glass);
+
+        --text-btn-publish: #0f172a;
+
+        --bg-back-btn: rgba(168, 85, 247, 0.15);
+        --bg-back-btn-hover: rgba(168, 85, 247, 0.25);
+        --border-back-btn: rgba(168, 85, 247, 0.3);
+        --border-back-btn-hover: rgba(168, 85, 247, 0.5);
+        --color-back-btn: #f3e8ff;
+        --color-back-btn-hover: #ffffff;
+        --bg-parent-badge: rgba(255, 255, 255, 0.15);
+
+        --shadow-glass: 0 10px 30px rgba(0, 0, 0, 0.3);
+        --accent-cyan-hover: #66e0ff;
+        --text-normal: var(--text-primary);
+    }
+
+    [data-theme="light"] {
+        --bg-base: hsl(210, 15%, 90%);
+        --bg-card: hsla(210, 20%, 100%, 0.85);
+        --border-glass: rgba(0, 0, 0, 0.15);
+        --border-glass-hover: rgba(0, 0, 0, 0.22);
+        --text-primary: hsl(222, 47%, 10%);
+        --text-secondary: hsl(222, 15%, 30%);
+        --text-muted: hsl(215, 20%, 35%);
+        --scrollbar-thumb: rgba(0, 0, 0, 0.25);
+        --scrollbar-thumb-hover: rgba(0, 0, 0, 0.35);
+        --bg-code: rgba(0, 0, 0, 0.04);
+        --text-code: hsl(222, 47%, 12%);
+        --bg-inline-code: rgba(0, 0, 0, 0.06);
+
+        --accent-cyan: hsl(195, 100%, 28%);
+        --accent-cyan-glow: rgba(0, 120, 160, 0.2);
+        --accent-purple: hsl(271, 75%, 45%);
+        --accent-purple-glow: rgba(110, 30, 180, 0.2);
+        --text-warning: hsl(35, 90%, 40%);
+
+        --user-hue-lightness-text: 35%;
+        --user-hue-lightness-hover: 25%;
+        --user-hue-lightness-border: 45%;
+
+        --bg-dropdown: hsla(210, 20%, 98%, 0.95);
+        --bg-dropdown-opaque: hsl(210, 20%, 98%);
+        --bg-dropdown-hover: rgba(0, 0, 0, 0.06);
+        --dropdown-inset: rgba(255, 255, 255, 0.6);
+        --dropdown-shadow: rgba(0, 0, 0, 0.15);
+        --dropdown-border: rgba(0, 0, 0, 0.08);
+
+        --bg-input: rgba(255, 255, 255, 0.9);
+        --bg-input-sidebar: rgba(255, 255, 255, 0.9);
+        --bg-input-search: rgba(255, 255, 255, 0.9);
+        --bg-input-focus: #ffffff;
+        --bg-textarea-chat: rgba(255, 255, 255, 0.9);
+        --bg-textarea-chat-focus: #ffffff;
+        --border-input: rgba(0, 0, 0, 0.25);
+
+        --text-btn-publish: #ffffff;
+
+        --bg-back-btn: rgba(110, 30, 180, 0.1);
+        --bg-back-btn-hover: rgba(110, 30, 180, 0.2);
+        --border-back-btn: rgba(110, 30, 180, 0.25);
+        --border-back-btn-hover: rgba(110, 30, 180, 0.45);
+        --color-back-btn: var(--accent-purple);
+        --color-back-btn-hover: hsl(271, 75%, 35%);
+        --bg-parent-badge: rgba(110, 30, 180, 0.15);
+
+        --shadow-glass: 0 10px 30px rgba(0, 0, 0, 0.15);
+        --accent-cyan-hover: #0099cc;
+        --text-normal: var(--text-primary);
+    }
+}

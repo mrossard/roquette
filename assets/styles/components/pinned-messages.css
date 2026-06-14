@@ -1,0 +1,131 @@
+@layer components {
+    .pinned-banner-container {
+        padding: 0;
+        transition: all 0.3s ease;
+    }
+
+    .pinned-banner-container:empty {
+        display: none;
+    }
+
+    .pinned-banner-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        background: rgba(168, 85, 247, 0.08);
+        border: 1px solid rgba(168, 85, 247, 0.2);
+        border-radius: 0.75rem;
+        padding: 0.6rem 1rem;
+        margin-bottom: 0.75rem;
+        animation: slide-down 0.25s ease-out;
+    }
+
+    @keyframes slide-down {
+        from { transform: translateY(-10px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .pinned-banner-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .pinned-icon {
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .pinned-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .pinned-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--accent-purple);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .pinned-message-preview {
+        font-size: 0.85rem;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pinned-banner-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    .btn-pinned-action {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        padding: 0.25rem 0.6rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-pinned-action.btn-jump:hover {
+        background: rgba(168, 85, 247, 0.2);
+        border-color: rgba(168, 85, 247, 0.4);
+        color: white;
+    }
+
+    .btn-pinned-action.btn-unpin {
+        padding: 0.25rem 0.4rem;
+        color: var(--text-muted);
+    }
+
+    .btn-pinned-action.btn-unpin:hover {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.4);
+        color: #f87171;
+    }
+
+    .feed-item-pinned-indicator {
+        font-size: 0.7rem;
+        background: rgba(168, 85, 247, 0.12);
+        border: 1px solid rgba(168, 85, 247, 0.3);
+        color: var(--accent-purple);
+        padding: 0.1rem 0.4rem;
+        border-radius: 0.25rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .feed-item.is-pinned {
+        background: rgba(168, 85, 247, 0.03);
+        border-left: 3px solid var(--accent-purple);
+    }
+
+    .highlight-pinned-message {
+        animation: highlight-pulse 2s ease;
+    }
+
+    @keyframes highlight-pulse {
+        0% {
+            background: rgba(168, 85, 247, 0.3);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+        }
+        100% {
+            background: inherit;
+            box-shadow: inherit;
+        }
+    }
+}

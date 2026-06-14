@@ -1,0 +1,166 @@
+@layer components {
+    .feed-item.is-me-message {
+        position: relative;
+        background: transparent;
+        border: none;
+        border-left: none;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0.15rem 0.75rem;
+        min-height: unset;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        transform: none;
+    }
+
+    .feed-item.is-me-message .feed-item-header {
+        width: 100%;
+        position: relative;
+    }
+
+    @media (min-width: 768px) {
+        .feed-item.is-me-message .feed-item-actions {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--bg-base);
+            padding-left: 0.5rem;
+            margin-left: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            border-radius: 4px;
+        }
+
+        .feed-item.is-me-message:hover .feed-item-actions,
+        .feed-item.is-me-message:focus-within .feed-item-actions,
+        .feed-item.is-me-message:has(.feed-item-actions-list.show) .feed-item-actions {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    }
+
+    .feed-item.is-me-message:hover {
+        background: rgba(255, 255, 255, 0.02);
+        transform: none;
+        box-shadow: none;
+    }
+
+    .feed-item-me-content {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-style: italic;
+        font-size: 0.9rem;
+        color: var(--text-normal);
+    }
+
+    .feed-item.is-me-message .feed-item-time {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-style: normal;
+    }
+
+    .feed-item.is-me-message .feed-item-user {
+        font-weight: 600;
+        color: hsl(var(--user-hue), 85%, 65%);
+    }
+
+    .feed-item-me-text {
+        color: var(--text-normal);
+    }
+
+    .feed-item-me-text p {
+        display: inline;
+        margin: 0;
+    }
+
+    .feed-item-actions {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 0.5rem;
+    }
+
+    .btn-actions-toggle {
+        display: none;
+    }
+
+    .feed-item-actions-list {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    @media (max-width: 767px) {
+        .feed-item-actions {
+            position: relative;
+            margin-left: auto;
+        }
+
+        .btn-actions-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transition: var(--transition-smooth);
+            padding: 0;
+        }
+
+        .btn-actions-toggle:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--text-primary);
+        }
+
+        .feed-item-actions-list {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 36px;
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid var(--border-glass);
+            border-radius: 2rem;
+            padding: 0.35rem 0.5rem;
+            z-index: 100;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(15px);
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .feed-item-actions-list.show {
+            display: inline-flex;
+            animation: slideInActions 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .feed-item-actions-list .btn-reply-subtle {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-glass);
+            border-radius: 50%;
+            margin: 0;
+        }
+    }
+
+    @keyframes slideInActions {
+        from {
+            opacity: 0;
+            transform: translateY(-8px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+}

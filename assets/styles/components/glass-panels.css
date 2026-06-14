@@ -1,0 +1,61 @@
+@layer components {
+    .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-glass);
+        border-radius: 1.25rem;
+        padding: 2rem;
+        backdrop-filter: blur(20px);
+        box-shadow: var(--shadow-glass);
+        transition: var(--transition-smooth);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card:hover {
+        border-color: var(--border-glass-hover);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .title-with-pulse {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .live-indicator {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--accent-red);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+        animation: pulse-red 2s infinite;
+    }
+
+    .card-description {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    .card-body {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        gap: 0;
+    }
+}
