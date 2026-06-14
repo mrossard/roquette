@@ -44,4 +44,52 @@ class UserGroupRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function countAll(): int
+    {
+        return (int) $this->createQueryBuilder('g')
+            ->select('COUNT(g.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countAdministeredGroupsForUser(User $user): int
+    {
+        return (int) $this->createQueryBuilder('g')
+            ->select('COUNT(g.id)')
+            ->join('g.administrators', 'a')
+            ->where('a.id = :userId')
+            ->setParameter('userId', $user->getId())
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * @return UserGroup[]
+     */
+    public function findPaginatedAll(int $page, int $perPage = 25): array
+    {
+        return $this->createQueryBuilder('g')
+            ->orderBy('g.name', 'ASC')
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return UserGroup[]
+     */
+    public function findPaginatedAdministeredGroupsForUser(User $user, int $page, int $perPage = 25): array
+    {
+        return $this->createQueryBuilder('g')
+            ->join('g.administrators', 'a')
+            ->where('a.id = :userId')
+            ->setParameter('userId', $user->getId())
+            ->orderBy('g.name', 'ASC')
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
+    }
 }

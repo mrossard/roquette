@@ -43,7 +43,17 @@ final class AdminGroupController extends AbstractController
             throw $this->createAccessDeniedException('Accès interdit.');
         }
 
-        $localGroups = $isGlobalAdmin ? $this->userGroupRepository->findAll() : $administeredGroups;
+        $page = max(1, $request->query->getInt('page', 1));
+
+        if ($isGlobalAdmin) {
+            $localGroups = $this->userGroupRepository->findPaginatedAll($page);
+            $totalGroups = $this->userGroupRepository->countAll();
+        } else {
+            $localGroups = $this->userGroupRepository->findPaginatedAdministeredGroupsForUser($currentUser, $page);
+            $totalGroups = $this->userGroupRepository->countAdministeredGroupsForUser($currentUser);
+        }
+
+        $totalPages = (int) ceil($totalGroups / 25);
         $importedIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
 
         $searchQuery = trim($request->request->get('search', $request->query->get('search', '')));
@@ -65,6 +75,9 @@ final class AdminGroupController extends AbstractController
             'localGroups' => $localGroups,
             'providerResults' => $providerResults,
             'searchQuery' => $searchQuery,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $totalGroups,
         ]);
     }
 

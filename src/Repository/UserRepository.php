@@ -99,4 +99,35 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         return $qb->getQuery()->getResult();
     }
+
+    public function countAll(bool $withRobot = false): int
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)');
+
+        if (!$withRobot) {
+            $qb->andWhere('u.username != :robot')->setParameter('robot', User::ROBOT_USERNAME);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * @return User[]
+     */
+    public function findPaginated(int $page, int $perPage = 25, bool $withRobot = false): array
+    {
+        $qb = $this
+            ->createQueryBuilder('u')
+            ->addSelect('COALESCE(u.displayName, u.username) AS HIDDEN sortName')
+            ->orderBy('sortName', 'ASC')
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage);
+
+        if (!$withRobot) {
+            $qb->andWhere('u.username != :robot')->setParameter('robot', User::ROBOT_USERNAME);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

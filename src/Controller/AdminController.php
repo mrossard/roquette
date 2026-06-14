@@ -15,6 +15,7 @@ use App\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -23,20 +24,26 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminController extends AbstractController
 {
+    private const int PER_PAGE = 25;
+
     public function __construct(
         private LoggerInterface $logger,
         private TranslatorInterface $translator,
     ) {}
 
     #[Route('/admin/users', name: 'app_admin_users')]
-    public function users(UserRepository $userRepository): Response
+    public function users(Request $request, UserRepository $userRepository): Response
     {
-        $users = $userRepository->getAllSortedByDisplayName($withRobot = false);
-
-        //$users = $userRepository->findBy([], ['displayName' => 'ASC']);
+        $page = max(1, $request->query->getInt('page', 1));
+        $users = $userRepository->findPaginated($page, self::PER_PAGE);
+        $total = $userRepository->countAll();
+        $totalPages = (int) ceil($total / self::PER_PAGE);
 
         return $this->render('admin/users.html.twig', [
             'users' => $users,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
         ]);
     }
 
@@ -129,12 +136,18 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/exports', name: 'app_admin_exports')]
-    public function exports(ChannelExportRepository $exportRepository): Response
+    public function exports(Request $request, ChannelExportRepository $exportRepository): Response
     {
-        $exports = $exportRepository->findBy([], ['createdAt' => 'DESC']);
+        $page = max(1, $request->query->getInt('page', 1));
+        $exports = $exportRepository->findPaginated($page, self::PER_PAGE);
+        $total = $exportRepository->countAll();
+        $totalPages = (int) ceil($total / self::PER_PAGE);
 
         return $this->render('admin/exports.html.twig', [
             'exports' => $exports,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
         ]);
     }
 
@@ -207,12 +220,18 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/audit-logs', name: 'app_admin_audit_logs')]
-    public function auditLogs(AuditLogRepository $auditLogRepository): Response
+    public function auditLogs(Request $request, AuditLogRepository $auditLogRepository): Response
     {
-        $logs = $auditLogRepository->findBy([], ['createdAt' => 'DESC']);
+        $page = max(1, $request->query->getInt('page', 1));
+        $logs = $auditLogRepository->findPaginated($page, self::PER_PAGE);
+        $total = $auditLogRepository->countAll();
+        $totalPages = (int) ceil($total / self::PER_PAGE);
 
         return $this->render('admin/audit_logs.html.twig', [
             'logs' => $logs,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
         ]);
     }
 }

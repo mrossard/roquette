@@ -1,35 +1,31 @@
 {# templates/admin/_nav.html.twig #}
 {% set current_route = app.request.attributes.get('_route') %}
 
-<div class="admin-nav-tabs" style="display: flex; gap: 0.25rem; flex-wrap: nowrap; background: rgba(0, 0, 0, 0.2); padding: 0.25rem; border-radius: 0.5rem; border: 1px solid var(--border-glass); overflow-x: auto; -webkit-overflow-scrolling: touch; align-items: center;">
+<div class="admin-nav-tabs">
     {% if is_granted('ROLE_ADMIN') %}
         {% set is_active = current_route starts with 'app_admin_users' %}
-        <a href="{{ path('app_admin_users') }}" 
-           style="text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 0.35rem; font-size: 0.8rem; font-weight: 500; white-space: nowrap; transition: var(--transition-smooth); display: inline-block;
-                  {{ is_active ? 'background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4); color: #fff;' : 'background: transparent; border: 1px solid transparent; color: var(--text-muted);' }}">
+        <a href="{{ path('app_admin_users') }}"
+           class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
             Utilisateurs
         </a>
     {% endif %}
 
     {% set is_active = current_route starts with 'app_admin_group' %}
-    <a href="{{ path('app_admin_groups') }}" 
-       style="text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 0.35rem; font-size: 0.8rem; font-weight: 500; white-space: nowrap; transition: var(--transition-smooth); display: inline-block;
-              {{ is_active ? 'background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4); color: #fff;' : 'background: transparent; border: 1px solid transparent; color: var(--text-muted);' }}">
+    <a href="{{ path('app_admin_groups') }}"
+       class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
         Groupes
     </a>
 
     {% if is_granted('ROLE_ADMIN') %}
         {% set is_active = current_route starts with 'app_admin_export' %}
-        <a href="{{ path('app_admin_exports') }}" 
-           style="text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 0.35rem; font-size: 0.8rem; font-weight: 500; white-space: nowrap; transition: var(--transition-smooth); display: inline-block;
-                  {{ is_active ? 'background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4); color: #fff;' : 'background: transparent; border: 1px solid transparent; color: var(--text-muted);' }}">
+        <a href="{{ path('app_admin_exports') }}"
+           class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
             Exports
         </a>
 
         {% set is_active = current_route starts with 'app_admin_audit_logs' %}
-        <a href="{{ path('app_admin_audit_logs') }}" 
-           style="text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 0.35rem; font-size: 0.8rem; font-weight: 500; white-space: nowrap; transition: var(--transition-smooth); display: inline-block;
-                  {{ is_active ? 'background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4); color: #fff;' : 'background: transparent; border: 1px solid transparent; color: var(--text-muted);' }}">
+        <a href="{{ path('app_admin_audit_logs') }}"
+           class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
             Audit Log
         </a>
     {% endif %}

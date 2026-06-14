@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block body %}
-    <div class="app-container" hx-boost="true">
+    <div class="app-container admin-layout" hx-boost="true">
         <header class="app-header">
             <div class="logo-area">
                 <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
@@ -28,9 +28,9 @@
             {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
         </header>
 
-        <main class="dashboard-grid" style="grid-template-columns: 1fr;">
-            <section class="card glass-panel settings-panel" style="flex-grow: 1;">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem; margin-bottom: 1rem;">
+        <main class="dashboard-grid">
+            <section class="card glass-panel settings-panel">
+                <div class="card-header">
                     <div>
                         <h2>Gestion des utilisateurs</h2>
                         <p class="card-description">Bannir ou réhabiliter des utilisateurs.</p>
@@ -38,7 +38,7 @@
                     {% include 'admin/_nav.html.twig' %}
                 </div>
 
-                <div class="card-body" style="gap: 1rem;">
+                <div class="card-body">
                     {% for label, messages in app.flashes %}
                         {% for msg in messages %}
                             <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in">
@@ -47,90 +47,87 @@
                         {% endfor %}
                     {% endfor %}
 
-                    <div class="admin-users-table-wrapper" style="overflow-x: auto;">
-                        <table class="admin-users-table"
-                               style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table">
                             <thead>
-                            <tr style="border-bottom: 1px solid var(--border-glass); text-align: left;">
-                                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">
-                                    Utilisateur
-                                </th>
-                                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Rôle
-                                </th>
-                                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">
-                                    Statut
-                                </th>
-                                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">
-                                    Actions
-                                </th>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Rôle</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
                             </tr>
                             </thead>
                             <tbody>
                             {% for u in users %}
-                                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                                    <td style="padding: 0.75rem 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <tr>
+                                    <td class="user-cell">
                                     <span class="feed-item-avatar"
-                                          style="--user-hue: {{ u.hue }}; width: 32px; height: 32px; font-size: 0.9rem; flex-shrink: 0;">
+                                          style="--user-hue: {{ u.hue }};">
                                         {{ u.username|slice(0, 1)|upper }}
                                     </span>
                                         <div>
-                                            <strong
-                                                style="color: hsl({{ u.hue }}, 90%, var(--user-hue-lightness-text));">{{ u.displayName|default(u.username) }}</strong>
-                                            <span
-                                                style="display: block; font-size: 0.8rem; color: var(--text-muted);">@{{ u.username }}</span>
+                                            <strong class="user-name"
+                                                    style="--user-hue: {{ u.hue }};">{{ u.displayName|default(u.username) }}</strong>
+                                            <span class="user-username">@{{ u.username }}</span>
                                         </div>
                                     </td>
-                                    <td style="padding: 0.75rem 0.5rem;">
+                                    <td>
                                         {% if u.admin %}
-                                            <span class="status-pill"
-                                                  style="background: rgba(147, 51, 234, 0.15); color: #a855f7; border: 1px solid rgba(147, 51, 234, 0.2);">Admin</span>
+                                            <span class="status-pill status-pill--admin">Admin</span>
                                         {% else %}
-                                            <span class="status-pill"
-                                                  style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-glass);">Utilisateur</span>
+                                            <span class="status-pill status-pill--user">Utilisateur</span>
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 0.75rem 0.5rem;">
+                                    <td>
                                         {% if u.bannedAt %}
-                                            <span class="status-pill"
-                                                  style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
+                                            <span class="status-pill status-pill--banned">
                                             Banni
                                         </span>
                                             {% if u.bannedReason %}
-                                                <span
-                                                    style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">{{ u.bannedReason }}</span>
+                                                <span class="text-muted-small" style="margin-top: 0.25rem;">{{ u.bannedReason }}</span>
                                             {% endif %}
                                         {% else %}
-                                            <span class="status-pill"
-                                                  style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2);">Actif</span>
+                                            <span class="status-pill status-pill--active">Actif</span>
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 0.75rem 0.5rem;">
+                                    <td>
                                         {% if u.bannedAt %}
                                             <form action="{{ path('app_admin_user_unban', {id: u.id}) }}" method="POST"
-                                                  style="display: inline;" hx-boost="false">
-                                                <button type="submit" class="btn-submit"
-                                                        style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2); padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                                                  class="action-inline" hx-boost="false">
+                                                <button type="submit" class="btn-submit btn-action btn-action--rehab">
                                                     Réhabiliter
                                                 </button>
                                             </form>
                                         {% elseif u.admin or u.id == app.user.id %}
-                                            <span style="color: var(--text-muted); font-size: 0.85rem;">—</span>
+                                            <span class="action-placeholder">—</span>
                                         {% else %}
                                             <form action="{{ path('app_admin_user_ban', {id: u.id}) }}" method="POST"
-                                                  style="display: inline;" hx-boost="false"
+                                                  class="action-inline" hx-boost="false"
                                                   data-confirm="Êtes-vous sûr de vouloir bannir {{ u.username }} ?">
-                                                <button type="submit" class="btn-delete-channel"
-                                                        style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                                                <button type="submit" class="btn-delete-channel btn-action">
                                                     Bannir
                                                 </button>
                                             </form>
                                         {% endif %}
                                     </td>
                                 </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="empty-state">
+                                        Aucun utilisateur.
+                                    </td>
+                                </tr>
                             {% endfor %}
                             </tbody>
                         </table>
                     </div>
+
+                    {% include 'admin/_pagination.html.twig' with {
+                        routeName: 'app_admin_users',
+                        currentPage: page,
+                        totalPages: totalPages,
+                        totalItems: total,
+                    } %}
                 </div>
             </section>
         </main>

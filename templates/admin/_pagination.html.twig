@@ -1,0 +1,24 @@
+{% if totalPages > 1 %}
+    {% set routeParams = routeParams|default({}) %}
+
+    <div class="admin-pagination">
+        {% if currentPage > 1 %}
+            <a href="{{ path(routeName, routeParams|merge({page: currentPage - 1})) }}"
+               class="pagination-btn" hx-boost="true">
+                ← Précédent
+            </a>
+        {% endif %}
+
+        <span class="pagination-info">
+            Page {{ currentPage }} / {{ totalPages }}
+            <span class="pagination-count">({{ totalItems }} résultat{% if totalItems > 1 %}s{% endif %})</span>
+        </span>
+
+        {% if currentPage < totalPages %}
+            <a href="{{ path(routeName, routeParams|merge({page: currentPage + 1})) }}"
+               class="pagination-btn" hx-boost="true">
+                Suivant →
+            </a>
+        {% endif %}
+    </div>
+{% endif %}

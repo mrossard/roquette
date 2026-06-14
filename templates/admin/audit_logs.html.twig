@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block body %}
-    <div class="app-container" hx-boost="true">
+    <div class="app-container admin-layout" hx-boost="true">
         <header class="app-header">
             <div class="logo-area">
                 <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
@@ -28,9 +28,9 @@
             {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
         </header>
 
-        <main class="dashboard-grid" style="grid-template-columns: 1fr;">
-            <section class="card glass-panel settings-panel" style="flex-grow: 1;">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem; margin-bottom: 1rem;">
+        <main class="dashboard-grid">
+            <section class="card glass-panel settings-panel">
+                <div class="card-header">
                     <div>
                         <h2>Logs d'audit de sécurité</h2>
                         <p class="card-description">Historique des actions administratives critiques effectuées sur la plateforme.</p>
@@ -38,76 +38,56 @@
                     {% include 'admin/_nav.html.twig' %}
                 </div>
 
-                <div class="card-body" style="gap: 1rem;">
-                    <div class="admin-users-table-wrapper" style="overflow-x: auto;">
-                        <table class="admin-users-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <div class="card-body">
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table">
                             <thead>
-                                <tr style="border-bottom: 1px solid var(--border-glass); text-align: left;">
-                                    <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Date</th>
-                                    <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Administrateur</th>
-                                    <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Action</th>
-                                    <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600;">Détails</th>
-                                    <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600; text-align: right;">Adresse IP</th>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Administrateur</th>
+                                    <th>Action</th>
+                                    <th>Détails</th>
+                                    <th class="th--right">Adresse IP</th>
                                 </tr>
                             </thead>
                             <tbody>
                             {% for log in logs %}
-                                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                                    <td style="padding: 0.75rem 0.5rem;">
+                                <tr>
+                                    <td>
                                         <span>{{ log.createdAt|date('d/m/Y H:i:s') }}</span>
                                     </td>
-                                    <td style="padding: 0.75rem 0.5rem;">
+                                    <td>
                                         {% if log.performedBy %}
                                             <strong>{{ log.performedBy.displayName|default(log.performedBy.username) }}</strong>
-                                            <span style="display: block; font-size: 0.8rem; color: var(--text-muted);">@{{ log.performedBy.username }}</span>
+                                            <span class="text-muted-block">@{{ log.performedBy.username }}</span>
                                         {% else %}
                                             <span style="color: var(--text-muted); font-style: italic;">Système</span>
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 0.75rem 0.5rem;">
+                                    <td>
                                         {% if log.action.value == 'user_ban' %}
-                                            <span class="status-pill" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
-                                                Bannissement
-                                            </span>
+                                            <span class="status-pill status-pill--banned">Bannissement</span>
                                         {% elseif log.action.value == 'user_unban' %}
-                                            <span class="status-pill" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2);">
-                                                Réhabilitation
-                                            </span>
+                                            <span class="status-pill status-pill--active">Réhabilitation</span>
                                         {% elseif log.action.value == 'channel_export' %}
-                                            <span class="status-pill" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);">
-                                                Export Canal
-                                            </span>
+                                            <span class="status-pill status-pill--export">Export Canal</span>
                                         {% elseif log.action.value == 'export_download' %}
-                                            <span class="status-pill" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.2);">
-                                                Téléchargement
-                                            </span>
+                                            <span class="status-pill status-pill--download">Téléchargement</span>
                                         {% elseif log.action.value == 'export_delete' %}
-                                            <span class="status-pill" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
-                                                Suppr. Export
-                                            </span>
+                                            <span class="status-pill status-pill--delete">Suppr. Export</span>
                                         {% elseif log.action.value == 'channel_create' %}
-                                            <span class="status-pill" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2);">
-                                                Création Canal
-                                            </span>
+                                            <span class="status-pill status-pill--create">Création Canal</span>
                                         {% elseif log.action.value == 'channel_delete' %}
-                                            <span class="status-pill" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
-                                                Suppr. Canal
-                                            </span>
+                                            <span class="status-pill status-pill--delete">Suppr. Canal</span>
                                         {% elseif log.action.value == 'group_create' %}
-                                            <span class="status-pill" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2);">
-                                                Création Groupe
-                                            </span>
+                                            <span class="status-pill status-pill--create">Création Groupe</span>
                                         {% elseif log.action.value == 'group_delete' %}
-                                            <span class="status-pill" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
-                                                Suppr. Groupe
-                                            </span>
+                                            <span class="status-pill status-pill--delete">Suppr. Groupe</span>
                                         {% else %}
-                                            <span class="status-pill" style="background: rgba(255, 255, 255, 0.05); color: var(--text-normal); border: 1px solid var(--border-glass);">
-                                                {{ log.action.value }}
-                                            </span>
+                                            <span class="status-pill status-pill--default">{{ log.action.value }}</span>
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 0.75rem 0.5rem; max-width: 350px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    <td class="detail-cell">
                                         {% if log.action.value == 'user_ban' %}
                                             Bannissement de l'utilisateur <strong style="color: var(--text-normal);">{{ log.details.username|default('Inconnu') }}</strong>
                                         {% elseif log.action.value == 'user_unban' %}
@@ -127,16 +107,16 @@
                                         {% elseif log.action.value == 'group_delete' %}
                                             Suppression du groupe <strong style="color: var(--text-normal);">{{ log.details.group_name|default('Inconnu') }}</strong> (Identifier : <code>{{ log.details.group_identifier|default('—') }}</code>)
                                         {% else %}
-                                            <span style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">{{ log.details|json_encode }}</span>
+                                            <span class="json-fallback">{{ log.details|json_encode }}</span>
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 0.75rem 0.5rem; text-align: right; font-family: monospace; color: var(--text-muted);">
+                                    <td class="td--right json-fallback">
                                         {{ log.ipAddress|default('—') }}
                                     </td>
                                 </tr>
                             {% else %}
                                 <tr>
-                                    <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                                    <td colspan="5" class="empty-state">
                                         Aucun événement d'audit enregistré.
                                     </td>
                                 </tr>
@@ -144,6 +124,13 @@
                             </tbody>
                         </table>
                     </div>
+
+                    {% include 'admin/_pagination.html.twig' with {
+                        routeName: 'app_admin_audit_logs',
+                        currentPage: page,
+                        totalPages: totalPages,
+                        totalItems: total,
+                    } %}
                 </div>
             </section>
         </main>

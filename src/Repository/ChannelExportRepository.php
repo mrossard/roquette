@@ -17,4 +17,17 @@ class ChannelExportRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, ChannelExport::class);
     }
+
+    /**
+     * @return ChannelExport[]
+     */
+    public function findPaginated(int $page, int $perPage = 25): array
+    {
+        return $this->findBy([], ['createdAt' => 'DESC'], $perPage, ($page - 1) * $perPage);
+    }
+
+    public function countAll(): int
+    {
+        return $this->count([]);
+    }
 }
