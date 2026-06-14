@@ -498,6 +498,38 @@
         border-left: 3px solid var(--accent-purple);
     }
 
+    .mention {
+        background: rgba(0, 229, 255, 0.12);
+        color: var(--accent-cyan);
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        font-weight: 500;
+        transition: var(--transition-smooth);
+    }
+
+    .mention.mention-me {
+        background: rgba(168, 85, 247, 0.22) !important;
+        color: var(--accent-purple) !important;
+        box-shadow: 0 0 6px rgba(168, 85, 247, 0.25);
+        font-weight: 600;
+    }
+
+    /* Force emojis to not be italicized in italic contexts */
+    .unicode-emoji {
+        font-style: normal !important;
+    }
+
+    /* Channel references styling */
+    .channel-ref {
+        background: rgba(0, 229, 255, 0.08);
+        color: var(--accent-cyan);
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        font-weight: 500;
+        transition: var(--transition-smooth);
+        text-decoration: none;
+    }
+
     .feed-item.offline-pending {
         position: relative;
         border-left: 3px solid var(--accent-orange);

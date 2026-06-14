@@ -21,6 +21,7 @@ class MessageFormatterTest extends TestCase
     private Security $security;
     private HttpClientInterface $httpClient;
     private \App\Repository\ChannelRepository $channelRepository;
+    private \App\Repository\UserRepository $userRepository;
     private string $testEmojisDir;
 
     protected function setUp(): void
@@ -29,6 +30,22 @@ class MessageFormatterTest extends TestCase
         $this->security->method('getUser')->willReturn(null);
         $this->httpClient = $this->createMock(HttpClientInterface::class);
         $this->channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
+        $this->userRepository = $this->createMock(\App\Repository\UserRepository::class);
+        $this->userRepository->method('findOneBy')->willReturnCallback(function ($criteria) {
+            $username = $criteria['username'] ?? null;
+            if ($username === 'alice' || $username === 'bob') {
+                $user = $this->createStub(\App\Entity\User::class);
+                $user->method('getUsername')->willReturn($username);
+                $user->method('getUserIdentifier')->willReturn($username);
+                if ($username === 'alice') {
+                    $user->method('getDisplayName')->willReturn('Alice de Merveilles');
+                } else {
+                    $user->method('getDisplayName')->willReturn(null);
+                }
+                return $user;
+            }
+            return null;
+        });
 
         $this->testEmojisDir = __DIR__ . '/../../../var/test_emojis';
 
@@ -38,6 +55,7 @@ class MessageFormatterTest extends TestCase
             $this->testEmojisDir,
             'http://example.com/emojis',
             $this->channelRepository,
+            $this->userRepository,
         );
     }
 
@@ -239,7 +257,22 @@ class MessageFormatterTest extends TestCase
     public function formatRendersMentionSpan(): void
     {
         $result = $this->formatter->format('Bonjour @alice !');
-        $this->assertStringContainsString('<span class="mention">@alice</span>', $result);
+        $this->assertStringContainsString('<a href="/dm/alice" class="mention" hx-boost="false">@Alice de Merveilles</a>', $result);
+    }
+
+    #[Test]
+    public function formatRendersMentionSpanWithoutDisplayName(): void
+    {
+        $result = $this->formatter->format('Bonjour @bob !');
+        $this->assertStringContainsString('<a href="/dm/bob" class="mention" hx-boost="false">@bob</a>', $result);
+    }
+
+    #[Test]
+    public function formatDoesNotRenderMentionSpanForNonExistingUser(): void
+    {
+        $result = $this->formatter->format('Bonjour @unknown !');
+        $this->assertStringNotContainsString('class="mention"', $result);
+        $this->assertStringContainsString('@unknown', $result);
     }
 
     #[Test]
@@ -257,10 +290,12 @@ class MessageFormatterTest extends TestCase
             $this->testEmojisDir,
             'http://example.com/emojis',
             $this->channelRepository,
+            $this->userRepository,
         );
         $result = $formatter->format('Bonjour @alice !');
 
         $this->assertStringContainsString('class="mention mention-me"', $result);
+        $this->assertStringContainsString('<a href="/dm/alice" class="mention mention-me" hx-boost="false">@Alice de Merveilles</a>', $result);
     }
 
     // -------------------------------------------------------------------------

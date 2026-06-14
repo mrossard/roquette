@@ -51,6 +51,7 @@ class MessageFormatter
 
     private readonly MarkdownConverter $converter;
     private array $channelSlugCache = [];
+    private array $userCache = [];
 
     public function __construct(
         private readonly Security $security,
@@ -60,6 +61,7 @@ class MessageFormatter
         #[Autowire('%env(EMOJI_BASE_URL)%')]
         private readonly string $emojiBaseUrl,
         private readonly \App\Repository\ChannelRepository $channelRepository,
+        private readonly \App\Repository\UserRepository $userRepository,
     ) {
         $config = [
             'html_input' => 'escape', // Échappe tout HTML brut fourni par l'utilisateur
@@ -159,12 +161,23 @@ class MessageFormatter
         $currentUsername = $currentUser?->getUserIdentifier();
 
         $html = preg_replace_callback(
-            '/@(\w+)/',
-            static function ($matches) use ($currentUsername) {
+            '/@([a-zA-Z0-9_à-ÿÀ-Ÿ-]+)/u',
+            function ($matches) use ($currentUsername) {
                 $username = $matches[1];
+                if (!array_key_exists($username, $this->userCache)) {
+                    $this->userCache[$username] = $this->userRepository->findOneBy(['username' => $username]);
+                }
+                $user = $this->userCache[$username];
+                if (!$user) {
+                    return $matches[0];
+                }
+
                 $isMe = $currentUsername && strcasecmp($username, $currentUsername) === 0;
                 $class = $isMe ? 'mention mention-me' : 'mention';
-                return '<span class="' . $class . '">@' . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . '</span>';
+                $displayName = $user->getDisplayName() ?: $user->getUsername();
+                $url = '/dm/' . urlencode($user->getUsername());
+
+                return '<a href="' . $url . '" class="' . $class . '" hx-boost="false">@' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</a>';
             },
             $html,
         );
