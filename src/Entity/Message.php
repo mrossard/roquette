@@ -15,6 +15,7 @@ use Doctrine\ORM\Mapping\JoinColumn;
 #[ORM\Index(name: 'idx_message_created_at', columns: ['created_at'])]
 #[ORM\Index(name: 'idx_message_author', columns: ['author_id'])]
 #[ORM\Index(name: 'idx_message_channel_id', columns: ['channel_id', 'id'])]
+#[ORM\Index(name: 'idx_message_channel_created_at', columns: ['channel_id', 'created_at'])]
 #[ORM\Index(name: 'idx_message_content_fts', columns: ['content_tsvector'])]
 class Message
 {

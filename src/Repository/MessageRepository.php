@@ -52,9 +52,9 @@ class MessageRepository extends ServiceEntityRepository
         $ids = $conn->fetchFirstColumn(
             'SELECT m.id FROM "message" m
              WHERE m.channel_id = :channelId
-               AND m.content_tsvector @@ plainto_tsquery(\'french\', :query)
-             ORDER BY ts_rank(m.content_tsvector, plainto_tsquery(\'french\', :query)) DESC',
-            ['channelId' => $channel->getId(), 'query' => $query],
+               AND LOWER(m.content) LIKE :query
+             ORDER BY m.created_at DESC',
+            ['channelId' => $channel->getId(), 'query' => '%' . strtolower($query) . '%'],
         );
 
         if ($ids === []) {
@@ -154,9 +154,9 @@ class MessageRepository extends ServiceEntityRepository
 
         $orderBy = 'm.created_at DESC';
         if ($textQuery && trim($textQuery) !== '') {
-            $conditions[] = 'm.content_tsvector @@ plainto_tsquery(\'french\', :textQuery)';
-            $params['textQuery'] = $textQuery;
-            $orderBy = 'ts_rank(m.content_tsvector, plainto_tsquery(\'french\', :textQuery)) DESC';
+            $conditions[] = 'LOWER(m.content) LIKE :textQuery';
+            $params['textQuery'] = '%' . strtolower($textQuery) . '%';
+            $orderBy = 'm.created_at DESC';
         }
 
         $where = implode(' AND ', $conditions);

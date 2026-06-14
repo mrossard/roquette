@@ -16,6 +16,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_USERNAME', fields: ['username'])]
 #[ORM\UniqueConstraint(name: 'UNIQ_USER_SLUG', fields: ['slug'])]
 #[ORM\UniqueConstraint(name: 'UNIQ_USER_OAUTH', fields: ['oauthId', 'oauthProvider'])]
+#[ORM\Index(name: 'idx_user_last_active', columns: ['last_active_at'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     public const string ROBOT_USERNAME = 'robot-roquette';
