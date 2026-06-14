@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Controller\Trait\MessageRendererTrait;
 use App\Controller\Trait\ChannelAccessTrait;
+use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\UserChannelRead;
@@ -13,13 +13,12 @@ use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
-use App\Service\AuditLoggerService;
+use App\Repository\UserRepository;
 use App\Service\ChannelExportService;
+use App\Service\ChannelManager;
 use App\Service\MercurePublisher;
 use App\Service\ReadTrackingService;
-use App\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,19 +36,14 @@ final class ChannelController extends AbstractController
     public function __construct(
         private MercurePublisher $mercurePublisher,
         private ReadTrackingService $readTrackingService,
-        private LoggerInterface $logger,
         private CacheInterface $cache,
         private TranslatorInterface $translator,
     ) {}
 
-    // -------------------------------------------------------------------------
-    // Create channel
-    // -------------------------------------------------------------------------
-
     #[Route('/channels/create', name: 'app_channel_create', methods: ['POST'])]
-    public function createChannel(Request $request, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
+    public function createChannel(Request $request, ChannelManager $channelManager): Response
     {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $name = trim($request->request->get('name', ''));
@@ -57,92 +51,26 @@ final class ChannelController extends AbstractController
 
         if ($name === '') {
             $this->addFlash('error', $this->translator->trans('Le nom du canal ne peut pas être vide.'));
+
             return $this->redirectToRoute('app_dashboard');
         }
 
-        $slug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($name));
-        $slug = trim($slug, '-');
+        try {
+            $channel = $channelManager->create($name, $description, [
+                'isPrivate' => $request->request->getBoolean('isPrivate', false),
+                'groupIdentifier' => $request->request->get('groupIdentifier', ''),
+                'isGroupChannel' => $request->request->getBoolean('isGroupChannel', false),
+                'isTodoList' => $request->request->getBoolean('isTodoList', false),
+                'retentionMonths' => $request->request->get('messageRetentionMonths'),
+            ], $currentUser);
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
 
-        if ($slug === '') {
-            $slug = 'channel-' . uniqid();
+            return $this->redirectToRoute('app_dashboard');
         }
 
-        $existing = $entityManager->getRepository(Channel::class)->findOneBy(['slug' => $slug]);
-        if ($existing) {
-            $slug = $slug . '-' . rand(100, 999);
-        }
-
-        $channel = new Channel();
-        $channel->setName($name);
-        $channel->setSlug($slug);
-        $channel->setDescription($description);
-        $channel->setCreator($currentUser);
-        $channel->addMember($currentUser);
-
-        $isPrivate = $request->request->getBoolean('isPrivate', false);
-        if ($isPrivate) {
-            $channel->setIsPrivate(true);
-
-            $groupIdentifier = $request->request->get('groupIdentifier');
-            if ($groupIdentifier !== null && $groupIdentifier !== '') {
-                $isGroupChannel = $request->request->getBoolean('isGroupChannel', false);
-
-                if ($isGroupChannel) {
-                    $existingGroupSub = $entityManager->getRepository(GroupSubscription::class)->findOneBy([
-                        'groupIdentifier' => $groupIdentifier,
-                        'isGroupChannel' => true,
-                    ]);
-                    if ($existingGroupSub) {
-                        $this->addFlash('error', $this->translator->trans('Ce groupe possède déjà un canal officiel.'));
-                        return $this->redirectToRoute('app_dashboard');
-                    }
-                }
-
-                $groupSubscription = new GroupSubscription();
-                $groupSubscription->setGroupIdentifier($groupIdentifier);
-                $groupSubscription->setIsGroupChannel($isGroupChannel);
-                $channel->addGroupSubscription($groupSubscription);
-                $entityManager->persist($groupSubscription);
-            }
-        }
-
-        $isTodoList = $request->request->getBoolean('isTodoList', false);
-        if ($isTodoList) {
-            $channel->setIsTodoList(true);
-        }
-
-        $retention = $request->request->get('messageRetentionMonths');
-        if ($retention !== null && $retention !== '') {
-            $retentionVal = (int) $retention;
-            $channel->setMessageRetentionMonths($retentionVal === 0 ? null : $retentionVal);
-        } else {
-            $channel->setMessageRetentionMonths(6);
-        }
-
-        $entityManager->persist($channel);
-        $entityManager->flush();
-
-        $auditLogger->log(AuditAction::CHANNEL_CREATE, $currentUser, [
-            'channel_id' => $channel->getId(),
-            'channel_name' => $channel->getName(),
-            'slug' => $channel->getSlug(),
-            'is_private' => $channel->isPrivate(),
-        ]);
-
-        $this->logger->info(sprintf(
-            'Channel created: "%s" (slug: "%s", private: %s) by user "%s"',
-            $channel->getName(),
-            $channel->getSlug(),
-            $channel->isPrivate() ? 'yes' : 'no',
-            $currentUser->getUsername(),
-        ));
-
-        return $this->redirectToRoute('app_channel', ['slug' => $slug]);
+        return $this->redirectToRoute('app_channel', ['slug' => $channel->getSlug()]);
     }
-
-    // -------------------------------------------------------------------------
-    // Main channel page
-    // -------------------------------------------------------------------------
 
     #[Route('/channels/{slug}', name: 'app_channel', requirements: [
         'slug' => '^(?!directory$|reorder$|create$|create-modal$)[^/]+$',
@@ -155,7 +83,7 @@ final class ChannelController extends AbstractController
         InvitationRepository $invitationRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $channels = $channelRepository->findAllForUser($currentUser);
@@ -178,6 +106,7 @@ final class ChannelController extends AbstractController
             }
             if ($existingChannel->isPrivate()) {
                 $this->addFlash('error', $this->translator->trans('Vous n\'avez pas accès à ce canal privé.'));
+
                 return $this->redirectToRoute('app_dashboard');
             }
             $activeChannel = $existingChannel;
@@ -199,7 +128,7 @@ final class ChannelController extends AbstractController
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
 
         if ($isMember) {
-            /** @var \App\Entity\UserChannelRead|null $activeRead */
+            /** @var UserChannelRead|null $activeRead */
             $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $activeChannel]);
             $lastReadMessageId = $activeRead?->getLastReadMessage()?->getId();
 
@@ -227,13 +156,11 @@ final class ChannelController extends AbstractController
 
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
 
-        $usersToInvite = [];
-
         $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
 
         $notificationsEnabled = null;
         if ($isMember) {
-            /** @var \App\Entity\UserChannelRead|null $activeRead */
+            /** @var UserChannelRead|null $activeRead */
             $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $activeChannel]);
             $notificationsEnabled = $activeRead ? $activeRead->isNotificationsEnabled() : null;
         }
@@ -241,33 +168,7 @@ final class ChannelController extends AbstractController
             $notificationsEnabled = $activeChannel->isDm();
         }
 
-        $typingUsers = [];
-        if ($isMember && $activeChannel) {
-            $cacheKey = 'channel_typing_' . $activeChannel->getSlug();
-            $typingUsersFromCache = $this->cache->get($cacheKey, static fn() => []);
-
-            $now = time();
-            $changed = false;
-            foreach ($typingUsersFromCache as $username => $info) {
-                if ($info['expires_at'] >= $now) {
-                    continue;
-                }
-
-                unset($typingUsersFromCache[$username]);
-                $changed = true;
-            }
-
-            if ($changed) {
-                $this->cache->delete($cacheKey);
-                $this->cache->get($cacheKey, static fn() => $typingUsersFromCache);
-            }
-
-            if ($currentUser) {
-                unset($typingUsersFromCache[$currentUser->getUsername()]);
-            }
-
-            $typingUsers = array_map(static fn($info) => $info['name'], array_values($typingUsersFromCache));
-        }
+        $typingUsers = $this->getTypingUsers($activeChannel, $currentUser, $isMember);
 
         $subChannelsByParent = $this->buildSubChannelsByParent($channels);
 
@@ -281,7 +182,7 @@ final class ChannelController extends AbstractController
             'topic_url' => $this->getChannelTopicUrl($activeChannel),
             'unreadCounts' => $unreadCounts,
             'firstUnreadMessageId' => $firstUnreadMessageId,
-            'usersToInvite' => $usersToInvite,
+            'usersToInvite' => [],
             'pendingInvitations' => $pendingInvitations,
             'isMember' => $isMember,
             'notificationsEnabled' => $notificationsEnabled,
@@ -291,10 +192,6 @@ final class ChannelController extends AbstractController
         ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Load more messages
-    // -------------------------------------------------------------------------
-
     #[Route('/channels/{slug}/more', name: 'app_channel_load_more', methods: ['GET'])]
     public function loadMore(
         string $slug,
@@ -303,7 +200,7 @@ final class ChannelController extends AbstractController
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $activeChannel = $entityManager->getRepository(Channel::class)->findOneBy(['slug' => $slug]);
@@ -355,7 +252,7 @@ final class ChannelController extends AbstractController
         ChannelRepository $channelRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
@@ -367,7 +264,7 @@ final class ChannelController extends AbstractController
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 
-        $ucrRepo = $entityManager->getRepository(\App\Entity\UserChannelRead::class);
+        $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
 
         $template = $channel->isSubChannel()
@@ -381,22 +278,19 @@ final class ChannelController extends AbstractController
         ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Open DM
-    // -------------------------------------------------------------------------
-
     #[Route('/dm/{username}', name: 'app_dm_open')]
     public function openDm(
         string $username,
         EntityManagerInterface $entityManager,
         ChannelRepository $channelRepository,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $partner = $entityManager->getRepository(\App\Entity\User::class)->findOneBy(['username' => $username]);
+        $partner = $entityManager->getRepository(User::class)->findOneBy(['username' => $username]);
         if (!$partner) {
             $this->addFlash('error', $this->translator->trans('Utilisateur non trouvé.'));
+
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -405,6 +299,7 @@ final class ChannelController extends AbstractController
                 'error',
                 $this->translator->trans('Vous ne pouvez pas envoyer de message direct à vous-même.'),
             );
+
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -443,10 +338,6 @@ final class ChannelController extends AbstractController
         return $this->redirectToRoute('app_channel', ['slug' => $dmChannel->getSlug()]);
     }
 
-    // -------------------------------------------------------------------------
-    // Join / Leave
-    // -------------------------------------------------------------------------
-
     #[Route('/channels/{slug}/join', name: 'app_channel_join', methods: ['POST'])]
     public function joinChannel(
         string $slug,
@@ -454,7 +345,7 @@ final class ChannelController extends AbstractController
         ChannelRepository $channelRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
@@ -489,7 +380,7 @@ final class ChannelController extends AbstractController
         ChannelRepository $channelRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
@@ -517,94 +408,48 @@ final class ChannelController extends AbstractController
         return $this->redirect($url);
     }
 
-    // -------------------------------------------------------------------------
-    // Delete channel
-    // -------------------------------------------------------------------------
-
     #[Route('/channels/{slug}/delete', name: 'app_channel_delete', methods: ['POST'])]
-    public function deleteChannel(
-        string $slug,
-        ChannelRepository $channelRepository,
-        EntityManagerInterface $entityManager,
-        AuditLoggerService $auditLogger,
-    ): Response {
-        /** @var \App\Entity\User $currentUser */
+    public function deleteChannel(string $slug, ChannelManager $channelManager): Response
+    {
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel) {
+        try {
+            $channel = $channelManager->findChannelBySlug($slug);
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
             return $this->redirectToRoute('app_dashboard');
         }
 
-        $isAdmin = $this->isGranted('ROLE_ADMIN');
-        $isCreator = $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
-
-        if (!$isAdmin && !$isCreator) {
-            throw $this->createAccessDeniedException($this->translator->trans(
-                'Vous n\'êtes pas autorisé à supprimer ce canal.',
-            ));
+        try {
+            $redirectSlug = $channelManager->delete($channel, $currentUser);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            throw $this->createAccessDeniedException($e->getMessage());
         }
-
-        $parentChannel = $channel->getParentMessage()?->getChannel();
-
-        $redirectSlug = $parentChannel ? '/channels/' . $parentChannel->getSlug() : '/';
-
-        $this->mercurePublisher->publishToChannel(
-            $channel,
-            [
-                'channelSlug' => $slug,
-                'redirectUrl' => $redirectSlug,
-            ],
-            'channel_deleted',
-        );
-
-        $auditLogger->log(AuditAction::CHANNEL_DELETE, $currentUser, [
-            'channel_id' => $channel->getId(),
-            'channel_name' => $channel->getName(),
-            'slug' => $channel->getSlug(),
-            'is_subchannel' => $channel->isSubChannel(),
-        ]);
-
-        $this->logger->info(sprintf(
-            'Channel deleted: "%s" (slug: "%s") by user "%s"',
-            $channel->getName(),
-            $channel->getSlug(),
-            $currentUser->getUsername(),
-        ));
-
-        $entityManager->remove($channel);
-        $entityManager->flush();
 
         $this->addFlash('success', $this->translator->trans('Le canal "%channelName%" a été supprimé.', [
             '%channelName%' => $channel->getName(),
         ]));
 
-        if ($parentChannel) {
-            return $this->redirectToRoute('app_channel', [
-                'slug' => $parentChannel->getSlug(),
-            ]);
+        if ($redirectSlug !== 'dashboard') {
+            return $this->redirectToRoute('app_channel', ['slug' => $redirectSlug]);
         }
 
         return $this->redirectToRoute('app_dashboard');
     }
 
-    // -------------------------------------------------------------------------
-    // Reorder channels
-    // -------------------------------------------------------------------------
-
     #[Route('/channels/reorder', name: 'app_channels_reorder', methods: ['POST'])]
     public function reorderChannels(Request $request, EntityManagerInterface $entityManager): Response
     {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $data = json_decode($request->getContent(), true);
         $order = $data['order'] ?? null;
         if (!is_array($order)) {
             $order = $request->request->all('order');
-            if (empty($order)) {
+            if ($order === null || $order === '') {
                 $order = $request->request->all();
-                if (isset($order['order'])) {
+                if (is_array($order) && array_key_exists('order', $order)) {
                     $order = $order['order'];
                 }
             }
@@ -629,7 +474,7 @@ final class ChannelController extends AbstractController
         InvitationRepository $invitationRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $channel = $channelRepository->findOneBy(['slug' => $slug]);
@@ -670,12 +515,6 @@ final class ChannelController extends AbstractController
                 'subChannelsByParent' => $subChannelsByParent,
             ]);
 
-            // Add hx-swap-oob="true" to the root of the rendered sidebar section
-            // Wait, templates/dashboard/_sidebar.html.twig already starts with <section class="card glass-panel sidebar-panel" id="sidebar-panel">.
-            // We need to inject hx-swap-oob="true" into it or let HTMX handle it.
-            // Actually, we can add hx-swap-oob="true" directly in the template when it's rendered for swap,
-            // or simply inject it into the tag here. Let's make sure it has hx-swap-oob="true".
-            // Since we want the sidebar to swap OOB, we can inject hx-swap-oob="true" into the section tag:
             $sidebarHtml = preg_replace(
                 '/<section class="card glass-panel sidebar-panel" id="sidebar-panel">/',
                 '<section class="card glass-panel sidebar-panel" id="sidebar-panel" hx-swap-oob="true">',
@@ -685,13 +524,12 @@ final class ChannelController extends AbstractController
 
             $html = $sidebarHtml;
 
-            $isMember = $activeChannel ? in_array($activeChannel, $channels, true) : false;
+            $isMember = $activeChannel !== null && in_array($activeChannel, $channels, true);
             if ($activeChannel && $isMember) {
-                $buttonHtml = $this->renderView('dashboard/_favorite_button_oob.html.twig', [
+                $html .= "\n" . $this->renderView('dashboard/_favorite_button_oob.html.twig', [
                     'activeChannel' => $activeChannel,
                     'isMember' => true,
                 ]);
-                $html .= "\n" . $buttonHtml;
             }
 
             return new Response($html);
@@ -701,38 +539,28 @@ final class ChannelController extends AbstractController
     }
 
     #[Route('/channels/{slug}/retention', name: 'app_channel_update_retention', methods: ['POST'])]
-    public function updateRetention(
-        string $slug,
-        Request $request,
-        ChannelRepository $channelRepository,
-        EntityManagerInterface $entityManager,
-    ): Response {
-        /** @var \App\Entity\User $currentUser */
+    public function updateRetention(string $slug, Request $request, ChannelManager $channelManager): Response
+    {
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel) {
+        try {
+            $channel = $channelManager->findChannelBySlug($slug);
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
             return $this->redirectToRoute('app_dashboard');
         }
 
-        $isAdmin = $this->isGranted('ROLE_ADMIN');
-        $isCreatorOrAdmin = $channel->isAdministrator($currentUser);
-
-        if (!$isAdmin && !$isCreatorOrAdmin) {
-            throw $this->createAccessDeniedException($this->translator->trans(
-                'Vous n\'êtes pas autorisé à modifier la rétention de ce canal.',
-            ));
-        }
-
         $retention = $request->request->get('messageRetentionMonths');
+        $retentionVal = null;
         if ($retention !== null && $retention !== '') {
             $retentionVal = (int) $retention;
-            $channel->setMessageRetentionMonths($retentionVal === 0 ? null : $retentionVal);
-        } else {
-            $channel->setMessageRetentionMonths(6);
         }
 
-        $entityManager->flush();
+        try {
+            $channelManager->updateRetention($channel, $retentionVal, $currentUser);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            throw $this->createAccessDeniedException($e->getMessage());
+        }
 
         $this->addFlash('success', $this->translator->trans('La durée de rétention du canal "%channelName%" a été mise à jour.', [
             '%channelName%' => $channel->getName(),
@@ -742,26 +570,15 @@ final class ChannelController extends AbstractController
     }
 
     #[Route('/channels/{slug}/edit', name: 'app_channel_edit', methods: ['POST'])]
-    public function editChannel(
-        string $slug,
-        Request $request,
-        ChannelRepository $channelRepository,
-        EntityManagerInterface $entityManager,
-    ): Response {
-        /** @var \App\Entity\User $currentUser */
+    public function editChannel(string $slug, Request $request, ChannelManager $channelManager): Response
+    {
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel) {
+        try {
+            $channel = $channelManager->findChannelBySlug($slug);
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
             return $this->redirectToRoute('app_dashboard');
-        }
-
-        $isAdmin = $this->isGranted('ROLE_ADMIN');
-        $isCreatorOrAdmin = $channel->isAdministrator($currentUser);
-        if (!$isAdmin && !$isCreatorOrAdmin) {
-            throw $this->createAccessDeniedException($this->translator->trans(
-                'Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.',
-            ));
         }
 
         $name = trim($request->request->get('name', ''));
@@ -769,64 +586,19 @@ final class ChannelController extends AbstractController
 
         if ($name === '') {
             $this->addFlash('error', $this->translator->trans('Le nom du canal ne peut pas être vide.'));
+
             return $this->redirectToRoute('app_channel', ['slug' => $slug]);
         }
 
-        if ($channel->getName() !== $name) {
-            $newSlug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($name));
-            $newSlug = trim($newSlug, '-');
-            if ($newSlug === '') {
-                $newSlug = 'channel-' . uniqid();
-            }
-
-            if ($newSlug !== $channel->getSlug()) {
-                $existing = $channelRepository->findOneBy(['slug' => $newSlug]);
-                if ($existing && $existing->getId() !== $channel->getId()) {
-                    $newSlug = $newSlug . '-' . rand(100, 999);
-                }
-                $channel->setSlug($newSlug);
-            }
-            $channel->setName($name);
+        try {
+            $channelManager->update($channel, $name, $description, [
+                'isTodoList' => $request->request->getBoolean('isTodoList', false),
+                'retentionMonths' => $request->request->get('messageRetentionMonths'),
+                'administratorIds' => $request->request->all('administrators'),
+            ], $currentUser);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            throw $this->createAccessDeniedException($e->getMessage());
         }
-
-        $channel->setDescription($description);
-
-        if ($channel->isSubChannel()) {
-            $isTodoList = $request->request->getBoolean('isTodoList', false);
-            $channel->setIsTodoList($isTodoList);
-        }
-
-        $retention = $request->request->get('messageRetentionMonths');
-        if ($retention !== null && $retention !== '') {
-            $retentionVal = (int) $retention;
-            $channel->setMessageRetentionMonths($retentionVal === 0 ? null : $retentionVal);
-        } else {
-            $channel->setMessageRetentionMonths(6);
-        }
-
-        // Process administrators
-        $adminIds = $request->request->all('administrators');
-        $userRepository = $entityManager->getRepository(\App\Entity\User::class);
-
-        // Remove existing administrators that are not in the submitted list
-        foreach ($channel->getAdministrators() as $admin) {
-            if (in_array((string) $admin->getId(), $adminIds, true)) {
-                continue;
-            }
-
-            $channel->removeAdministrator($admin);
-        }
-        // Add new administrators
-        foreach ($adminIds as $adminId) {
-            $adminUser = $userRepository->find((int) $adminId);
-            if ($adminUser && $adminUser !== $channel->getCreator()) {
-                if ($channel->getMembers()->contains($adminUser)) {
-                    $channel->addAdministrator($adminUser);
-                }
-            }
-        }
-
-        $entityManager->flush();
 
         $this->addFlash('success', $this->translator->trans('Les paramètres du canal ont été modifiés.'));
 
@@ -880,7 +652,6 @@ final class ChannelController extends AbstractController
             );
         }
 
-        // Find channel members matching the query who are not already administrators (including creator)
         $matches = [];
         foreach ($channel->getMembers() as $member) {
             if ($channel->getAdministrators()->contains($member) || $member === $channel->getCreator()) {
@@ -902,10 +673,6 @@ final class ChannelController extends AbstractController
         ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Channel export
-    // -------------------------------------------------------------------------
-
     #[Route('/channels/{slug}/export', name: 'app_channel_export', methods: ['GET'])]
     public function exportChannel(
         string $slug,
@@ -921,7 +688,6 @@ final class ChannelController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        // Only admins or channel administrators can export
         if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
             throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à exporter l\'historique de ce canal.'));
         }
@@ -938,15 +704,12 @@ final class ChannelController extends AbstractController
         return $this->mercurePublisher->getChannelTopic($channel);
     }
 
-    /**
-     * @param Channel[] $channels
-     * @return array<int, Channel[]>
-     */
+    /** @param Channel[] $channels */
     private function buildSubChannelsByParent(array $channels): array
     {
         $map = [];
         foreach ($channels as $ch) {
-            if (!($ch->isSubChannel() && $ch->getParentMessage())) {
+            if (!$ch->isSubChannel() || !$ch->getParentMessage()) {
                 continue;
             }
 
@@ -955,5 +718,35 @@ final class ChannelController extends AbstractController
         }
 
         return $map;
+    }
+
+    private function getTypingUsers(?Channel $channel, User $currentUser, bool $isMember): array
+    {
+        if (!$isMember || !$channel) {
+            return [];
+        }
+
+        $cacheKey = 'channel_typing_' . $channel->getSlug();
+        $typingUsersFromCache = $this->cache->get($cacheKey, static fn() => []);
+
+        $now = time();
+        $changed = false;
+        foreach ($typingUsersFromCache as $username => $info) {
+            if ($info['expires_at'] >= $now) {
+                continue;
+            }
+
+            unset($typingUsersFromCache[$username]);
+            $changed = true;
+        }
+
+        if ($changed) {
+            $this->cache->delete($cacheKey);
+            $this->cache->get($cacheKey, static fn() => $typingUsersFromCache);
+        }
+
+        unset($typingUsersFromCache[$currentUser->getUsername()]);
+
+        return array_map(static fn($info) => $info['name'], array_values($typingUsersFromCache));
     }
 }
