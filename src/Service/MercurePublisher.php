@@ -91,74 +91,31 @@ class MercurePublisher
     ): void {
         $this->publishToChannel($channel, $renderedHtml, 'message_' . $channel->getSlug());
 
-        $this->publishMemberNotifications($channel, $message, $author, $messageText);
-    }
-
-    /**
-     * Sends per-member unread / mention notifications for a message.
-     * Skips the author. Respects notification preferences and @mentions.
-     */
-    public function publishMemberNotifications(
-        Channel $channel,
-        Message $message,
-        User $author,
-        string $messageText,
-    ): void {
-        $members = $channel->getMembers();
-
-        $ucrIndex = $this->ucrRepo->findByChannelAndUsers($channel, $members);
-
-        foreach ($members as $member) {
-            if ($member->getId() === $author->getId()) {
-                continue;
-            }
-
-            $ucr = $ucrIndex[$member->getId()] ?? null;
-            $notificationsEnabled = $ucr ? $ucr->isNotificationsEnabled() : null;
-            if ($notificationsEnabled === null) {
-                $notificationsEnabled = $channel->isDm();
-            }
-
-            $isMentioned = false;
-            if ($messageText !== '') {
-                $pattern = '/@' . preg_quote($member->getUsername(), '/') . '\b/i';
-                $isMentioned = (bool) preg_match($pattern, $messageText);
-            }
-
-            $content = $this->buildContentSummary($message);
-
-            $channelName = $channel->isDm() ? 'Message direct' : '#' . $channel->getName();
-            if ($channel->isSubChannel() && $channel->getParentMessage() !== null) {
-                $parentChannelName = '#' . $channel->getParentMessage()->getChannel()->getName();
-                $channelName .= ' (discussion de ' . $parentChannelName . ')';
-            }
-
-            $this->publishToUser(
-                $member,
-                [
-                    'channelSlug' => $channel->getSlug(),
-                    'channelId' => $channel->getId(),
-                    'messageId' => $message->getId(),
-                    'author' => $author->getUsername(),
-                    'authorDisplayName' =>
-                        $author->getDisplayName() !== null && $author->getDisplayName() !== ''
-                            ? $author->getDisplayName()
-                            : $author->getUsername(),
-                    'channelName' => $channelName,
-                    'content' => $content,
-                    'notificationsEnabled' => $isMentioned
-                        ? $member->isMentionNotificationsEnabled()
-                        : $notificationsEnabled,
-                    'isMention' => $isMentioned,
-                    'isMentionNotificationAllowed' => $member->isMentionNotificationsEnabled(),
-                    'isDm' => $channel->isDm(),
-                    'isSubChannel' => $channel->isSubChannel(),
-                    'parentChannelId' => $channel->getParentMessage()?->getChannel()->getId(),
-                    'parentChannelSlug' => $channel->getParentMessage()?->getChannel()->getSlug(),
-                ],
-                'personal_notification',
-            );
+        $channelName = $channel->isDm() ? 'Message direct' : '#' . $channel->getName();
+        if ($channel->isSubChannel() && $channel->getParentMessage() !== null) {
+            $parentChannelName = '#' . $channel->getParentMessage()->getChannel()->getName();
+            $channelName .= ' (discussion de ' . $parentChannelName . ')';
         }
+
+        $content = $this->buildContentSummary($message);
+
+        $this->publishToChannel(
+            $channel,
+            [
+                'channelSlug' => $channel->getSlug(),
+                'channelId' => $channel->getId(),
+                'messageId' => $message->getId(),
+                'author' => $author->getUsername(),
+                'authorDisplayName' => $author->getDisplayName() ?: $author->getUsername(),
+                'channelName' => $channelName,
+                'content' => $content,
+                'isDm' => $channel->isDm(),
+                'isSubChannel' => $channel->isSubChannel(),
+                'parentChannelId' => $channel->getParentMessage()?->getChannel()->getId(),
+                'parentChannelSlug' => $channel->getParentMessage()?->getChannel()->getSlug(),
+            ],
+            'channel_notification'
+        );
     }
 
     // -------------------------------------------------------------------------

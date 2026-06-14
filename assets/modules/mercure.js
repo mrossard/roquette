@@ -371,7 +371,7 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
         const data = JSON.parse(event.detail.data);
         if (type === 'user_status_changed') {
             handleUserStatusChanged(data);
-        } else if (type === 'personal_notification') {
+        } else if (type === 'personal_notification' || type === 'channel_notification') {
             if (window.handleGlobalNotification) {
                 window.handleGlobalNotification(data);
             }

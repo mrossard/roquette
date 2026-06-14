@@ -1,7 +1,8 @@
 <div class="header-controls">
     <div id="mercure-status"
          data-active-channel-slug="{{ activeChannel is defined and activeChannel ? activeChannel.slug : '' }}"
-         data-current-username="{{ app.user.username }}"></div>
+         data-current-username="{{ app.user.username }}"
+         data-mention-notifications-enabled="{{ app.user.isMentionNotificationsEnabled() ? 'true' : 'false' }}"></div>
 
     {% if show_back_button|default(false) %}
         {% if channels is defined and channels is not empty %}

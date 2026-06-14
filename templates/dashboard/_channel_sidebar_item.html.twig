@@ -9,6 +9,7 @@
    class="channel-link {% if activeChannel and channel.id == activeChannel.id %}active{% endif %} {% if count > 0 and (not activeChannel or channel.id != activeChannel.id) %}unread{% endif %} {% if hasMention and (not activeChannel or channel.id != activeChannel.id) %}has-mention{% endif %} {% if isRobotDm %}assistant-dm{% endif %} {% if channel.isTodoList() %}is-todo-channel{% endif %}"
    data-channel-slug="{{ channel.slug }}"
    data-channel-id="{{ channel.id }}"
+   data-notifications-enabled="{{ (unread and unread.notificationsEnabled) ? 'true' : 'false' }}"
    draggable="false"
    title="{{ channelName }}">
     <span class="drag-handle" style="display: none; font-size: 0.85rem; margin-right: 0.2rem; opacity: 0.5;">☰</span>

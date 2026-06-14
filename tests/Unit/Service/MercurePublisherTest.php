@@ -119,30 +119,11 @@ class MercurePublisherTest extends TestCase
         $author->method('getUsername')->willReturn('author-user');
         $author->method('getDisplayName')->willReturn('Author Display Name');
 
-        $member = $this->createStub(User::class);
-        $member->method('getId')->willReturn(2);
-        $member->method('getUsername')->willReturn('member-user');
-        $member->method('getDisplayName')->willReturn('Member Display Name');
-        $member->method('isMentionNotificationsEnabled')->willReturn(true);
-
-        $members = new \Doctrine\Common\Collections\ArrayCollection([$author, $member]);
-        $channel
-            ->method('getMembers')
-            ->willReturn($members);
-
         $message = $this->createStub(Message::class);
         $message->method('getId')->willReturn(99);
         $message->method('getContent')->willReturn('Hello @member-user code check');
 
-        $ucr = $this->createStub(UserChannelRead::class);
-        $ucr->method('isNotificationsEnabled')->willReturn(true);
-        $this->ucrRepo
-            ->expects($this->once())
-            ->method('findByChannelAndUsers')
-            ->with($channel, $members)
-            ->willReturn([2 => $ucr]);
-
-        // We expect dispatch to be called twice: once for the channel update, once for the member notification.
+        // We expect dispatch to be called twice: once for the channel HTML message, once for the channel notification.
         $this->bus
             ->expects($this->exactly(2))
             ->method('dispatch')

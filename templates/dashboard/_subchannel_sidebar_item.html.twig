@@ -7,6 +7,7 @@
    class="channel-link subchannel-link {% if activeChannel and channel.id == activeChannel.id %}active{% endif %} {% if count > 0 and (not activeChannel or channel.id != activeChannel.id) %}unread{% endif %} {% if hasMention and (not activeChannel or channel.id != activeChannel.id) %}has-mention{% endif %}"
    data-channel-slug="{{ channel.slug }}"
    data-channel-id="{{ channel.id }}"
+   data-notifications-enabled="{{ (unread and unread.notificationsEnabled) ? 'true' : 'false' }}"
    data-parent-channel-id="{{ channel.parentMessage ? channel.parentMessage.channel.id : '' }}"
    draggable="false"
    title="{{ channel.name }}">

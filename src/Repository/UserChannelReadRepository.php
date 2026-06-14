@@ -35,7 +35,7 @@ class UserChannelReadRepository extends ServiceEntityRepository
         $qb = $this->getEntityManager()->createQueryBuilder();
         $qb
             ->select(
-                'c.id as channelId, COUNT(m.id) as unreadCount, SUM(CASE WHEN LOWER(m.content) LIKE :mentionPattern THEN 1 ELSE 0 END) as mentionCount',
+                'c.id as channelId, c.isDm as isDm, COUNT(m.id) as unreadCount, SUM(CASE WHEN LOWER(m.content) LIKE :mentionPattern THEN 1 ELSE 0 END) as mentionCount, ucr.notificationsEnabled as notificationsEnabled',
             )
             ->from(Channel::class, 'c')
             ->leftJoin(UserChannelRead::class, 'ucr', 'WITH', 'ucr.channel = c AND ucr.user = :user')
@@ -45,7 +45,7 @@ class UserChannelReadRepository extends ServiceEntityRepository
                 'WITH',
                 'm.author != :user AND (ucr.lastReadMessage IS NULL OR m.id > IDENTITY(ucr.lastReadMessage))',
             )
-            ->groupBy('c.id')
+            ->groupBy('c.id', 'c.isDm', 'ucr.notificationsEnabled')
             ->setParameter('user', $user)
             ->setParameter('mentionPattern', $mentionPattern);
 
@@ -53,9 +53,14 @@ class UserChannelReadRepository extends ServiceEntityRepository
 
         $counts = [];
         foreach ($results as $row) {
+            $notificationsEnabled = $row['notificationsEnabled'];
+            if ($notificationsEnabled === null) {
+                $notificationsEnabled = (bool) $row['isDm'];
+            }
             $counts[(int) $row['channelId']] = [
                 'count' => (int) $row['unreadCount'],
                 'hasMention' => (int) $row['mentionCount'] > 0,
+                'notificationsEnabled' => (bool) $notificationsEnabled,
             ];
         }
 

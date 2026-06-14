@@ -315,6 +315,7 @@ export function handleGlobalNotification(data) {
 
     const activeChannelSlug = statusBadge.getAttribute('data-active-channel-slug');
     const currentUsername = statusBadge.getAttribute('data-current-username');
+    const isMentionNotificationAllowed = statusBadge.getAttribute('data-mention-notifications-enabled') !== 'false';
 
     if (data.author === currentUsername) {
         // Ignore messages authored by the current user
@@ -325,15 +326,29 @@ export function handleGlobalNotification(data) {
     const isViewingActiveChannel = (data.channelSlug === activeChannelSlug);
     const isPageActive = (document.visibilityState === 'visible' && document.hasFocus());
 
+    // Mentions are determined server-side (data.isMention) or parsed client-side
+    let isMention = data.isMention;
+    if (isMention === undefined) {
+        const mentionPattern = new RegExp(`@${currentUsername}\\b`, 'i');
+        isMention = mentionPattern.test(data.content || '');
+    }
+
+    // Notifications enabled for this channel: read from data or DOM
+    let notificationsEnabled = data.notificationsEnabled;
+    const channelLink = document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`);
+    if (notificationsEnabled === undefined) {
+        notificationsEnabled = channelLink ? (channelLink.getAttribute('data-notifications-enabled') !== 'false') : true;
+    }
+
     // If it's a mention, we notify unless the page is visible and active on the channel or mention notifications are disabled
     const shouldNotify = (!isViewingActiveChannel || !isPageActive) && (
-        (data.isMention && data.isMentionNotificationAllowed !== false) ||
-        data.notificationsEnabled
+        (isMention && isMentionNotificationAllowed) ||
+        notificationsEnabled
     );
 
     if (shouldNotify) {
-        const title = data.isMention ? `Mention dans ${data.channelName}` : (data.channelName || 'Nouveau message 🚀');
-        const body = data.isMention ? `@${data.authorDisplayName || data.author} vous a mentionné : ${data.content}` : `@${data.authorDisplayName || data.author}: ${data.content || 'Nouveau message'}`;
+        const title = isMention ? `Mention dans ${data.channelName}` : (data.channelName || 'Nouveau message 🚀');
+        const body = isMention ? `@${data.authorDisplayName || data.author} vous a mentionné : ${data.content}` : `@${data.authorDisplayName || data.author}: ${data.content || 'Nouveau message'}`;
 
         sendDesktopNotification(
             title,
@@ -350,10 +365,9 @@ export function handleGlobalNotification(data) {
         fetch(readUrl, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}});
     } else {
         // We are on another channel, show/increment the unread badge
-        const channelLink = document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`);
         if (channelLink) {
             channelLink.classList.add('unread');
-            if (data.isMention) {
+            if (isMention) {
                 channelLink.classList.add('has-mention');
             }
             let badge = channelLink.querySelector('.unread-badge');
