@@ -8,6 +8,7 @@ use App\Entity\Channel;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -59,5 +60,29 @@ class UserChannelReadRepository extends ServiceEntityRepository
         }
 
         return $counts;
+    }
+
+    /**
+     * Batch-load UserChannelRead for all members of a channel in one query.
+     *
+     * @param Collection<int, User>|User[] $members
+     * @return array<int, UserChannelRead> indexed by user id
+     */
+    public function findByChannelAndUsers(Channel $channel, Collection|array $members): array
+    {
+        $result = $this->createQueryBuilder('ucr')
+            ->where('ucr.channel = :channel')
+            ->andWhere('ucr.user IN (:users)')
+            ->setParameter('channel', $channel)
+            ->setParameter('users', $members)
+            ->getQuery()
+            ->getResult();
+
+        $indexed = [];
+        foreach ($result as $ucr) {
+            $indexed[$ucr->getUser()->getId()] = $ucr;
+        }
+
+        return $indexed;
     }
 }

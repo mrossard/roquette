@@ -7,8 +7,7 @@ namespace App\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
-use App\Entity\UserChannelRead;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\UserChannelReadRepository;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\MessageBusInterface;
 
@@ -22,6 +21,7 @@ class MercurePublisher
     public function __construct(
         private MessageBusInterface $bus,
         private string $mercureTopicPrefix,
+        private UserChannelReadRepository $ucrRepo,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -88,11 +88,10 @@ class MercurePublisher
         User $author,
         string $messageText,
         string $renderedHtml,
-        EntityManagerInterface $em,
     ): void {
         $this->publishToChannel($channel, $renderedHtml, 'message_' . $channel->getSlug());
 
-        $this->publishMemberNotifications($channel, $message, $author, $messageText, $em);
+        $this->publishMemberNotifications($channel, $message, $author, $messageText);
     }
 
     /**
@@ -104,16 +103,17 @@ class MercurePublisher
         Message $message,
         User $author,
         string $messageText,
-        EntityManagerInterface $em,
     ): void {
-        $ucrRepo = $em->getRepository(UserChannelRead::class);
+        $members = $channel->getMembers();
 
-        foreach ($channel->getMembers() as $member) {
+        $ucrIndex = $this->ucrRepo->findByChannelAndUsers($channel, $members);
+
+        foreach ($members as $member) {
             if ($member->getId() === $author->getId()) {
                 continue;
             }
 
-            $ucr = $ucrRepo->findOneBy(['user' => $member, 'channel' => $channel]);
+            $ucr = $ucrIndex[$member->getId()] ?? null;
             $notificationsEnabled = $ucr ? $ucr->isNotificationsEnabled() : null;
             if ($notificationsEnabled === null) {
                 $notificationsEnabled = $channel->isDm();

@@ -81,7 +81,6 @@ final class WebhookController extends AbstractController
             $robotUser,
             (string) $content,
             $renderedHtml,
-            $entityManager,
         );
 
         return new JsonResponse([

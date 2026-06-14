@@ -13,7 +13,6 @@ use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\UserChannelReadRepository;
 use App\Service\MercurePublisher;
-use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -25,12 +24,14 @@ use Symfony\Component\Messenger\MessageBusInterface;
 class MercurePublisherTest extends TestCase
 {
     private MessageBusInterface&MockObject $bus;
+    private UserChannelReadRepository&MockObject $ucrRepo;
     private MercurePublisher $publisher;
 
     protected function setUp(): void
     {
         $this->bus = $this->createMock(MessageBusInterface::class);
-        $this->publisher = new MercurePublisher($this->bus, 'http://test-mercure');
+        $this->ucrRepo = $this->createMock(UserChannelReadRepository::class);
+        $this->publisher = new MercurePublisher($this->bus, 'http://test-mercure', $this->ucrRepo);
     }
 
     #[Test]
@@ -124,25 +125,22 @@ class MercurePublisherTest extends TestCase
         $member->method('getDisplayName')->willReturn('Member Display Name');
         $member->method('isMentionNotificationsEnabled')->willReturn(true);
 
+        $members = new \Doctrine\Common\Collections\ArrayCollection([$author, $member]);
         $channel
             ->method('getMembers')
-            ->willReturn(new \Doctrine\Common\Collections\ArrayCollection([$author, $member]));
+            ->willReturn($members);
 
         $message = $this->createStub(Message::class);
         $message->method('getId')->willReturn(99);
         $message->method('getContent')->willReturn('Hello @member-user code check');
 
-        $em = $this->createMock(EntityManagerInterface::class);
-        $ucrRepo = $this->createMock(UserChannelReadRepository::class);
-        $em->expects($this->once())->method('getRepository')->with(UserChannelRead::class)->willReturn($ucrRepo);
-
         $ucr = $this->createStub(UserChannelRead::class);
         $ucr->method('isNotificationsEnabled')->willReturn(true);
-        $ucrRepo
+        $this->ucrRepo
             ->expects($this->once())
-            ->method('findOneBy')
-            ->with(['user' => $member, 'channel' => $channel])
-            ->willReturn($ucr);
+            ->method('findByChannelAndUsers')
+            ->with($channel, $members)
+            ->willReturn([2 => $ucr]);
 
         // We expect dispatch to be called twice: once for the channel update, once for the member notification.
         $this->bus
@@ -156,7 +154,6 @@ class MercurePublisherTest extends TestCase
             $author,
             'Hello @member-user code check',
             '<p>Hello @member-user code check</p>',
-            $em,
         );
     }
 }

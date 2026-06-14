@@ -133,7 +133,6 @@ class MessagePublisher
             $currentUser,
             $isPoll ? 'Sondage : ' . $pollQuestion : $messageText,
             $renderedHtml,
-            $this->entityManager,
         );
 
         if (
