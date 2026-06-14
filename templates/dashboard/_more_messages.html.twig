@@ -16,6 +16,7 @@
     {% endif %}
     {% include 'dashboard/_feed_item.html.twig' with {
         'messageObject': message,
-        'replyCounts': replyCounts|default({})
+        'replyCounts': replyCounts|default({}),
+        'subchannelByParentMessageId': subchannelByParentMessageId|default({})
     } %}
 {% endfor %}

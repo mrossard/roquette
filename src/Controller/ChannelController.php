@@ -174,6 +174,7 @@ final class ChannelController extends AbstractController
 
         $messageIds = array_map(static fn(Message $m) => $m->getId(), $messages);
         $replyCounts = $messageRepository->findReplyCounts($messageIds);
+        $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($activeChannel);
 
         return $this->render('dashboard/index.html.twig', [
             'channels' => $channels,
@@ -189,6 +190,7 @@ final class ChannelController extends AbstractController
             'typingUsers' => $typingUsers,
             'subChannelsByParent' => $subChannelsByParent,
             'replyCounts' => $replyCounts,
+            'subchannelByParentMessageId' => $subchannelByParentMessageId,
         ]);
     }
 
@@ -236,6 +238,7 @@ final class ChannelController extends AbstractController
 
         $messageIds = array_map(static fn(Message $m) => $m->getId(), $moreMessages);
         $replyCounts = $messageRepository->findReplyCounts($messageIds);
+        $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($activeChannel);
 
         return $this->render('dashboard/_more_messages.html.twig', [
             'messages' => $moreMessages,
@@ -243,6 +246,7 @@ final class ChannelController extends AbstractController
             'hasMore' => $hasMore,
             'nextBeforeId' => $nextBeforeId,
             'replyCounts' => $replyCounts,
+            'subchannelByParentMessageId' => $subchannelByParentMessageId,
         ]);
     }
 

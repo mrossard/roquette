@@ -24,6 +24,7 @@
 {% set messageChannel = messageObject ? messageObject.getChannel() : null %}
 {% set isThisMessagePinned = messageChannel and messageChannel.pinnedMessage == messageObject %}
 {% set isMeMessage = message is not null and (message starts with '/me ' or message == '/me') %}
+{% set subchannelByParentMessageId = subchannelByParentMessageId|default({}) %}
 {% set pollHasVotes = messageObject and messageObject.poll and messageObject.poll.totalVotes > 0 %}
 {% set isTodoCompleted = false %}
 {% if messageChannel and messageChannel.isTodoList() and messageObject %}
@@ -122,7 +123,7 @@
             {% if messageObject is defined and messageObject and messageObject.poll %}
                 {% include 'dashboard/_poll.html.twig' with { poll: messageObject.poll } %}
             {% elseif message is defined and message is not empty and message != '' %}
-                {% set subChannel = messageObject and (messageChannel is null or not messageChannel.isTodoList()) ? get_subchannel(messageObject) : null %}
+                {% set subChannel = messageObject and (messageChannel is null or not messageChannel.isTodoList()) ? (subchannelByParentMessageId[message_id] ?? get_subchannel(messageObject)) : null %}
                 {% set hasSubChannel = subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}
                 {% set msgReplyCount = replyCounts[message_id]|default(0) %}
                 {% set hasReplies = msgReplyCount > 0 %}

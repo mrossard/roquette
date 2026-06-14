@@ -93,6 +93,7 @@ final class NotificationController extends AbstractController
 
             $messageIds = array_map(static fn(Message $m) => (int) $m->getId(), $messages);
             $replyCounts = $messageRepository->findReplyCounts($messageIds);
+            $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($activeChannel);
 
             return $this->render('dashboard/_messages_feed.html.twig', [
                 'messages' => $messages,
@@ -101,6 +102,7 @@ final class NotificationController extends AbstractController
                 'unreadFilterActive' => true,
                 'searchQuery' => $query !== '' ? $query : null,
                 'replyCounts' => $replyCounts,
+                'subchannelByParentMessageId' => $subchannelByParentMessageId,
             ]);
         }
 
@@ -110,12 +112,14 @@ final class NotificationController extends AbstractController
 
             $messageIds = array_map(static fn(Message $m) => (int) $m->getId(), $messages);
             $replyCounts = $messageRepository->findReplyCounts($messageIds);
+            $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($activeChannel);
 
             return $this->render('dashboard/_messages_feed.html.twig', [
                 'messages' => $messages,
                 'activeChannel' => $activeChannel,
                 'firstUnreadMessageId' => null,
                 'replyCounts' => $replyCounts,
+                'subchannelByParentMessageId' => $subchannelByParentMessageId,
             ]);
         }
 
@@ -123,6 +127,7 @@ final class NotificationController extends AbstractController
 
         $messageIds = array_map(static fn(Message $m) => (int) $m->getId(), $messages);
         $replyCounts = $messageRepository->findReplyCounts($messageIds);
+        $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($activeChannel);
 
         return $this->render('dashboard/_messages_feed.html.twig', [
             'messages' => $messages,
@@ -130,6 +135,7 @@ final class NotificationController extends AbstractController
             'searchQuery' => $query,
             'firstUnreadMessageId' => null,
             'replyCounts' => $replyCounts,
+            'subchannelByParentMessageId' => $subchannelByParentMessageId,
         ]);
     }
 
@@ -138,7 +144,7 @@ final class NotificationController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/messages/{id}/replies', name: 'app_message_replies', methods: ['GET'])]
-    public function replies(int $id, MessageRepository $messageRepository): Response
+    public function replies(int $id, MessageRepository $messageRepository, ChannelRepository $channelRepository): Response
     {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -167,12 +173,14 @@ final class NotificationController extends AbstractController
 
         // Include the original message as the first item
         $messages = array_merge([$message], $replies);
+        $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($channel);
 
         return $this->render('dashboard/_messages_feed.html.twig', [
             'messages' => $messages,
             'activeChannel' => $channel,
             'firstUnreadMessageId' => null,
             'threadOf' => $message,
+            'subchannelByParentMessageId' => $subchannelByParentMessageId,
         ]);
     }
 

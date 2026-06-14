@@ -317,6 +317,29 @@ class ChannelRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Load all subchannels of a given channel in one query via JOIN.
+     * Returns an array indexed by parent message id.
+     *
+     * @return array<int, Channel>
+     */
+    public function findSubchannelsByChannel(Channel $channel): array
+    {
+        $result = $this->createQueryBuilder('c')
+            ->join('c.parentMessage', 'pm')
+            ->where('pm.channel = :channel')
+            ->setParameter('channel', $channel)
+            ->getQuery()
+            ->getResult();
+
+        $indexed = [];
+        foreach ($result as $sub) {
+            $indexed[$sub->getParentMessage()->getId()] = $sub;
+        }
+
+        return $indexed;
+    }
+
     public function hasUserParticipated(Channel $channel, User $user): bool
     {
         $count = $this
