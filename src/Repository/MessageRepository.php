@@ -48,12 +48,24 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function searchInChannel(Channel $channel, string $query): array
     {
-        return $this
-            ->createQueryBuilder('m')
-            ->where('m.channel = :channel')
-            ->andWhere('LOWER(m.content) LIKE :query')
-            ->setParameter('channel', $channel)
-            ->setParameter('query', '%' . mb_strtolower($query, 'UTF-8') . '%')
+        $conn = $this->getEntityManager()->getConnection();
+        $ids = $conn->fetchFirstColumn(
+            'SELECT m.id FROM "message" m
+             WHERE m.channel_id = :channelId
+               AND m.content_tsvector @@ plainto_tsquery(\'french\', :query)
+             ORDER BY ts_rank(m.content_tsvector, plainto_tsquery(\'french\', :query)) DESC',
+            ['channelId' => $channel->getId(), 'query' => $query],
+        );
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $ids = array_map('intval', $ids);
+
+        return $this->createQueryBuilder('m')
+            ->where('m.id IN (:ids)')
+            ->setParameter('ids', $ids)
             ->orderBy('m.createdAt', 'ASC')
             ->getQuery()
             ->getResult();
@@ -111,48 +123,70 @@ class MessageRepository extends ServiceEntityRepository
         ?string $fileType = null,
         ?string $textQuery = null,
     ): array {
-        $qb = $this
-            ->createQueryBuilder('m')
-            ->select('m', 'author', 'channel')
-            ->join('m.author', 'author')
-            ->join('m.channel', 'channel')
-            ->leftJoin('channel.members', 'chanMember')
-            ->where('channel.isPrivate = false OR chanMember = :currentUser')
-            ->setParameter('currentUser', $currentUser);
+        $conn = $this->getEntityManager()->getConnection();
+
+        $conditions = ['(ch.is_private = false OR cu.user_id IS NOT NULL)'];
+        $params = ['currentUserId' => $currentUser->getId()];
 
         if ($authorUsername) {
-            $qb->andWhere(
-                'LOWER(author.username) = :authorUsername OR LOWER(author.displayName) = :authorUsername',
-            )->setParameter('authorUsername', strtolower($authorUsername));
+            $conditions[] = '(LOWER(u.username) = :authorUsername OR LOWER(u.display_name) = :authorUsername)';
+            $params['authorUsername'] = strtolower($authorUsername);
         }
 
         if ($channelName) {
-            $qb->andWhere('LOWER(channel.name) = :channelName OR LOWER(channel.slug) = :channelName')->setParameter(
-                'channelName',
-                strtolower($channelName),
-            );
+            $conditions[] = '(LOWER(ch.name) = :channelName OR LOWER(ch.slug) = :channelName)';
+            $params['channelName'] = strtolower($channelName);
         }
 
         if ($hasFile) {
-            $qb->andWhere('m.fileName IS NOT NULL');
+            $conditions[] = 'm.file_name IS NOT NULL';
         }
 
         if ($fileType) {
             if ($fileType === 'pdf') {
-                $qb->andWhere('m.mimeType = :fileType')->setParameter('fileType', 'application/pdf');
+                $conditions[] = 'm.mime_type = :fileType';
+                $params['fileType'] = 'application/pdf';
             } else {
-                $qb->andWhere('m.mimeType LIKE :fileType')->setParameter('fileType', $fileType . '/%');
+                $conditions[] = 'm.mime_type LIKE :fileType';
+                $params['fileType'] = $fileType . '/%';
             }
         }
 
+        $orderBy = 'm.created_at DESC';
         if ($textQuery && trim($textQuery) !== '') {
-            $qb->andWhere('LOWER(m.content) LIKE :textQuery')->setParameter(
-                'textQuery',
-                '%' . mb_strtolower($textQuery, 'UTF-8') . '%',
-            );
+            $conditions[] = 'm.content_tsvector @@ plainto_tsquery(\'french\', :textQuery)';
+            $params['textQuery'] = $textQuery;
+            $orderBy = 'ts_rank(m.content_tsvector, plainto_tsquery(\'french\', :textQuery)) DESC';
         }
 
-        return $qb->orderBy('m.createdAt', 'DESC')->setMaxResults(30)->getQuery()->getResult();
+        $where = implode(' AND ', $conditions);
+
+        $ids = $conn->fetchFirstColumn(
+            "SELECT m.id FROM \"message\" m
+             JOIN \"user\" u ON u.id = m.author_id
+             JOIN \"channel\" ch ON ch.id = m.channel_id
+             LEFT JOIN channel_user cu ON cu.channel_id = ch.id AND cu.user_id = :currentUserId
+             WHERE {$where}
+             ORDER BY {$orderBy}
+             LIMIT 30",
+            $params,
+        );
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $ids = array_map('intval', $ids);
+
+        return $this->createQueryBuilder('m')
+            ->select('m', 'author', 'channel')
+            ->join('m.author', 'author')
+            ->join('m.channel', 'channel')
+            ->where('m.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->orderBy('m.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**
