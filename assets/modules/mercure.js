@@ -1,3 +1,5 @@
+import { wasAtBottom } from './scroll.js';
+
 const isProd = document.querySelector('meta[name="app-env"]')?.getAttribute('content') === 'prod';
 const console = {
     log: (...args) => {
@@ -349,6 +351,13 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                         if (window.highlightAllCodeBlocks) {
                             window.highlightAllCodeBlocks(oobElem);
                         }
+                    }
+                }
+
+                if (wasAtBottom) {
+                    const feed = document.getElementById('live-feed');
+                    if (feed) {
+                        feed.scrollTop = feed.scrollHeight;
                     }
                 }
             }

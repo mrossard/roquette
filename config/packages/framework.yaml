@@ -12,8 +12,8 @@ framework:
         scoped_clients:
             llm.client:
                 base_uri: '%env(resolve:LLM_ENDPOINT)%'
-                timeout: 120.0
-                max_duration: 300.0
+                timeout: 300.0
+                max_duration: 600.0
 
     #esi: true
     #fragments: true

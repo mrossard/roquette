@@ -16,7 +16,7 @@ services:
       CLAMAV_PORT: 3310
 
   database:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:0.8.0-pg16
     restart: unless-stopped
     environment:
       POSTGRES_DB:  ${POSTGRES_DB:-roquette}
@@ -57,7 +57,7 @@ services:
 
   ollama-pull-model:
     image: curlimages/curl:latest
-    entrypoint: [ "sh", "-c", "until curl -s http://ollama:11434/api/tags > /dev/null; do sleep 1; done; curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"qwen2.5:3b\"}'" ]
+    entrypoint: [ "sh", "-c", "until curl -s http://ollama:11434/api/tags > /dev/null; do sleep 1; done; curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"qwen2.5:3b\"}' && curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"nomic-embed-text\"}'" ]
     depends_on:
       - ollama
 

@@ -14,6 +14,7 @@ use App\Repository\UserRepository;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
 use PHPUnit\Framework\TestCase;
+use Symfony\AI\Store\RetrieverInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
@@ -57,6 +58,7 @@ class LlmQueryHandlerTest extends TestCase
         $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
         $twig = $this->createMock(\Twig\Environment::class);
         $twig->method('render')->willReturn('<div>test</div>');
+        $retriever = $this->createStub(RetrieverInterface::class);
 
         $handler = new LlmQueryHandler(
             $userRepository,
@@ -71,6 +73,7 @@ class LlmQueryHandlerTest extends TestCase
             'roquette',
             $logger,
             $twig,
+            $retriever,
         );
 
         $message = new LlmQueryMessage('How does it work?', 42, 'general', 'help-123');
@@ -140,6 +143,7 @@ class LlmQueryHandlerTest extends TestCase
 
         $twig = $this->createMock(\Twig\Environment::class);
         $twig->method('render')->willReturn('<div>test</div>');
+        $retriever = $this->createStub(RetrieverInterface::class);
 
         $handler = new LlmQueryHandler(
             $userRepository,
@@ -154,6 +158,7 @@ class LlmQueryHandlerTest extends TestCase
             'roquette',
             $logger,
             $twig,
+            $retriever,
             3, // Limit to 3 messages
         );
 
@@ -247,6 +252,7 @@ class LlmQueryHandlerTest extends TestCase
 
         $twig = $this->createMock(\Twig\Environment::class);
         $twig->method('render')->willReturn('<div>test</div>');
+        $retriever = $this->createStub(RetrieverInterface::class);
 
         $handler = new LlmQueryHandler(
             $userRepository,
@@ -261,6 +267,7 @@ class LlmQueryHandlerTest extends TestCase
             'roquette',
             $logger,
             $twig,
+            $retriever,
             10, // Large limit to avoid batching in this test
         );
 

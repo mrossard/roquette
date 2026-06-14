@@ -1,6 +1,6 @@
 // Preserve scroll position when loading older messages (prepending to top of #live-feed)
 let loadMoreScrollTracker = null;
-let wasAtBottom = true;
+export let wasAtBottom = true;
 
 document.body.addEventListener('htmx:beforeSwap', (evt) => {
     const target = evt.detail.target;

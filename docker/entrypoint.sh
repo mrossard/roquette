@@ -14,6 +14,4 @@
 # Déclencher les migrations de schéma
 php /app/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 
-
-
 exec "$@"

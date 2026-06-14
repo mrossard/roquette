@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b3e513c5657f0de57643dd9175b92569",
+    "content-hash": "34511f53f9d3fba67c0bcd8d29e49a17",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3873,6 +3873,211 @@
                 }
             ],
             "time": "2026-05-15T19:15:50+00:00"
+        },
+        {
+            "name": "symfony/ai-postgres-store",
+            "version": "v0.9.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/ai-postgres-store.git",
+                "reference": "ae4d00ef22e95c2da07379564ef9e4fc6752cf39"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/ai-postgres-store/zipball/ae4d00ef22e95c2da07379564ef9e4fc6752cf39",
+                "reference": "ae4d00ef22e95c2da07379564ef9e4fc6752cf39",
+                "shasum": ""
+            },
+            "require": {
+                "ext-pdo": "*",
+                "oskarstark/enum-helper": "^1.5",
+                "php": ">=8.2",
+                "symfony/ai-platform": "^0.9",
+                "symfony/ai-store": "^0.9",
+                "symfony/uid": "^7.3|^8.0"
+            },
+            "require-dev": {
+                "doctrine/dbal": "^3.3|^4.0",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "phpunit/phpunit": "^11.5.53"
+            },
+            "type": "symfony-ai-store",
+            "extra": {
+                "thanks": {
+                    "url": "https://github.com/symfony/ai",
+                    "name": "symfony/ai"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\AI\\Store\\Bridge\\Postgres\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Christopher Hertel",
+                    "email": "mail@christopher-hertel.de"
+                },
+                {
+                    "name": "Oskar Stark",
+                    "email": "oskarstark@googlemail.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "PostgreSQL pgvector vector store bridge for Symfony AI",
+            "keywords": [
+                "Bridge",
+                "ai",
+                "pgvector",
+                "postgres",
+                "postgresql",
+                "store",
+                "vector"
+            ],
+            "support": {
+                "source": "https://github.com/symfony/ai-postgres-store/tree/v0.9.0"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nicolas-grekas",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2026-05-16T08:40:45+00:00"
+        },
+        {
+            "name": "symfony/ai-store",
+            "version": "v0.9.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/ai-store.git",
+                "reference": "53961554949f74d56f7c0ece701c73cff5560a41"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/ai-store/zipball/53961554949f74d56f7c0ece701c73cff5560a41",
+                "reference": "53961554949f74d56f7c0ece701c73cff5560a41",
+                "shasum": ""
+            },
+            "require": {
+                "ext-fileinfo": "*",
+                "php": ">=8.2",
+                "psr/log": "^3.0",
+                "symfony/ai-platform": "^0.9",
+                "symfony/clock": "^7.3|^8.0",
+                "symfony/event-dispatcher-contracts": "^3.0",
+                "symfony/http-client": "^7.3|^8.0",
+                "symfony/polyfill-php83": "^1.32",
+                "symfony/service-contracts": "^2.5|^3",
+                "symfony/uid": "^7.3|^8.0"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "phpunit/phpunit": "^11.5.53",
+                "symfony/console": "^7.3|^8.0",
+                "symfony/dependency-injection": "^7.3|^8.0",
+                "symfony/dom-crawler": "^7.3|^8.0",
+                "symfony/filesystem": "^7.3|^8.0",
+                "symfony/json-path": "^7.3|^8.0",
+                "symfony/string": "^7.3|^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "thanks": {
+                    "url": "https://github.com/symfony/ai",
+                    "name": "symfony/ai"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\AI\\Store\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Christopher Hertel",
+                    "email": "mail@christopher-hertel.de"
+                },
+                {
+                    "name": "Oskar Stark",
+                    "email": "oskarstark@googlemail.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Low-level abstraction for storing and retrieving documents in a vector store.",
+            "keywords": [
+                "ai",
+                "azure",
+                "chromadb",
+                "clickhouse",
+                "cloudflare",
+                "elasticsearch",
+                "mariadb",
+                "meilisearch",
+                "milvus",
+                "mongodb",
+                "neo4j",
+                "opensearch",
+                "pinecone",
+                "postgres",
+                "qdrant",
+                "supabase",
+                "surrealdb",
+                "typesense",
+                "weaviate"
+            ],
+            "support": {
+                "source": "https://github.com/symfony/ai-store/tree/v0.9.0"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nicolas-grekas",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2026-05-16T08:40:45+00:00"
         },
         {
             "name": "symfony/asset",

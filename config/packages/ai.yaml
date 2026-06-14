@@ -4,3 +4,32 @@ ai:
             endpoint: '%env(resolve:LLM_ENDPOINT)%'
             http_client: 'llm.client'
 
+    store:
+        postgres:
+            doc_store:
+                dbal_connection: 'doctrine.dbal.default_connection'
+                table_name: 'doc_chunks'
+                vector_field: 'embedding'
+                distance: 'cosine'
+                lang: 'english'
+                setup_options:
+                    vector_size: 768
+                    index_method: 'hnsw'
+                    index_opclass: 'vector_cosine_ops'
+
+    vectorizer:
+        doc_vectorizer:
+            platform: 'ai.platform.ollama'
+            model: 'nomic-embed-text'
+
+    indexer:
+        doc_indexer:
+            vectorizer: 'ai.vectorizer.doc_vectorizer'
+            store: 'ai.store.postgres.doc_store'
+            transformers: []
+            filters: []
+
+    retriever:
+        doc_retriever:
+            store: 'ai.store.postgres.doc_store'
+            vectorizer: 'ai.vectorizer.doc_vectorizer'

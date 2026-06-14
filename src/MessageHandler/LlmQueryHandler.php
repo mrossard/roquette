@@ -13,6 +13,7 @@ use App\Service\LlmService;
 use App\Service\MessageFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\AI\Store\RetrieverInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Mercure\HubInterface;
@@ -20,23 +21,24 @@ use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
-final class LlmQueryHandler
+final readonly class LlmQueryHandler
 {
     public function __construct(
-        private readonly UserRepository $userRepository,
-        private readonly ChannelRepository $channelRepository,
-        private readonly MessageRepository $messageRepository,
-        private readonly UserChannelReadRepository $userChannelReadRepository,
-        private readonly LlmService $llmService,
-        private readonly MessageFormatter $messageFormatter,
-        private readonly HubInterface $hub,
-        private readonly ParameterBagInterface $parameterBag,
-        private readonly EntityManagerInterface $entityManager,
-        private readonly string $mercureTopicPrefix,
-        private readonly LoggerInterface $logger,
-        private readonly \Twig\Environment $twig,
+        private UserRepository $userRepository,
+        private ChannelRepository $channelRepository,
+        private MessageRepository $messageRepository,
+        private UserChannelReadRepository $userChannelReadRepository,
+        private LlmService $llmService,
+        private MessageFormatter $messageFormatter,
+        private HubInterface $hub,
+        private ParameterBagInterface $parameterBag,
+        private EntityManagerInterface $entityManager,
+        private string $mercureTopicPrefix,
+        private LoggerInterface $logger,
+        private \Twig\Environment $twig,
+        private RetrieverInterface $retriever,
         #[Autowire(env: 'int:LLM_MAX_SUMMARY_MESSAGES')]
-        private readonly int $maxSummaryMessages = 100,
+        private int $maxSummaryMessages = 100,
     ) {}
 
     public function __invoke(LlmQueryMessage $message): void
@@ -214,9 +216,30 @@ final class LlmQueryHandler
      */
     private function getDefaultHelpPrompts(string $question): array
     {
-        $projectDir = $this->parameterBag->get('kernel.project_dir');
-        $docPath = $projectDir . '/DOC_UTILISATEUR.md';
-        $documentation = file_exists($docPath) ? file_get_contents($docPath) : '';
+        $chunks = [];
+        try {
+            $retrieved = $this->retriever->retrieve($question, ['limit' => 5]);
+            foreach ($retrieved as $doc) {
+                if ($doc->getMetadata()->hasText()) {
+                    $title = $doc->getMetadata()->hasTitle()
+                        ? $doc->getMetadata()->getTitle()
+                        : $doc->getId();
+                    $chunks[] = '### ' . $title . "\n" . $doc->getMetadata()->getText();
+                }
+            }
+        } catch (\Exception) {
+        }
+
+        if ([] === $chunks) {
+            static $documentation = null;
+            if ($documentation === null) {
+                $docPath = $this->parameterBag->get('kernel.project_dir') . '/DOC_UTILISATEUR.md';
+                $documentation = file_exists($docPath) ? file_get_contents($docPath) : '';
+            }
+            $context = $documentation;
+        } else {
+            $context = implode("\n\n---\n\n", $chunks);
+        }
 
         $systemPrompt =
             "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette. "
@@ -224,7 +247,7 @@ final class LlmQueryHandler
             . 'Sois concis et précis dans ta réponse. '
             . "Si la réponse n'est pas dans la documentation, réponds poliment que tu ne sais pas car cela ne figure pas dans le guide utilisateur.\n\n"
             . "Documentation utilisateur :\n"
-            . $documentation;
+            . $context;
 
         return [$question, $systemPrompt];
     }
