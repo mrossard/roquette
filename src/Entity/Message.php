@@ -15,6 +15,7 @@ use Doctrine\ORM\Mapping\JoinColumn;
 #[ORM\Index(name: 'idx_message_created_at', columns: ['created_at'])]
 #[ORM\Index(name: 'idx_message_author', columns: ['author_id'])]
 #[ORM\Index(name: 'idx_message_channel_id', columns: ['channel_id', 'id'])]
+#[ORM\Index(name: 'idx_message_content_fts', columns: ['content_tsvector'])]
 class Message
 {
     #[ORM\Id]
@@ -75,6 +76,9 @@ class Message
 
     #[ORM\OneToOne(mappedBy: 'message', targetEntity: Poll::class, cascade: ['persist', 'remove'])]
     private ?Poll $poll = null;
+
+    #[ORM\Column(name: 'content_tsvector', type: 'text', nullable: true, insertable: false, updatable: false)]
+    private ?string $contentTsvector = null;
 
     public function __construct()
     {
