@@ -394,8 +394,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         if ($this->lastActiveAt !== null) {
-            $fiveMinutesAgo = new \DateTimeImmutable('-5 minutes');
-            if ($this->lastActiveAt > $fiveMinutesAgo) {
+            if ($this->lastActiveAt->getTimestamp() > (time() - 300)) {
                 return 'online';
             }
         }

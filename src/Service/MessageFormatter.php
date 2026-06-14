@@ -50,6 +50,7 @@ class MessageFormatter
     ];
 
     private readonly MarkdownConverter $converter;
+    private array $channelSlugCache = [];
 
     public function __construct(
         private readonly Security $security,
@@ -173,7 +174,10 @@ class MessageFormatter
             '/#([a-zA-Z0-9_-]+)/',
             function ($matches) {
                 $slug = $matches[1];
-                $channel = $this->channelRepository->findOneBy(['slug' => $slug, 'isDm' => false]);
+                if (!array_key_exists($slug, $this->channelSlugCache)) {
+                    $this->channelSlugCache[$slug] = $this->channelRepository->findOneBy(['slug' => $slug, 'isDm' => false]);
+                }
+                $channel = $this->channelSlugCache[$slug];
                 if ($channel) {
                     $currentUser = $this->security->getUser();
                     if ($channel->isPrivate()) {

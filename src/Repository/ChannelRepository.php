@@ -14,6 +14,8 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ChannelRepository extends ServiceEntityRepository
 {
+    private array $userGroupsCache = [];
+
     public function __construct(
         ManagerRegistry $registry,
         private readonly \App\Service\Group\GroupProviderInterface $groupProvider,
@@ -22,15 +24,38 @@ class ChannelRepository extends ServiceEntityRepository
         parent::__construct($registry, Channel::class);
     }
 
+    /**
+     * @return string[]
+     */
+    private function getUserGroupIdentifiers(\App\Entity\User $user): array
+    {
+        $userId = $user->getId();
+        if ($userId === null) {
+            $providerGroups = $this->groupProvider->getGroupsForUser($user);
+            $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
+
+            $localGroups = $this->userGroupRepository->findGroupsForUser($user);
+            $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
+
+            return array_unique(array_merge($providerGroupIdentifiers, $localGroupIdentifiers));
+        }
+
+        if (!isset($this->userGroupsCache[$userId])) {
+            $providerGroups = $this->groupProvider->getGroupsForUser($user);
+            $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
+
+            $localGroups = $this->userGroupRepository->findGroupsForUser($user);
+            $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
+
+            $this->userGroupsCache[$userId] = array_unique(array_merge($providerGroupIdentifiers, $localGroupIdentifiers));
+        }
+
+        return $this->userGroupsCache[$userId];
+    }
+
     public function findAllForUser(\App\Entity\User $user): array
     {
-        $providerGroups = $this->groupProvider->getGroupsForUser($user);
-        $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
-
-        $localGroups = $this->userGroupRepository->findGroupsForUser($user);
-        $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
-
-        $groupIdentifiers = array_unique(array_merge($providerGroupIdentifiers, $localGroupIdentifiers));
+        $groupIdentifiers = $this->getUserGroupIdentifiers($user);
 
         $qb = $this->createQueryBuilder('c')
             ->leftJoin('c.members', 'm');
@@ -222,13 +247,7 @@ class ChannelRepository extends ServiceEntityRepository
 
     public function searchByName(string $query, \App\Entity\User $user): array
     {
-        $providerGroups = $this->groupProvider->getGroupsForUser($user);
-        $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
-
-        $localGroups = $this->userGroupRepository->findGroupsForUser($user);
-        $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
-
-        $groupIdentifiers = array_unique(array_merge($providerGroupIdentifiers, $localGroupIdentifiers));
+        $groupIdentifiers = $this->getUserGroupIdentifiers($user);
 
         $qb = $this->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
@@ -274,13 +293,7 @@ class ChannelRepository extends ServiceEntityRepository
             return false;
         }
 
-        $providerGroups = $this->groupProvider->getGroupsForUser($user);
-        $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
-
-        $localGroups = $this->userGroupRepository->findGroupsForUser($user);
-        $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
-
-        $userGroupIdentifiers = array_unique(array_merge($providerGroupIdentifiers, $localGroupIdentifiers));
+        $userGroupIdentifiers = $this->getUserGroupIdentifiers($user);
 
         foreach ($subscriptions as $subscription) {
             if (in_array($subscription->getGroupIdentifier(), $userGroupIdentifiers, true)) {

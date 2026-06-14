@@ -73,7 +73,7 @@ class Channel
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Message $parentMessage = null;
 
-    #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'channel', cascade: ['remove'], fetch: 'EXTRA_LAZY')]
+    #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'channel', fetch: 'EXTRA_LAZY')]
     private Collection $messages;
 
     /**
