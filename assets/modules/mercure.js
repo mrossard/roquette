@@ -335,9 +335,13 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                 const id = oobElem.id;
                 const existing = document.getElementById(id);
                 if (existing) {
-                    existing.replaceWith(oobElem);
+                    if (window.Idiomorph) {
+                        window.Idiomorph.morph(existing, oobElem);
+                    } else {
+                        existing.replaceWith(oobElem);
+                    }
                     if (window.highlightAllCodeBlocks) {
-                        window.highlightAllCodeBlocks(oobElem);
+                        window.highlightAllCodeBlocks(existing);
                     }
                 } else {
                     const liveFeed = document.getElementById('live-feed');

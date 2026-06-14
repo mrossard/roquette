@@ -34,20 +34,12 @@ readonly class LlmService
      */
     public function generateText(string $prompt, ?string $systemPrompt = null, array $options = []): string
     {
-        $messages = [];
-
-        // Apply system prompt if available
-        $activeSystemPrompt = $systemPrompt ?? $this->defaultSystemPrompt;
-        if ($activeSystemPrompt !== null && $activeSystemPrompt !== '') {
-            $messages[] = new SystemMessage($activeSystemPrompt);
+        $text = '';
+        foreach ($this->generateTextStream($prompt, $systemPrompt, $options) as $chunk) {
+            $text .= $chunk;
         }
 
-        // Add user prompt
-        $messages[] = new UserMessage(new Text($prompt));
-
-        $messageBag = new MessageBag(...$messages);
-
-        return $this->platform->invoke($this->model, $messageBag, $options)->asText();
+        return $text;
     }
 
     /**
@@ -93,6 +85,18 @@ readonly class LlmService
      */
     public function chat(MessageBag $messageBag, array $options = []): string
     {
-        return $this->platform->invoke($this->model, $messageBag, $options)->asText();
+        $options['stream'] = true;
+
+        $resultStream = $this->platform->invoke($this->model, $messageBag, $options)->asStream();
+        $text = '';
+        foreach ($resultStream as $delta) {
+            if (!$delta instanceof \Symfony\AI\Platform\Result\Stream\Delta\TextDelta) {
+                continue;
+            }
+
+            $text .= $delta->getText();
+        }
+
+        return $text;
     }
 }
