@@ -120,9 +120,51 @@ class AppExtension extends AbstractExtension
         ]);
     }
 
+    private ?array $subchannelCache = null;
+
     public function getSubchannel(\App\Entity\Message $message): ?Channel
     {
-        return $this->channelRepository->findOneBy(['parentMessage' => $message]);
+        $messageId = $message->getId();
+        if ($messageId === null) {
+            return null;
+        }
+
+        if ($this->subchannelCache === null) {
+            $this->subchannelCache = [];
+            $em = $this->channelRepository->getEntityManager();
+            $messages = $em->getUnitOfWork()->getIdentityMap()[\App\Entity\Message::class] ?? [];
+            $messageIds = [];
+            foreach ($messages as $msg) {
+                if ($msg instanceof \App\Entity\Message && $msg->getId() !== null) {
+                    $messageIds[] = $msg->getId();
+                }
+            }
+
+            if (!empty($messageIds)) {
+                $channels = $this->channelRepository->createQueryBuilder('c')
+                    ->where('c.parentMessage IN (:messageIds)')
+                    ->setParameter('messageIds', $messageIds)
+                    ->getQuery()
+                    ->getResult();
+
+                foreach ($messageIds as $id) {
+                    $this->subchannelCache[$id] = null;
+                }
+
+                foreach ($channels as $channel) {
+                    if ($channel->getParentMessage() !== null) {
+                        $this->subchannelCache[$channel->getParentMessage()->getId()] = $channel;
+                    }
+                }
+            }
+        }
+
+        if (!array_key_exists($messageId, $this->subchannelCache)) {
+            $channel = $this->channelRepository->findOneBy(['parentMessage' => $message]);
+            $this->subchannelCache[$messageId] = $channel;
+        }
+
+        return $this->subchannelCache[$messageId];
     }
 
     public function getUserMercureTopics(\App\Entity\User $user): array

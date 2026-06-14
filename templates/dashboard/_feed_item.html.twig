@@ -180,7 +180,7 @@
             {% endif %}
         </div>
         {% if messageChannel and messageChannel.isTodoList() %}
-            {% set subChannel = messageObject ? get_subchannel(messageObject) : null %}
+            {% set subChannel = messageObject ? (subchannelByParentMessageId[message_id] ?? get_subchannel(messageObject)) : null %}
             {% if subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}
                 {% set subUnread = unreadCounts[subChannel.id]|default(null) %}
                 {% set subCount = subUnread ? subUnread.count : 0 %}

@@ -49,6 +49,8 @@ class ChannelRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
+        $needsFlush = false;
+
         $general = $this->findOneBy(['slug' => 'general']);
         if (!$general) {
             $general = new Channel();
@@ -56,6 +58,7 @@ class ChannelRepository extends ServiceEntityRepository
             $general->setSlug('general');
             $general->setDescription('Le canal de discussion principal pour tout le monde.');
             $this->getEntityManager()->persist($general);
+            $needsFlush = true;
         }
 
         $isMemberOfGeneral = false;
@@ -70,7 +73,7 @@ class ChannelRepository extends ServiceEntityRepository
 
         if (!$isMemberOfGeneral) {
             $general->addMember($user);
-            $this->getEntityManager()->flush();
+            $needsFlush = true;
             array_unshift($joinedChannels, $general);
         }
 
@@ -85,11 +88,11 @@ class ChannelRepository extends ServiceEntityRepository
             $robotUser->setPassword('robot-roquette-dummy-password');
             $robotUser->setRoles(['ROLE_USER']);
             $this->getEntityManager()->persist($robotUser);
-            $this->getEntityManager()->flush();
+            $needsFlush = true;
         } else {
             if ($robotUser->getDisplayName() !== 'Assistant') {
                 $robotUser->setDisplayName('Assistant');
-                $this->getEntityManager()->flush();
+                $needsFlush = true;
             }
         }
 
@@ -103,7 +106,7 @@ class ChannelRepository extends ServiceEntityRepository
             if ($channel->getName() !== 'Assistant') {
                 $channel->setName('Assistant');
                 $channel->setDescription('Discussion privée avec l\'Assistant');
-                $this->getEntityManager()->flush();
+                $needsFlush = true;
             }
             $hasRobotChannel = true;
             break;
@@ -120,7 +123,7 @@ class ChannelRepository extends ServiceEntityRepository
                 $robotChannel->addMember($user);
                 $robotChannel->addMember($robotUser);
                 $this->getEntityManager()->persist($robotChannel);
-                $this->getEntityManager()->flush();
+                $needsFlush = true;
             } else {
                 $flushed = false;
                 if ($robotChannel->getName() !== 'Assistant') {
@@ -137,10 +140,14 @@ class ChannelRepository extends ServiceEntityRepository
                     $flushed = true;
                 }
                 if ($flushed) {
-                    $this->getEntityManager()->flush();
+                    $needsFlush = true;
                 }
             }
             $joinedChannels[] = $robotChannel;
+        }
+
+        if ($needsFlush) {
+            $this->getEntityManager()->flush();
         }
 
         // Apply custom channel ordering if it exists
