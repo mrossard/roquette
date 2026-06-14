@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Entity\AuditLog;
 use App\Entity\User;
 use App\Enum\AuditAction;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Message\AuditLogMessage;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 class AuditLoggerService
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
+        private MessageBusInterface $messageBus,
         private RequestStack $requestStack,
     ) {}
 
@@ -22,13 +22,12 @@ class AuditLoggerService
         $request = $this->requestStack->getCurrentRequest();
         $ipAddress = $request?->getClientIp();
 
-        $log = new AuditLog();
-        $log->setAction($action);
-        $log->setPerformedBy($performedBy);
-        $log->setDetails($details);
-        $log->setIpAddress($ipAddress);
-
-        $this->entityManager->persist($log);
-        $this->entityManager->flush();
+        $this->messageBus->dispatch(new AuditLogMessage(
+            action: $action,
+            performedById: $performedBy?->getId(),
+            details: $details,
+            ipAddress: $ipAddress,
+            createdAt: new \DateTimeImmutable(),
+        ));
     }
 }
