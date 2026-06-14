@@ -1,0 +1,9 @@
+<div class="invitations-section" id="invitations-section"
+     {% if pendingInvitations is empty %}style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1.25rem;"{% else %}style="margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1.25rem;"{% endif %}>
+    <h3 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem;">{{ 'Invitations'|trans }}</h3>
+    <div class="invitations-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for invite in pendingInvitations %}
+            {% include 'dashboard/_invite_sidebar_item.html.twig' with {'invite': invite} %}
+        {% endfor %}
+    </div>
+</div>

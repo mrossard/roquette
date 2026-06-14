@@ -1,0 +1,39 @@
+{% set hasFavorites = false %}
+{% for channel in channels %}
+    {% if app.user.isChannelFavorite(channel) and not (channel.slug starts with 'dm-robot-roquette-') %}
+        {% set hasFavorites = true %}
+    {% endif %}
+{% endfor %}
+
+{% if hasFavorites %}
+    <details class="sidebar-section-details" data-section="favorites" open
+             style="margin-bottom: 1.5rem; display: block;">
+        <summary class="sidebar-section-header">
+            <span>
+                <span class="sidebar-section-toggle-icon">▼</span>
+                {{ 'Favoris'|trans }}
+            </span>
+        </summary>
+        <div class="channel-list" id="section-favorites" data-list-type="favorites">
+            {% for channel in channels %}
+                {% if app.user.isChannelFavorite(channel) and not (channel.slug starts with 'dm-robot-roquette-') %}
+                    {% if channel.isSubChannel %}
+                        {% if (activeChannel and channel.id == activeChannel.id) or (unreadCounts[channel.id] is defined and unreadCounts[channel.id].count > 0) %}
+                            {% include 'dashboard/_subchannel_sidebar_item.html.twig' with {
+                                'channel': channel,
+                                'unreadCounts': unreadCounts,
+                                'activeChannel': activeChannel
+                            } %}
+                        {% endif %}
+                    {% else %}
+                        {% include 'dashboard/_channel_sidebar_item.html.twig' with {
+                            'channel': channel,
+                            'unreadCounts': unreadCounts,
+                            'activeChannel': activeChannel
+                        } %}
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </details>
+{% endif %}

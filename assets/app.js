@@ -55,10 +55,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
 }
 
-console.log('Roquette application initialized! 🚀');
-
 // ── Draft persistence: save the textarea content on every keystroke ──────────
-// Uses a delegated listener so it works even after the textarea is re-created.
 function getActiveChannelSlug() {
     const badge = document.getElementById('mercure-status');
     return badge ? badge.getAttribute('data-active-channel-slug') : null;
@@ -70,10 +67,8 @@ document.addEventListener('input', (e) => {
     if (!slug) return;
     const text = e.target.value;
     if (text.trim()) {
-        console.log('[Draft] 💾 SAVE on input, slug=' + slug + ', length=' + text.length);
         sessionStorage.setItem('draft:' + slug, text);
     } else {
-        console.log('[Draft] 🗑️ REMOVE on input (empty), slug=' + slug);
         sessionStorage.removeItem('draft:' + slug);
     }
 });
@@ -343,7 +338,6 @@ document.body.addEventListener('htmx:afterRequest', (evt) => {
                 const statusBadge = document.getElementById('mercure-status');
                 const slug = statusBadge ? statusBadge.getAttribute('data-active-channel-slug') : null;
                 if (slug) {
-                    console.log('[Draft] 🧹 CLEAR after publish, slug=' + slug);
                     sessionStorage.removeItem('draft:' + slug);
                 }
 
@@ -407,7 +401,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener('htmx:afterSettle', (evt) => {
         const target = evt.detail.target;
         const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
-        console.log('[Draft] 🔄 htmx:afterSettle fired, target=' + (target ? (target.tagName + '#' + target.id + '.' + target.className.split(' ').slice(0,2).join('.')) : 'null') + ', isChannelSwitch=' + isChannelSwitch);
 
         // ── Skip / early-return cases ──────────────────────────────────────────
         if (target && target.id === 'global-search-results') {
@@ -492,61 +485,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Refocus appropriate input and restore draft after channel switches
         if (isChannelSwitch) {
-            // Dump all drafts in sessionStorage
-            const allDrafts = [];
-            for (let i = 0; i < sessionStorage.length; i++) {
-                const key = sessionStorage.key(i);
-                if (key.startsWith('draft:')) {
-                    allDrafts.push(key + ' (' + sessionStorage.getItem(key).length + ' chars)');
-                }
-            }
-            console.log('[Draft] 🔀 CHANNEL SWITCH detected. Drafts in storage: [' + allDrafts.join(', ') + ']');
             const messageInputAfterSettle = document.getElementById('message');
-            console.log('[Draft] 🔀 #message textarea found=' + !!messageInputAfterSettle);
             if (messageInputAfterSettle && !isMobile) {
                 messageInputAfterSettle.focus();
             }
             if (messageInputAfterSettle) {
-                const slugNow = getActiveChannelSlug();
-                console.log('[Draft] 🔀 Active slug=' + slugNow + ', scheduling rAF...');
                 // Restore draft after all init functions have finished and DOM is stable
                 requestAnimationFrame(() => {
                     const slug = getActiveChannelSlug();
-                    console.log('[Draft] 📥 RESTORE in rAF, slug=' + slug);
                     if (slug) {
                         const draft = sessionStorage.getItem('draft:' + slug);
                         const textarea = document.getElementById('message');
-                        console.log('[Draft] 📥 draft=' + (draft ? '"' + draft.substring(0, 30) + '"' : 'null') + ', textarea=' + !!textarea + ', currentValue="' + (textarea ? textarea.value : '') + '"');
                         if (draft && textarea) {
                             textarea.value = draft;
                             textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                            console.log('[Draft] ✅ RESTORED OK');
-                            setTimeout(() => {
-                                const ta = document.getElementById('message');
-                                console.log('[Draft] ⏰ 50ms check: value="' + (ta ? ta.value.substring(0, 50) : 'TEXTAREA GONE') + '"');
-                            }, 50);
-                            setTimeout(() => {
-                                const ta = document.getElementById('message');
-                                console.log('[Draft] ⏰ 500ms check: value="' + (ta ? ta.value.substring(0, 50) : 'TEXTAREA GONE') + '"');
-                            }, 500);
                         }
                     }
                 });
-            } else {
-                console.log('[Draft] ⚠️ No #message textarea found after channel switch');
             }
             initializeChannelScroll();
         }
         checkJumpToMessage();
     });
 
-    // Diagnosing focus steals on main message input
-    const messageEl = document.getElementById('message');
-    if (messageEl) {
-        messageEl.addEventListener('focus', () => {
-            console.trace('[Diagnostic] Message input #message gained focus!');
-        });
-    }
 });
 
 // Global HTMX listener to toggle data-search-active when searching

@@ -1,0 +1,50 @@
+<div class="formatting-toolbar">
+    <button type="button" class="btn-format" data-markdown="bold" title="{{ 'Gras (**)'|trans }}">
+        <span class="icon">B</span>
+    </button>
+    <button type="button" class="btn-format" data-markdown="italic" title="{{ 'Italique (*)'|trans }}">
+        <span class="icon">I</span>
+    </button>
+    <button type="button" class="btn-format" data-markdown="strikethrough"
+            title="{{ 'Barré (~~)'|trans }}">
+        <span class="icon">S</span>
+    </button>
+    <button type="button" class="btn-format" data-markdown="quote"
+            title="{{ 'Citation (&gt;)'|trans }}">
+        <span class="icon">”</span>
+    </button>
+    <button type="button" class="btn-format" data-markdown="code"
+            title="{{ 'Code en ligne (`)'|trans }}">
+        <span class="icon">&lt;/&gt;</span>
+    </button>
+    <button type="button" class="btn-format" data-markdown="codeblock"
+            title="{{ 'Bloc de code (```)'|trans }}">
+        <span class="icon">code</span>
+    </button>
+    <button type="button" class="btn-format" data-markdown="link"
+            title="{{ 'Lien [texte](url)'|trans }}">
+        <span class="icon">🔗</span>
+    </button>
+    <button type="button"
+            class="btn-format btn-poll-toggle {% if pollComposerOpen|default(false) %}active{% endif %}"
+            hx-get="{{ path('app_composer_toggle', {slug: activeChannel.slug, open: pollComposerOpen|default(false) ? 0 : 1}) }}"
+            hx-include="closest form"
+            hx-target="closest form"
+            hx-swap="morph transition:false"
+            title="{{ 'Créer un sondage'|trans }}">
+        <span class="icon">📊</span>
+    </button>
+
+    <div class="toolbar-tabs" style="margin-left: auto; display: flex; gap: 4px;">
+        <button type="button" class="btn-format active" id="message-btn-edit-tab"
+                hx-on:click="this.closest('.chat-message-form').classList.remove('show-preview')"
+                title="{{ 'Écrire'|trans }}">{{ 'Écrire'|trans }}</button>
+        <button type="button" class="btn-format" id="message-btn-preview-tab"
+                hx-post="{{ path('app_api_message_preview') }}"
+                hx-include="#message"
+                hx-target="#message-preview"
+                hx-swap="innerHTML transition:false"
+                hx-on:click="this.closest('.chat-message-form').classList.add('show-preview')"
+                title="{{ 'Aperçu'|trans }}">{{ 'Aperçu'|trans }}</button>
+    </div>
+</div>

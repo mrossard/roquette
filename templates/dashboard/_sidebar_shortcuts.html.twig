@@ -1,0 +1,43 @@
+{% set robotChannel = null %}
+{% for channel in channels %}
+    {% if channel.slug starts with 'dm-robot-roquette-' %}
+        {% set robotChannel = channel %}
+    {% endif %}
+{% endfor %}
+
+<details class="sidebar-section-details" data-section="shortcuts" open
+         style="margin-bottom: 1.5rem; display: block;">
+    <summary class="sidebar-section-header">
+        <span>
+            <span class="sidebar-section-toggle-icon">▼</span>
+            {{ 'Raccourcis'|trans }}
+        </span>
+    </summary>
+    <div class="channel-list" id="section-shortcuts">
+        <div style="margin-bottom: 0.125rem;">
+            <a href="{{ path('app_saved_messages') }}"
+               class="btn-sidebar-item {% if app.request.attributes.get('_route') == 'app_saved_messages' %}active{% endif %}">
+                <span style="font-size: 1.1rem; line-height: 1; margin-right: 0.5rem;">⭐</span>
+                <span>{{ 'Messages enregistrés'|trans }}</span>
+            </a>
+        </div>
+
+        <div style="margin-bottom: 0.125rem;">
+            <a href="{{ path('app_my_reactions') }}"
+               class="btn-sidebar-item {% if app.request.attributes.get('_route') == 'app_my_reactions' or app.request.attributes.get('_route') == 'app_my_reactions_filtered' %}active{% endif %}">
+                <span style="font-size: 1.1rem; line-height: 1; margin-right: 0.5rem;">💬</span>
+                <span>{{ 'Mes réactions'|trans }}</span>
+            </a>
+        </div>
+
+        {% if robotChannel %}
+            <div class="channel-group">
+                {% include 'dashboard/_channel_sidebar_item.html.twig' with {
+                    'channel': robotChannel,
+                    'unreadCounts': unreadCounts,
+                    'activeChannel': activeChannel
+                } %}
+            </div>
+        {% endif %}
+    </div>
+</details>

@@ -1,0 +1,67 @@
+<div class="chat-input-container">
+    <!-- Reply context banner -->
+    <div id="reply-context-banner" class="reply-context-banner" style="display: none;">
+        <span class="reply-context-icon">↩</span>
+        <span id="reply-context-label" class="reply-context-label"></span>
+        <input type="hidden" id="reply-to-input" name="replyTo" value="">
+        <button type="button" id="btn-cancel-reply" class="btn-cancel-reply"
+                title="{{ 'Annuler la réponse'|trans }}">✕
+        </button>
+    </div>
+
+    <!-- File upload preview -->
+    <div id="file-preview-container" class="file-preview-container"
+         style="display: none; flex-direction: column; align-items: stretch; gap: 0.5rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <div class="file-preview-info">
+                <span class="file-preview-icon">📎</span>
+                <span id="file-preview-name" class="file-preview-name"></span>
+            </div>
+            <button type="button" id="btn-clear-file" class="btn-clear-file"
+                    title="{{ 'Supprimer le fichier'|trans }}">✕
+            </button>
+        </div>
+        <div id="file-upload-progress" class="upload-progress-wrapper" style="display: none; width: 100%;">
+            <div class="upload-progress-bar-bg" style="background: rgba(255, 255, 255, 0.1); border-radius: 4px; height: 6px; overflow: hidden; width: 100%;">
+                <div id="file-upload-progress-bar" class="upload-progress-bar" style="background: var(--accent-cyan); height: 100%; width: 0%; transition: width 0.15s ease;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                <span>{{ 'Envoi en cours...'|trans }}</span>
+                <span id="file-upload-progress-percent" class="upload-progress-percent">0%</span>
+            </div>
+        </div>
+    </div>
+
+    <label for="message" class="sr-only">{{ 'Message'|trans }}</label>
+    <div class="message-input-wrapper">
+        <input type="file" id="file-upload" name="file" style="display: none;" />
+        <textarea id="message" name="message"
+                  {% if not pollComposerOpen|default(false) %}required{% else %}disabled
+                  placeholder="Sondage en cours de création..."{% endif %}
+                  oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"
+                  placeholder="{{ 'Saisissez votre message dans #%name%...'|trans({'%name%': activeChannel.name}) }}"
+                  rows="1">{{ messageValue|default('') }}</textarea>
+        <div id="message-preview" class="message-preview-box" style="display: none;"></div>
+
+
+        <div class="input-actions-wrapper">
+            <button type="button" class="btn-format-toggle"
+                    onclick="this.closest('.chat-message-form').classList.toggle('show-formatting'); this.classList.toggle('active');"
+                    title="{{ 'Options de formatage'|trans }}" aria-label="{{ 'Options de formatage'|trans }}">
+                {{ ux_icon('heroicons:document-text', {'aria-hidden': 'true'}) }}
+            </button>
+            <button type="button" class="btn-file-toggle" data-file-input="file-upload"
+                    title="{{ 'Joindre un fichier'|trans }}" aria-label="{{ 'Joindre un fichier'|trans }}">
+                {{ ux_icon('heroicons:paper-clip', {class: 'btn-icon', 'aria-hidden': 'true'}) }}
+            </button>
+            <button type="button" class="btn-emoji-toggle" data-emoji-target="#message"
+                    title="{{ 'Ajouter un émoji'|trans }}" aria-label="{{ 'Ajouter un émoji'|trans }}">
+                {{ ux_icon('heroicons:face-smile', {'aria-hidden': 'true'}) }}
+            </button>
+        </div>
+    </div>
+    <button type="submit" class="btn-publish-compact" title="{{ 'Diffuser'|trans }}"
+            aria-label="{{ 'Diffuser le message'|trans }}">
+        {{ ux_icon('heroicons:paper-airplane', {class: 'btn-icon', 'aria-hidden': 'true'}) }}
+    </button>
+</div>

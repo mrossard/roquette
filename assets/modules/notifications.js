@@ -468,7 +468,6 @@ export function handleChannelDeletedNotification(data) {
     if (statusBadge) {
         const activeChannelSlug = statusBadge.getAttribute('data-active-channel-slug');
         if (data.channelSlug === activeChannelSlug) {
-            console.log('Active channel was deleted. Redirecting to home...');
             window.location.href = '/';
         }
     }

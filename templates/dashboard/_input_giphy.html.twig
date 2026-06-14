@@ -1,0 +1,41 @@
+{% if giphyPreviews is defined and giphyPreviews is not empty %}
+    <div class="giphy-preview-panel glass-panel">
+        <div class="giphy-preview-header">
+            <span class="giphy-preview-title">👾 Choisir un GIF pour "{{ giphyQuery }}" :</span>
+            <button type="button" class="btn-giphy-cancel"
+                    hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
+                    hx-vals='{"message": ""}'
+                    hx-target="closest form"
+                    hx-swap="morph transition:false"
+                    title="Annuler">
+                Annuler
+            </button>
+        </div>
+        <div class="giphy-preview-grid">
+            {% for gif in giphyPreviews %}
+                <div class="giphy-preview-item"
+                     hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
+                     hx-vals='{"message": "![giphy {{ giphyQuery|escape('js') }}]({{ gif.url }})"}'
+                     hx-target="closest form"
+                     hx-swap="morph transition:false">
+                    <img src="{{ gif.preview }}" alt="GIF Preview" class="giphy-preview-img">
+                    <div class="giphy-preview-overlay">
+                        <span class="giphy-send-icon">📤</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% elseif giphyPreviews is defined %}
+    <div class="giphy-preview-panel glass-panel" style="padding: 0.5rem; text-align: center; font-size: 0.85rem; color: var(--accent-red, #ff5b5b); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+        <span>❌ Aucun GIF trouvé pour "{{ giphyQuery }}".</span>
+        <button type="button" class="btn-giphy-cancel"
+                hx-post="{{ path('app_publish', {slug: activeChannel.slug}) }}"
+                hx-vals='{"message": ""}'
+                hx-target="closest form"
+                hx-swap="morph transition:false"
+                title="Fermer">
+            Fermer
+        </button>
+    </div>
+{% endif %}

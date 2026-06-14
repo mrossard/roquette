@@ -276,7 +276,6 @@ export function initOfflineQueue() {
 
     // Monitor online/offline status
     window.addEventListener('online', () => {
-        console.log('Browser back online. Attempting to sync offline messages...');
         syncOfflineMessages();
     });
 
