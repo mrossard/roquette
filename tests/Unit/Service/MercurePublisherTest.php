@@ -25,13 +25,15 @@ class MercurePublisherTest extends TestCase
 {
     private MessageBusInterface&MockObject $bus;
     private UserChannelReadRepository&MockObject $ucrRepo;
+    private \Symfony\Contracts\Translation\TranslatorInterface&MockObject $translator;
     private MercurePublisher $publisher;
 
     protected function setUp(): void
     {
         $this->bus = $this->createMock(MessageBusInterface::class);
         $this->ucrRepo = $this->createMock(UserChannelReadRepository::class);
-        $this->publisher = new MercurePublisher($this->bus, 'http://test-mercure', $this->ucrRepo);
+        $this->translator = $this->createMock(\Symfony\Contracts\Translation\TranslatorInterface::class);
+        $this->publisher = new MercurePublisher($this->bus, 'http://test-mercure', $this->ucrRepo, $this->translator);
     }
 
     #[Test]

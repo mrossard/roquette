@@ -37,7 +37,7 @@
         <input type="file" id="file-upload" name="file" style="display: none;" />
         <textarea id="message" name="message"
                   {% if not pollComposerOpen|default(false) %}required{% else %}disabled
-                  placeholder="Sondage en cours de création..."{% endif %}
+                  placeholder="{{ 'Sondage en cours de création...'|trans }}"{% endif %}
                   oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"
                   placeholder="{{ 'Saisissez votre message dans #%name%...'|trans({'%name%': activeChannel.name}) }}"
                   rows="1">{{ messageValue|default('') }}</textarea>

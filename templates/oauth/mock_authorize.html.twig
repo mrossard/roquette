@@ -122,20 +122,20 @@
 </head>
 <body>
     <div class="card">
-        <span class="app-badge">Mock OAuth2 Server</span>
-        <h1>Demande d'autorisation</h1>
-        <p>L'application <strong>Roquette</strong> souhaite se connecter à votre compte et accéder à votre profil public (nom, email).</p>
+        <span class="app-badge">{{ 'Mock OAuth2 Server'|trans }}</span>
+        <h1>{{ "Demande d'autorisation"|trans }}</h1>
+        <p>{{ "L'application <strong>Roquette</strong> souhaite se connecter à votre compte et accéder à votre profil public (nom, email)."|trans|raw }}</p>
 
         <form method="POST">
             <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
             <input type="hidden" name="state" value="{{ state }}">
 
             <div class="input-group">
-                <label for="username">Choisissez un nom d'utilisateur Mock</label>
-                <input type="text" id="username" name="username" placeholder="Ex: JeanDupont, SuperDev..." required autofocus>
+                <label for="username">{{ 'Choisissez un nom d\'utilisateur Mock'|trans }}</label>
+                <input type="text" id="username" name="username" placeholder="{{ 'Ex: JeanDupont, SuperDev...'|trans }}" required autofocus>
             </div>
 
-            <button type="submit" class="btn">Autoriser & Se connecter</button>
+            <button type="submit" class="btn">{{ 'Autoriser & Se connecter'|trans }}</button>
         </form>
     </div>
 </body>

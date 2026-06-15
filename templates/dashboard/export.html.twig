@@ -314,10 +314,10 @@
                 <p class="header-desc">{{ channel.description }}</p>
             {% endif %}
             <div class="header-meta">
-                <span class="meta-item">Type : <strong>{% if channel.isDm %}Direct Message{% elseif channel.isPrivate %}Privé{% else %}Public{% endif %}</strong></span>
-                <span class="meta-item">Messages : <strong>{{ messages|length }}</strong></span>
-                <span class="meta-item">Exporté le : <strong>{{ exportData.exportedAt|date('d/m/Y H:i:s') }}</strong></span>
-                <span class="meta-item">Par : <strong>{{ exportData.exportedBy }}</strong></span>
+                <span class="meta-item">{{ 'Type :'|trans }} <strong>{% if channel.isDm %}{{ 'Direct Message'|trans }}{% elseif channel.isPrivate %}{{ 'Privé'|trans }}{% else %}{{ 'Public'|trans }}{% endif %}</strong></span>
+                <span class="meta-item">{{ 'Messages :'|trans }} <strong>{{ messages|length }}</strong></span>
+                <span class="meta-item">{{ 'Exporté le :'|trans }} <strong>{{ exportData.exportedAt|date('d/m/Y H:i:s') }}</strong></span>
+                <span class="meta-item">{{ 'Par :'|trans }} <strong>{{ exportData.exportedBy }}</strong></span>
             </div>
         </header>
 
@@ -342,7 +342,7 @@
                             </span>
                             <span class="timestamp">{{ msg.createdAt|date('H:i') }}</span>
                             {% if msg.updatedAt %}
-                                <span class="edited-indicator" title="Modifié le {{ msg.updatedAt|date('d/m/Y H:i:s') }}">(modifié)</span>
+                                <span class="edited-indicator" title="{{ 'Modifié le'|trans }} {{ msg.updatedAt|date('d/m/Y H:i:s') }}">{{ '(modifié)'|trans }}</span>
                             {% endif %}
                         </div>
                         <div class="message-body">
@@ -379,7 +379,7 @@
         </main>
 
         <footer class="export-footer">
-            Généré automatiquement par Roquette 🚀
+            {{ "Généré automatiquement par Roquette 🚀"|trans }}
         </footer>
     </div>
 </body>

@@ -94,7 +94,7 @@ class ChannelExportService
         $zip = new \ZipArchive();
         $zipFile = tempnam(sys_get_temp_dir(), 'export-');
         if ($zipFile === false || $zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            throw new \RuntimeException('Impossible de créer l\'archive ZIP.');
+            throw new \RuntimeException($this->translator->trans('Impossible de créer l\'archive ZIP.'));
         }
 
         $zip->addFromString('channel.json', json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));

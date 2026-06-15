@@ -20,7 +20,7 @@
 {% set filePath = filePath|default(messageObject ? messageObject.filePath : null) %}
 {% set mimeType = mimeType|default(messageObject ? messageObject.mimeType : null) %}
 {% set user_hue = author ? author.hue : 200 %}
-{% set username = (messageObject and messageObject.customAuthorName) ? messageObject.customAuthorName : (author ? (author.displayName|default(author.username)) : (user|default('Utilisateur'))) %}
+{% set username = (messageObject and messageObject.customAuthorName) ? messageObject.customAuthorName : (author ? (author.displayName|default(author.username)) : (user|default('Utilisateur'|trans))) %}
 {% set messageChannel = messageObject ? messageObject.getChannel() : null %}
 {% set isThisMessagePinned = messageChannel and messageChannel.pinnedMessage == messageObject %}
 {% set isMeMessage = message is not null and (message starts with '/me ' or message == '/me') %}

@@ -7,6 +7,7 @@ namespace App\Service;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ClamavService
 {
@@ -16,6 +17,7 @@ class ClamavService
         #[Autowire(env: 'int:CLAMAV_PORT')]
         private int $port,
         private LoggerInterface $logger,
+        private TranslatorInterface $translator,
     ) {}
 
     /**
@@ -26,7 +28,7 @@ class ClamavService
     {
         $handle = fopen($file->getPathname(), 'rb');
         if (!$handle) {
-            throw new \RuntimeException('Impossible d\'ouvrir le fichier pour l\'analyse antivirus.');
+            throw new \RuntimeException($this->translator->trans('Impossible d\'ouvrir le fichier pour l\'analyse antivirus.'));
         }
         try {
             return $this->scanStream($handle, $file->getClientOriginalName());
@@ -57,7 +59,7 @@ class ClamavService
                 $errno,
                 $e->getMessage(),
             ));
-            throw new \RuntimeException('Le service d\'analyse antivirus est temporairement indisponible.', 0, $e);
+            throw new \RuntimeException($this->translator->trans('Le service d\'analyse antivirus est temporairement indisponible.'), 0, $e);
         } finally {
             restore_error_handler();
         }
@@ -70,7 +72,7 @@ class ClamavService
                 $errstr !== null && $errstr !== '' ? $errstr : 'Unknown error',
                 $errno,
             ));
-            throw new \RuntimeException('Le service d\'analyse antivirus est temporairement indisponible.');
+            throw new \RuntimeException($this->translator->trans('Le service d\'analyse antivirus est temporairement indisponible.'));
         }
 
         // Send INSTREAM command (nINSTREAM\n is standard for TCP)
@@ -120,6 +122,6 @@ class ClamavService
             $originalFileName,
             $response,
         ));
-        throw new \RuntimeException('Une erreur est survenue lors de l\'analyse antivirus du fichier.');
+        throw new \RuntimeException($this->translator->trans('Une erreur est survenue lors de l\'analyse antivirus du fichier.'));
     }
 }

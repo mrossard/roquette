@@ -1,3 +1,5 @@
+const trans = (key) => (window.AppTranslations && window.AppTranslations[key]) || key;
+
 function isCurrentUserBusy() {
     const statusBadge = document.getElementById('mercure-status');
     if (!statusBadge) return false;
@@ -98,8 +100,8 @@ export function setupNotificationHeaderButton() {
                 text.className = 'btn-text';
                 btn.appendChild(text);
             }
-            text.textContent = 'Activer les notifications';
-            btn.title = "Activer les notifications de bureau";
+            text.textContent = trans('Activer les notifications');
+            btn.title = trans('Activer les notifications de bureau');
             btn.style.border = '1px solid var(--accent-cyan)';
             btn.style.boxShadow = '0 0 8px rgba(0, 229, 255, 0.2)';
             btn.style.opacity = '1';
@@ -111,20 +113,20 @@ export function setupNotificationHeaderButton() {
             if (permission === 'granted') {
                 if (enabled) {
                     bell.textContent = '🔔';
-                    btn.title = "Notifications actives (cliquez pour désactiver)";
+                    btn.title = trans("Notifications actives (cliquez pour désactiver)");
                     btn.style.border = '1px solid var(--border-glass)';
                     btn.style.boxShadow = 'none';
                     btn.style.opacity = '1';
                 } else {
                     bell.textContent = '🔕';
-                    btn.title = "Notifications désactivées (cliquez pour activer)";
+                    btn.title = trans("Notifications désactivées (cliquez pour activer)");
                     btn.style.border = '1px solid var(--border-glass)';
                     btn.style.boxShadow = 'none';
                     btn.style.opacity = '0.6';
                 }
             } else if (permission === 'denied') {
                 bell.textContent = '🔕';
-                btn.title = "Notifications bloquées. Modifiez les autorisations de votre navigateur.";
+                btn.title = trans("Notifications bloquées. Modifiez les autorisations de votre navigateur.");
                 btn.style.border = '1px solid var(--border-glass)';
                 btn.style.boxShadow = 'none';
                 btn.style.opacity = '0.4';
@@ -152,8 +154,8 @@ export function setupNotificationHeaderButton() {
                 if (newPermission === 'granted') {
                     localStorage.setItem('roquette_notifications_enabled', 'true');
                     sendDesktopNotification(
-                        'Notifications activées ! 🚀',
-                        'Vous recevrez désormais des alertes pour les nouveaux messages et invitations.'
+                        trans('Notifications activées ! 🚀'),
+                        trans('Vous recevrez désormais des alertes pour les nouveaux messages et invitations.')
                     );
                 }
                 updateButtonUI();
@@ -167,8 +169,8 @@ export function setupNotificationHeaderButton() {
 
             if (!currentlyEnabled) {
                 sendDesktopNotification(
-                    'Notifications réactivées ! 🔔',
-                    'Les alertes de bureau sont à nouveau actives.'
+                    trans('Notifications réactivées ! 🔔'),
+                    trans('Les alertes de bureau sont à nouveau actives.')
                 );
             }
         }
@@ -194,13 +196,13 @@ export function updateSettingsPageUI() {
     if (permission === 'default') {
         container.innerHTML = `
             <div class="notification-status-badge default">
-                <span>🔔 Les notifications ne sont pas encore configurées.</span>
+                <span>🔔 ${trans('Les notifications ne sont pas encore configurées.')}</span>
             </div>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
-                Pour recevoir des alertes de bureau, vous devez autoriser Roquette à vous envoyer des notifications.
+                ${trans('Pour recevoir des alertes de bureau, vous devez autoriser Roquette à vous envoyer des notifications.')}
             </p>
             <button id="enable-notifications-btn" class="btn-submit" style="width: 100%;">
-                Autoriser les notifications
+                ${trans('Autoriser les notifications')}
             </button>
         `;
 
@@ -209,8 +211,8 @@ export function updateSettingsPageUI() {
                 if (newPermission === 'granted') {
                     localStorage.setItem('roquette_notifications_enabled', 'true');
                     sendDesktopNotification(
-                        'Notifications activées ! 🚀',
-                        'Vous recevrez désormais des alertes pour les nouveaux messages et invitations.'
+                        trans('Notifications activées ! 🚀'),
+                        trans('Vous recevrez désormais des alertes pour les nouveaux messages et invitations.')
                     );
                 }
                 updateSettingsPageUI();
@@ -225,11 +227,11 @@ export function updateSettingsPageUI() {
 
         container.innerHTML = `
             <div class="notification-status-badge granted">
-                <span>✅ Les notifications sont autorisées dans votre navigateur.</span>
+                <span>✅ ${trans('Les notifications sont autorisées dans votre navigateur.')}</span>
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 0.75rem; border: 1px solid var(--border-glass);">
-                <span style="font-size: 0.9rem; color: var(--text-primary);">🔔 Notifications de bureau</span>
+                <span style="font-size: 0.9rem; color: var(--text-primary);">🔔 ${trans('Notifications de bureau')}</span>
                 <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
                     <input type="checkbox" id="notification-toggle-checkbox" ${enabled ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
                     <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${enabled ? 'var(--accent-cyan)' : 'rgba(255, 255, 255, 0.1)'}; transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
@@ -237,7 +239,7 @@ export function updateSettingsPageUI() {
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 0.75rem; border: 1px solid var(--border-glass);">
-                <span style="font-size: 0.9rem; color: var(--text-primary);">🔊 Son de notification</span>
+                <span style="font-size: 0.9rem; color: var(--text-primary);">🔊 ${trans('Son de notification')}</span>
                 <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
                     <input type="checkbox" id="notification-sound-checkbox" ${soundEnabled ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
                     <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${soundEnabled ? 'var(--accent-cyan)' : 'rgba(255, 255, 255, 0.1)'}; transition: .3s; border-radius: 24px; border: 1px solid var(--border-glass);"></span>
@@ -246,7 +248,7 @@ export function updateSettingsPageUI() {
 
             <div style="display: flex; gap: 0.5rem;">
                 <button id="test-notification-btn" class="btn-submit" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text-primary);" ${!enabled ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
-                    Envoyer un test
+                    ${trans('Envoyer un test')}
                 </button>
             </div>
         `;
@@ -292,17 +294,17 @@ export function updateSettingsPageUI() {
 
         testBtn?.addEventListener('click', () => {
             sendDesktopNotification(
-                'Test de notification 🚀',
-                'Ceci est une notification de test de Roquette.'
+                trans('Test de notification 🚀'),
+                trans('Ceci est une notification de test de Roquette.')
             );
         });
     } else if (permission === 'denied') {
         container.innerHTML = `
             <div class="notification-status-badge denied">
-                <span>❌ Les notifications sont bloquées par votre navigateur.</span>
+                <span>❌ ${trans('Les notifications sont bloquées par votre navigateur.')}</span>
             </div>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; margin-bottom: 0;">
-                Veuillez autoriser les notifications pour ce site dans les paramètres de votre navigateur afin de pouvoir recevoir les alertes.
+                ${trans('Veuillez autoriser les notifications pour ce site dans les paramètres de votre navigateur afin de pouvoir recevoir les alertes.')}
             </p>
         `;
     }
@@ -347,8 +349,10 @@ export function handleGlobalNotification(data) {
     );
 
     if (shouldNotify) {
-        const title = isMention ? `Mention dans ${data.channelName}` : (data.channelName || 'Nouveau message 🚀');
-        const body = isMention ? `@${data.authorDisplayName || data.author} vous a mentionné : ${data.content}` : `@${data.authorDisplayName || data.author}: ${data.content || 'Nouveau message'}`;
+        const title = isMention ? trans('Mention dans %channelName%').replace('%channelName%', data.channelName) : (data.channelName || trans('Nouveau message 🚀'));
+        const body = isMention 
+            ? trans('@%author% vous a mentionné : %content%').replace('%author%', data.authorDisplayName || data.author).replace('%content%', data.content) 
+            : `@${data.authorDisplayName || data.author}: ${data.content || trans('Nouveau message')}`;
 
         sendDesktopNotification(
             title,
@@ -429,8 +433,10 @@ export function handleInvitationNotification(data) {
     // Show desktop notification
     const sender = data.senderName || 'Quelqu\'un';
     sendDesktopNotification(
-        'Nouvelle invitation 🔒',
-        `${sender} vous a invité à rejoindre le canal #${data.channelName}`,
+        trans('Nouvelle invitation 🔒'),
+        trans('%sender% vous a invité à rejoindre le canal #%channelName%')
+            .replace('%sender%', sender)
+            .replace('%channelName%', data.channelName),
         null,
         `invitation-${data.invitationId}`,
         `/channels/${data.channelSlug}`

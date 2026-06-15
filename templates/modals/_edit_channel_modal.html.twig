@@ -1,42 +1,42 @@
 {% embed 'partials/_modal_layout.html.twig' with {
     id: 'edit-channel-modal',
-    title: 'Modifier le canal'
+    title: 'Modifier le canal'|trans
 } %}
     {% block modal_body %}
         <form action="{{ path('app_channel_edit', {slug: activeChannel.slug}) }}" method="POST" class="add-channel-form"
               hx-boost="false">
             <div class="input-group">
-                <label for="edit-modal-name">Nom du canal</label>
+                <label for="edit-modal-name">{{ 'Nom du canal'|trans }}</label>
                 <input type="text" id="edit-modal-name" name="name" value="{{ activeChannel.name }}" required
-                       placeholder="Nom du canal..." maxlength="20" class="input-sidebar">
+                       placeholder="{{ 'Nom du canal...'|trans }}" maxlength="20" class="input-sidebar">
             </div>
             <div class="input-group" style="margin-top: 0.5rem;">
-                <label for="edit-modal-description">Description</label>
+                <label for="edit-modal-description">{{ 'Description'|trans }}</label>
                 <input type="text" id="edit-modal-description" name="description"
-                       value="{{ activeChannel.description }}" placeholder="Description (optionnelle)..." maxlength="50"
+                       value="{{ activeChannel.description }}" placeholder="{{ 'Description (optionnelle)...'|trans }}" maxlength="50"
                        class="input-sidebar">
             </div>
             <div class="input-group" style="margin-top: 0.5rem;">
-                <label for="edit-modal-retention">Rétention des messages</label>
+                <label for="edit-modal-retention">{{ 'Rétention des messages'|trans }}</label>
                 <select id="edit-modal-retention" name="messageRetentionMonths" class="input-sidebar"
                         style="width: 100%; cursor: pointer;">
-                    <option value="1" {% if activeChannel.messageRetentionMonths == 1 %}selected{% endif %}>1 mois
+                    <option value="1" {% if activeChannel.messageRetentionMonths == 1 %}selected{% endif %}>{{ '1 mois'|trans }}
                     </option>
-                    <option value="3" {% if activeChannel.messageRetentionMonths == 3 %}selected{% endif %}>3 mois
+                    <option value="3" {% if activeChannel.messageRetentionMonths == 3 %}selected{% endif %}>{{ '3 mois'|trans }}
                     </option>
-                    <option value="6" {% if activeChannel.messageRetentionMonths == 6 %}selected{% endif %}>6 mois
+                    <option value="6" {% if activeChannel.messageRetentionMonths == 6 %}selected{% endif %}>{{ '6 mois'|trans }}
                     </option>
-                    <option value="12" {% if activeChannel.messageRetentionMonths == 12 %}selected{% endif %}>12 mois
+                    <option value="12" {% if activeChannel.messageRetentionMonths == 12 %}selected{% endif %}>{{ '12 mois'|trans }}
                 </select>
             </div>
 
             {% if activeChannel.isPrivate() %}
                 <div class="input-group" style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
-                    <label>Groupes abonnés</label>
+                    <label>{{ 'Groupes abonnés'|trans }}</label>
                     <div id="group-subscriptions-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
                         {% for sub in resolvedSubscriptions %}
                             <div class="admin-chip" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); padding: 0.4rem 0.75rem; border-radius: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; color: var(--text-primary);">
-                                <span>👥 {{ sub.name }} {% if sub.isGroupChannel %}<span style="font-size: 0.75rem; color: #6366f1; background: rgba(99, 102, 241, 0.1); padding: 0.1rem 0.4rem; border-radius: 0.25rem; margin-left: 0.25rem;">Officiel</span>{% endif %}</span>
+                                <span>👥 {{ sub.name }} {% if sub.isGroupChannel %}<span style="font-size: 0.75rem; color: #6366f1; background: rgba(99, 102, 241, 0.1); padding: 0.1rem 0.4rem; border-radius: 0.25rem; margin-left: 0.25rem;">{{ 'Officiel'|trans }}</span>{% endif %}</span>
                                 <button type="button" 
                                         hx-post="{{ path('app_channel_unsubscribe_group', {slug: activeChannel.slug, subscriptionId: sub.id}) }}"
                                         hx-target="#edit-channel-modal"
@@ -46,15 +46,15 @@
                                 </button>
                             </div>
                         {% else %}
-                            <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Aucun groupe abonné.</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">{{ 'Aucun groupe abonné.'|trans }}</div>
                         {% endfor %}
                     </div>
 
                     <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: flex-end;">
                         <div style="flex-grow: 1;">
-                            <label for="edit-modal-add-group" style="font-size: 0.75rem;">Abonner un groupe</label>
+                            <label for="edit-modal-add-group" style="font-size: 0.75rem;">{{ 'Abonner un groupe'|trans }}</label>
                             <select id="edit-modal-add-group" name="newGroupIdentifier" class="input-sidebar" style="width: 100%; cursor: pointer;">
-                                <option value="">-- Sélectionner un groupe --</option>
+                                <option value="">{{ '-- Sélectionner un groupe --'|trans }}</option>
                                 {% for group in groups %}
                                     <option value="{{ group.identifier }}">{{ group.name }}</option>
                                 {% endfor %}
@@ -62,7 +62,7 @@
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
                             <input type="checkbox" name="newGroupIsOfficial" id="edit-modal-group-official" class="input-checkbox" style="width: auto; cursor: pointer;">
-                            <label for="edit-modal-group-official" style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer; white-space: nowrap;">Officiel</label>
+                            <label for="edit-modal-group-official" style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer; white-space: nowrap;">{{ 'Officiel'|trans }}</label>
                         </div>
                         <button type="button" 
                                 hx-post="{{ path('app_channel_subscribe_group', {slug: activeChannel.slug}) }}"
@@ -71,7 +71,7 @@
                                 hx-swap="outerHTML"
                                 class="btn-publish" 
                                 style="padding: 0.5rem 1rem; margin-top: 0; font-size: 0.85rem; border-radius: 0.5rem; cursor: pointer;">
-                            Ajouter
+                            {{ 'Ajouter'|trans }}
                         </button>
                     </div>
                 </div>
@@ -83,19 +83,18 @@
                     <input type="checkbox" name="isTodoList" id="edit-modal-isTodoList" class="input-checkbox"
                            style="width: auto; cursor: pointer;" {% if activeChannel.isTodoList() %}checked{% endif %}>
                     <label for="edit-modal-isTodoList"
-                           style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">Transformer
-                        en todo list</label>
+                           style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">{{ 'Transformer en todo list'|trans }}</label>
                 </div>
             {% endif %}
             <div class="input-group" style="margin-top: 0.75rem;">
-                <label>Administrateurs du canal</label>
+                <label>{{ 'Administrateurs du canal'|trans }}</label>
                 <div id="admin-chips-container"
                      style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; margin-top: 0.25rem;">
                     <!-- Creator chip -->
                     <div class="admin-chip creator"
                          style="background: rgba(255, 255, 255, 0.1); border: 1px solid var(--border-glass); padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
                         👤 {{ activeChannel.creator.displayName ?: activeChannel.creator.username }} <span
-                            style="font-size: 0.75rem; opacity: 0.75;">(Créateur)</span>
+                            style="font-size: 0.75rem; opacity: 0.75;">{{ '(Créateur)'|trans }}</span>
                     </div>
                     <!-- Other administrators -->
                     {% for member in activeChannel.members %}
@@ -114,10 +113,10 @@
                 </div>
             </div>
             <div class="input-group" style="margin-top: 0.5rem;">
-                <label for="admin-autocomplete-input">Ajouter un administrateur</label>
+                <label for="admin-autocomplete-input">{{ 'Ajouter un administrateur'|trans }}</label>
                 <div class="autocomplete-wrapper" style="position: relative; width: 100%;">
                     <input type="text" id="admin-autocomplete-input" name="search"
-                           placeholder="Saisir le nom d'un membre..."
+                           placeholder="{{ "Saisir le nom d'un membre..."|trans }}"
                            class="input-sidebar" autocomplete="off"
                            hx-get="{{ path('app_channel_admin_autocomplete', {slug: activeChannel.slug}) }}"
                            hx-trigger="keyup changed delay:300ms"
@@ -128,7 +127,7 @@
                          style="display: none; top: 100%; bottom: auto; left: 0; right: 0; min-width: 100%; max-width: 100%; margin-top: 4px;"></div>
                 </div>
             </div>
-            <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Enregistrer les modifications
+            <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">{{ 'Enregistrer les modifications'|trans }}
             </button>
         </form>
 
@@ -137,11 +136,11 @@
         {% endif %}
         {% if activeChannel.creator == app.user or is_granted('ROLE_ADMIN') %}
             <form action="{{ path('app_channel_delete', {slug: activeChannel.slug}) }}" method="POST"
-                  data-confirm="Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement."
+                  data-confirm="{{ 'Êtes-vous sûr de vouloir supprimer ce canal ? Tout l\'historique des messages sera perdu définitivement.'|trans }}"
                   hx-boost="false"
                   style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
                 <button type="submit" class="btn-delete-channel"
-                        style="width: 100%; justify-content: center; cursor: pointer;">🗑️ Supprimer le canal
+                        style="width: 100%; justify-content: center; cursor: pointer;">🗑️ {{ 'Supprimer le canal'|trans }}
                 </button>
             </form>
         {% endif %}

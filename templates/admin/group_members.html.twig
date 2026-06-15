@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Roquette - Membres du groupe {{ group.name }}{% endblock %}
+{% block title %}{{ 'Roquette - Membres du groupe %group_name%'|trans({ '%group_name%': group.name }) }}{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -13,7 +13,7 @@
     <div class="app-container admin-layout" hx-boost="true">
         <header class="app-header">
             <div class="logo-area">
-                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="{{ 'Afficher le menu'|trans }}">
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
@@ -34,9 +34,9 @@
                     <div>
                         <div class="back-link-row">
                             <a href="{{ path('app_admin_groups') }}" hx-boost="false">⬅️</a>
-                            <h2>Membres de {{ group.name }}</h2>
+                            <h2>{{ 'Membres de %group_name%'|trans({ '%group_name%': group.name }) }}</h2>
                         </div>
-                        <p class="card-description">Ajouter ou retirer manuellement des membres de ce groupe.</p>
+                        <p class="card-description">{{ 'Ajouter ou retirer manuellement des membres de ce groupe.'|trans }}</p>
                     </div>
                     {% include 'admin/_nav.html.twig' %}
                 </div>
@@ -52,16 +52,16 @@
 
                     {% if isExternal %}
                         <div class="external-sync-notice">
-                            <h3>🌐 Groupe synchronisé (Annuaire externe)</h3>
-                            <p>Ce groupe est géré dans l'annuaire externe (LDAP). La liste des membres est synchronisée automatiquement et ne peut pas être modifiée manuellement.</p>
+                            <h3>🌐 {{ 'Groupe synchronisé (Annuaire externe)'|trans }}</h3>
+                            <p>{{ "Ce groupe est géré dans l'annuaire externe (LDAP). La liste des membres est synchronisée automatiquement et ne peut pas être modifiée manuellement."|trans }}</p>
                         </div>
                     {% else %}
                         <div class="add-member-panel">
-                            <h3>➕ Ajouter un membre</h3>
+                            <h3>➕ {{ 'Ajouter un membre'|trans }}</h3>
                             <form action="{{ path('app_admin_group_member_add', {id: group.id}) }}" method="POST">
                                 <div class="field-wrapper">
-                                    <label for="member-search-input-field" class="form-label">Rechercher un utilisateur</label>
-                                    <input type="text" id="member-search-input-field" placeholder="Saisir le nom ou l'identifiant..." class="input-sidebar form-input-full" autocomplete="off"
+                                    <label for="member-search-input-field" class="form-label">{{ 'Rechercher un utilisateur'|trans }}</label>
+                                    <input type="text" id="member-search-input-field" placeholder="{{ 'Saisir le nom ou l\'identifiant...'|trans }}" class="input-sidebar form-input-full" autocomplete="off"
                                            hx-get="{{ path('app_admin_group_member_autocomplete', {id: group.id}) }}"
                                            hx-trigger="keyup changed delay:300ms"
                                            hx-target="#member-autocomplete-suggestions"
@@ -70,7 +70,7 @@
                                     <input type="hidden" name="userId" id="member-user-id" required>
                                     <div id="member-autocomplete-suggestions" class="emoji-autocomplete-dropdown autocomplete-dropdown--hidden"></div>
                                 </div>
-                                <button type="submit" class="btn-publish btn-panel">Ajouter</button>
+                                <button type="submit" class="btn-publish btn-panel">{{ 'Ajouter'|trans }}</button>
                             </form>
                         </div>
                     {% endif %}
@@ -78,7 +78,7 @@
                     <!-- Current Members List -->
                     <div>
                         {% if isExternal %}
-                            <h3 class="section-title">Membres de l'annuaire ({{ externalMembers|length }})</h3>
+                            <h3 class="section-title">{{ "Membres de l'annuaire"|trans }} ({{ externalMembers|length }})</h3>
                             {% if externalMembers|length > 0 %}
                                 <div class="member-list">
                                     {% for item in externalMembers %}
@@ -97,10 +97,10 @@
                                                             {% endif %}
                                                         </span>
                                                         {% if item.isRegistered and group.isAdministrator(item.user) %}
-                                                            <span class="admin-badge admin-badge--uppercase">Admin</span>
+                                                            <span class="admin-badge admin-badge--uppercase">{{ 'Admin'|trans }}</span>
                                                         {% endif %}
                                                         {% if not item.isRegistered %}
-                                                            <span class="status-pill status-pill--not-registered">Non inscrit</span>
+                                                            <span class="status-pill status-pill--not-registered">{{ 'Non inscrit'|trans }}</span>
                                                         {% endif %}
                                                     </div>
                                                     <div class="text-muted-small">
@@ -109,27 +109,27 @@
                                                 </div>
                                             </div>
                                             <div class="member-actions">
-                                                {% if item.isRegistered %}
-                                                    {% if group.isAdministrator(item.user) %}
-                                                        <form action="{{ path('app_admin_group_administrator_remove', {id: group.id, userId: item.user.id}) }}" method="POST" onsubmit="return confirm('Retirer les droits administrateur de cet utilisateur ?');" style="margin: 0;">
-                                                            <button type="submit" class="btn-member-action btn-member-action--neutral">Retirer Admin</button>
-                                                        </form>
-                                                    {% else %}
-                                                        <form action="{{ path('app_admin_group_administrator_add', {id: group.id}) }}" method="POST" style="margin: 0;">
-                                                            <input type="hidden" name="userId" value="{{ item.user.id }}">
-                                                            <button type="submit" class="btn-member-action btn-member-action--promote">Nommer Admin</button>
-                                                        </form>
+                                                    {% if item.isRegistered %}
+                                                        {% if group.isAdministrator(item.user) %}
+                                                            <form action="{{ path('app_admin_group_administrator_remove', {id: group.id, userId: item.user.id}) }}" method="POST" data-confirm="{{ 'Retirer les droits administrateur de cet utilisateur ?'|trans }}" style="margin: 0;">
+                                                                <button type="submit" class="btn-member-action btn-member-action--neutral">{{ 'Retirer Admin'|trans }}</button>
+                                                            </form>
+                                                        {% else %}
+                                                            <form action="{{ path('app_admin_group_administrator_add', {id: group.id}) }}" method="POST" style="margin: 0;">
+                                                                <input type="hidden" name="userId" value="{{ item.user.id }}">
+                                                                <button type="submit" class="btn-member-action btn-member-action--promote">{{ 'Nommer Admin'|trans }}</button>
+                                                            </form>
+                                                        {% endif %}
                                                     {% endif %}
-                                                {% endif %}
                                             </div>
                                         </div>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <div class="empty-state-block">Aucun membre dans l'annuaire pour ce groupe.</div>
+                                <div class="empty-state-block">{{ "Aucun membre dans l'annuaire pour ce groupe."|trans }}</div>
                             {% endif %}
                         {% else %}
-                            <h3 class="section-title">Membres actuels ({{ group.members|length }})</h3>
+                            <h3 class="section-title">{{ 'Membres actuels'|trans }} ({{ group.members|length }})</h3>
                             {% if group.members|length > 0 %}
                                 <div class="member-list">
                                     {% for member in group.members|sort((a, b) => (a.displayName|default(a.username))|lower <=> (b.displayName|default(b.username))|lower) %}
@@ -142,7 +142,7 @@
                                                     <div class="member-name-row">
                                                         <span class="member-display-name">{{ member.displayName|default(member.username) }}</span>
                                                         {% if group.isAdministrator(member) %}
-                                                            <span class="admin-badge admin-badge--uppercase">Admin</span>
+                                                            <span class="admin-badge admin-badge--uppercase">{{ 'Admin'|trans }}</span>
                                                         {% endif %}
                                                     </div>
                                                     <div class="text-muted-small">@{{ member.username }}</div>
@@ -150,24 +150,24 @@
                                             </div>
                                             <div class="member-actions">
                                                 {% if group.isAdministrator(member) %}
-                                                    <form action="{{ path('app_admin_group_administrator_remove', {id: group.id, userId: member.id}) }}" method="POST" onsubmit="return confirm('Retirer les droits administrateur de cet utilisateur ?');" style="margin: 0;">
-                                                        <button type="submit" class="btn-member-action btn-member-action--neutral">Retirer Admin</button>
+                                                    <form action="{{ path('app_admin_group_administrator_remove', {id: group.id, userId: member.id}) }}" method="POST" data-confirm="{{ 'Retirer les droits administrateur de cet utilisateur ?'|trans }}" style="margin: 0;">
+                                                        <button type="submit" class="btn-member-action btn-member-action--neutral">{{ 'Retirer Admin'|trans }}</button>
                                                     </form>
                                                 {% else %}
                                                     <form action="{{ path('app_admin_group_administrator_add', {id: group.id}) }}" method="POST" style="margin: 0;">
                                                         <input type="hidden" name="userId" value="{{ member.id }}">
-                                                        <button type="submit" class="btn-member-action btn-member-action--promote">Nommer Admin</button>
+                                                        <button type="submit" class="btn-member-action btn-member-action--promote">{{ 'Nommer Admin'|trans }}</button>
                                                     </form>
                                                 {% endif %}
-                                                <form action="{{ path('app_admin_group_member_remove', {id: group.id, userId: member.id}) }}" method="POST" onsubmit="return confirm('Retirer cet utilisateur du groupe ?');" style="margin: 0;">
-                                                    <button type="submit" class="btn-member-action btn-member-action--remove">Retirer</button>
+                                                <form action="{{ path('app_admin_group_member_remove', {id: group.id, userId: member.id}) }}" method="POST" data-confirm="{{ 'Retirer cet utilisateur du groupe ?'|trans }}" style="margin: 0;">
+                                                    <button type="submit" class="btn-member-action btn-member-action--remove">{{ 'Retirer'|trans }}</button>
                                                 </form>
                                             </div>
                                         </div>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <div class="empty-state-block">Ce groupe n'a pas encore de membre local.</div>
+                                <div class="empty-state-block">{{ "Ce groupe n'a pas encore de membre local."|trans }}</div>
                             {% endif %}
                         {% endif %}
                     </div>

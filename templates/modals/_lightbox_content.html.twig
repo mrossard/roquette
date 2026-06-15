@@ -1,13 +1,13 @@
 <dialog id="image-lightbox" class="modal-backdrop-dialog" role="dialog" aria-modal="true"
-        aria-label="Aperçu de l'image">
+        aria-label="{{ 'Aperçu de l\'image'|trans }}">
     <div class="lightbox-content">
         <button type="button" onclick="closeModal('image-lightbox')" class="btn-close-lightbox"
-                aria-label="Fermer l'aperçu">&times;
+                aria-label="{{ "Fermer l'aperçu"|trans }}">&times;
         </button>
         <img src="{{ previewUrl }}" alt="{{ fileName }}">
         <div class="lightbox-caption">
             <span>{{ fileName }}</span>
-            <a href="{{ downloadUrl }}" class="btn-lightbox-download" download>Télécharger</a>
+            <a href="{{ downloadUrl }}" class="btn-lightbox-download" download>{{ 'Télécharger'|trans }}</a>
         </div>
     </div>
 </dialog>

@@ -20,8 +20,7 @@
                 <span>{{ member.displayName ?: member.username }} (@{{ member.username }})</span>
             </button>
         {% else %}
-            <div style="padding: 0.5rem 1rem; color: var(--text-muted); font-size: 0.85rem; background: #1e1e24;">Aucun
-                membre correspondant
+            <div style="padding: 0.5rem 1rem; color: var(--text-muted); font-size: 0.85rem; background: #1e1e24;">{{ 'Aucun membre correspondant'|trans }}
             </div>
         {% endfor %}
     </div>

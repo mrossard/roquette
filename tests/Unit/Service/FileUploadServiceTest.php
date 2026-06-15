@@ -22,6 +22,7 @@ class FileUploadServiceTest extends TestCase
     private FilesystemOperator&MockObject $storage;
     private ClamavService&MockObject $clamavService;
     private LoggerInterface&MockObject $logger;
+    private \Symfony\Contracts\Translation\TranslatorInterface&MockObject $translator;
     private FileUploadService $service;
 
     protected function setUp(): void
@@ -30,7 +31,9 @@ class FileUploadServiceTest extends TestCase
         $this->clamavService = $this->createMock(ClamavService::class);
         $this->clamavService->method('scanFile')->willReturn(true);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->service = new FileUploadService($this->storage, $this->clamavService, $this->logger);
+        $this->translator = $this->createMock(\Symfony\Contracts\Translation\TranslatorInterface::class);
+        $this->translator->method('trans')->willReturnCallback(static fn($id, $parameters = []) => strtr($id, $parameters));
+        $this->service = new FileUploadService($this->storage, $this->clamavService, $this->logger, $this->translator);
     }
 
     #[Test]

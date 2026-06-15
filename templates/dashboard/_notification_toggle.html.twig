@@ -2,10 +2,10 @@
         class="btn-notifications {% if not notificationsEnabled %}muted{% endif %}"
         hx-post="{{ path('app_channel_toggle_notifications', {slug: activeChannel.slug}) }}"
         hx-swap="outerHTML"
-        title="{% if notificationsEnabled %}Notifications de bureau activées pour ce canal (cliquez pour désactiver){% else %}Notifications de bureau désactivées pour ce canal (cliquez pour activer){% endif %}">
+        title="{% if notificationsEnabled %}{{ 'Notifications de bureau activées pour ce canal (cliquez pour désactiver)'|trans }}{% else %}{{ 'Notifications de bureau désactivées pour ce canal (cliquez pour activer)'|trans }}{% endif %}">
     {% if notificationsEnabled %}
-        🔔 Notifications actives
+        🔔 {{ 'Notifications actives'|trans }}
     {% else %}
-        🔕 Sourdine
+        🔕 {{ 'Sourdine'|trans }}
     {% endif %}
 </button>

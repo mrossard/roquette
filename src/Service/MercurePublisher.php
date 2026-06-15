@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Repository\UserChannelReadRepository;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Centralises all Mercure SSE publish operations.
@@ -22,6 +23,7 @@ class MercurePublisher
         private MessageBusInterface $bus,
         private string $mercureTopicPrefix,
         private UserChannelReadRepository $ucrRepo,
+        private TranslatorInterface $translator,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -125,7 +127,7 @@ class MercurePublisher
     private function buildContentSummary(Message $message): string
     {
         if ($message->getPoll()) {
-            return 'a créé un sondage : ' . $message->getPoll()->getQuestion();
+            return $this->translator->trans('a créé un sondage : %question%', ['%question%' => $message->getPoll()->getQuestion()]);
         }
 
         if ($message->getContent()) {
@@ -133,9 +135,9 @@ class MercurePublisher
         }
 
         if ($message->getFileName()) {
-            return 'a envoyé un fichier : ' . $message->getFileName();
+            return $this->translator->trans('a envoyé un fichier : %filename%', ['%filename%' => $message->getFileName()]);
         }
 
-        return 'Nouveau message';
+        return $this->translator->trans('Nouveau message');
     }
 }

@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Roquette - Administration{% endblock %}
+{% block title %}{{ 'Roquette - Administration'|trans }}{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -13,7 +13,7 @@
     <div class="app-container admin-layout" hx-boost="true">
         <header class="app-header">
             <div class="logo-area">
-                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="{{ 'Afficher le menu'|trans }}">
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
@@ -32,8 +32,8 @@
             <section class="card glass-panel settings-panel">
                 <div class="card-header">
                     <div>
-                        <h2>Gestion des utilisateurs</h2>
-                        <p class="card-description">Bannir ou réhabiliter des utilisateurs.</p>
+                        <h2>{{ 'Gestion des utilisateurs'|trans }}</h2>
+                        <p class="card-description">{{ 'Bannir ou réhabiliter des utilisateurs.'|trans }}</p>
                     </div>
                     {% include 'admin/_nav.html.twig' %}
                 </div>
@@ -51,10 +51,10 @@
                         <table class="admin-table">
                             <thead>
                             <tr>
-                                <th>Utilisateur</th>
-                                <th>Rôle</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
+                                <th>{{ 'Utilisateur'|trans }}</th>
+                                <th>{{ 'Rôle'|trans }}</th>
+                                <th>{{ 'Statut'|trans }}</th>
+                                <th>{{ 'Actions'|trans }}</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -73,21 +73,21 @@
                                     </td>
                                     <td>
                                         {% if u.admin %}
-                                            <span class="status-pill status-pill--admin">Admin</span>
+                                            <span class="status-pill status-pill--admin">{{ 'Admin'|trans }}</span>
                                         {% else %}
-                                            <span class="status-pill status-pill--user">Utilisateur</span>
+                                            <span class="status-pill status-pill--user">{{ 'Utilisateur'|trans }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if u.bannedAt %}
                                             <span class="status-pill status-pill--banned">
-                                            Banni
+                                            {{ 'Banni'|trans }}
                                         </span>
                                             {% if u.bannedReason %}
                                                 <span class="text-muted-small" style="margin-top: 0.25rem;">{{ u.bannedReason }}</span>
                                             {% endif %}
                                         {% else %}
-                                            <span class="status-pill status-pill--active">Actif</span>
+                                            <span class="status-pill status-pill--active">{{ 'Actif'|trans }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -95,7 +95,7 @@
                                             <form action="{{ path('app_admin_user_unban', {id: u.id}) }}" method="POST"
                                                   class="action-inline" hx-boost="false">
                                                 <button type="submit" class="btn-submit btn-action btn-action--rehab">
-                                                    Réhabiliter
+                                                    {{ 'Réhabiliter'|trans }}
                                                 </button>
                                             </form>
                                         {% elseif u.admin or u.id == app.user.id %}
@@ -103,9 +103,9 @@
                                         {% else %}
                                             <form action="{{ path('app_admin_user_ban', {id: u.id}) }}" method="POST"
                                                   class="action-inline" hx-boost="false"
-                                                  data-confirm="Êtes-vous sûr de vouloir bannir {{ u.username }} ?">
+                                                  data-confirm="{{ 'Êtes-vous sûr de vouloir bannir %username% ?'|trans({ '%username%': u.username }) }}">
                                                 <button type="submit" class="btn-delete-channel btn-action">
-                                                    Bannir
+                                                    {{ 'Bannir'|trans }}
                                                 </button>
                                             </form>
                                         {% endif %}
@@ -114,7 +114,7 @@
                             {% else %}
                                 <tr>
                                     <td colspan="4" class="empty-state">
-                                        Aucun utilisateur.
+                                        {{ 'Aucun utilisateur.'|trans }}
                                     </td>
                                 </tr>
                             {% endfor %}

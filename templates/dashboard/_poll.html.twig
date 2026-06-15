@@ -1,7 +1,7 @@
 <div class="poll-container" data-poll-id="{{ poll.id }}" data-allow-multiple="{{ poll.allowMultiple ? '1' : '0' }}">
     <div class="poll-header-meta">
-        <span class="poll-badge">📊 Sondage</span>
-        <span class="poll-type-text">• {{ poll.allowMultiple ? 'Choix multiples' : 'Choix unique' }}</span>
+        <span class="poll-badge">📊 {{ 'Sondage'|trans }}</span>
+        <span class="poll-type-text">• {{ poll.allowMultiple ? 'Choix multiples'|trans : 'Choix unique'|trans }}</span>
     </div>
     
     <p class="poll-question">{{ poll.question }}</p>
@@ -50,5 +50,5 @@
             </div>
         </button>
     {% endfor %}
-    <p class="poll-total">{{ total_votes }} vote{{ total_votes > 1 ? 's' : '' }}</p>
+    <p class="poll-total">{{ total_votes }} {{ total_votes > 1 ? 'votes'|trans : 'vote'|trans }}</p>
 </div>

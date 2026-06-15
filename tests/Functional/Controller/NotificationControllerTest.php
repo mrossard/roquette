@@ -335,7 +335,8 @@ class NotificationControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $content = $this->client->getResponse()->getContent();
         static::assertStringContainsString('test_notif_other', $content);
-        static::assertStringContainsString('est en train d\'écrire', $content);
+        static::assertStringContainsString('est en train', $content);
+        static::assertStringContainsString('écrire', $content);
     }
 
     #[Test]

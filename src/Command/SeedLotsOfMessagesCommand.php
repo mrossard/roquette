@@ -14,6 +14,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsCommand(
     name: 'app:seed-lots-of-messages',
@@ -23,6 +24,7 @@ class SeedLotsOfMessagesCommand extends Command
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct();
     }
@@ -43,11 +45,11 @@ class SeedLotsOfMessagesCommand extends Command
 
         if (!$channel) {
             $channel = new Channel();
-            $channel->setName('Général');
+            $channel->setName($this->translator->trans('Général'));
             $channel->setSlug('general');
             $channel->setDescription('Le canal de discussion principal pour tout le monde.');
             $this->em->persist($channel);
-            $io->text('Création du canal Général car il n\'existait pas.');
+            $io->text($this->translator->trans('Création du canal Général car il n\'existait pas.'));
         }
 
         // Find or create user
@@ -60,7 +62,7 @@ class SeedLotsOfMessagesCommand extends Command
             $user->setDisplayName('Utilisateur de Test');
             $user->setPassword('nopassword');
             $this->em->persist($user);
-            $io->text('Création de l\'utilisateur testuser car aucun utilisateur n\'existait.');
+            $io->text($this->translator->trans('Création de l\'utilisateur testuser car aucun utilisateur n\'existait.'));
         }
 
         $now = new \DateTimeImmutable();

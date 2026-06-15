@@ -1,5 +1,5 @@
 {% set user_hue = message.author ? message.author.hue : 200 %}
-{% set username = message.author ? (message.author.displayName|default(message.author.username)) : 'Utilisateur' %}
+{% set username = message.author ? (message.author.displayName|default(message.author.username)) : 'Utilisateur'|trans %}
 <div class="feed-item editing" style="--user-hue: {{ user_hue }};" data-message-id="{{ message.id }}" data-author-username="{{ message.author ? message.author.username : '' }}">
     <div class="feed-item-header">
         <div class="feed-item-user-container">
@@ -9,7 +9,7 @@
         <span
             class="feed-item-time">{% if message.createdAt|date('Y-m-d') != 'now'|date('Y-m-d') %}{{ message.createdAt|date('d/m/Y') }} {% endif %}{{ message.createdAt|date('H:i:s') }}</span>
         {% if message.updatedAt %}
-            <span class="feed-item-edited-indicator" title="Modifié le {{ message.updatedAt|date('d/m/Y H:i:s') }}">(modifié)</span>
+            <span class="feed-item-edited-indicator" title="{{ 'Modifié le'|trans }} {{ message.updatedAt|date('d/m/Y H:i:s') }}">{{ '(modifié)'|trans }}</span>
         {% endif %}
     </div>
     <div class="feed-item-body" style="padding-left: 2.2rem; width: 100%;">
@@ -17,14 +17,14 @@
             {% if message.poll %}
                 <!-- Poll Edit Form -->
                 <div>
-                    <label for="edit_poll_question_{{ message.id }}" style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Question</label>
+                    <label for="edit_poll_question_{{ message.id }}" style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">{{ 'Question'|trans }}</label>
                     <input type="text" id="edit_poll_question_{{ message.id }}" name="poll_question"
                            value="{{ message.poll.question }}" required autofocus class="input-sidebar"/>
                 </div>
 
                 <div
                     style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--bg-input); padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-input);">
-                    <label for="edit_allow_multiple_{{ message.id }}" style="font-size: 0.85rem; color: var(--text-color); cursor: pointer; user-select: none; margin-bottom: 0; font-weight: 500;">Autoriser plusieurs réponses</label>
+                    <label for="edit_allow_multiple_{{ message.id }}" style="font-size: 0.85rem; color: var(--text-color); cursor: pointer; user-select: none; margin-bottom: 0; font-weight: 500;">{{ 'Autoriser plusieurs réponses'|trans }}</label>
                     <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; margin-bottom: 0;">
                         <input type="checkbox" id="edit_allow_multiple_{{ message.id }}" name="allow_multiple" value="1"
                                style="opacity: 0; width: 0; height: 0;"
@@ -35,13 +35,13 @@
                 </div>
 
                 <div>
-                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Options de réponse</label>
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">{{ 'Options de réponse'|trans }}</label>
                     <div id="edit-poll-options-container-{{ message.id }}" class="poll-options-list"
                          style="display: flex; flex-direction: column; gap: 0.5rem;">
                         {% for option in message.poll.options %}
                             <div style="display: flex; gap: 0.5rem; align-items: center;">
                                 <input type="text" name="poll_options[]" value="{{ option.text }}"
-                                       placeholder="Option {{ loop.index }}" required
+                                       placeholder="{{ 'Option'|trans }} {{ loop.index }}" required
                                        class="edit-poll-option-input input-sidebar" style="flex: 1;"/>
                                 {% if loop.index > 2 %}
                                     <button type="button"
@@ -61,14 +61,14 @@
                             hx-target="#edit-poll-options-container-{{ message.id }}"
                             hx-swap="beforeend"
                             style="margin-top: 0.5rem; font-size: 0.8rem; padding: 0.25rem 0.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.35rem; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
-                        <span>+</span> Ajouter une option
+                        <span>+</span> {{ 'Ajouter une option'|trans }}
                     </button>
                 </div>
             {% else %}
                 <!-- Standard Message Edit Form -->
                 <div class="message-input-wrapper">
                     <textarea name="content" class="edit-message-textarea" required autofocus
-                              aria-label="Modifier le message"
+                              aria-label="{{ 'Modifier le message'|trans }}"
                               style="width: 100%; min-height: 80px; padding: 0.6rem; padding-right: 2.5rem; border-radius: 0.5rem; background: var(--bg-textarea-chat); border: 1px solid var(--border-input); color: var(--text-primary); font-family: inherit; font-size: 0.925rem; resize: vertical; outline: none; transition: var(--transition-smooth);"
                               onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.altKey) { event.preventDefault(); this.form.requestSubmit(); } else if(event.key === 'Escape') { this.form.querySelector('.btn-cancel').click(); }">{{ message.content }}</textarea>
                     <button type="button" class="btn-emoji-toggle" data-emoji-target="textarea" title="Ajouter un émoji" aria-label="Ajouter un émoji">
@@ -80,11 +80,11 @@
             <div class="edit-message-actions" style="display: flex; gap: 0.5rem; align-self: flex-start;">
                 <button type="submit" class="btn-publish" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 0.4rem; height: auto;">
                     {{ ux_icon('heroicons:check', {class: 'action-icon', style: 'width: 12px; height: 12px; margin-right: 0.25rem;'}) }}
-                    <span>Enregistrer</span>
+                    <span>{{ 'Enregistrer'|trans }}</span>
                 </button>
                 <button type="button" class="btn-reply-subtle btn-cancel" hx-get="{{ path('app_message_view', {id: message.id}) }}" hx-target="closest .feed-item" hx-swap="morph transition:false" style="opacity: 1; padding: 0.4rem 0.8rem; border: 1px solid var(--border-glass); font-size: 0.8rem; border-radius: 0.4rem; display: inline-flex; align-items: center; justify-content: center; margin-left: 0;">
                     {{ ux_icon('heroicons:x-mark', {class: 'action-icon', style: 'width: 12px; height: 12px; margin-right: 0.25rem;'}) }}
-                    <span>Annuler</span>
+                    <span>{{ 'Annuler'|trans }}</span>
                 </button>
             </div>
         </form>

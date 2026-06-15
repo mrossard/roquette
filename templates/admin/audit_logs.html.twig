@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Roquette - Administration - Audit Log{% endblock %}
+{% block title %}{{ 'Roquette - Administration - Audit Log'|trans }}{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -13,7 +13,7 @@
     <div class="app-container admin-layout" hx-boost="true">
         <header class="app-header">
             <div class="logo-area">
-                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="{{ 'Afficher le menu'|trans }}">
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
@@ -32,8 +32,8 @@
             <section class="card glass-panel settings-panel">
                 <div class="card-header">
                     <div>
-                        <h2>Logs d'audit de sécurité</h2>
-                        <p class="card-description">Historique des actions administratives critiques effectuées sur la plateforme.</p>
+                        <h2>{{ "Logs d'audit de sécurité"|trans }}</h2>
+                        <p class="card-description">{{ 'Historique des actions administratives critiques effectuées sur la plateforme.'|trans }}</p>
                     </div>
                     {% include 'admin/_nav.html.twig' %}
                 </div>
@@ -43,11 +43,11 @@
                         <table class="admin-table">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Administrateur</th>
-                                    <th>Action</th>
-                                    <th>Détails</th>
-                                    <th class="th--right">Adresse IP</th>
+                                    <th>{{ 'Date'|trans }}</th>
+                                    <th>{{ 'Administrateur'|trans }}</th>
+                                    <th>{{ 'Action'|trans }}</th>
+                                    <th>{{ 'Détails'|trans }}</th>
+                                    <th class="th--right">{{ 'Adresse IP'|trans }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -61,51 +61,51 @@
                                             <strong>{{ log.performedBy.displayName|default(log.performedBy.username) }}</strong>
                                             <span class="text-muted-block">@{{ log.performedBy.username }}</span>
                                         {% else %}
-                                            <span style="color: var(--text-muted); font-style: italic;">Système</span>
+                                            <span style="color: var(--text-muted); font-style: italic;">{{ 'Système'|trans }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if log.action.value == 'user_ban' %}
-                                            <span class="status-pill status-pill--banned">Bannissement</span>
+                                            <span class="status-pill status-pill--banned">{{ 'Bannissement'|trans }}</span>
                                         {% elseif log.action.value == 'user_unban' %}
-                                            <span class="status-pill status-pill--active">Réhabilitation</span>
+                                            <span class="status-pill status-pill--active">{{ 'Réhabilitation'|trans }}</span>
                                         {% elseif log.action.value == 'channel_export' %}
-                                            <span class="status-pill status-pill--export">Export Canal</span>
+                                            <span class="status-pill status-pill--export">{{ 'Export Canal'|trans }}</span>
                                         {% elseif log.action.value == 'export_download' %}
-                                            <span class="status-pill status-pill--download">Téléchargement</span>
+                                            <span class="status-pill status-pill--download">{{ 'Téléchargement'|trans }}</span>
                                         {% elseif log.action.value == 'export_delete' %}
-                                            <span class="status-pill status-pill--delete">Suppr. Export</span>
+                                            <span class="status-pill status-pill--delete">{{ 'Suppr. Export'|trans }}</span>
                                         {% elseif log.action.value == 'channel_create' %}
-                                            <span class="status-pill status-pill--create">Création Canal</span>
+                                            <span class="status-pill status-pill--create">{{ 'Création Canal'|trans }}</span>
                                         {% elseif log.action.value == 'channel_delete' %}
-                                            <span class="status-pill status-pill--delete">Suppr. Canal</span>
+                                            <span class="status-pill status-pill--delete">{{ 'Suppr. Canal'|trans }}</span>
                                         {% elseif log.action.value == 'group_create' %}
-                                            <span class="status-pill status-pill--create">Création Groupe</span>
+                                            <span class="status-pill status-pill--create">{{ 'Création Groupe'|trans }}</span>
                                         {% elseif log.action.value == 'group_delete' %}
-                                            <span class="status-pill status-pill--delete">Suppr. Groupe</span>
+                                            <span class="status-pill status-pill--delete">{{ 'Suppr. Groupe'|trans }}</span>
                                         {% else %}
                                             <span class="status-pill status-pill--default">{{ log.action.value }}</span>
                                         {% endif %}
                                     </td>
                                     <td class="detail-cell">
                                         {% if log.action.value == 'user_ban' %}
-                                            Bannissement de l'utilisateur <strong style="color: var(--text-normal);">{{ log.details.username|default('Inconnu') }}</strong>
+                                            {{ "Bannissement de l'utilisateur"|trans }} <strong style="color: var(--text-normal);">{{ log.details.username|default('Inconnu'|trans) }}</strong>
                                         {% elseif log.action.value == 'user_unban' %}
-                                            Réhabilitation de l'utilisateur <strong style="color: var(--text-normal);">{{ log.details.username|default('Inconnu') }}</strong>
+                                            {{ "Réhabilitation de l'utilisateur"|trans }} <strong style="color: var(--text-normal);">{{ log.details.username|default('Inconnu'|trans) }}</strong>
                                         {% elseif log.action.value == 'channel_export' %}
-                                            Export du canal <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu') }}</strong> (Fichier: <code>{{ log.details.file_name|default('—') }}</code>)
+                                            {{ "Export du canal"|trans }} <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu'|trans) }}</strong> (Fichier: <code>{{ log.details.file_name|default('—') }}</code>)
                                         {% elseif log.action.value == 'export_download' %}
-                                            Téléchargement d'export pour <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu') }}</strong> (Fichier: <code>{{ log.details.file_name|default('—') }}</code>)
+                                            {{ "Téléchargement d'export pour"|trans }} <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu'|trans) }}</strong> (Fichier: <code>{{ log.details.file_name|default('—') }}</code>)
                                         {% elseif log.action.value == 'export_delete' %}
-                                            Suppression d'export pour <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu') }}</strong> (Fichier: <code>{{ log.details.file_name|default('—') }}</code>)
+                                            {{ "Suppression d'export pour"|trans }} <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu'|trans) }}</strong> (Fichier: <code>{{ log.details.file_name|default('—') }}</code>)
                                         {% elseif log.action.value == 'channel_create' %}
-                                            Création du canal <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu') }}</strong> (Privé : {{ log.details.is_private ? 'Oui' : 'Non' }}{% if log.details.parent_channel_id is defined %}, sous-canal{% endif %})
+                                            {{ "Création du canal"|trans }} <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu'|trans) }}</strong> (Privé : {{ log.details.is_private ? 'Oui'|trans : 'Non'|trans }}{% if log.details.parent_channel_id is defined %}, {{ 'sous-canal'|trans }}{% endif %})
                                         {% elseif log.action.value == 'channel_delete' %}
-                                            Suppression du canal <strong style="color: var(--text-normal);">#{{ log.details.channel_name|default('Inconnu') }}</strong> (slug: <code>{{ log.details.slug|default('—') }}</code>)
+                                            {{ "Suppression du canal"|trans }} <strong style="color: var(--text-normal);">#{{ log.details.channel_name|default('Inconnu'|trans) }}</strong> (slug: <code>{{ log.details.slug|default('—') }}</code>)
                                         {% elseif log.action.value == 'group_create' %}
-                                            Création du groupe <strong style="color: var(--accent-cyan);">{{ log.details.group_name|default('Inconnu') }}</strong> (Identifier : <code>{{ log.details.group_identifier|default('—') }}</code>{% if log.details.imported is defined and log.details.imported %}, importé{% endif %})
+                                            {{ "Création du groupe"|trans }} <strong style="color: var(--accent-cyan);">{{ log.details.group_name|default('Inconnu'|trans) }}</strong> (Identifier : <code>{{ log.details.group_identifier|default('—') }}</code>{% if log.details.imported is defined and log.details.imported %}, {{ 'importé'|trans }}{% endif %})
                                         {% elseif log.action.value == 'group_delete' %}
-                                            Suppression du groupe <strong style="color: var(--text-normal);">{{ log.details.group_name|default('Inconnu') }}</strong> (Identifier : <code>{{ log.details.group_identifier|default('—') }}</code>)
+                                            {{ "Suppression du groupe"|trans }} <strong style="color: var(--text-normal);">{{ log.details.group_name|default('Inconnu'|trans) }}</strong> (Identifier : <code>{{ log.details.group_identifier|default('—') }}</code>)
                                         {% else %}
                                             <span class="json-fallback">{{ log.details|json_encode }}</span>
                                         {% endif %}
@@ -117,7 +117,7 @@
                             {% else %}
                                 <tr>
                                     <td colspan="5" class="empty-state">
-                                        Aucun événement d'audit enregistré.
+                                        {{ "Aucun événement d'audit enregistré."|trans }}
                                     </td>
                                 </tr>
                             {% endfor %}

@@ -9,12 +9,14 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
 use Symfony\Component\Security\Http\Authenticator\FormLoginAuthenticator;
 use Symfony\Component\Security\Http\Event\CheckPassportEvent;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class SecuritySubscriber implements EventSubscriberInterface
 {
     public function __construct(
         #[Autowire(env: 'bool:AUTH_FORM_ENABLED')]
         private bool $authFormEnabled,
+        private TranslatorInterface $translator,
     ) {}
 
     public static function getSubscribedEvents(): array
@@ -28,7 +30,7 @@ class SecuritySubscriber implements EventSubscriberInterface
     {
         $authenticator = $event->getAuthenticator();
         if ($authenticator instanceof FormLoginAuthenticator && !$this->authFormEnabled) {
-            throw new CustomUserMessageAuthenticationException('L\'authentification par mot de passe est désactivée.');
+            throw new CustomUserMessageAuthenticationException($this->translator->trans('L\'authentification par mot de passe est désactivée.'));
         }
     }
 }

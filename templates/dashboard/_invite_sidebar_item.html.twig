@@ -7,12 +7,12 @@
         </span>
         {% if invite.channel.creator %}
             <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; padding-left: 1.25rem;">
-                Invité par {{ invite.channel.creator.displayName|default(invite.channel.creator.username) }}
+                {{ 'Invité par'|trans }} {{ invite.channel.creator.displayName|default(invite.channel.creator.username) }}
             </span>
         {% endif %}
     </div>
     <div style="display: flex; gap: 0.5rem;">
-        <button hx-post="{{ path('app_invite_accept', {id: invite.id}) }}" hx-target="#invite-{{ invite.id }}" hx-swap="outerHTML" style="background: var(--accent-green); color: #0f172a; border: none; border-radius: 0.25rem; padding: 0.35rem 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-grow: 1; transition: var(--transition-smooth);">Accepter</button>
-        <button hx-post="{{ path('app_invite_reject', {id: invite.id}) }}" hx-target="#invite-{{ invite.id }}" hx-swap="outerHTML" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--accent-red); border-radius: 0.25rem; padding: 0.35rem 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-grow: 1; transition: var(--transition-smooth);">Refuser</button>
+        <button hx-post="{{ path('app_invite_accept', {id: invite.id}) }}" hx-target="#invite-{{ invite.id }}" hx-swap="outerHTML" style="background: var(--accent-green); color: #0f172a; border: none; border-radius: 0.25rem; padding: 0.35rem 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-grow: 1; transition: var(--transition-smooth);">{{ 'Accepter'|trans }}</button>
+        <button hx-post="{{ path('app_invite_reject', {id: invite.id}) }}" hx-target="#invite-{{ invite.id }}" hx-swap="outerHTML" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--accent-red); border-radius: 0.25rem; padding: 0.35rem 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-grow: 1; transition: var(--transition-smooth);">{{ 'Refuser'|trans }}</button>
     </div>
 </div>

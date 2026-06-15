@@ -224,6 +224,7 @@
 "L'inscription est désactivée.": "L'inscription est désactivée."
 "Trop de tentatives d'inscription. Veuillez réessayer plus tard.": "Trop de tentatives d'inscription. Veuillez réessayer plus tard."
 "Votre compte a été créé avec succès ! Connectez-vous maintenant.": "Votre compte a été créé avec succès ! Connectez-vous maintenant."
+"Rejoindre": "Rejoindre"
 
 # Thread / Replies
 "Fil de discussion": "Fil de discussion"
@@ -240,4 +241,97 @@
 "Copier l'URL": "Copier l'URL"
 "Nouveau webhook (Nom)": "Nouveau webhook (Nom)"
 "Créer": "Créer"
+
+# UI / Feature Strings
+"Actualiser": "Actualiser"
+"Fermer": "Fermer"
+"Télécharger": "Télécharger"
+"Options": "Options"
+"Terminer": "Terminer"
+"Membres": "Membres"
+"Discussions": "Discussions"
+"Médias": "Médias"
+"Médiathèque": "Médiathèque"
+"Docs": "Docs"
+"Images": "Images"
+"Tous": "Tous"
+"Raccourcis": "Raccourcis"
+"Options de formatage": "Options de formatage"
+"Annuler la réponse": "Annuler la réponse"
+"Masquer les tâches terminées": "Masquer les tâches terminées"
+"Filtrer par non lus": "Filtrer par non lus"
+"Exporter l'historique": "Exporter l'historique"
+"Retour au canal parent": "Retour au canal parent"
+"Retour au direct": "Retour au direct"
+
+# Todo / Discussion Features
+"Todo": "Todo"
+"Todos": "Todos"
+"Discussion": "Discussion"
+"Discussion todo": "Discussion todo"
+"discussion": "discussion"
+"Créer un canal todo": "Créer un canal todo"
+"Créer une discussion": "Créer une discussion"
+"Créer une discussion todo": "Créer une discussion todo"
+"Canal todo list": "Canal todo list"
+"Aucun canal todo. Créez-en un !": "Aucun canal todo. Créez-en un !"
+"Aucune discussion existante.": "Aucune discussion existante."
+
+# Files / Media upload
+"Analyse antivirus en cours...": "Analyse antivirus en cours..."
+"Fichier bloqué : Contenu malveillant détecté.": "Fichier bloqué : Contenu malveillant détecté."
+"Échec de l'analyse antivirus. Fichier inaccessible.": "Échec de l'analyse antivirus. Fichier inaccessible."
+"Chargement des fichiers...": "Chargement des fichiers..."
+"Aucun fichier partagé dans ce canal.": "Aucun fichier partagé dans ce canal."
+
+# Admin / Group management
+"Ce groupe est déjà importé dans l'application.": "Ce groupe est déjà importé dans l'application."
+"Ce groupe possède déjà un canal officiel.": "Ce groupe possède déjà un canal officiel."
+"Paramètres d'import invalides.": "Paramètres d'import invalides."
+"Le nom du groupe ne peut pas être vide.": "Le nom du groupe ne peut pas être vide."
+"L'utilisateur \"%username%\" a été ajouté au groupe.": "L'utilisateur \"%username%\" a été ajouté au groupe."
+"L'utilisateur \"%username%\" a été retiré du groupe.": "L'utilisateur \"%username%\" a été retiré du groupe."
+"L'utilisateur \"%username%\" a été promu administrateur du groupe.": "L'utilisateur \"%username%\" a été promu administrateur du groupe."
+"L'utilisateur \"%username%\" n'est plus administrateur du groupe.": "L'utilisateur \"%username%\" n'est plus administrateur du groupe."
+"Impossible de retirer le dernier administrateur du groupe.": "Impossible de retirer le dernier administrateur du groupe."
+"Le groupe \"%name%\" a été créé avec son canal officiel.": "Le groupe \"%name%\" a été créé avec son canal officiel."
+"Le groupe \"%name%\" a été importé avec son canal officiel.": "Le groupe \"%name%\" a été importé avec son canal officiel."
+"Le groupe \"%name%\" et son canal officiel ont été supprimés.": "Le groupe \"%name%\" et son canal officiel ont été supprimés."
+"L'export a été supprimé.": "L'export a été supprimé."
+"Le fichier d'export n'existe pas dans le stockage.": "Le fichier d'export n'existe pas dans le stockage."
+"Non autorisé à exporter l'historique de ce canal.": "Non autorisé à exporter l'historique de ce canal."
+
+# Channel / Discussion management
+"Discussion \"%channelName%\" créée.": "Discussion \"%channelName%\" créée."
+"Discussion créée depuis un message.": "Discussion créée depuis un message."
+"Aucune description.": "Aucune description."
+
+# Security / Antivirus
+"L'accès à ce fichier a été bloqué par l'antivirus.": "L'accès à ce fichier a été bloqué par l'antivirus."
+"L'analyse antivirus de ce fichier est en cours.": "L'analyse antivirus de ce fichier est en cours."
+
+# Thread / Replies
+"réponses (%count%)": "réponses (%count%)"
+
+# Javascript Frontend Translations
+"Activer les notifications": "Activer les notifications"
+"Activer les notifications de bureau": "Activer les notifications de bureau"
+"Notifications actives (cliquez pour désactiver)": "Notifications actives (cliquez pour désactiver)"
+"Notifications désactivées (cliquez pour activer)": "Notifications désactivées (cliquez pour activer)"
+"Notifications bloquées. Modifiez les autorisations de votre navigateur.": "Notifications bloquées. Modifiez les autorisations de votre navigateur."
+"Notifications activées ! 🚀": "Notifications activées ! 🚀"
+"Vous recevrez désormais des alertes pour les nouveaux messages et invitations.": "Vous recevrez désormais des alertes pour les nouveaux messages et invitations."
+"Notifications réactivées ! 🔔": "Notifications réactivées ! 🔔"
+"Les alertes de bureau sont à nouveau actives.": "Les alertes de bureau sont à nouveau actives."
+"Test de notification 🚀": "Test de notification 🚀"
+"Ceci est une notification de test de Roquette.": "Ceci est une notification de test de Roquette."
+"Nouvelle invitation 🔒": "Nouvelle invitation 🔒"
+"%sender% vous a invité à rejoindre le canal #%channelName%": "%sender% vous a invité à rejoindre le canal #%channelName%"
+"Mention dans %channelName%": "Mention dans %channelName%"
+"Nouveau message 🚀": "Nouveau message 🚀"
+"@%author% vous a mentionné : %content%": "@%author% vous a mentionné : %content%"
+"En attente de connexion...": "En attente de connexion..."
+"Connexion perdue. Nouvel essai...": "Connexion perdue. Nouvel essai..."
+
+
 

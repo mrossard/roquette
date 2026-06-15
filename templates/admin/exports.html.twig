@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Roquette - Administration - Exports{% endblock %}
+{% block title %}{{ 'Roquette - Administration - Exports'|trans }}{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -13,7 +13,7 @@
     <div class="app-container admin-layout" hx-boost="true">
         <header class="app-header">
             <div class="logo-area">
-                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="{{ 'Afficher le menu'|trans }}">
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
@@ -32,8 +32,8 @@
             <section class="card glass-panel settings-panel">
                 <div class="card-header">
                     <div>
-                        <h2>Gestion des exports de canaux</h2>
-                        <p class="card-description">Liste des exports d'historiques archivés, téléchargement et suppression.</p>
+                        <h2>{{ 'Gestion des exports de canaux'|trans }}</h2>
+                        <p class="card-description">{{ "Liste des exports d'historiques archivés, téléchargement et suppression."|trans }}</p>
                     </div>
                     {% include 'admin/_nav.html.twig' %}
                 </div>
@@ -51,11 +51,11 @@
                         <table class="admin-table">
                             <thead>
                                 <tr>
-                                    <th>Canal</th>
-                                    <th>Date d'export</th>
-                                    <th>Exporté par</th>
-                                    <th>Nom du fichier / Taille</th>
-                                    <th class="th--right">Actions</th>
+                                    <th>{{ 'Canal'|trans }}</th>
+                                    <th>{{ "Date d'export"|trans }}</th>
+                                    <th>{{ 'Exporté par'|trans }}</th>
+                                    <th>{{ 'Nom du fichier / Taille'|trans }}</th>
+                                    <th class="th--right">{{ 'Actions'|trans }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -67,7 +67,7 @@
                                             <span class="text-muted-block">slug: {{ e.channel.slug }}</span>
                                         {% else %}
                                             <strong style="color: var(--text-muted);">{{ e.channelName }}</strong>
-                                            <span class="status-pill status-pill--deleted-channel">Supprimé</span>
+                                            <span class="status-pill status-pill--deleted-channel">{{ 'Supprimé'|trans }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -78,7 +78,7 @@
                                             <span>{{ e.exportedBy.displayName|default(e.exportedBy.username) }}</span>
                                             <span class="text-muted-block">@{{ e.exportedBy.username }}</span>
                                         {% else %}
-                                            <span style="color: var(--text-muted); font-style: italic;">Inconnu</span>
+                                            <span style="color: var(--text-muted); font-style: italic;">{{ 'Inconnu'|trans }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -89,13 +89,13 @@
                                         <div class="action-row">
                                             <a href="{{ path('app_admin_export_download', {id: e.id}) }}" 
                                                class="btn-download" hx-boost="false">
-                                                📥 Télécharger
+                                                📥 {{ 'Télécharger'|trans }}
                                             </a>
                                             <form action="{{ path('app_admin_export_delete', {id: e.id}) }}" 
                                                   method="POST" class="action-inline" hx-boost="false"
-                                                  data-confirm="Êtes-vous sûr de vouloir supprimer cet export ? Le fichier physique sera également détruit.">
+                                                  data-confirm="{{ 'Êtes-vous sûr de vouloir supprimer cet export ? Le fichier physique sera également détruit.'|trans }}">
                                                 <button type="submit" class="btn-delete-channel btn-action">
-                                                    🗑️ Supprimer
+                                                    🗑️ {{ 'Supprimer'|trans }}
                                                 </button>
                                             </form>
                                         </div>
@@ -104,7 +104,7 @@
                             {% else %}
                                 <tr>
                                     <td colspan="5" class="empty-state">
-                                        Aucun export archivé pour le moment.
+                                        {{ 'Aucun export archivé pour le moment.'|trans }}
                                     </td>
                                 </tr>
                             {% endfor %}

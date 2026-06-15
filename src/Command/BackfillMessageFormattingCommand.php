@@ -13,6 +13,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsCommand(
     name: 'app:backfill-message-formatting',
@@ -23,6 +24,7 @@ class BackfillMessageFormattingCommand extends Command
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly MessageFormatter $formatter,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct();
     }
@@ -47,7 +49,7 @@ class BackfillMessageFormattingCommand extends Command
         $total = (int) $qb->getQuery()->getSingleScalarResult();
 
         if ($total === 0) {
-            $io->success('Tous les messages sont déjà formatés !');
+            $io->success($this->translator->trans('Tous les messages sont déjà formatés !'));
             return Command::SUCCESS;
         }
 
@@ -94,7 +96,7 @@ class BackfillMessageFormattingCommand extends Command
             $io->text(sprintf('Progression : %d/%d messages...', $processed, $total));
         }
 
-        $io->success('Formatage rétroactif terminé avec succès !');
+        $io->success($this->translator->trans('Formatage rétroactif terminé avec succès !'));
 
         return Command::SUCCESS;
     }

@@ -3,6 +3,6 @@
             style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer;"
             hx-get="{{ path('app_channel_invite_modal', {slug: activeChannel.slug}) }}"
             hx-target="#modal-container"
-            hx-trigger="click">✉️ Inviter un membre
+            hx-trigger="click">✉️ {{ 'Inviter un membre'|trans }}
     </button>
 </div>

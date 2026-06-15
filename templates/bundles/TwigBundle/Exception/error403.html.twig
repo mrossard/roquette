@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accès refusé - Roquette</title>
+    <title>{{ 'Accès refusé - Roquette'|trans }}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -232,16 +232,15 @@
         <div class="lock-ring"></div>
     </div>
     <h1>403</h1>
-    <h2>Accès refusé.</h2>
-    <p>Vous n'avez pas les autorisations nécessaires pour accéder à cette zone. Si vous pensez qu'il s'agit d'une
-        erreur, contactez un administrateur.</p>
+    <h2>{{ 'Accès refusé.'|trans }}</h2>
+    <p>{{ "Vous n'avez pas les autorisations nécessaires pour accéder à cette zone. Si vous pensez qu'il s'agit d'une erreur, contactez un administrateur."|trans }}</p>
     <a href="/" class="btn">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
              stroke-linecap="round" stroke-linejoin="round">
             <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
-        Retourner à l'accueil
+        {{ "Retourner à l'accueil"|trans }}
     </a>
 </div>
 

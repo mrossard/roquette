@@ -1,4 +1,5 @@
 // assets/offline.js
+const trans = (key) => (window.AppTranslations && window.AppTranslations[key]) || key;
 
 // Array to hold offline messages in memory (also synced to localStorage)
 let offlineQueue = [];
@@ -118,7 +119,7 @@ function renderOfflineMessage(msg) {
             <span class="feed-item-time">${timeStr}</span>
             <span class="offline-status-label" style="font-size: 0.75rem; color: var(--accent-orange, #f59e0b); font-weight: 500; margin-left: 0.5rem; display: flex; align-items: center; gap: 4px;">
                 <span class="spinner-small" style="border: 2px solid rgba(245, 158, 11, 0.1); border-top-color: var(--accent-orange, #f59e0b); width: 10px; height: 10px; display: inline-block; border-radius: 50%; animation: spin 1s linear infinite;"></span>
-                En attente de connexion...
+                ${trans('En attente de connexion...')}
             </span>
         </div>
         <div class="feed-item-body">
@@ -159,7 +160,7 @@ export function syncOfflineMessages() {
             if (statusLabel) {
                 statusLabel.innerHTML = `
                     <span class="spinner-small" style="border: 2px solid rgba(24, 119, 242, 0.1); border-top-color: #1877f2; width: 10px; height: 10px; display: inline-block; border-radius: 50%; animation: spin 1s linear infinite;"></span>
-                    Envoi en cours...
+                    ${trans('Envoi en cours...')}
                 `;
                 statusLabel.style.color = '#1877f2';
             }
@@ -218,7 +219,7 @@ export function syncOfflineMessages() {
                     if (statusLabel) {
                         statusLabel.innerHTML = `
                         <span class="spinner-small" style="border: 2px solid rgba(245, 158, 11, 0.1); border-top-color: var(--accent-orange, #f59e0b); width: 10px; height: 10px; display: inline-block; border-radius: 50%; animation: spin 1s linear infinite;"></span>
-                        Connexion perdue. Nouvel essai...
+                        ${trans('Connexion perdue. Nouvel essai...')}
                     `;
                         statusLabel.style.color = 'var(--accent-orange, #f59e0b)';
                     }

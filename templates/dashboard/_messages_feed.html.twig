@@ -2,10 +2,10 @@
     <div hx-on:htmx:load="var f=document.getElementById('live-feed');if(f)f.removeAttribute('data-block-sse')"
          style="display:none"></div>
     <div class="search-results-banner unread-filter-banner">
-        <span class="search-banner-text">🔔 Affichage des <strong>messages non lus</strong></span>
+        <span class="search-banner-text">{{ '🔔 Affichage des <strong>messages non lus</strong>'|trans }}</span>
         <button class="btn-clear-search btn-clear-unread"
                 hx-on:click="clearSearchFilters()"
-                title="Revenir à tous les messages">Retour au direct
+                title="Revenir à tous les messages">{{ 'Retour au direct'|trans }}
         </button>
     </div>
 
@@ -14,7 +14,7 @@
         {% set currentDate = message.createdAt|date('Y-m-d') %}
         {% if lastDate is null or currentDate != lastDate %}
             {% if not activeChannel.isTodoList() %}
-                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui'|trans : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier'|trans : message.createdAt|date('d/m/Y'))} %}
             {% endif %}
             {% set lastDate = currentDate %}
         {% endif %}
@@ -27,10 +27,10 @@
         <div id="feed-empty-state" class="empty-state">
             <div class="empty-icon">✅</div>
             <h3>Tout est à jour !</h3>
-            <p>Aucun message non lu dans ce canal.</p>
+            <p>{{ 'Aucun message non lu dans ce canal.'|trans }}</p>
             <button class="btn-clear-search"
                     hx-on:click="clearSearchFilters()"
-                    style="margin-top: 1rem;">Retour au direct
+                    style="margin-top: 1rem;">{{ 'Retour au direct'|trans }}
             </button>
         </div>
     {% endfor %}
@@ -40,7 +40,7 @@
     {% set replyCount = messages|length - 1 %}
     <div class="search-results-banner thread-banner">
         <span
-            class="search-banner-text">💬 <strong>{{ threadOf.author.displayName|default(threadOf.author.username) }}</strong> — {{ 'Fil de discussion'|trans }} ({{ replyCount }} {{ replyCount > 1 ? 'réponses' : 'réponse' }})</span>
+            class="search-banner-text">💬 <strong>{{ threadOf.author.displayName|default(threadOf.author.username) }}</strong> — {{ 'Fil de discussion'|trans }} ({{ replyCount }} {{ replyCount > 1 ? 'réponses'|trans : 'réponse'|trans }})</span>
         <button class="btn-clear-search"
                 hx-on:click="clearSearchFilters()"
                 title="Revenir à tous les messages">{{ 'Retour au direct'|trans }}
@@ -52,7 +52,7 @@
         {% set currentDate = message.createdAt|date('Y-m-d') %}
         {% if lastDate is null or currentDate != lastDate %}
             {% if not activeChannel.isTodoList() %}
-                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui'|trans : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier'|trans : message.createdAt|date('d/m/Y'))} %}
             {% endif %}
             {% set lastDate = currentDate %}
         {% endif %}
@@ -66,18 +66,18 @@
     {% else %}
         <div id="feed-empty-state" class="empty-state">
             <div class="empty-icon">💬</div>
-            <h3>Aucune réponse</h3>
-            <p>Ce message n'a pas encore de réponse.</p>
+            <h3>{{ 'Aucune réponse'|trans }}</h3>
+            <p>{{ 'Ce message n\'a pas encore de réponse.'|trans }}</p>
         </div>
     {% endfor %}
 {% elseif searchQuery is defined and searchQuery is not empty %}
     <div hx-on:htmx:load="var f=document.getElementById('live-feed');if(f)f.removeAttribute('data-block-sse')"
          style="display:none"></div>
     <div class="search-results-banner">
-        <span class="search-banner-text">🔍 <strong>{{ messages|length }}</strong> résultat(s) pour "<strong>{{ searchQuery }}</strong>"</span>
+        <span class="search-banner-text">{{ '🔍 <strong>%count%</strong> résultat(s) pour "<strong>%query%</strong>"'|trans({'%count%': messages|length, '%query%': searchQuery}) }}</span>
         <button class="btn-clear-search"
                 hx-on:click="clearSearchFilters()"
-                title="Quitter la recherche">Retour au direct
+                title="Quitter la recherche">{{ 'Retour au direct'|trans }}
         </button>
     </div>
 
@@ -86,7 +86,7 @@
         {% set currentDate = message.createdAt|date('Y-m-d') %}
         {% if lastDate is null or currentDate != lastDate %}
             {% if not activeChannel.isTodoList() %}
-                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui'|trans : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier'|trans : message.createdAt|date('d/m/Y'))} %}
             {% endif %}
             {% set lastDate = currentDate %}
         {% endif %}
@@ -98,8 +98,8 @@
     {% else %}
         <div id="feed-empty-state" class="empty-state">
             <div class="empty-icon">🔍</div>
-            <h3>Aucun résultat</h3>
-            <p>Aucun message contenant "<strong>{{ searchQuery }}</strong>" n'a été trouvé dans ce canal.</p>
+            <h3>{{ 'Aucun résultat'|trans }}</h3>
+            <p>{{ 'Aucun message contenant "<strong>%query%</strong>" n\'a été trouvé dans ce canal.'|trans({'%query%': searchQuery}) }}</p>
         </div>
     {% endfor %}
 {% else %}
@@ -117,14 +117,14 @@
         {% set currentDate = message.createdAt|date('Y-m-d') %}
         {% if lastDate is null or currentDate != lastDate %}
             {% if not activeChannel.isTodoList() %}
-                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui' : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier' : message.createdAt|date('d/m/Y'))} %}
+                {% include 'dashboard/_day_separator.html.twig' with {label: currentDate == 'now'|date('Y-m-d') ? 'Aujourd\'hui'|trans : (currentDate == 'yesterday'|date('Y-m-d') ? 'Hier'|trans : message.createdAt|date('d/m/Y'))} %}
             {% endif %}
             {% set lastDate = currentDate %}
         {% endif %}
         {% if firstUnreadMessageId|default(null) and message.id >= firstUnreadMessageId and not separatorShown and message.author.id != app.user.id %}
             <div class="unread-separator">
                 <span class="unread-separator-line"></span>
-                <span class="unread-separator-label">Nouveaux messages</span>
+                <span class="unread-separator-label">{{ 'Nouveaux messages'|trans }}</span>
                 <span class="unread-separator-line"></span>
             </div>
             {% set separatorShown = true %}
@@ -138,8 +138,8 @@
     {% else %}
         <div id="feed-empty-state" class="empty-state">
             <div class="empty-icon">📡</div>
-            <h3>Aucun message reçu</h3>
-            <p>Les nouveaux messages apparaîtront ici dès qu'ils seront publiés.</p>
+            <h3>{{ 'Aucun message reçu'|trans }}</h3>
+            <p>{{ 'Les nouveaux messages apparaîtront ici dès qu\'ils seront publiés.'|trans }}</p>
         </div>
     {% endfor %}
 {% endif %}

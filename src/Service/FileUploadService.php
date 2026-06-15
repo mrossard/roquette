@@ -7,6 +7,7 @@ namespace App\Service;
 use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Handles file upload and deletion via Flysystem.
@@ -84,6 +85,7 @@ class FileUploadService
         private FilesystemOperator $defaultStorage,
         private ClamavService $clamavService,
         private LoggerInterface $logger,
+        private TranslatorInterface $translator,
     ) {}
 
     /**
@@ -100,7 +102,7 @@ class FileUploadService
                 $file->getClientOriginalName(),
             ));
             throw new \InvalidArgumentException(
-                'Le fichier est invalide ou dépasse la taille autorisée par le serveur.',
+                $this->translator->trans('Le fichier est invalide ou dépasse la taille autorisée par le serveur.'),
             );
         }
 
@@ -123,9 +125,9 @@ class FileUploadService
                 $file->getSize(),
                 self::MAX_FILE_SIZE,
             ));
-            throw new \InvalidArgumentException(sprintf(
-                'Le fichier dépasse la taille maximale autorisée de %d Mo.',
-                (self::MAX_FILE_SIZE / 1024) / 1024,
+            throw new \InvalidArgumentException($this->translator->trans(
+                'Le fichier dépasse la taille maximale autorisée de %maxSize% Mo.',
+                ['%maxSize%' => (self::MAX_FILE_SIZE / 1024) / 1024],
             ));
         }
 
@@ -135,9 +137,9 @@ class FileUploadService
                 $extension,
                 $file->getClientOriginalName(),
             ));
-            throw new \InvalidArgumentException(sprintf(
-                'L\'extension de fichier ".%s" n\'est pas autorisée.',
-                $extension,
+            throw new \InvalidArgumentException($this->translator->trans(
+                'L\'extension de fichier ".%extension%" n\'est pas autorisée.',
+                ['%extension%' => $extension],
             ));
         }
 
@@ -147,7 +149,7 @@ class FileUploadService
                 $mimeType,
                 $file->getClientOriginalName(),
             ));
-            throw new \InvalidArgumentException(sprintf('Le type MIME "%s" n\'est pas autorisé.', $mimeType));
+            throw new \InvalidArgumentException($this->translator->trans('Le type MIME "%mimeType%" n\'est pas autorisé.', ['%mimeType%' => $mimeType]));
         }
 
 

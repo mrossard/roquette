@@ -56,12 +56,15 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 class ClamavServiceTest extends TestCase
 {
     private LoggerInterface $logger;
+    private \Symfony\Contracts\Translation\TranslatorInterface $translator;
     private ClamavService $service;
 
     protected function setUp(): void
     {
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->service = new ClamavService('localhost', 3310, $this->logger);
+        $this->translator = $this->createMock(\Symfony\Contracts\Translation\TranslatorInterface::class);
+        $this->translator->method('trans')->willReturnCallback(static fn($id, $parameters = []) => strtr($id, $parameters));
+        $this->service = new ClamavService('localhost', 3310, $this->logger, $this->translator);
 
         // Reset state
         ClamavServiceTestState::$shouldFailFsockopen = false;

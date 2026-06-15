@@ -13,6 +13,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsCommand(name: 'app:create-admin', description: 'Crée un nouvel utilisateur administrateur.')]
 class CreateAdminCommand extends Command
@@ -20,6 +21,7 @@ class CreateAdminCommand extends Command
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct();
     }
@@ -41,9 +43,9 @@ class CreateAdminCommand extends Command
         $password = $input->getArgument('password');
 
         if (!$username) {
-            $username = $io->ask('Nom d\'utilisateur', null, static function ($value) {
+            $username = $io->ask('Nom d\'utilisateur', null, function ($value) {
                 if ($value === null || trim((string) $value) === '') {
-                    throw new \RuntimeException('Le nom d\'utilisateur ne peut pas être vide.');
+                    throw new \RuntimeException($this->translator->trans('Le nom d\'utilisateur ne peut pas être vide.'));
                 }
                 return $value;
             });
@@ -73,9 +75,9 @@ class CreateAdminCommand extends Command
         }
 
         if (!$password) {
-            $password = $io->askHidden('Mot de passe', static function ($value) {
+            $password = $io->askHidden('Mot de passe', function ($value) {
                 if ($value === null || trim((string) $value) === '') {
-                    throw new \RuntimeException('Le mot de passe ne peut pas être vide.');
+                    throw new \RuntimeException($this->translator->trans('Le mot de passe ne peut pas être vide.'));
                 }
                 return $value;
             });

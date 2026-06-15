@@ -11,11 +11,11 @@
         </div>
         <span class="typing-text">
             {% if typingUsers|length == 1 %}
-                <strong>{{ typingUsers[0] }}</strong> est en train d'écrire...
+                <strong>{{ typingUsers[0] }}</strong> {{ 'est en train d\'écrire...'|trans }}
             {% elseif typingUsers|length == 2 %}
-                <strong>{{ typingUsers[0] }}</strong> et <strong>{{ typingUsers[1] }}</strong> sont en train d'écrire...
+                <strong>{{ typingUsers[0] }}</strong> {{ 'et'|trans }} <strong>{{ typingUsers[1] }}</strong> {{ 'sont en train d\'écrire...'|trans }}
             {% else %}
-                Plusieurs personnes sont en train d'écrire...
+                {{ 'Plusieurs personnes sont en train d\'écrire...'|trans }}
             {% endif %}
         </span>
     {% else %}

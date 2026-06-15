@@ -79,10 +79,10 @@
         <div class="language-switcher"
              style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; display: flex; justify-content: center; gap: 0.75rem;">
             <a href="?_locale=fr"
-               style="color: var(--text-muted); text-decoration: none; font-weight: {% if app.request.locale == 'fr' %}600{% else %}400{% endif %};">Français</a>
+               style="color: var(--text-muted); text-decoration: none; font-weight: {% if app.request.locale == 'fr' %}600{% else %}400{% endif %};">{{ 'Français'|trans }}</a>
             <span style="color: var(--border-glass);">|</span>
             <a href="?_locale=en"
-               style="color: var(--text-muted); text-decoration: none; font-weight: {% if app.request.locale == 'en' %}600{% else %}400{% endif %};">English</a>
+               style="color: var(--text-muted); text-decoration: none; font-weight: {% if app.request.locale == 'en' %}600{% else %}400{% endif %};">{{ 'English'|trans }}</a>
         </div>
     </div>
 </div>

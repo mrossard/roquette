@@ -14,6 +14,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsCommand(
     name: 'app:purge-expired-messages',
@@ -24,6 +25,7 @@ class PurgeExpiredMessagesCommand extends Command
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly FileUploadService $fileUploadService,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct();
     }
@@ -72,11 +74,13 @@ class PurgeExpiredMessagesCommand extends Command
                 continue;
             }
 
-            $io->section(sprintf(
-                'Canal: #%s (Rétention: %d mois, Seuil: %s)',
-                $channel->getName(),
-                $retentionMonths,
-                $threshold->format('Y-m-d H:i:s'),
+            $io->section($this->translator->trans(
+                'Canal: #%channelName% (Rétention: %retentionMonths% mois, Seuil: %threshold%)',
+                [
+                    '%channelName%' => $channel->getName(),
+                    '%retentionMonths%' => $retentionMonths,
+                    '%threshold%' => $threshold->format('Y-m-d H:i:s'),
+                ],
             ));
 
             foreach ($messages as $message) {

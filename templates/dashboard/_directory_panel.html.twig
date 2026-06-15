@@ -14,34 +14,34 @@
                             </h3>
                             {% if isMember %}
                                 <span class="status-pill member-pill"
-                                      style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.2); font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 9999px;">Membre</span>
+                                      style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.2); font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 9999px;">{{ 'Membre'|trans }}</span>
                             {% endif %}
                         </div>
                         <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.8rem;">
-                            {{ channel.description|default('Aucune description fournie.') }}
+                            {{ channel.description|default('Aucune description fournie.'|trans) }}
                         </p>
                         <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
                             <span
                                 style="font-size: 0.8rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.25rem;">
-                                👥 {{ channel.members|length }} membre{{ channel.members|length > 1 ? 's' : '' }}
+                                👥 {{ channel.members|length }} {{ channel.members|length > 1 ? 'membres'|trans : 'membre'|trans }}
                             </span>
                             <span
                                 style="font-size: 0.8rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.25rem;">
-                                ⏱️ {% if channel.messageRetentionMonths is null %}Sans limite{% else %}{{ channel.messageRetentionMonths }} mois{% endif %}
+                                ⏱️ {% if channel.messageRetentionMonths is null %}{{ 'Sans limite'|trans }}{% else %}{{ channel.messageRetentionMonths }} {{ 'mois'|trans }}{% endif %}
                             </span>
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.5rem; width: 100%;">
                         {% if isMember %}
                             <a href="{{ path('app_channel', {slug: channel.slug}) }}" class="btn-account"
-                               style="flex: 1; text-align: center; justify-content: center; padding: 0.6rem;">Ouvrir</a>
+                               style="flex: 1; text-align: center; justify-content: center; padding: 0.6rem;">{{ 'Ouvrir'|trans }}</a>
                             {% if channel.slug != 'general' %}
                                 <form action="{{ path('app_channel_leave', {slug: channel.slug}) }}" method="POST"
                                       style="flex: 1;" hx-boost="false"
                                       data-confirm="Quitter le canal #{{ channel.name }} ?">
                                     <button type="submit" class="btn-logout"
                                             style="width: 100%; text-align: center; cursor: pointer; padding: 0.6rem;">
-                                        Quitter
+                                        {{ 'Quitter'|trans }}
                                     </button>
                                 </form>
                             {% endif %}
@@ -50,7 +50,7 @@
                                   style="width: 100%;" hx-boost="false">
                                 <button type="submit" class="btn-publish"
                                         style="width: 100%; cursor: pointer; padding: 0.6rem; font-size: 0.9rem;">
-                                    Rejoindre
+                                    {{ 'Rejoindre'|trans }}
                                 </button>
                             </form>
                         {% endif %}
@@ -59,8 +59,8 @@
             {% else %}
                 <div class="empty-state" style="grid-column: 1 / -1; padding: 4rem 1rem;">
                     <div class="empty-icon">📡</div>
-                    <h3>Aucun canal public</h3>
-                    <p>Il n'y a pas encore de canaux publics disponibles.</p>
+                    <h3>{{ 'Aucun canal public'|trans }}</h3>
+                    <p>{{ 'Il n\'y a pas encore de canaux publics disponibles.'|trans }}</p>
                 </div>
             {% endfor %}
         </div>
@@ -95,15 +95,15 @@
                     <div style="display: flex; gap: 0.5rem; width: 100%;">
                         <a href="{{ path('app_dm_open', {username: user.username}) }}" class="btn-publish"
                            style="width: 100%; text-align: center; text-decoration: none; font-size: 0.9rem; padding: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                            💬 Message Direct
+                            💬 {{ 'Message Direct'|trans }}
                         </a>
                     </div>
                 </div>
             {% else %}
                 <div class="empty-state" style="grid-column: 1 / -1; padding: 4rem 1rem;">
                     <div class="empty-icon">👥</div>
-                    <h3>Aucun autre membre</h3>
-                    <p>Il n'y a pas d'autres utilisateurs enregistrés pour le moment.</p>
+                    <h3>{{ 'Aucun autre membre'|trans }}</h3>
+                    <p>{{ 'Il n\'y a pas d\'autres utilisateurs enregistrés pour le moment.'|trans }}</p>
                 </div>
             {% endfor %}
         </div>

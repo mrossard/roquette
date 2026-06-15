@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Roquette - Gestion des groupes{% endblock %}
+{% block title %}{{ 'Roquette - Gestion des groupes'|trans }}{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -13,7 +13,7 @@
     <div class="app-container admin-layout" hx-boost="true">
         <header class="app-header">
             <div class="logo-area">
-                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="Afficher le menu">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="{{ 'Afficher le menu'|trans }}">
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
@@ -33,8 +33,8 @@
             <section class="card glass-panel settings-panel">
                 <div class="card-header" style="border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem;">
                     <div>
-                        <h2>Gestion des groupes</h2>
-                        <p class="card-description">Créer des groupes locaux ou importer des groupes depuis l'annuaire.</p>
+                        <h2>{{ 'Gestion des groupes'|trans }}</h2>
+                        <p class="card-description">{{ 'Créer des groupes locaux ou importer des groupes depuis l\'annuaire.'|trans }}</p>
                     </div>
                     {% include 'admin/_nav.html.twig' %}
                 </div>
@@ -53,25 +53,25 @@
                     <div class="search-row">
                         <!-- Local Group Creation -->
                         <div class="glass-panel">
-                            <h3>🆕 Créer un groupe local</h3>
+                            <h3>🆕 {{ 'Créer un groupe local'|trans }}</h3>
                             <form action="{{ path('app_admin_group_create') }}" method="POST" class="inline-form">
                                 <div style="flex-grow: 1;">
-                                    <label for="group-name-input" class="form-label">Nom du groupe</label>
-                                    <input type="text" id="group-name-input" name="name" required placeholder="Ex: Équipe Support" class="input-sidebar form-input-full">
+                                    <label for="group-name-input" class="form-label">{{ 'Nom du groupe'|trans }}</label>
+                                    <input type="text" id="group-name-input" name="name" required placeholder="{{ 'Ex: Équipe Support'|trans }}" class="input-sidebar form-input-full">
                                 </div>
-                                <button type="submit" class="btn-publish btn-panel">Créer</button>
+                                <button type="submit" class="btn-publish btn-panel">{{ 'Créer'|trans }}</button>
                             </form>
                         </div>
 
                         <!-- Provider Search -->
                         <div class="glass-panel">
-                            <h3>🔍 Rechercher un groupe (Annuaire)</h3>
+                            <h3>🔍 {{ 'Rechercher un groupe (Annuaire)'|trans }}</h3>
                             <form action="{{ path('app_admin_groups') }}" method="GET" class="inline-form">
                                 <div style="flex-grow: 1;">
-                                    <label for="provider-search-input" class="form-label">Nom du groupe ou identifiant</label>
-                                    <input type="text" id="provider-search-input" name="search" value="{{ searchQuery }}" placeholder="Ex: devs" class="input-sidebar form-input-full">
+                                    <label for="provider-search-input" class="form-label">{{ 'Nom du groupe ou identifiant'|trans }}</label>
+                                    <input type="text" id="provider-search-input" name="search" value="{{ searchQuery }}" placeholder="{{ 'Ex: devs'|trans }}" class="input-sidebar form-input-full">
                                 </div>
-                                <button type="submit" class="btn-publish btn-panel btn-panel--search">Rechercher</button>
+                                <button type="submit" class="btn-publish btn-panel btn-panel--search">{{ 'Rechercher'|trans }}</button>
                             </form>
                         </div>
                     </div>
@@ -79,7 +79,7 @@
 
                     {% if searchQuery is not empty %}
                         <div class="provider-results">
-                            <h3>Résultats de la recherche dans l'annuaire</h3>
+                            <h3>{{ "Résultats de la recherche dans l'annuaire"|trans }}</h3>
                             {% if providerResults|length > 0 %}
                                 <div class="result-list">
                                     {% for group in providerResults %}
@@ -93,12 +93,12 @@
                                             </div>
                                             <div>
                                                 {% if group.isImported %}
-                                                    <span class="badge-imported">Importé</span>
+                                                    <span class="badge-imported">{{ 'Importé'|trans }}</span>
                                                 {% else %}
                                                     <form action="{{ path('app_admin_group_import') }}" method="POST" style="margin: 0;">
                                                         <input type="hidden" name="identifier" value="{{ group.identifier }}">
                                                         <input type="hidden" name="name" value="{{ group.name }}">
-                                                        <button type="submit" class="btn-publish" style="margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; cursor: pointer; height: auto;">Importer</button>
+                                                        <button type="submit" class="btn-publish" style="margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; cursor: pointer; height: auto;">{{ 'Importer'|trans }}</button>
                                                     </form>
                                                 {% endif %}
                                             </div>
@@ -106,24 +106,24 @@
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <div class="no-results">Aucun groupe trouvé pour "{{ searchQuery }}".</div>
+                                <div class="no-results">{{ 'Aucun groupe trouvé pour "%searchQuery%".'|trans({ '%searchQuery%': searchQuery }) }}</div>
                             {% endif %}
                         </div>
                     {% endif %}
 
                     <!-- Local Groups Table -->
-                    <h3 class="section-title">Groupes enregistrés</h3>
+                    <h3 class="section-title">{{ 'Groupes enregistrés'|trans }}</h3>
                     {% if localGroups|length > 0 %}
                         <div class="admin-table-wrapper">
                             <table class="admin-table">
                                 <thead>
                                     <tr>
-                                        <th>Nom du groupe</th>
-                                        <th>Identifiant / DN</th>
-                                        <th>Canal officiel</th>
-                                        <th>Administrateurs</th>
-                                        <th class="th--center">Membres locaux</th>
-                                        <th class="th--right">Actions</th>
+                                        <th>{{ 'Nom du groupe'|trans }}</th>
+                                        <th>{{ 'Identifiant / DN'|trans }}</th>
+                                        <th>{{ 'Canal officiel'|trans }}</th>
+                                        <th>{{ 'Administrateurs'|trans }}</th>
+                                        <th class="th--center">{{ 'Membres locaux'|trans }}</th>
+                                        <th class="th--right">{{ 'Actions'|trans }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -146,7 +146,7 @@
                                                         {{ admin.displayName|default(admin.username) }}
                                                     </span>
                                                 {% else %}
-                                                    <span style="font-style: italic; color: var(--text-muted); font-size: 0.8rem;">Aucun</span>
+                                                    <span style="font-style: italic; color: var(--text-muted); font-size: 0.8rem;">{{ 'Aucun'|trans }}</span>
                                                 {% endfor %}
                                             </td>
                                             <td class="member-count">
@@ -155,12 +155,12 @@
                                             <td class="td--right">
                                                 <div class="action-row action-row--flex">
                                                     <a href="{{ path('app_admin_group_members', {id: group.id}) }}" class="btn-members-link" hx-boost="false">
-                                                        👤 Membres
+                                                        👤 {{ 'Membres'|trans }}
                                                     </a>
                                                     {% if is_granted('ROLE_ADMIN') %}
-                                                    <form action="{{ path('app_admin_group_delete', {id: group.id}) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce groupe ? Son canal officiel sera supprimé définitivement.');" style="margin: 0;">
+                                                    <form action="{{ path('app_admin_group_delete', {id: group.id}) }}" method="POST" data-confirm="{{ 'Êtes-vous sûr de vouloir supprimer ce groupe ? Son canal officiel sera supprimé définitivement.'|trans }}" style="margin: 0;">
                                                         <button type="submit" class="btn-member-action btn-member-action--remove">
-                                                            Supprimer
+                                                            {{ 'Supprimer'|trans }}
                                                         </button>
                                                     </form>
                                                     {% endif %}
@@ -179,7 +179,7 @@
                             totalItems: total,
                         } %}
                     {% else %}
-                        <div class="empty-state-block">Aucun groupe enregistré localement.</div>
+                        <div class="empty-state-block">{{ 'Aucun groupe enregistré localement.'|trans }}</div>
                     {% endif %}
                 </div>
             </section>

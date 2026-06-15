@@ -1,34 +1,34 @@
 {% embed 'partials/_modal_layout.html.twig' with {
     id: 'create-channel-modal',
-    title: 'Créer un nouveau canal'
+    title: 'Créer un nouveau canal'|trans
 } %}
     {% block modal_body %}
         <form action="{{ path('app_channel_create') }}" method="POST" class="add-channel-form" hx-boost="false">
             <div class="input-group">
-                <label for="modal-name">Nom du canal</label>
-                <input type="text" id="modal-name" name="name" required placeholder="Nom du canal..." maxlength="20"
+                <label for="modal-name">{{ 'Nom du canal'|trans }}</label>
+                <input type="text" id="modal-name" name="name" required placeholder="{{ 'Nom du canal...'|trans }}" maxlength="20"
                        class="input-sidebar">
             </div>
             <div class="input-group" style="margin-top: 0.5rem;">
-                <label for="modal-description">Description</label>
-                <input type="text" id="modal-description" name="description" placeholder="Description (optionnelle)..."
+                <label for="modal-description">{{ 'Description'|trans }}</label>
+                <input type="text" id="modal-description" name="description" placeholder="{{ 'Description (optionnelle)...'|trans }}"
                        maxlength="50" class="input-sidebar">
             </div>
             <div class="input-group" style="margin-top: 0.5rem;">
-                <label for="modal-retention">Rétention des messages</label>
+                <label for="modal-retention">{{ 'Rétention des messages'|trans }}</label>
                 <select id="modal-retention" name="messageRetentionMonths" class="input-sidebar"
                         style="width: 100%; cursor: pointer;">
-                    <option value="1">1 mois</option>
-                    <option value="3">3 mois</option>
-                    <option value="6" selected>6 mois (par défaut)</option>
-                    <option value="12">12 mois</option>
-                    <option value="0">Sans limite</option>
+                    <option value="1">{{ '1 mois'|trans }}</option>
+                    <option value="3">{{ '3 mois'|trans }}</option>
+                    <option value="6" selected>{{ '6 mois (par défaut)'|trans }}</option>
+                    <option value="12">{{ '12 mois'|trans }}</option>
+                    <option value="0">{{ 'Sans limite'|trans }}</option>
                 </select>
             </div>
 
             {# Canal type selector #}
             <div class="channel-type-selector" style="margin-top: 1rem;">
-                <label class="channel-type-label-title">Type de canal</label>
+                <label class="channel-type-label-title">{{ 'Type de canal'|trans }}</label>
                 <div class="channel-type-options">
                     <label class="channel-type-option {% if not defaultTodo %}channel-type-option-selected{% endif %}"
                            id="channel-type-discussion-label"
@@ -37,8 +37,8 @@
                                class="channel-type-radio" {% if not defaultTodo %}checked{% endif %}>
                         <span class="channel-type-icon">💬</span>
                         <span class="channel-type-content">
-                            <span class="channel-type-title">Discussion</span>
-                            <span class="channel-type-desc">Canal de messagerie classique avec historique</span>
+                            <span class="channel-type-title">{{ 'Discussion'|trans }}</span>
+                            <span class="channel-type-desc">{{ 'Canal de messagerie classique avec historique'|trans }}</span>
                         </span>
                     </label>
                     <label class="channel-type-option {% if defaultTodo %}channel-type-option-selected{% endif %}"
@@ -48,8 +48,8 @@
                                class="channel-type-radio" {% if defaultTodo %}checked{% endif %}>
                         <span class="channel-type-icon">✅</span>
                         <span class="channel-type-content">
-                            <span class="channel-type-title">Todo list</span>
-                            <span class="channel-type-desc">Chaque message devient une tâche à cocher</span>
+                            <span class="channel-type-title">{{ 'Todo list'|trans }}</span>
+                            <span class="channel-type-desc">{{ 'Chaque message devient une tâche à cocher'|trans }}</span>
                         </span>
                     </label>
                 </div>
@@ -63,15 +63,14 @@
                 <input type="checkbox" name="isPrivate" id="modal-isPrivate" class="input-checkbox"
                        style="width: auto; cursor: pointer;">
                 <label for="modal-isPrivate"
-                       style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">Canal
-                    privé</label>
+                       style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">{{ 'Canal privé'|trans }}</label>
             </div>
 
             <div id="group-subscription-container" style="display: none; margin-top: 0.75rem; border-top: 1px solid var(--border-glass); padding-top: 0.75rem;">
                 <div class="input-group">
-                    <label for="modal-group">Abonner un groupe d'utilisateurs</label>
+                    <label for="modal-group">{{ "Abonner un groupe d'utilisateurs"|trans }}</label>
                     <select id="modal-group" name="groupIdentifier" class="input-sidebar" style="width: 100%; cursor: pointer;">
-                        <option value="">-- Aucun groupe --</option>
+                        <option value="">{{ '-- Aucun groupe --'|trans }}</option>
                         {% for group in groups %}
                             <option value="{{ group.identifier }}">{{ group.name }}</option>
                         {% endfor %}
@@ -80,12 +79,12 @@
                 <div class="input-group-checkbox" style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
                     <input type="checkbox" name="isGroupChannel" id="modal-isGroupChannel" class="input-checkbox" style="width: auto; cursor: pointer;">
                     <label for="modal-isGroupChannel" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">
-                        Faire de ce canal le canal officiel du groupe
+                        {{ 'Faire de ce canal le canal officiel du groupe'|trans }}
                     </label>
                 </div>
             </div>
 
-            <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">Créer le canal</button>
+            <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">{{ 'Créer le canal'|trans }}</button>
         </form>
 
         <script>
