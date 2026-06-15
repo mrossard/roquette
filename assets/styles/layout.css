@@ -191,6 +191,14 @@
             padding: 0.75rem !important;
             gap: 0.75rem !important;
         }
+
+        .logo-text {
+            display: none;
+        }
+
+        .logo-area {
+            gap: 0.5rem;
+        }
     }
 }
 

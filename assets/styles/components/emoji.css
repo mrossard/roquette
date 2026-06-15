@@ -224,6 +224,19 @@
         max-width: 380px;
     }
 
+    @media (max-width: 767px) {
+        .emoji-picker {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            top: auto;
+            width: 100%;
+            max-height: 50vh;
+            border-radius: 1rem 1rem 0 0;
+        }
+    }
+
     .autocomplete-commands-header {
         padding: 0.4rem 0.75rem 0.25rem;
         font-size: 0.65rem;

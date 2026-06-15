@@ -224,4 +224,13 @@
         background: rgba(10, 15, 30, 0.92);
         backdrop-filter: blur(12px);
     }
+
+    @media (max-width: 520px) {
+        .modal-content {
+            max-width: calc(100vw - 1.5rem) !important;
+            width: calc(100vw - 1.5rem) !important;
+            padding: 1.25rem;
+            margin: 0 auto;
+        }
+    }
 }

@@ -149,6 +149,12 @@
         box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
     }
 
+    @media (max-width: 767px) {
+        .header-controls {
+            gap: 0.5rem;
+        }
+    }
+
     .user-status-dropdown-container {
         position: relative;
         display: inline-flex;
