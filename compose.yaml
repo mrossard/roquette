@@ -47,6 +47,20 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
 
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 minioadmin minioadminpassword; do
+        echo 'Waiting for MinIO...';
+        sleep 2;
+      done;
+      mc mb --ignore-existing local/roquette-uploads;
+      exit 0;
+      "
+
   ollama:
     image: ollama/ollama:latest
     restart: unless-stopped

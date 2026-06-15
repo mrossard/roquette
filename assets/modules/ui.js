@@ -1072,11 +1072,10 @@ window.filterFiles = function(category) {
 
 window.clearSearchFilters = function () {
     const input = document.getElementById('channel-search-input');
-    const checkbox = document.getElementById('unread-filter-checkbox');
-    const form = document.getElementById('channel-filters-form');
-    if (input) input.value = '';
-    if (checkbox) checkbox.checked = false;
-    if (form) htmx.trigger(form, 'submit');
+    if (input) {
+        input.value = '';
+        input.dispatchEvent(new Event('input', {bubbles: true}));
+    }
 };
 
 function toggleMessageActionsFromEvent(e) {

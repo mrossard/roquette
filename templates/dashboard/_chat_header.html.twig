@@ -73,7 +73,7 @@
                           hx-get="{{ path('app_channel_search', {slug: activeChannel.slug}) }}"
                           hx-target="#live-feed"
                           hx-swap="innerHTML transition:false"
-                          hx-trigger="input changed delay:400ms from:#channel-search-input, change from:#unread-filter-checkbox"
+                          hx-trigger="input changed delay:400ms from:#channel-search-input"
                           style="display: inline-flex; align-items: center; gap: 0.5rem; margin: 0; padding: 0;">
                         <div class="search-container">
                             <span class="search-icon">🔍</span>
@@ -92,31 +92,6 @@
                             <button type="button" class="btn-hide-completed" data-channel-slug="{{ activeChannel.slug }}">
                                 {{ 'Masquer les tâches terminées'|trans }}
                             </button>
-                        {% else %}
-                            {% set channelUnread = unreadCounts[activeChannel.id] is defined ? unreadCounts[activeChannel.id].count : 0 %}
-                            <label class="btn-unread-filter-wrapper"
-                                   style="display: inline-flex; align-items: center; margin: 0; padding: 0;">
-                                <input type="checkbox"
-                                       name="unread"
-                                       value="1"
-                                       id="unread-filter-checkbox"
-                                       style="display: none;">
-                                <div id="btn-unread-filter"
-                                     class="btn-unread-filter"
-                                     title="{{ 'Afficher uniquement les messages non lus'|trans }}"
-                                     aria-label="{{ 'Filtrer les messages non lus'|trans }}"
-                                     style="cursor: pointer;">
-                                    <span class="unread-filter-icon">🔔</span>
-                                    <span>{{ 'Non lus'|trans }}</span>
-                                    {% if channelUnread > 0 %}
-                                        <span class="unread-filter-badge"
-                                              id="unread-filter-badge-count">{{ channelUnread }}</span>
-                                    {% else %}
-                                        <span class="unread-filter-badge unread-filter-badge-zero"
-                                              id="unread-filter-badge-count" style="display:none;">0</span>
-                                    {% endif %}
-                                </div>
-                            </label>
                         {% endif %}
                     </form>
                 {% endif %}
@@ -126,9 +101,6 @@
                     'notificationsEnabled': notificationsEnabled
                 } %}
                 {% if isMember %}
-                    <button type="button" class="btn-notifications" id="btn-files-sidebar-toggle" onclick="toggleFilesSidebar()" title="{{ 'Médiathèque'|trans }}">
-                        📂 {{ 'Médiathèque'|trans }}
-                    </button>
                     <details class="user-status-dropdown-container">
                         <summary class="user-status-trigger"
                                  style="list-style: none; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 0.5rem; height: 32px;">
