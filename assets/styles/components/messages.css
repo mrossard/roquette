@@ -117,6 +117,46 @@
         padding: 0;
     }
 
+    .feed-item-avatar-img {
+        width: 24px;
+        height: 24px;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .feed-item-actions-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .feed-item-content-area {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .feed-item-action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-shrink: 0;
+        align-items: center;
+        margin-top: 0;
+    }
+
+    .feed-item-unread-badge {
+        position: static;
+        margin-left: 0.25rem;
+        font-size: 0.65rem;
+        padding: 0.1rem 0.35rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: auto;
+        height: auto;
+    }
+
     .btn-todo-discussion {
         background: var(--accent-cyan);
         color: var(--text-btn-publish);
