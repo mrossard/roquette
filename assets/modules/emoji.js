@@ -1,4 +1,4 @@
-import {EMOJI_CATEGORIES, EMOJI_KEYWORDS} from './emoji-data.js';
+import {EMOJI_CATEGORIES, EMOJI_KEYWORDS, EMOJI_PRIMARY_SHORTCODES} from './emoji-data.js';
 
 let activePicker = null;
 const emojiPickerInitialized = new WeakSet();
@@ -118,6 +118,7 @@ export function buildEmojiPickerDOM(onSelect) {
             btn.type = 'button';
             btn.className = 'emoji-item';
             btn.textContent = emoji;
+            btn.title = `:${EMOJI_PRIMARY_SHORTCODES[emoji] || ''}:`;
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 onSelect(emoji);
