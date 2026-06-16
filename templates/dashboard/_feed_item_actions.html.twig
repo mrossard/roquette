@@ -52,7 +52,7 @@
                 <span>{{ 'Todo'|trans }}</span>
             </button>
         {% endif %}
-        {% if message_id|default(0) > 0 %}
+        {% if message_id|default(0) > 0 and app.user and author and author.username == app.user.username %}
             <button class="btn-reply-subtle btn-edit-subtle"
                     hx-get="{{ path('app_message_edit_form', {id: message_id}) }}"
                     hx-target="closest .feed-item" hx-swap="morph transition:false" title="{{ 'Modifier'|trans }}">
