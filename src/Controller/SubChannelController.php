@@ -108,11 +108,9 @@ final class SubChannelController extends AbstractController
         if ($isTodoList) {
             $channel->setIsTodoList(true);
         }
-        else {
-            // only auto-add members on non "todolist" subchannels
-            foreach ($parentChannel->getMembers() as $member) {
-                $channel->addMember($member);
-            }
+
+        foreach ($parentChannel->getMembers() as $member) {
+            $channel->addMember($member);
         }
 
         $entityManager->persist($channel);
