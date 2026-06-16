@@ -1074,7 +1074,16 @@ window.clearSearchFilters = function () {
     const input = document.getElementById('channel-search-input');
     if (input) {
         input.value = '';
-        input.dispatchEvent(new Event('input', {bubbles: true}));
+    }
+    const form = document.getElementById('channel-filters-form');
+    if (form && window.htmx) {
+        const url = form.getAttribute('hx-get');
+        if (url) {
+            window.htmx.ajax('GET', url, {
+                target: form.getAttribute('hx-target') || '#live-feed',
+                swap: 'innerHTML',
+            });
+        }
     }
 };
 
