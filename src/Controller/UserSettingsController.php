@@ -305,7 +305,7 @@ final class UserSettingsController extends AbstractController
         $currentUser = $this->getUser();
 
         $channel = $message->getChannel();
-        if ($channel->getCreator() !== $currentUser) {
+        if ($channel->getCreator() !== $currentUser && !$this->isGranted('ROLE_ADMIN')) {
             return new Response($this->translator->trans('Seul le créateur du canal peut épingler un message.'), 403);
         }
 
@@ -350,7 +350,7 @@ final class UserSettingsController extends AbstractController
         $currentUser = $this->getUser();
 
         $channel = $message->getChannel();
-        if ($channel->getCreator() !== $currentUser) {
+        if ($channel->getCreator() !== $currentUser && !$this->isGranted('ROLE_ADMIN')) {
             return new Response(
                 $this->translator->trans('Seul le créateur du canal peut désépingler un message.'),
                 403,

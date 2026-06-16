@@ -157,7 +157,7 @@
                             {% endif %}
 
                             {# 3. Paramètres #}
-                            {% if not activeChannel.isDm and activeChannel.isAdministrator(app.user) %}
+                            {% if not activeChannel.isDm and (activeChannel.isAdministrator(app.user) or is_granted('ROLE_ADMIN')) %}
                                 <button type="button" class="user-status-option"
                                         hx-get="{{ path('app_channel_edit_modal', {slug: activeChannel.slug}) }}"
                                         hx-target="#modal-container"

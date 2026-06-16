@@ -68,7 +68,7 @@
                 <span style="color: var(--accent-red, #ff5b5b);">{{ 'Supprimer'|trans }}</span>
             </button>
         {% endif %}
-        {% if message_id|default(0) > 0 and messageChannel and messageChannel.creator == app.user %}
+        {% if message_id|default(0) > 0 and messageChannel and (messageChannel.creator == app.user or is_granted('ROLE_ADMIN')) %}
             <button class="btn-reply-subtle btn-pin-subtle"
                     hx-post="{{ isThisMessagePinned ? path('app_message_unpin', {id: message_id}) : path('app_message_pin', {id: message_id}) }}"
                     hx-target="#pinned-banner-container"

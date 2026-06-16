@@ -24,7 +24,7 @@
                     title="{{ 'Aller au message'|trans }}">
                 {{ 'Voir'|trans }}
             </button>
-            {% if activeChannel.creator == app.user %}
+            {% if activeChannel.creator == app.user or is_granted('ROLE_ADMIN') %}
                 <button class="btn-pinned-action btn-unpin"
                         hx-post="{{ path('app_message_unpin', {id: pinnedMessage.id}) }}"
                         hx-target="#pinned-banner-container"
