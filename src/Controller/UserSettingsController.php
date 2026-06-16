@@ -215,23 +215,34 @@ final class UserSettingsController extends AbstractController
         if ($type === 'custom-emojis') {
             $matchingEmojis = [];
             try {
-                $contents = $this->defaultStorage->listContents('emojis');
+                $contents = $this->defaultStorage->listContents('emojis', true);
                 foreach ($contents as $attributes) {
                     if ($attributes->isFile()) {
                         $path = $attributes->path();
-                        $filename = basename($path);
-                        if (str_ends_with($filename, '.gif')) {
-                            // Skip empty files (negative cache of failed downloads)
-                            if ($attributes->fileSize() === 0) {
-                                continue;
-                            }
-                            $name = substr($filename, 0, -4);
-                            if ($q === '' || str_contains(mb_strtolower($name), mb_strtolower($q))) {
-                                $matchingEmojis[] = [
-                                    'name' => $name,
-                                    'filename' => $filename,
-                                ];
-                            }
+                        $relativePath = substr($path, \strlen('emojis/'));
+                        if (!str_ends_with($relativePath, '.gif')) {
+                            continue;
+                        }
+                        // Skip empty files (negative cache of failed downloads)
+                        if ($attributes->fileSize() === 0) {
+                            continue;
+                        }
+                        $noExt = substr($relativePath, 0, -4);
+                        $parts = explode('/', $noExt);
+                        $filePart = (string) array_pop($parts);
+                        if (\count($parts) === 0) {
+                            $code = $filePart;
+                            $filename = $filePart . '.gif';
+                        } else {
+                            $dir = implode('/', $parts);
+                            $code = $filePart . ':' . $dir;
+                            $filename = $dir . '/' . $filePart . '.gif';
+                        }
+                        if ($q === '' || str_contains(mb_strtolower($code), mb_strtolower($q))) {
+                            $matchingEmojis[] = [
+                                'name' => $code,
+                                'filename' => $filename,
+                            ];
                         }
                     }
                 }

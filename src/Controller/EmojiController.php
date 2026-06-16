@@ -23,14 +23,19 @@ final class EmojiController extends AbstractController
         private readonly string $emojiBaseUrl,
     ) {}
 
-    #[Route('/emojis/{filename}', name: 'app_emoji_serve', requirements: ['filename' => '[a-zA-Z0-9_\-\+: ]+\.gif'], methods: ['GET'])]
-    public function serve(string $filename): Response
+    #[Route('/emojis/{path}', name: 'app_emoji_serve', requirements: ['path' => '.+\.gif'], methods: ['GET'])]
+    public function serve(string $path): Response
     {
         if (empty($this->emojiBaseUrl)) {
             return new Response('Emoji base URL is not configured.', Response::HTTP_NOT_FOUND);
         }
 
-        $storagePath = 'emojis/' . $filename;
+        $sanitizedPath = $this->sanitizeEmojiPath($path);
+        if ($sanitizedPath === '') {
+            return new Response('Invalid emoji path.', Response::HTTP_NOT_FOUND);
+        }
+
+        $storagePath = 'emojis/' . $sanitizedPath;
 
         try {
             if ($this->defaultStorage->has($storagePath)) {
@@ -57,11 +62,33 @@ final class EmojiController extends AbstractController
         }
 
         // Dispatch background job to download and save this emoji to Flysystem
-        $this->messageBus->dispatch(new DownloadEmojiMessage($filename));
+        $this->messageBus->dispatch(new DownloadEmojiMessage($sanitizedPath));
 
         // Instantly redirect the user's browser to the remote URL so the emoji displays immediately
-        $remoteUrl = rtrim($this->emojiBaseUrl, '/') . '/' . rawurlencode($filename);
+        $remoteUrl = $this->buildEmojiRemoteUrl($sanitizedPath);
 
         return new RedirectResponse($remoteUrl, Response::HTTP_FOUND);
+    }
+
+    private function sanitizeEmojiPath(string $path): string
+    {
+        $path = str_replace('\\', '/', $path);
+        $parts = explode('/', $path);
+        $clean = [];
+        foreach ($parts as $part) {
+            if ($part === '..' || $part === '' || $part === '.') {
+                continue;
+            }
+            $clean[] = $part;
+        }
+
+        return implode('/', $clean);
+    }
+
+    private function buildEmojiRemoteUrl(string $path): string
+    {
+        $parts = explode('/', $path);
+
+        return rtrim($this->emojiBaseUrl, '/') . '/' . implode('/', array_map('rawurlencode', $parts));
     }
 }

@@ -96,7 +96,7 @@ class EmojiControllerTest extends WebTestCase
 
         // Mock Flysystem listing
         $mockStorage = $this->createMock(FilesystemOperator::class);
-        $mockStorage->expects($this->exactly(2))->method('listContents')->with('emojis')->willReturn(new \League\Flysystem\DirectoryListing([
+        $mockStorage->expects($this->exactly(2))->method('listContents')->with('emojis', true)->willReturn(new \League\Flysystem\DirectoryListing([
             new \League\Flysystem\FileAttributes('emojis/smile.gif', 1024),
             new \League\Flysystem\FileAttributes('emojis/sad.gif', 2048),
             new \League\Flysystem\FileAttributes('emojis/invalid.gif', 0), // empty file / negative cache

@@ -24,12 +24,12 @@ class DownloadEmojiMessageHandler
 
     public function __invoke(DownloadEmojiMessage $message): void
     {
-        $filename = basename($message->getFilename());
-        if ($filename === '' || $filename === '.' || $filename === '..') {
+        $path = $this->sanitizeEmojiPath($message->getFilename());
+        if ($path === '') {
             return;
         }
 
-        $storagePath = 'emojis/' . $filename;
+        $storagePath = 'emojis/' . $path;
 
         // If it's already in Flysystem, don't download it again
         if ($this->defaultStorage->has($storagePath)) {
@@ -40,8 +40,8 @@ class DownloadEmojiMessageHandler
             return;
         }
 
-        $url = rtrim($this->emojiBaseUrl, '/') . '/' . rawurlencode($filename);
-        $this->logger->info(sprintf('Asynchronously downloading emoji "%s" from "%s" to local storage.', $filename, $url));
+        $url = $this->buildEmojiRemoteUrl($path);
+        $this->logger->info(sprintf('Asynchronously downloading emoji "%s" from "%s" to local storage.', $path, $url));
 
         try {
             $response = $this->httpClient->request('GET', $url, [
@@ -50,14 +50,36 @@ class DownloadEmojiMessageHandler
             if ($response->getStatusCode() === 200) {
                 $content = $response->getContent();
                 $this->defaultStorage->write($storagePath, $content);
-                $this->logger->info(sprintf('Emoji "%s" saved successfully to local storage.', $filename));
+                $this->logger->info(sprintf('Emoji "%s" saved successfully to local storage.', $path));
             } else {
                 // Save empty content as negative cache
                 $this->defaultStorage->write($storagePath, '');
-                $this->logger->warning(sprintf('Failed to download emoji "%s": HTTP %d.', $filename, $response->getStatusCode()));
+                $this->logger->warning(sprintf('Failed to download emoji "%s": HTTP %d.', $path, $response->getStatusCode()));
             }
         } catch (\Exception $e) {
-            $this->logger->error(sprintf('Exception while downloading emoji "%s": %s', $filename, $e->getMessage()));
+            $this->logger->error(sprintf('Exception while downloading emoji "%s": %s', $path, $e->getMessage()));
         }
+    }
+
+    private function sanitizeEmojiPath(string $path): string
+    {
+        $path = str_replace('\\', '/', $path);
+        $parts = explode('/', $path);
+        $clean = [];
+        foreach ($parts as $part) {
+            if ($part === '..' || $part === '' || $part === '.') {
+                continue;
+            }
+            $clean[] = $part;
+        }
+
+        return implode('/', $clean);
+    }
+
+    private function buildEmojiRemoteUrl(string $path): string
+    {
+        $parts = explode('/', $path);
+
+        return rtrim($this->emojiBaseUrl, '/') . '/' . implode('/', array_map('rawurlencode', $parts));
     }
 }

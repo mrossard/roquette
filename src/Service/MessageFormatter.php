@@ -36,8 +36,6 @@ class MessageFormatter
         ':p' => '😛',
         ':-O' => '😮',
         ':-o' => '😮',
-        ':O' => '😮',
-        ':o' => '😮',
         '&lt;3' => '❤️',
         '8)' => '😎',
         'B)' => '😎',
@@ -251,6 +249,7 @@ class MessageFormatter
                     $part = $this->replaceShortcodes($part);
                     $part = $this->wrapUnicodeEmojis($part);
                     $part = $this->replaceCustomEmojis($part);
+                    $part = $this->replaceRedfaceEmoji($part);
                 }
             }
         }
@@ -295,10 +294,18 @@ class MessageFormatter
             '/\[:([a-zA-Z0-9_\-\+: ]+)\]/',
             static function ($matches) {
                 $code = $matches[1];
-                $filename = $code . '.gif';
-                $filename = basename($filename);
 
-                $webPath = '/emojis/' . rawurlencode($filename);
+                $pos = strrpos($code, ':');
+                if ($pos !== false) {
+                    $name = substr($code, 0, $pos);
+                    $dir = substr($code, $pos + 1);
+                    $filename = basename($name . '.gif');
+                    $webPath = '/emojis/' . rawurlencode($dir) . '/' . rawurlencode($filename);
+                } else {
+                    $filename = basename($code . '.gif');
+                    $webPath = '/emojis/' . rawurlencode($filename);
+                }
+
                 $title = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
 
                 return (
@@ -326,7 +333,7 @@ class MessageFormatter
 
         // Match all emoticons in a single pattern ordered by length descending.
         // We handle the single quote being escaped as &#039; by htmlspecialchars.
-        $pattern = '/(?<=^|\s)(?:&lt;3|:(?:\'|&#039;)\(|:-\)|:-D|;-\)|:-\(|:-P|:-p|:-O|:-o|:-\*|:\)|:D|;\)|:\(|:P|:p|:O|:o|8\)|B\)|xD|XD|:\*|;\()(?=$|\s|[\.!?,])/';
+        $pattern = '/(?<=^|\s)(?:&lt;3|:(?:\'|&#039;)\(|:-\)|:-D|;-\)|:-\(|:-P|:-p|:-\*|:\)|:D|;\)|:\(|:P|:p|8\)|B\)|xD|XD|:\*|;\()(?=$|\s|[\.!?,])/';
 
         $safeContent = preg_replace_callback(
             $pattern,
@@ -343,5 +350,26 @@ class MessageFormatter
 
         // On décode avant d'envoyer à CommonMark pour qu'il parse correctement les caractères complexes
         return htmlspecialchars_decode($safeContent, ENT_QUOTES);
+    }
+
+    private function replaceRedfaceEmoji(string $text): string
+    {
+        if (empty($this->emojiBaseUrl)) {
+            return $text;
+        }
+
+        $parsed = parse_url($this->emojiBaseUrl);
+        $origin = $parsed['scheme'] . '://' . $parsed['host'];
+        if (isset($parsed['port'])) {
+            $origin .= ':' . $parsed['port'];
+        }
+        $url = $origin . '/icones/redface.gif';
+
+        $pattern = '/(?<=^|\s):-?o(?=$|\s|[\.!?,])/i';
+        return preg_replace(
+            $pattern,
+            '<img src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" alt=":o" title=":o" class="message-emoji" style="vertical-align: middle;" />',
+            $text,
+        );
     }
 }
