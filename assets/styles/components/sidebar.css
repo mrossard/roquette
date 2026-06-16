@@ -570,6 +570,10 @@
         display: none;
     }
 
+    #btn-reorder-done {
+        display: none;
+    }
+
     .sidebar-panel.reorder-active #btn-reorder-done {
         display: inline-flex;
     }
