@@ -56,6 +56,10 @@ class AppExtension extends AbstractExtension
             return [];
         }
 
+        // Strip Markdown image syntax ![alt](url) so that image URLs already
+        // rendered by CommonMark are not extracted again as link previews.
+        $content = preg_replace('/!\[.*?\]\(.*?\)/s', '', $content);
+
         // Match http/https URLs
         preg_match_all('/https?:\/\/[^\s\)<>"]+/i', $content, $matches);
         if ($matches[0] === []) {
