@@ -62,15 +62,15 @@
     }
 
     [data-theme="light"] {
-        --bg-base: hsl(210, 15%, 90%);
-        --bg-card: hsla(210, 20%, 100%, 0.85);
-        --border-glass: rgba(0, 0, 0, 0.15);
-        --border-glass-hover: rgba(0, 0, 0, 0.22);
+        --bg-base: hsl(40, 14%, 89%);
+        --bg-card: hsla(40, 8%, 97%, 0.85);
+        --border-glass: rgba(0, 0, 0, 0.07);
+        --border-glass-hover: rgba(0, 0, 0, 0.12);
         --text-primary: hsl(222, 47%, 10%);
         --text-secondary: hsl(222, 15%, 30%);
         --text-muted: hsl(215, 20%, 35%);
-        --scrollbar-thumb: rgba(0, 0, 0, 0.25);
-        --scrollbar-thumb-hover: rgba(0, 0, 0, 0.35);
+        --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+        --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
         --bg-code: rgba(0, 0, 0, 0.04);
         --text-code: hsl(222, 47%, 12%);
         --bg-inline-code: rgba(0, 0, 0, 0.06);
@@ -85,20 +85,20 @@
         --user-hue-lightness-hover: 25%;
         --user-hue-lightness-border: 45%;
 
-        --bg-dropdown: hsla(210, 20%, 98%, 0.95);
-        --bg-dropdown-opaque: hsl(210, 20%, 98%);
+        --bg-dropdown: hsla(40, 14%, 96%, 0.95);
+        --bg-dropdown-opaque: hsl(40, 14%, 96%);
         --bg-dropdown-hover: rgba(0, 0, 0, 0.06);
         --dropdown-inset: rgba(255, 255, 255, 0.6);
         --dropdown-shadow: rgba(0, 0, 0, 0.15);
         --dropdown-border: rgba(0, 0, 0, 0.08);
 
-        --bg-input: rgba(255, 255, 255, 0.9);
-        --bg-input-sidebar: rgba(255, 255, 255, 0.9);
-        --bg-input-search: rgba(255, 255, 255, 0.9);
-        --bg-input-focus: #ffffff;
-        --bg-textarea-chat: rgba(255, 255, 255, 0.9);
-        --bg-textarea-chat-focus: #ffffff;
-        --border-input: rgba(0, 0, 0, 0.25);
+        --bg-input: hsla(40, 8%, 96%, 0.9);
+        --bg-input-sidebar: hsla(40, 8%, 96%, 0.9);
+        --bg-input-search: hsla(40, 8%, 96%, 0.9);
+        --bg-input-focus: hsl(40, 8%, 97%);
+        --bg-textarea-chat: hsla(40, 8%, 96%, 0.9);
+        --bg-textarea-chat-focus: hsl(40, 8%, 97%);
+        --border-input: rgba(0, 0, 0, 0.18);
 
         --text-btn-publish: #ffffff;
 
