@@ -11,7 +11,11 @@
     }
 
     .chat-panel .card-header {
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .chat-panel .card-header h2 {
+        margin-bottom: 0.25rem;
     }
 
     @media (max-width: 767px) {
@@ -651,6 +655,40 @@
     @media (max-width: 767px) {
         .chat-panel {
             padding: 1rem !important;
+        }
+    }
+
+    @media (max-height: 720px) {
+        .chat-panel {
+            padding: 0.75rem;
+        }
+        .chat-panel .card-header {
+            margin-bottom: 0.25rem;
+        }
+        .chat-panel .card-header h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0;
+        }
+        .chat-header-info p.card-description {
+            display: none;
+        }
+        .chat-input-area {
+            margin-top: 0.5rem;
+        }
+    }
+
+    @media (max-height: 600px) {
+        .chat-panel {
+            padding: 0.5rem;
+        }
+        .chat-panel .card-header {
+            margin-bottom: 0.15rem;
+        }
+        .chat-panel .card-header h2 {
+            font-size: 1rem;
+        }
+        .chat-input-area {
+            margin-top: 0.25rem;
         }
     }
 }

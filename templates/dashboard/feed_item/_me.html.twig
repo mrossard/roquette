@@ -35,7 +35,7 @@
             {% include 'dashboard/feed_item/_link_previews.html.twig' %}
         {% endif %}
         {% if hasAttachment %}
-            {% include 'dashboard/feed_item/_attachment.html.twig' %}
+            {% include 'dashboard/feed_item/_attachment.html.twig' with {isSubchannelParent: isSubchannelParent|default(false)} %}
         {% endif %}
         {% if message_reactions is not empty %}
             {% include 'dashboard/_feed_item_reactions.html.twig' %}

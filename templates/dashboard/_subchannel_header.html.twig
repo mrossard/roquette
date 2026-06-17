@@ -8,7 +8,8 @@
     </div>
     <div class="subchannel-parent-message{{ activeChannel.isTodoList() ? ' subchannel-parent-compact' : '' }}">
         {% include 'dashboard/_feed_item.html.twig' with {
-            'messageObject': parentMessage
+            'messageObject': parentMessage,
+            'isSubchannelParent': true
         } %}
     </div>
 </div>

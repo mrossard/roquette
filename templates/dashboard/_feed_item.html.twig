@@ -169,7 +169,7 @@
             {% endif %}
 
             {% if fileName is defined and fileName %}
-                {% include 'dashboard/feed_item/_attachment.html.twig' %}
+                {% include 'dashboard/feed_item/_attachment.html.twig' with {isSubchannelParent: isSubchannelParent|default(false)} %}
             {% endif %}
 
             {% if messageChannel is null or not messageChannel.isTodoList() %}
