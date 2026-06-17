@@ -1,38 +1,23 @@
-<details class="sidebar-section-details" data-section="channels" open
-         style="margin-bottom: 1.5rem; display: block;">
-    <summary class="sidebar-section-header">
+{% set channelCount = channels|filter(c => not c.isDm and not c.isSubChannel and not c.isTodoList() and not app.user.isChannelFavorite(c))|length %}
+
+<details class="sidebar-section-details" data-section="channels"
+         {% if channelCount <= 5 %}open{% endif %}
+         style="display: block;">
+    <summary class="sidebar-section-header sidebar-section-header-channels">
         <span>
             <span class="sidebar-section-toggle-icon">▼</span>
+            <span class="sidebar-section-icon">#</span>
             {{ 'Canaux'|trans }}
         </span>
+        <button type="button" class="btn-sidebar-section-add btn-sidebar-section-add-channel"
+                hx-get="{{ path('app_channel_create_modal') }}"
+                hx-target="#modal-container"
+                hx-trigger="click"
+                onclick="event.preventDefault(); event.stopPropagation();"
+                title="{{ 'Créer un canal'|trans }}"
+                aria-label="{{ 'Créer un canal'|trans }}">
+            +
+        </button>
     </summary>
-    <div class="channel-list" id="section-channels" data-list-type="channels">
-        {% set hasChannels = false %}
-        {% for channel in channels %}
-            {% if not channel.isDm and not channel.isSubChannel and not channel.isTodoList() and not app.user.isChannelFavorite(channel) %}
-                {% set hasChannels = true %}
-                <div class="channel-group">
-                    {% include 'dashboard/_channel_sidebar_item.html.twig' with {
-                        'channel': channel,
-                        'unreadCounts': unreadCounts,
-                        'activeChannel': activeChannel
-                    } %}
-                    <div class="channel-subchannels">
-                        {% for sub in subChannelsByParent[channel.id]|default([]) %}
-                            {% if not app.user.isChannelFavorite(sub) and ((activeChannel and sub.id == activeChannel.id) or (unreadCounts[sub.id] is defined and unreadCounts[sub.id].count > 0)) %}
-                            {% include 'dashboard/_subchannel_sidebar_item.html.twig' with {
-                                'channel': sub,
-                                'unreadCounts': unreadCounts,
-                                'activeChannel': activeChannel
-                            } %}
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-        {% endfor %}
-        {% if not hasChannels %}
-            <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 0.25rem 0.5rem;">{{ 'Aucun canal'|trans }}</p>
-        {% endif %}
-    </div>
+    {% include 'dashboard/_sidebar_channels_list.html.twig' %}
 </details>

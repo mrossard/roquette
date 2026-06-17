@@ -699,6 +699,45 @@ final class ChannelController extends AbstractController
         return $channelExportService->export($channel, $currentUser);
     }
 
+    #[Route('/sidebar/filter-channels', name: 'app_sidebar_filter_channels', methods: ['GET'])]
+    public function filterChannels(
+        Request $request,
+        ChannelRepository $channelRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+
+        $query = trim($request->query->get('q', ''));
+        $channels = $channelRepository->findAllForUser($currentUser);
+
+        if ($query !== '') {
+            $channels = array_filter($channels, static fn(Channel $c) => stripos($c->getName() ?? '', $query) !== false);
+        }
+
+        $subChannelsByParent = $this->buildSubChannelsByParent($channels);
+
+        $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
+        $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
+
+        $currentUrl = $request->headers->get('HX-Current-URL');
+        $activeChannel = null;
+        if ($currentUrl) {
+            $path = parse_url($currentUrl, PHP_URL_PATH);
+            if (preg_match('#^/channels/([a-z0-9-]+)$#', $path, $matches)) {
+                $activeChannel = $channelRepository->findOneBy(['slug' => $matches[1]]);
+            }
+        }
+
+        return $this->render('dashboard/_sidebar_filter_results.html.twig', [
+            'channels' => $channels,
+            'subChannelsByParent' => $subChannelsByParent,
+            'unreadCounts' => $unreadCounts,
+            'activeChannel' => $activeChannel,
+            'filterMode' => true,
+        ]);
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------

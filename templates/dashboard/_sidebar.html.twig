@@ -9,14 +9,50 @@
 
     {% include 'dashboard/_sidebar_header.html.twig' %}
 
-    <div class="card-body" style="display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto;">
-        <div>
-            {% include 'dashboard/_sidebar_shortcuts.html.twig' %}
-            {% include 'dashboard/_sidebar_favorites.html.twig' %}
-            {% include 'dashboard/_sidebar_todos.html.twig' %}
-            {% include 'dashboard/_sidebar_channels.html.twig' %}
+    <div class="sidebar-search-row">
+        <div class="sidebar-channel-search">
+            <input type="search" class="sidebar-search-input"
+                   placeholder="{{ 'Rechercher un canal...'|trans }}"
+                   name="q"
+                   hx-get="{{ path('app_sidebar_filter_channels') }}"
+                   hx-trigger="keyup changed delay:300ms, search"
+                   hx-target="#section-channels"
+                   hx-swap="outerHTML"
+                   hx-include="this">
         </div>
+        <details class="user-status-dropdown-container sidebar-gear-btn">
+            <summary class="user-status-trigger sidebar-gear-trigger">
+                ⚙️
+            </summary>
+            <div class="user-status-dropdown-menu" role="menu">
+                {# Filter unread #}
+                <button id="btn-filter-unread" class="user-status-option" role="menuitem">
+                    <span class="option-icon">✉️</span>
+                    <span class="option-label">{{ 'Filtrer par non lus'|trans }}</span>
+                </button>
 
+                {# Reorder #}
+                {% if showReorder %}
+                    <button id="btn-edit-order-trigger" class="user-status-option" role="menuitem">
+                        <span class="option-icon">⇅</span>
+                        <span class="option-label">{{ 'Ordonner les canaux'|trans }}</span>
+                    </button>
+                {% endif %}
+
+                {# Directory #}
+                <a href="{{ path('app_channels_directory') }}" class="user-status-option" role="menuitem">
+                    <span class="option-icon">🔍</span>
+                    <span class="option-label">{{ 'Parcourir les canaux'|trans }}</span>
+                </a>
+            </div>
+        </details>
+    </div>
+
+    <div class="card-body">
+        {% include 'dashboard/_sidebar_shortcuts.html.twig' %}
+        {% include 'dashboard/_sidebar_favorites.html.twig' %}
+        {% include 'dashboard/_sidebar_todos.html.twig' %}
+        {% include 'dashboard/_sidebar_channels.html.twig' %}
         {% include 'dashboard/_sidebar_dms.html.twig' %}
         {% include 'dashboard/_sidebar_invitations.html.twig' %}
     </div>

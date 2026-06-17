@@ -1,15 +1,9 @@
-{% set hasTodos = false %}
-{% for channel in channels %}
-    {% if not channel.isDm and channel.isTodoList() and not app.user.isChannelFavorite(channel) %}
-        {% set hasTodos = true %}
-    {% endif %}
-{% endfor %}
-
 <details class="sidebar-section-details sidebar-section-todos" data-section="todos" open
-         style="margin-bottom: 1.5rem; display: block;">
+         style="display: block;">
     <summary class="sidebar-section-header sidebar-section-header-todos">
         <span>
             <span class="sidebar-section-toggle-icon">▼</span>
+            <span class="sidebar-section-icon">✅</span>
             {{ 'Todos'|trans }}
         </span>
         <button type="button" class="btn-sidebar-section-add btn-sidebar-section-add-todo"
@@ -22,55 +16,5 @@
             +
         </button>
     </summary>
-    <div class="channel-list" id="section-todos" data-list-type="todos">
-        {% if hasTodos %}
-            {% for channel in channels %}
-                {% if not channel.isDm and channel.isTodoList() and not app.user.isChannelFavorite(channel) %}
-                    {% if channel.isSubChannel %}
-                        {% set parentChan = channel.parentMessage ? channel.parentMessage.channel : null %}
-                        <div class="channel-group">
-                            <a href="{{ path('app_channel', {slug: channel.slug}) }}"
-                               id="sidebar-channel-{{ channel.slug }}"
-                               class="channel-link is-todo-channel {% if activeChannel and channel.id == activeChannel.id %}active{% endif %} {% set unread = unreadCounts[channel.id]|default(null) %}{% set cnt = unread ? unread.count : 0 %}{% if cnt > 0 and (not activeChannel or channel.id != activeChannel.id) %}unread{% endif %}"
-                               data-channel-slug="{{ channel.slug }}"
-                               data-channel-id="{{ channel.id }}"
-                               title="{{ channel.name }}">
-                                <span class="channel-hash todo-channel-icon" title="{{ 'Discussion todo'|trans }}">✅</span>
-                                <span class="channel-name">{{ channel.name }}</span>
-                                {% if parentChan %}
-                                    <span class="todo-subchannel-parent-badge" title="{{ 'Depuis #' ~ parentChan.name }}">
-                                        ↳ #{{ parentChan.name }}
-                                    </span>
-                                {% endif %}
-                                {% set unreadSub = unreadCounts[channel.id]|default(null) %}
-                                {% set cntSub = unreadSub ? unreadSub.count : 0 %}
-                                <span class="unread-badge" {% if cntSub == 0 or (activeChannel and channel.id == activeChannel.id) %}style="display: none;"{% endif %}>{{ cntSub }}</span>
-                            </a>
-                        </div>
-                    {% else %}
-                        <div class="channel-group">
-                            {% include 'dashboard/_channel_sidebar_item.html.twig' with {
-                                'channel': channel,
-                                'unreadCounts': unreadCounts,
-                                'activeChannel': activeChannel
-                            } %}
-                            <div class="channel-subchannels">
-                                {% for sub in subChannelsByParent[channel.id]|default([]) %}
-                                    {% if not app.user.isChannelFavorite(sub) and ((activeChannel and sub.id == activeChannel.id) or (unreadCounts[sub.id] is defined and unreadCounts[sub.id].count > 0)) %}
-                                    {% include 'dashboard/_subchannel_sidebar_item.html.twig' with {
-                                        'channel': sub,
-                                        'unreadCounts': unreadCounts,
-                                        'activeChannel': activeChannel
-                                    } %}
-                                {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endif %}
-                {% endif %}
-            {% endfor %}
-        {% else %}
-            <p class="sidebar-empty-section-hint">{{ 'Aucun canal todo. Créez-en un !'|trans }}</p>
-        {% endif %}
-    </div>
+    {% include 'dashboard/_sidebar_todos_list.html.twig' %}
 </details>

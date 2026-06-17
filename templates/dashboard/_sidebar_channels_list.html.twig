@@ -1,0 +1,29 @@
+<div class="channel-list" id="section-channels" data-list-type="channels">
+    {% set hasChannels = false %}
+    {% for channel in channels %}
+        {% if not channel.isDm and not channel.isSubChannel and not channel.isTodoList() and not app.user.isChannelFavorite(channel) %}
+            {% set hasChannels = true %}
+            <div class="channel-group">
+                {% include 'dashboard/_channel_sidebar_item.html.twig' with {
+                    'channel': channel,
+                    'unreadCounts': unreadCounts,
+                    'activeChannel': activeChannel
+                } %}
+                <div class="channel-subchannels">
+                    {% for sub in subChannelsByParent[channel.id]|default([]) %}
+                        {% if not app.user.isChannelFavorite(sub) and ((activeChannel and sub.id == activeChannel.id) or (unreadCounts[sub.id] is defined and unreadCounts[sub.id].count > 0)) %}
+                        {% include 'dashboard/_subchannel_sidebar_item.html.twig' with {
+                            'channel': sub,
+                            'unreadCounts': unreadCounts,
+                            'activeChannel': activeChannel
+                        } %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+    {% if not hasChannels %}
+        <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 0.25rem 0.5rem;">{{ 'Aucun canal'|trans }}</p>
+    {% endif %}
+</div>
