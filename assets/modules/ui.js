@@ -555,22 +555,31 @@ export function initSidebarToggles() {
     // Restore sidebar details state on load
     document.querySelectorAll('details.sidebar-section-details').forEach(details => {
         const sectionName = details.getAttribute('data-section');
-        const isCollapsed = localStorage.getItem(`roquette-section-${sectionName}-collapsed`) === 'true';
-        if (isCollapsed) {
-            details.removeAttribute('open');
-        } else {
-            details.setAttribute('open', '');
+        const stored = localStorage.getItem(`roquette-section-${sectionName}-collapsed`);
+        if (stored !== null) {
+            if (stored === 'true') {
+                details.removeAttribute('open');
+            } else {
+                details.setAttribute('open', '');
+            }
         }
     });
 }
 
-// Watch details toggle events to save state in localStorage
-document.addEventListener('toggle', (e) => {
-    if (e.target.tagName === 'DETAILS' && e.target.classList.contains('sidebar-section-details')) {
-        const sectionName = e.target.getAttribute('data-section');
-        localStorage.setItem(`roquette-section-${sectionName}-collapsed`, !e.target.open ? 'true' : 'false');
+// Watch user clicks on summary to save state in localStorage
+document.addEventListener('click', (e) => {
+    const summary = e.target.closest('summary');
+    if (!summary) return;
+    const details = summary.parentElement;
+    if (details && details.tagName === 'DETAILS' && details.classList.contains('sidebar-section-details')) {
+        const sectionName = details.getAttribute('data-section');
+        if (sectionName) {
+            setTimeout(() => {
+                localStorage.setItem(`roquette-section-${sectionName}-collapsed`, !details.open ? 'true' : 'false');
+            }, 0);
+        }
     }
-}, true); // Capture phase is required because toggle event does not bubble
+});
 
 
 export function showCustomConfirm(message, callback) {
