@@ -278,10 +278,32 @@ class MessageFormatter
         );
     }
 
+    private ?array $reverseEmojiMapping = null;
+
+    private function getShortcodeForUnicodeEmoji(string $emoji): ?string
+    {
+        if ($this->reverseEmojiMapping === null) {
+            $this->reverseEmojiMapping = [];
+            foreach (EmojiMapping::MAPPING as $code => $unicode) {
+                if (!isset($this->reverseEmojiMapping[$unicode])) {
+                    $this->reverseEmojiMapping[$unicode] = $code;
+                }
+            }
+        }
+        return $this->reverseEmojiMapping[$emoji] ?? null;
+    }
+
     public function wrapUnicodeEmojis(string $text): string
     {
         $pattern = '/(?:[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{1F1E6}-\x{1F1FF}\x{1F3FB}-\x{1F3FF}]\x{FE0F}?|\x{200D})+/u';
-        return preg_replace($pattern, '<span class="unicode-emoji">$0</span>', $text);
+        return preg_replace_callback($pattern, function ($matches) {
+            $emoji = $matches[0];
+            $shortcode = $this->getShortcodeForUnicodeEmoji($emoji);
+            if ($shortcode) {
+                return '<span class="unicode-emoji" title=":' . htmlspecialchars($shortcode, ENT_QUOTES, 'UTF-8') . ':">' . $emoji . '</span>';
+            }
+            return '<span class="unicode-emoji">' . $emoji . '</span>';
+        }, $text);
     }
 
     private function replaceCustomEmojis(string $text): string

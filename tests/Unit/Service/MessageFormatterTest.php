@@ -123,7 +123,7 @@ class MessageFormatterTest extends TestCase
     public function formatWrapsUnicodeEmojis(): void
     {
         $result = $this->formatter->format('*italique 🙂*');
-        $this->assertStringContainsString('<em>italique <span class="unicode-emoji">🙂</span></em>', $result);
+        $this->assertStringContainsString('<em>italique <span class="unicode-emoji" title=":slight_smile:">🙂</span></em>', $result);
     }
 
     #[Test]
@@ -394,7 +394,7 @@ class MessageFormatterTest extends TestCase
     {
         $result = $this->formatter->format('Hello :grin: and :smile:!');
         $this->assertStringContainsString(
-            'Hello <span class="unicode-emoji">😁</span> and <span class="unicode-emoji">😄</span>!',
+            'Hello <span class="unicode-emoji" title=":grin:">😁</span> and <span class="unicode-emoji" title=":smile:">😄</span>!',
             $result,
         );
     }
