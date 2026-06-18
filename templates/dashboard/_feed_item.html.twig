@@ -50,7 +50,7 @@
             {% if messageChannel is null or not messageChannel.isTodoList() %}
                 <div class="feed-item-user-container">
                     {% if author and author.username != 'robot-roquette' %}
-                        <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link"
+                        <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link" hx-boost="false"
                            title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel}) }}">
                             <div class="avatar-container">
                                 {% if messageObject and messageObject.customAuthorAvatar %}

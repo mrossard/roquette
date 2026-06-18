@@ -3,7 +3,7 @@
         <span
             class="feed-item-time">{% if timestamp|date('Y-m-d') != 'now'|date('Y-m-d') %}{{ timestamp|date('d/m/Y') }} {% endif %}{{ timestamp|date('H:i') }}</span>
         {% if author and author.username != constant('App\\Entity\\User::ROBOT_USERNAME') %}
-            <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link"
+            <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link" hx-boost="false"
                title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel}) }}">
                 <span class="feed-item-user">{{ username|wrap_emojis }}</span>
             </a>
