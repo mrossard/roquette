@@ -114,4 +114,10 @@
             opacity: 1;
         }
     }
+
+    @media (max-width: 767px) {
+        .typing-indicator {
+            display: none !important;
+        }
+    }
 }
