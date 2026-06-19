@@ -30,7 +30,7 @@
 {% set hasAttachment = fileName is defined and fileName %}
 
 {% if links is not empty or hasAttachment or message_reactions is not empty %}
-    <div class="feed-item-body" style="padding: 0; border: none; background: none; box-shadow: none;">
+    <div class="feed-item-body">
         {% if links is not empty %}
             {% include 'dashboard/feed_item/_link_previews.html.twig' %}
         {% endif %}
