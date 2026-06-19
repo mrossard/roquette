@@ -13,6 +13,7 @@ use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
+use App\Service\ChannelManager;
 use App\Service\MercurePublisher;
 use App\Service\ReadTrackingService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -31,10 +32,11 @@ final class ChannelController extends AbstractController
     use ChannelAccessTrait;
 
     public function __construct(
-        private MercurePublisher $mercurePublisher,
-        private ReadTrackingService $readTrackingService,
-        private CacheInterface $cache,
-        private TranslatorInterface $translator,
+        private readonly MercurePublisher $mercurePublisher,
+        private readonly ReadTrackingService $readTrackingService,
+        private readonly CacheInterface $cache,
+        private readonly TranslatorInterface $translator,
+        private readonly ChannelManager $channelManager,
     ) {}
 
     #[Route('/channels/{slug}', name: 'app_channel', requirements: [
