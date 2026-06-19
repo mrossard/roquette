@@ -5,8 +5,6 @@ window.htmx = htmx;
 import 'htmx-ext-sse';
 import {initializeChannelScroll, adjustScrollForLinkPreview} from './modules/scroll.js';
 
-import hljs from 'highlight.js';
-window.hljs = hljs;
 
 import { Idiomorph } from 'idiomorph';
 window.Idiomorph = Idiomorph;
@@ -59,7 +57,7 @@ import './modules/mercure.js';
 import './modules/notifications.js';
 import './modules/editor.js';
 import './modules/autocomplete.js';
-import {buildEmojiPickerDOM} from './modules/emoji.js';
+import {getOrBuildSharedEmojiPickerDOM} from './modules/emoji.js';
 import './modules/offline.js';
 import './modules/search-builder.js';
 
@@ -102,7 +100,7 @@ window.removePollOption = function (btn) {
     }
 };
 
-document.addEventListener('click', (e) => {
+document.addEventListener('click', async (e) => {
     const btn = e.target.closest('.btn-add-reaction');
     if (!btn) return;
 
@@ -127,7 +125,7 @@ document.addEventListener('click', (e) => {
     if (isShowing) {
         let emojiPickerContainer = document.getElementById('shared-reaction-emoji-picker');
         if (!emojiPickerContainer) {
-            const { element, focusSearch: focusSearchFn } = buildEmojiPickerDOM(emoji => {
+            const { element, focusSearch: focusSearchFn } = await getOrBuildSharedEmojiPickerDOM(emoji => {
                 const msgId = emojiPickerContainer.dataset.messageId;
                 if (emoji && msgId) {
                     const targetFeedItem = document.querySelector(`.feed-item[data-message-id="${msgId}"]`);

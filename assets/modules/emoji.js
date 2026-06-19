@@ -1,7 +1,15 @@
-import {EMOJI_CATEGORIES, EMOJI_KEYWORDS, EMOJI_PRIMARY_SHORTCODES} from './emoji-data.js';
+// emoji-data.js is loaded dynamically when the picker is opened
 
 let activePicker = null;
 const emojiPickerInitialized = new WeakSet();
+let emojiData = null;
+
+async function loadEmojiData() {
+    if (!emojiData) {
+        emojiData = await import('./emoji-data.js');
+    }
+    return emojiData;
+}
 
 export function initEmojiPickers() {
     const triggers = document.querySelectorAll('.btn-emoji-toggle');
@@ -10,9 +18,9 @@ export function initEmojiPickers() {
         if (emojiPickerInitialized.has(trigger)) return;
         emojiPickerInitialized.add(trigger);
 
-        trigger.addEventListener('click', (e) => {
+        trigger.addEventListener('click', async (e) => {
             e.stopPropagation();
-            toggleEmojiPicker(trigger);
+            await toggleEmojiPicker(trigger);
         });
     });
 }
@@ -29,7 +37,7 @@ function getTargetTextarea(trigger) {
     return document.querySelector(selector);
 }
 
-export function toggleEmojiPicker(trigger) {
+export async function toggleEmojiPicker(trigger) {
     if (activePicker && activePicker.trigger === trigger) {
         closeEmojiPicker();
         return;
@@ -39,7 +47,7 @@ export function toggleEmojiPicker(trigger) {
         closeEmojiPicker();
     }
 
-    createEmojiPicker(trigger);
+    await createEmojiPicker(trigger);
 }
 
 export function closeEmojiPicker() {
@@ -67,7 +75,7 @@ function insertEmoji(textarea, emoji) {
     textarea.dispatchEvent(event);
 }
 
-export function buildEmojiPickerDOM(onSelect) {
+export function buildEmojiPickerDOM(onSelect, data) {
     const picker = document.createElement('div');
     picker.className = 'emoji-picker';
 
@@ -82,7 +90,7 @@ export function buildEmojiPickerDOM(onSelect) {
     const tabsContainer = document.createElement('div');
     tabsContainer.className = 'emoji-picker-tabs';
 
-    EMOJI_CATEGORIES.forEach((cat, idx) => {
+    data.EMOJI_CATEGORIES.forEach((cat, idx) => {
         const tabBtn = document.createElement('button');
         tabBtn.type = 'button';
         tabBtn.className = `emoji-picker-tab ${idx === 0 ? 'active' : ''}`;
@@ -99,7 +107,7 @@ export function buildEmojiPickerDOM(onSelect) {
     const listContainer = document.createElement('div');
     listContainer.className = 'emoji-picker-list';
 
-    EMOJI_CATEGORIES.forEach((cat, idx) => {
+    data.EMOJI_CATEGORIES.forEach((cat, idx) => {
         const catSection = document.createElement('div');
         catSection.className = 'emoji-category-section';
         catSection.setAttribute('data-category-id', cat.id);
@@ -118,7 +126,7 @@ export function buildEmojiPickerDOM(onSelect) {
             btn.type = 'button';
             btn.className = 'emoji-item';
             btn.textContent = emoji;
-            btn.title = `:${EMOJI_PRIMARY_SHORTCODES[emoji] || ''}:`;
+            btn.title = `:${data.EMOJI_PRIMARY_SHORTCODES[emoji] || ''}:`;
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 onSelect(emoji);
@@ -182,7 +190,7 @@ export function buildEmojiPickerDOM(onSelect) {
 
             items.forEach(item => {
                 const emoji = item.textContent;
-                const matchKeywords = EMOJI_KEYWORDS[emoji] || [];
+                const matchKeywords = data.EMOJI_KEYWORDS[emoji] || [];
                 const isMatch = matchKeywords.some(keyword => keyword.includes(val));
 
                 if (isMatch) {
@@ -218,13 +226,19 @@ export function buildEmojiPickerDOM(onSelect) {
     };
 }
 
-function createEmojiPicker(trigger) {
+export async function getOrBuildSharedEmojiPickerDOM(onSelect) {
+    const data = await loadEmojiData();
+    return buildEmojiPickerDOM(onSelect, data);
+}
+
+async function createEmojiPicker(trigger) {
     const targetTextarea = getTargetTextarea(trigger);
     if (!targetTextarea) return;
 
+    const data = await loadEmojiData();
     const {element: picker, focusSearch} = buildEmojiPickerDOM(emoji => {
         insertEmoji(targetTextarea, emoji);
-    });
+    }, data);
 
     const wrapper = trigger.closest('.message-input-wrapper');
     if (wrapper) {

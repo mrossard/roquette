@@ -2,13 +2,19 @@ import {adjustScrollForFeedContent} from './scroll.js';
 import Sortable from 'sortablejs';
 
 
-export function highlightAllCodeBlocks(container = document) {
-    if (window.hljs) {
-        const blocks = container.querySelectorAll('pre code');
-        blocks.forEach(block => {
-            window.hljs.highlightElement(block);
-        });
+let hljsModule = null;
+
+export async function highlightAllCodeBlocks(container = document) {
+    const blocks = container.querySelectorAll('pre code');
+    if (blocks.length === 0) return;
+
+    if (!hljsModule) {
+        hljsModule = (await import('highlight.js')).default;
     }
+
+    blocks.forEach(block => {
+        hljsModule.highlightElement(block);
+    });
 }
 
 export function formatBytes(bytes, decimals = 2) {

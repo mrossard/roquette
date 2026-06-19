@@ -1,4 +1,4 @@
-import {EMOJI_CATEGORIES, EMOJI_KEYWORDS, EMOJI_PRIMARY_SHORTCODES} from './emoji-data.js';
+// emoji-data.js will be loaded dynamically when needed
 
 let activeAutocomplete = null;
 let lastAutocompleteQuery = '';
@@ -27,20 +27,20 @@ function loadAutocompleteItems(type, query) {
     });
 }
 
-function findMatchingEmojisForQuery(query) {
+function findMatchingEmojisForQuery(query, data) {
     const matched = [];
     const seen = new Set();
 
-    for (const cat of EMOJI_CATEGORIES) {
+    for (const cat of data.EMOJI_CATEGORIES) {
         for (const emoji of cat.emojis) {
             if (seen.has(emoji)) continue;
 
-            const keywords = EMOJI_KEYWORDS[emoji] || [];
+            const keywords = data.EMOJI_KEYWORDS[emoji] || [];
             const priorityMatch = keywords.some(kw => kw.startsWith(query));
             const containsMatch = keywords.some(kw => kw.includes(query));
 
             if (priorityMatch || containsMatch) {
-                const primaryShortcode = EMOJI_PRIMARY_SHORTCODES[emoji] || keywords[0] || '';
+                const primaryShortcode = data.EMOJI_PRIMARY_SHORTCODES[emoji] || keywords[0] || '';
                 matched.push({
                     emoji,
                     keyword: primaryShortcode,
@@ -144,7 +144,8 @@ async function handleTextareaInputForAutocomplete(textarea) {
         const queryStartIndex = cursor - matchEmoji[0].length;
         const queryEndIndex = cursor;
 
-        const matches = findMatchingEmojisForQuery(query);
+        const emojiData = await import('./emoji-data.js');
+        const matches = findMatchingEmojisForQuery(query, emojiData);
 
         if (matches.length === 0) {
             closeAutocomplete();
