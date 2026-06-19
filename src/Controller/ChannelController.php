@@ -175,6 +175,7 @@ final class ChannelController extends AbstractController
         $messageIds = array_map(static fn(Message $m) => $m->getId(), $messages);
         $replyCounts = $messageRepository->findReplyCounts($messageIds);
         $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($activeChannel);
+        $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(static fn(Channel $c) => $c->getId(), $channels));
 
         return $this->render('dashboard/index.html.twig', [
             'channels' => $channels,
@@ -191,6 +192,7 @@ final class ChannelController extends AbstractController
             'subChannelsByParent' => $subChannelsByParent,
             'replyCounts' => $replyCounts,
             'subchannelByParentMessageId' => $subchannelByParentMessageId,
+            'lastMessages' => $lastMessages,
         ]);
     }
 
@@ -476,6 +478,7 @@ final class ChannelController extends AbstractController
         Request $request,
         ChannelRepository $channelRepository,
         InvitationRepository $invitationRepository,
+        MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
@@ -510,6 +513,7 @@ final class ChannelController extends AbstractController
             }
 
             $subChannelsByParent = $this->buildSubChannelsByParent($channels);
+            $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(static fn(Channel $c) => $c->getId(), $channels));
 
             $sidebarHtml = $this->renderView('dashboard/_sidebar.html.twig', [
                 'channels' => $channels,
@@ -517,6 +521,7 @@ final class ChannelController extends AbstractController
                 'activeChannel' => $activeChannel,
                 'pendingInvitations' => $pendingInvitations,
                 'subChannelsByParent' => $subChannelsByParent,
+                'lastMessages' => $lastMessages,
             ]);
 
             $sidebarHtml = preg_replace(

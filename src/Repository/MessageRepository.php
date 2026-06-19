@@ -14,6 +14,10 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<Message>
  */
+
+/**
+ * @extends ServiceEntityRepository<Message>
+ */
 class MessageRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -322,6 +326,66 @@ class MessageRepository extends ServiceEntityRepository
             ->setParameter('channel', $channel)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Returns the latest message for each channel in a single query.
+     *
+     * @param int[] $channelIds
+     *
+     * @return array<int, Message> channelId => lastMessage
+     */
+    public function findLastMessagesForChannels(array $channelIds): array
+    {
+        if ($channelIds === []) {
+            return [];
+        }
+
+        $conn = $this->getEntityManager()->getConnection();
+
+        $rows = $conn->fetchAllAssociative(
+            'SELECT DISTINCT ON (m.channel_id) m.id
+             FROM message m
+             WHERE m.channel_id IN (:channelIds)
+             ORDER BY m.channel_id, m.created_at DESC, m.id DESC',
+            ['channelIds' => $channelIds],
+            ['channelIds' => \Doctrine\DBAL\ArrayParameterType::INTEGER],
+        );
+
+        $ids = array_map('intval', array_column($rows, 'id'));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $messages = $this->createQueryBuilder('m')
+            ->select('m', 'author')
+            ->join('m.author', 'author')
+            ->where('m.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+
+        $indexed = [];
+        foreach ($messages as $msg) {
+            $indexed[$msg->getChannel()->getId()] = $msg;
+        }
+
+        return $indexed;
+    }
+
+    public function findLastMessageForChannel(Channel $channel): ?Message
+    {
+        return $this->createQueryBuilder('m')
+            ->select('m', 'author')
+            ->join('m.author', 'author')
+            ->where('m.channel = :channel')
+            ->orderBy('m.createdAt', 'DESC')
+            ->addOrderBy('m.id', 'DESC')
+            ->setMaxResults(1)
+            ->setParameter('channel', $channel)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 }
 

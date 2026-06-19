@@ -3,6 +3,7 @@
 {% set pendingInvitations = pendingInvitations|default([]) %}
 {% set showReorder = showReorder|default(true) %}
 {% set subChannelsByParent = subChannelsByParent|default({}) %}
+{% set lastMessages = lastMessages|default({}) %}
 
 <section class="card glass-panel sidebar-panel" id="sidebar-panel">
     {% include 'dashboard/_sidebar_sse_events.html.twig' %}

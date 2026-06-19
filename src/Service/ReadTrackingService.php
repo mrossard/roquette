@@ -36,26 +36,33 @@ class ReadTrackingService
             $existingChannelIds[$read->getChannel()->getId()] = true;
         }
 
-        $changed = false;
+        $neededIds = [];
+        foreach ($channels as $channel) {
+            if (!array_key_exists($channel->getId(), $existingChannelIds)) {
+                $neededIds[] = $channel->getId();
+            }
+        }
+
+        if ($neededIds === []) {
+            return;
+        }
+
+        $lastMessages = $messageRepo->findLastMessagesForChannels($neededIds);
+
         foreach ($channels as $channel) {
             if (array_key_exists($channel->getId(), $existingChannelIds)) {
                 continue;
             }
 
-            $latestMessage = $messageRepo->findOneBy(['channel' => $channel], ['id' => 'DESC']);
-
             $read = new UserChannelRead();
             $read->setUser($user);
             $read->setChannel($channel);
-            $read->setLastReadMessage($latestMessage);
+            $read->setLastReadMessage($lastMessages[$channel->getId()] ?? null);
 
             $this->entityManager->persist($read);
-            $changed = true;
         }
 
-        if ($changed) {
-            $this->entityManager->flush();
-        }
+        $this->entityManager->flush();
     }
 
     /**

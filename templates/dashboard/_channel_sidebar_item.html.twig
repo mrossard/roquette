@@ -41,7 +41,7 @@
         {% endif %}
         <span class="channel-name">{{ channel.name }}</span>
     {% endif %}
-    {% set lastMessage = channel.lastMessage %}
+    {% set lastMessage = lastMessages[channel.id] ?? channel.lastMessage %}
     {% if lastMessage %}
         {% set lastMessageDate = lastMessage.createdAt %}
         {% set isToday = lastMessageDate|date('Y-m-d') == 'now'|date('Y-m-d') %}

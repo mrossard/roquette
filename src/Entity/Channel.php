@@ -345,30 +345,6 @@ class Channel
         return false;
     }
 
-    public function hasUserParticipated(User $user): bool
-    {
-        if ($this->creator && $this->creator->getId() === $user->getId()) {
-            return true;
-        }
-
-        foreach ($this->messages as $message) {
-            if ($message->getAuthor() && $message->getAuthor()->getId() === $user->getId()) {
-                return true;
-            }
-        }
-
-        if ($this->parentMessage) {
-            $parentChannel = $this->parentMessage->getChannel();
-            if ($parentChannel && $parentChannel->isDm()) {
-                if ($parentChannel->getMembers()->contains($user)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     /**
      * @return Collection<int, GroupSubscription>
      */

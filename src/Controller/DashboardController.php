@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Channel;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
+use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use App\Service\ReadTrackingService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -63,6 +65,7 @@ final class DashboardController extends AbstractController
     #[Route('/channels/directory', name: 'app_channels_directory')]
     public function directory(
         ChannelRepository $channelRepository,
+        MessageRepository $messageRepository,
         UserRepository $userRepository,
         InvitationRepository $invitationRepository,
         EntityManagerInterface $entityManager,
@@ -95,6 +98,8 @@ final class DashboardController extends AbstractController
             $subChannelsByParent[$parentId][] = $ch;
         }
 
+        $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(static fn(Channel $c) => $c->getId(), $channels));
+
         return $this->render('dashboard/directory.html.twig', [
             'channels' => $channels,
             'allPublicChannels' => $allPublicChannels,
@@ -103,6 +108,7 @@ final class DashboardController extends AbstractController
             'activeChannel' => null,
             'allUsers' => $allUsers,
             'subChannelsByParent' => $subChannelsByParent,
+            'lastMessages' => $lastMessages,
         ]);
     }
 

@@ -74,9 +74,9 @@ class ReadTrackingServiceTest extends TestCase
         $latestMessage = $this->createMock(Message::class);
         $messageRepo
             ->expects($this->once())
-            ->method('findOneBy')
-            ->with(['channel' => $channel], ['id' => 'DESC'])
-            ->willReturn($latestMessage);
+            ->method('findLastMessagesForChannels')
+            ->with([42])
+            ->willReturn([42 => $latestMessage]);
 
         $this->entityManager
             ->method('getRepository')
