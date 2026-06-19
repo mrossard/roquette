@@ -524,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// Global HTMX listener to toggle data-search-active when searching
+// Global HTMX listener to toggle data-search-active when searching and inject CSRF token
 document.body.addEventListener('htmx:configRequest', (evt) => {
     if (evt.detail.elt && evt.detail.elt.id === 'channel-search-input') {
         const query = evt.detail.elt.value.trim();
@@ -535,6 +535,13 @@ document.body.addEventListener('htmx:configRequest', (evt) => {
             } else {
                 statusBadge.removeAttribute('data-search-active');
             }
+        }
+    }
+
+    if (evt.detail.method !== 'GET') {
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+        if (tokenMeta) {
+            evt.detail.headers['X-CSRF-Token'] = tokenMeta.content;
         }
     }
 });

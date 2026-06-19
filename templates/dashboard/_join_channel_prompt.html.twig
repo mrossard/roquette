@@ -15,6 +15,7 @@
             </p>
         </div>
         <form action="{{ path('app_channel_join', {slug: activeChannel.slug}) }}" method="POST" style="width: 100%;" hx-boost="false">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
             <button type="submit" class="btn-publish" style="padding: 1rem; font-size: 1.05rem; cursor: pointer;">
                 Rejoindre le canal
             </button>

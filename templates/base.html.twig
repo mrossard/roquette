@@ -5,6 +5,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="app-env" content="{{ app.environment }}">
         <meta name="htmx-config" content='{"historyCacheSize": 0, "globalViewTransitions": true}'>
+        {% if app.user %}
+            <meta name="csrf-token" content="{{ csrf_token('app') }}">
+        {% endif %}
         <script>
             window.AppTranslations = {
                 "Rechercher un émoji...": "{{ 'Rechercher un émoji...'|trans|escape('js') }}",

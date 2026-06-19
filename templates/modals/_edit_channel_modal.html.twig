@@ -5,6 +5,7 @@
     {% block modal_body %}
         <form action="{{ path('app_channel_edit', {slug: activeChannel.slug}) }}" method="POST" class="add-channel-form"
               hx-boost="false">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
             <div class="input-group">
                 <label for="edit-modal-name">{{ 'Nom du canal'|trans }}</label>
                 <input type="text" id="edit-modal-name" name="name" value="{{ activeChannel.name }}" required
@@ -139,6 +140,7 @@
                   data-confirm="{{ 'Êtes-vous sûr de vouloir supprimer ce canal ? Tout l\'historique des messages sera perdu définitivement.'|trans }}"
                   hx-boost="false"
                   style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                 <button type="submit" class="btn-delete-channel"
                         style="width: 100%; justify-content: center; cursor: pointer;">🗑️ {{ 'Supprimer le canal'|trans }}
                 </button>
