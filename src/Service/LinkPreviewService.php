@@ -49,21 +49,7 @@ class LinkPreviewService
      */
     public function getPreviewWithType(string $url): ?array
     {
-        $url = trim($url);
-        if (!$this->isSafeUrl($url)) {
-            return null;
-        }
-
-        if ($this->isDirectImageUrl($url)) {
-            return ['type' => 'direct_image', 'url' => $url];
-        }
-
-        $preview = $this->getPreview($url);
-        if ($preview === null) {
-            return null;
-        }
-
-        return array_merge(['type' => 'og_preview'], $preview);
+        return $this->getPreview($url);
     }
 
     /**
@@ -71,41 +57,83 @@ class LinkPreviewService
      */
     public function getPreview(string $url): ?array
     {
-        // Nettoyer l'URL
         $url = trim($url);
-
-        // Clé de cache basée sur l'URL hachée
         $cacheKey = 'link_preview_' . md5($url);
 
-        return $this->cache->get($cacheKey, function (ItemInterface $item) use ($url) {
+        $value = $this->cache->get($cacheKey, function (ItemInterface $item) use ($url) {
             if (!$this->isSafeUrl($url)) {
-                // Pour éviter d'attaquer l'infra en boucle, on garde en cache (négatif) les URLs invalides/non sécurisées pendant 5 min
-                $item->expiresAfter(300);
+                $item->expiresAfter(300); // Cache negative for 5 minutes
                 return null;
+            }
+
+            // Check image extensions first to avoid unnecessary network request
+            $path = parse_url($url, PHP_URL_PATH) ?? '';
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            if (in_array($ext, self::IMAGE_EXTENSIONS, true)) {
+                $item->expiresAfter(86_400 * 7); // Cache successful image preview for 7 days
+                return ['type' => 'direct_image', 'url' => $url];
             }
 
             try {
-                $html = $this->fetchHtml($url);
-                if (!$html) {
-                    $item->expiresAfter(300); // Cache négatif : 5 minutes en cas d'échec de récupération
+                $response = $this->httpClient->request('GET', $url, [
+                    'timeout' => 1.5,
+                    'headers' => [
+                        'User-Agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)',
+                    ],
+                    'max_redirects' => 3,
+                ]);
+
+                // Verify content type before downloading the stream
+                $headers = $response->getHeaders(false);
+                $contentType = $headers['content-type'][0] ?? '';
+
+                if (str_starts_with($contentType, 'image/')) {
+                    $response->cancel();
+                    $item->expiresAfter(86_400 * 7); // Cache successful image preview for 7 days
+                    return ['type' => 'direct_image', 'url' => $url];
+                }
+
+                if (!str_contains($contentType, 'text/html') && !str_contains($contentType, 'application/xhtml+xml')) {
+                    $response->cancel();
+                    $item->expiresAfter(300); // Cache negative for 5 minutes
                     return null;
                 }
 
-                $metadata = $this->parseMetadata($url, $html);
+                $content = '';
+                foreach ($this->httpClient->stream($response, 1.5) as $chunk) {
+                    $content .= $chunk->getContent();
+                    if (strlen($content) >= 1_048_576) {
+                        $response->cancel();
+                        break;
+                    }
+                }
+
+                if ($content === '') {
+                    $item->expiresAfter(300); // Cache negative for 5 minutes
+                    return null;
+                }
+
+                $metadata = $this->parseMetadata($url, $content);
                 $titleVal = $metadata['title'] ?? null;
                 if ($titleVal === null || trim((string) $titleVal) === '') {
-                    $item->expiresAfter(300); // Cache négatif : 5 minutes en cas de métadonnées invalides
+                    $item->expiresAfter(300); // Cache negative for 5 minutes
                     return null;
                 }
 
-                $item->expiresAfter(3600); // 1 hour expiration for successful previews
-                return $metadata;
-            } catch (\Exception $e) {
-                $item->expiresAfter(300); // Cache négatif : 5 minutes en cas d'exception/erreur réseau
-                // Silencieusement ignorer les erreurs de requêtes externes
+                $item->expiresAfter(86_400 * 7); // Cache successful OG preview for 7 days
+                return array_merge(['type' => 'og_preview'], $metadata);
+            } catch (\Exception) {
+                $item->expiresAfter(300); // Cache negative for 5 minutes
                 return null;
             }
         });
+
+        // Add 'type' key if missing (backward compatibility with old cache entries)
+        if (is_array($value) && !array_key_exists('type', $value)) {
+            $value['type'] = 'og_preview';
+        }
+
+        return $value;
     }
 
     /**
@@ -289,6 +317,11 @@ class LinkPreviewService
                     $value = $item->get();
                     if ($value === null) {
                         return ['status' => 'negative'];
+                    }
+
+                    // Backward compatibility check for older cached entries
+                    if (is_array($value) && !array_key_exists('type', $value)) {
+                        $value['type'] = 'og_preview';
                     }
 
                     return ['status' => 'success', 'preview' => $value];

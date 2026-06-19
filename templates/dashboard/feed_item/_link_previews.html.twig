@@ -12,13 +12,19 @@
         {% set cachedResult = get_cached_link_preview(link) %}
         {% if cachedResult is not null %}
             {% if cachedResult.status == 'success' %}
-                {% include 'dashboard/_link_preview.html.twig' with {
-                    url: cachedResult.preview.url,
-                    title: cachedResult.preview.title,
-                    description: cachedResult.preview.description,
-                    image: cachedResult.preview.image,
-                    siteName: cachedResult.preview.siteName
-                } %}
+                {% if cachedResult.preview.type == 'direct_image' %}
+                    {% include 'dashboard/_image_preview.html.twig' with {
+                        url: cachedResult.preview.url
+                    } %}
+                {% else %}
+                    {% include 'dashboard/_link_preview.html.twig' with {
+                        url: cachedResult.preview.url,
+                        title: cachedResult.preview.title,
+                        description: cachedResult.preview.description,
+                        image: cachedResult.preview.image,
+                        siteName: cachedResult.preview.siteName
+                    } %}
+                {% endif %}
             {% endif %}
         {% else %}
             <div hx-get="{{ path('app_api_link_preview', {url: link}) }}"

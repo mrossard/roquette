@@ -28,23 +28,27 @@ final class LinkPreviewController extends AbstractController
         }
 
         $result = $this->linkPreviewService->getPreviewWithType($url);
-        if (!$result) {
-            // Return empty 200 response so HTMX replaces the placeholder with nothing, effectively removing it.
-            return new Response('', 200);
-        }
 
-        if ($result['type'] === 'direct_image') {
-            return $this->render('dashboard/_image_preview.html.twig', [
+        $response = match ($result['type'] ?? null) {
+            null => new Response('', 200),
+            'direct_image' => $this->render('dashboard/_image_preview.html.twig', [
                 'url' => $result['url'],
-            ]);
-        }
+            ]),
+            default => $this->render('dashboard/_link_preview.html.twig', [
+                'url' => $result['url'],
+                'title' => $result['title'],
+                'description' => $result['description'],
+                'image' => $result['image'],
+                'siteName' => $result['siteName'],
+            ]),
+        };
 
-        return $this->render('dashboard/_link_preview.html.twig', [
-            'url' => $result['url'],
-            'title' => $result['title'],
-            'description' => $result['description'],
-            'image' => $result['image'],
-            'siteName' => $result['siteName'],
-        ]);
+        // Configure public HTTP caching (both for browser and Souin reverse proxy)
+        $response->setPublic();
+        $response->setMaxAge(86_400);
+        $response->setSharedMaxAge(86_400);
+        $response->headers->set('Symfony-Session-NoAutoCacheControl', 'true');
+
+        return $response;
     }
 }
