@@ -12,6 +12,7 @@ use App\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ChannelExportService
@@ -100,44 +101,58 @@ class ChannelExportService
         $zip->addFromString('channel.json', json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         $zip->addFromString('channel.html', $htmlContent);
 
-        foreach ($messages as $msg) {
-            $filePath = $msg->getFilePath();
-            if (!$filePath) {
-                continue;
-            }
-            try {
-                if ($this->fileUploadService->exists($filePath)) {
-                    $fileStream = $this->fileUploadService->readStream($filePath);
-                    $fileContent = stream_get_contents($fileStream);
-                    if (is_resource($fileStream)) {
-                        fclose($fileStream);
-                    }
-                    $zip->addFromString('files/' . basename($filePath), $fileContent);
+        $tmpFiles = [];
+        try {
+            foreach ($messages as $msg) {
+                $filePath = $msg->getFilePath();
+                if (!$filePath) {
+                    continue;
                 }
-            } catch (\Exception) {
-                continue;
+                try {
+                    if ($this->fileUploadService->exists($filePath)) {
+                        $fileStream = $this->fileUploadService->readStream($filePath);
+                        $tmpFile = tempnam(sys_get_temp_dir(), 'attach-');
+                        $tmpStream = fopen($tmpFile, 'wb');
+                        stream_copy_to_stream($fileStream, $tmpStream);
+                        fclose($tmpStream);
+                        if (is_resource($fileStream)) {
+                            fclose($fileStream);
+                        }
+                        $zip->addFile($tmpFile, 'files/' . basename($filePath));
+                        $tmpFiles[] = $tmpFile;
+                    }
+                } catch (\Exception) {
+                    continue;
+                }
             }
+        } finally {
+            $zip->close();
         }
-
-        $zip->close();
-        $fileContentResult = file_get_contents($zipFile);
-        unlink($zipFile);
 
         $filename = $channel->getSlug() . '-export.zip';
 
-        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $fileContentResult, 'zip');
+        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $zipFile, 'zip');
 
-        $response = new Response($fileContentResult);
-        $response->headers->set('Content-Type', 'application/zip');
-        $response->headers->set(
-            'Content-Disposition',
-            HeaderUtils::makeDisposition(
+        foreach ($tmpFiles as $tmpFile) {
+            if (file_exists($tmpFile)) {
+                unlink($tmpFile);
+            }
+        }
+
+        return new StreamedResponse(function () use ($zipFile) {
+            $out = fopen('php://output', 'wb');
+            $in = fopen($zipFile, 'rb');
+            stream_copy_to_stream($in, $out);
+            fclose($in);
+            fclose($out);
+            unlink($zipFile);
+        }, Response::HTTP_OK, [
+            'Content-Type' => 'application/zip',
+            'Content-Disposition' => HeaderUtils::makeDisposition(
                 HeaderUtils::DISPOSITION_ATTACHMENT,
                 $filename,
             ),
-        );
-
-        return $response;
+        ]);
     }
 
     private function exportAsTar(
@@ -153,63 +168,80 @@ class ChannelExportService
         $tar->addFromString('channel.json', json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         $tar->addFromString('channel.html', $htmlContent);
 
-        foreach ($messages as $msg) {
-            $filePath = $msg->getFilePath();
-            if (!$filePath) {
-                continue;
-            }
-            try {
-                if ($this->fileUploadService->exists($filePath)) {
-                    $fileStream = $this->fileUploadService->readStream($filePath);
-                    $fileContent = stream_get_contents($fileStream);
-                    if (is_resource($fileStream)) {
-                        fclose($fileStream);
-                    }
-                    $tar->addFromString('files/' . basename($filePath), $fileContent);
+        $tmpFiles = [];
+        try {
+            foreach ($messages as $msg) {
+                $filePath = $msg->getFilePath();
+                if (!$filePath) {
+                    continue;
                 }
-            } catch (\Exception) {
-                continue;
+                try {
+                    if ($this->fileUploadService->exists($filePath)) {
+                        $fileStream = $this->fileUploadService->readStream($filePath);
+                        $tmpFile = tempnam(sys_get_temp_dir(), 'attach-');
+                        $tmpStream = fopen($tmpFile, 'wb');
+                        stream_copy_to_stream($fileStream, $tmpStream);
+                        fclose($tmpStream);
+                        if (is_resource($fileStream)) {
+                            fclose($fileStream);
+                        }
+                        $tar->addFile($tmpFile, 'files/' . basename($filePath));
+                        $tmpFiles[] = $tmpFile;
+                    }
+                } catch (\Exception) {
+                    continue;
+                }
             }
+        } finally {
+            // PharData writes on object destruction; force it
+            unset($tar);
         }
-
-        $fileContentResult = file_get_contents($tarFile);
-        unlink($tarFile);
 
         $filename = $channel->getSlug() . '-export.tar';
 
-        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $fileContentResult, 'tar');
+        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $tarFile, 'tar');
 
-        $response = new Response($fileContentResult);
-        $response->headers->set('Content-Type', 'application/x-tar');
-        $response->headers->set(
-            'Content-Disposition',
-            HeaderUtils::makeDisposition(
+        foreach ($tmpFiles as $tmpFile) {
+            if (file_exists($tmpFile)) {
+                unlink($tmpFile);
+            }
+        }
+
+        return new StreamedResponse(function () use ($tarFile) {
+            $out = fopen('php://output', 'wb');
+            $in = fopen($tarFile, 'rb');
+            stream_copy_to_stream($in, $out);
+            fclose($in);
+            fclose($out);
+            unlink($tarFile);
+        }, Response::HTTP_OK, [
+            'Content-Type' => 'application/x-tar',
+            'Content-Disposition' => HeaderUtils::makeDisposition(
                 HeaderUtils::DISPOSITION_ATTACHMENT,
                 $filename,
             ),
-        );
-
-        return $response;
+        ]);
     }
 
     private function saveAndCreateExportEntity(
         Channel $channel,
         User $currentUser,
         string $filename,
-        string $fileContentResult,
+        string $tempFilePath,
         string $extension,
     ): void {
         $uniqueFilename = $channel->getSlug() . '-' . uniqid() . '.' . $extension;
         $storagePath = 'exports/' . $uniqueFilename;
 
-        $this->fileUploadService->write($storagePath, $fileContentResult);
+        $stream = fopen($tempFilePath, 'rb');
+        $this->fileUploadService->writeStream($storagePath, $stream);
 
         $export = new ChannelExport();
         $export->setChannel($channel);
         $export->setExportedBy($currentUser);
         $export->setFileName($filename);
         $export->setFilePath($storagePath);
-        $export->setFileSize(strlen($fileContentResult));
+        $export->setFileSize(filesize($tempFilePath));
         $export->setChannelName($channel->getName());
 
         $this->entityManager->persist($export);

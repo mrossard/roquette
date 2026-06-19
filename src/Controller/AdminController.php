@@ -17,6 +17,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -161,12 +162,6 @@ final class AdminController extends AbstractController
             throw $this->createNotFoundException($this->translator->trans('Le fichier d\'export n\'existe pas dans le stockage.'));
         }
 
-        $fileStream = $fileUploadService->readStream($export->getFilePath());
-        $fileContent = stream_get_contents($fileStream);
-        if (is_resource($fileStream)) {
-            fclose($fileStream);
-        }
-
         /** @var User $currentUser */
         $currentUser = $this->getUser();
         $auditLogger->log(AuditAction::EXPORT_DOWNLOAD, $currentUser, [
@@ -177,17 +172,19 @@ final class AdminController extends AbstractController
 
         $contentType = str_ends_with($export->getFileName(), '.tar') ? 'application/x-tar' : 'application/zip';
 
-        $response = new Response($fileContent);
-        $response->headers->set('Content-Type', $contentType);
-        $response->headers->set(
-            'Content-Disposition',
-            \Symfony\Component\HttpFoundation\HeaderUtils::makeDisposition(
+        return new StreamedResponse(function () use ($fileUploadService, $export) {
+            $fileStream = $fileUploadService->readStream($export->getFilePath());
+            if ($fileStream) {
+                fpassthru($fileStream);
+                fclose($fileStream);
+            }
+        }, Response::HTTP_OK, [
+            'Content-Type' => $contentType,
+            'Content-Disposition' => \Symfony\Component\HttpFoundation\HeaderUtils::makeDisposition(
                 \Symfony\Component\HttpFoundation\HeaderUtils::DISPOSITION_ATTACHMENT,
-                $export->getFileName()
-            )
-        );
-
-        return $response;
+                $export->getFileName(),
+            ),
+        ]);
     }
 
     #[Route('/admin/exports/{id}/delete', name: 'app_admin_export_delete', methods: ['POST'])]

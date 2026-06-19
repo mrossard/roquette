@@ -14,6 +14,7 @@ use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 #[AllowMockObjectsWithoutExpectations]
 class AdminControllerTest extends WebTestCase
@@ -91,6 +92,8 @@ class AdminControllerTest extends WebTestCase
 
     private function mockFileUploadService(bool $exists, string $content = 'file content'): void
     {
+        $this->client->disableReboot();
+
         $mock = $this->createMock(FileUploadService::class);
         $mock->method('exists')->willReturn($exists);
 
@@ -199,7 +202,13 @@ class AdminControllerTest extends WebTestCase
         $this->client->request('GET', sprintf('/admin/exports/%d/download', $export->getId()));
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('Content-Type', 'application/zip');
-        static::assertSame('zipped_data', $this->client->getResponse()->getContent());
+
+        $response = $this->client->getResponse();
+        static::assertInstanceOf(StreamedResponse::class, $response);
+        static::assertStringContainsString(
+            'test-export.zip',
+            $response->headers->get('Content-Disposition') ?? '',
+        );
     }
 
     #[Test]

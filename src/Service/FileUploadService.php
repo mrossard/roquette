@@ -221,6 +221,16 @@ class FileUploadService
     }
 
     /**
+     * Writes a stream to a stored file path.
+     *
+     * @param resource $stream
+     */
+    public function writeStream(string $filePath, mixed $stream): void
+    {
+        $this->defaultStorage->writeStream($filePath, $stream);
+    }
+
+    /**
      * Uploads an UploadedFile and populates metadata on a Message entity.
      *
      * @throws \InvalidArgumentException if the file is invalid or not allowed
