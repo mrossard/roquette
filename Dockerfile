@@ -31,7 +31,7 @@ ENV SERVER_NAME=":80" \
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends supervisor tzdata && \
-    install-php-extensions apcu zip opcache intl ldap soap pdo_pgsql pgsql pcntl sockets && \
+    install-php-extensions apcu zip opcache intl ldap soap pdo_pgsql pgsql pcntl sockets redis && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 RUN curl -fsSL https://raw.githubusercontent.com/alexandre-daubois/ember/main/install.sh | sh

@@ -8,7 +8,7 @@
         "ext-ctype": "*",
         "ext-iconv": "*",
         "ext-mbstring": "*",
-        "doctrine/doctrine-bundle": "^3.2",
+        "doctrine/doctrine-bundle": "^3.2.4",
         "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.6",
         "ezyang/htmlpurifier": "^4.19",
@@ -25,7 +25,7 @@
         "symfony/doctrine-messenger": "8.0.*",
         "symfony/dom-crawler": "8.0.*",
         "symfony/dotenv": "8.0.*",
-        "symfony/flex": "^2",
+        "symfony/flex": "^2.11",
         "symfony/form": "8.0.*",
         "symfony/framework-bundle": "8.0.*",
         "symfony/http-client": "8.0.*",
@@ -34,18 +34,19 @@
         "symfony/mime": "8.0.*",
         "symfony/monolog-bundle": "^4.0",
         "symfony/rate-limiter": "8.0.*",
+        "symfony/redis-messenger": "8.0.*",
         "symfony/runtime": "8.0.*",
         "symfony/scheduler": "8.0.*",
         "symfony/security-bundle": "8.0.*",
         "symfony/translation": "8.0.*",
         "symfony/twig-bundle": "8.0.*",
-        "symfony/ux-icons": "^3.1",
+        "symfony/ux-icons": "^3.2",
         "symfony/validator": "8.0.*",
         "symfony/yaml": "8.0.*",
         "twig/cache-extra": "^3.24",
         "twig/extra-bundle": "^2.12|^3.0",
         "twig/string-extra": "^3.24",
-        "twig/twig": "^2.12|^3.0"
+        "twig/twig": "^2.12|^3.27.1"
     },
     "config": {
         "allow-plugins": {
@@ -114,7 +115,7 @@
     },
     "require-dev": {
         "carthage-software/mago": "^1.30",
-        "phpunit/phpunit": "^13.1",
+        "phpunit/phpunit": "^13.2.1",
         "symfony/ai-mate": "^0.9.0",
         "symfony/ai-monolog-mate-extension": "^0.9.0",
         "symfony/ai-symfony-mate-extension": "^0.9.0",
