@@ -19,7 +19,19 @@ if (window.htmx && window.Idiomorph) {
         } else if (swapStyle === "morph:innerHTML") {
             return { morphStyle: "innerHTML" };
         } else if (swapStyle.startsWith("morph:")) {
-            return Function("return (" + swapStyle.slice(6) + ")")();
+            const params = swapStyle.slice(6);
+            const config = {};
+            for (const part of params.split(';')) {
+                const eqIdx = part.indexOf('=');
+                if (eqIdx === -1) continue;
+                const key = part.slice(0, eqIdx).trim();
+                let value = part.slice(eqIdx + 1).trim();
+                if (value === 'true') value = true;
+                else if (value === 'false') value = false;
+                else if (value === 'null') value = null;
+                config[key] = value;
+            }
+            return config;
         }
     }
 
