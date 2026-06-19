@@ -33,6 +33,8 @@ class MessageRepository extends ServiceEntityRepository
     {
         $qb = $this
             ->createQueryBuilder('m')
+            ->select('m', 'poll')
+            ->leftJoin('m.poll', 'poll')
             ->where('m.channel = :channel')
             ->andWhere('m.author != :user')
             ->orderBy('m.createdAt', 'ASC')
@@ -67,6 +69,8 @@ class MessageRepository extends ServiceEntityRepository
         $ids = array_map('intval', $ids);
 
         return $this->createQueryBuilder('m')
+            ->leftJoin('m.poll', 'poll')
+            ->addSelect('poll')
             ->where('m.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->orderBy('m.createdAt', 'ASC')
@@ -195,9 +199,10 @@ class MessageRepository extends ServiceEntityRepository
         $ids = array_map('intval', $ids);
 
         return $this->createQueryBuilder('m')
-            ->select('m', 'author', 'channel')
+            ->select('m', 'author', 'channel', 'poll')
             ->join('m.author', 'author')
             ->join('m.channel', 'channel')
+            ->leftJoin('m.poll', 'poll')
             ->where('m.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->orderBy('m.createdAt', 'DESC')
@@ -389,8 +394,9 @@ class MessageRepository extends ServiceEntityRepository
         }
 
         $messages = $this->createQueryBuilder('m')
-            ->select('m', 'author')
+            ->select('m', 'author', 'poll')
             ->join('m.author', 'author')
+            ->leftJoin('m.poll', 'poll')
             ->where('m.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->getQuery()
@@ -407,8 +413,9 @@ class MessageRepository extends ServiceEntityRepository
     public function findLastMessageForChannel(Channel $channel): ?Message
     {
         return $this->createQueryBuilder('m')
-            ->select('m', 'author')
+            ->select('m', 'author', 'poll')
             ->join('m.author', 'author')
+            ->leftJoin('m.poll', 'poll')
             ->where('m.channel = :channel')
             ->orderBy('m.createdAt', 'DESC')
             ->addOrderBy('m.id', 'DESC')
@@ -444,9 +451,10 @@ class MessageRepository extends ServiceEntityRepository
         }
 
         return $this->createQueryBuilder('m')
-            ->select('m', 'author', 'channel')
+            ->select('m', 'author', 'channel', 'poll')
             ->join('m.author', 'author')
             ->join('m.channel', 'channel')
+            ->leftJoin('m.poll', 'poll')
             ->where('m.id IN (:ids)')
             ->orderBy('m.id', 'DESC')
             ->setParameter('ids', $ids)

@@ -58,7 +58,9 @@ class ChannelRepository extends ServiceEntityRepository
         $groupIdentifiers = $this->getUserGroupIdentifiers($user);
 
         $qb = $this->createQueryBuilder('c')
-            ->leftJoin('c.members', 'm');
+            ->leftJoin('c.members', 'm')
+            ->leftJoin('c.userGroup', 'ug')
+            ->addSelect('ug');
 
         if (!empty($groupIdentifiers)) {
             $qb->leftJoin('c.groupSubscriptions', 'gs')
