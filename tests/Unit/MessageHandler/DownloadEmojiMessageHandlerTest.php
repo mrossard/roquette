@@ -25,6 +25,7 @@ class DownloadEmojiMessageHandlerTest extends TestCase
         $httpClient = $this->createMock(HttpClientInterface::class);
         $defaultStorage = $this->createMock(FilesystemOperator::class);
         $logger = $this->createMock(LoggerInterface::class);
+        $cache = $this->createMock(\Symfony\Contracts\Cache\CacheInterface::class);
 
         $response = $this->createMock(ResponseInterface::class);
         $response->method('getStatusCode')->willReturn(200);
@@ -45,11 +46,16 @@ class DownloadEmojiMessageHandlerTest extends TestCase
             ->method('write')
             ->with('emojis/smile.gif', 'gif_binary_data');
 
+        $cache->expects($this->once())
+            ->method('delete')
+            ->with('emojis_filesystem_list');
+
         $handler = new DownloadEmojiMessageHandler(
             $httpClient,
             $defaultStorage,
             'http://example.com/emojis/',
-            $logger
+            $logger,
+            $cache
         );
 
         $handler(new DownloadEmojiMessage('smile.gif'));

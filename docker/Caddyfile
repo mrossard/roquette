@@ -3,9 +3,37 @@
 
     metrics
 
+    order cache before rewrite
+
     frankenphp {
         #worker /path/to/your/worker.php
         {$FRANKENPHP_CONFIG}
+    }
+
+    cache {
+        log_level debug
+        api {
+            souin
+        }
+
+        cdn {
+            strategy hard
+        }
+
+        key {
+            headers Authorization
+        }
+
+        timeout {
+            backend 180s
+            cache 5s
+        }
+
+        otter {
+            configuration {
+                timeout 5s
+            }
+        }
     }
 }
 
@@ -25,6 +53,13 @@
 
     root * public/
     encode zstd br gzip
+
+    # Strip client-side cache bypass headers and session/auth cookies for emojis so they cache cleanly in Souin
+    @emojis path /emojis/*
+    request_header @emojis -Cache-Control
+    request_header @emojis -Pragma
+    request_header @emojis -Cookie
+    request_header @emojis -Authorization
 
     # Uncomment the following lines to enable Mercure and Vulcain modules
     mercure {
@@ -50,6 +85,8 @@
     #vulcain
 
     {$CADDY_SERVER_EXTRA_DIRECTIVES}
+
+    cache
 
     php_server
 }

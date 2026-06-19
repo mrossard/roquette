@@ -1,4 +1,13 @@
+FROM dunglas/frankenphp:1.12.4-builder-php8.5 AS builder
+
+RUN xcaddy build \
+    --with github.com/dunglas/frankenphp/caddy \
+    --with github.com/caddyserver/cache-handler \
+    --output /usr/local/bin/frankenphp
+
 FROM dunglas/frankenphp:1.12.4-php8.5
+
+COPY --from=builder /usr/local/bin/frankenphp /usr/local/bin/frankenphp
 
 #force non-https, TZ, ...
 ENV SERVER_NAME=":80" \

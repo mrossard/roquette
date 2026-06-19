@@ -10,6 +10,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\Cache\CacheInterface;
 
 #[AsMessageHandler]
 class DownloadEmojiMessageHandler
@@ -20,6 +21,7 @@ class DownloadEmojiMessageHandler
         #[Autowire('%env(EMOJI_BASE_URL)%')]
         private readonly string $emojiBaseUrl,
         private readonly LoggerInterface $logger,
+        private readonly CacheInterface $cache,
     ) {}
 
     public function __invoke(DownloadEmojiMessage $message): void
@@ -50,10 +52,12 @@ class DownloadEmojiMessageHandler
             if ($response->getStatusCode() === 200) {
                 $content = $response->getContent();
                 $this->defaultStorage->write($storagePath, $content);
+                $this->cache->delete('emojis_filesystem_list');
                 $this->logger->info(sprintf('Emoji "%s" saved successfully to local storage.', $path));
             } else {
                 // Save empty content as negative cache
                 $this->defaultStorage->write($storagePath, '');
+                $this->cache->delete('emojis_filesystem_list');
                 $this->logger->warning(sprintf('Failed to download emoji "%s": HTTP %d.', $path, $response->getStatusCode()));
             }
         } catch (\Exception $e) {

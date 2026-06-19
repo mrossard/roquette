@@ -23,6 +23,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Symfony\Contracts\Cache\CacheInterface;
 
 #[IsGranted('ROLE_ADMIN')]
 final class AdminController extends AbstractController
@@ -238,7 +239,8 @@ final class AdminController extends AbstractController
     public function emojis(
         Request $request,
         FilesystemOperator $defaultStorage,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        CacheInterface $cache
     ): Response {
         $page = max(1, $request->query->getInt('page', 1));
         $q = trim($request->query->get('q', ''));
@@ -252,53 +254,68 @@ final class AdminController extends AbstractController
 
         $matchingEmojis = [];
         try {
-            $contents = $defaultStorage->listContents('emojis', true);
-            foreach ($contents as $attributes) {
-                if ($attributes->isFile()) {
-                    $path = $attributes->path();
-                    $relativePath = substr($path, \strlen('emojis/'));
-                    if (!str_ends_with($relativePath, '.gif')) {
-                        continue;
+            $files = $cache->get('emojis_filesystem_list', function () use ($defaultStorage) {
+                $list = [];
+                try {
+                    $contents = $defaultStorage->listContents('emojis', true);
+                    foreach ($contents as $attributes) {
+                        if ($attributes->isFile()) {
+                            $list[] = [
+                                'path' => $attributes->path(),
+                                'size' => $attributes->fileSize(),
+                            ];
+                        }
                     }
-                    if ($attributes->fileSize() === 0) {
-                        continue;
-                    }
-                    $noExt = substr($relativePath, 0, -4);
-                    $parts = explode('/', $noExt);
-                    $filePart = (string) array_pop($parts);
-                    if (\count($parts) === 0) {
-                        $code = $filePart;
-                        $filename = $filePart . '.gif';
-                    } else {
-                        $dir = implode('/', $parts);
-                        $code = $filePart . ':' . $dir;
-                        $filename = $dir . '/' . $filePart . '.gif';
-                    }
+                } catch (\Exception $e) {
+                    // Ignore
+                }
+                return $list;
+            });
 
-                    $tags = $emojiTagsMap[$code] ?? [];
+            foreach ($files as $file) {
+                $path = $file['path'];
+                $relativePath = substr($path, \strlen('emojis/'));
+                if (!str_ends_with($relativePath, '.gif')) {
+                    continue;
+                }
+                if ($file['size'] === 0) {
+                    continue;
+                }
+                $noExt = substr($relativePath, 0, -4);
+                $parts = explode('/', $noExt);
+                $filePart = (string) array_pop($parts);
+                if (\count($parts) === 0) {
+                    $code = $filePart;
+                    $filename = $filePart . '.gif';
+                } else {
+                    $dir = implode('/', $parts);
+                    $code = $filePart . ':' . $dir;
+                    $filename = $dir . '/' . $filePart . '.gif';
+                }
 
-                    // Filter by search query if any (matches code or any tag)
-                    if ($q !== '') {
-                        $match = str_contains(mb_strtolower($code), mb_strtolower($q));
-                        if (!$match) {
-                            foreach ($tags as $tag) {
-                                if (str_contains(mb_strtolower($tag), mb_strtolower($q))) {
-                                    $match = true;
-                                    break;
-                                }
+                $tags = $emojiTagsMap[$code] ?? [];
+
+                // Filter by search query if any (matches code or any tag)
+                if ($q !== '') {
+                    $match = str_contains(mb_strtolower($code), mb_strtolower($q));
+                    if (!$match) {
+                        foreach ($tags as $tag) {
+                            if (str_contains(mb_strtolower($tag), mb_strtolower($q))) {
+                                $match = true;
+                                break;
                             }
                         }
-                        if (!$match) {
-                            continue;
-                        }
                     }
-
-                    $matchingEmojis[] = [
-                        'code' => $code,
-                        'filename' => $filename,
-                        'tags' => $tags,
-                    ];
+                    if (!$match) {
+                        continue;
+                    }
                 }
+
+                $matchingEmojis[] = [
+                    'code' => $code,
+                    'filename' => $filename,
+                    'tags' => $tags,
+                ];
             }
         } catch (\Exception $e) {
             // Ignore
@@ -364,7 +381,8 @@ final class AdminController extends AbstractController
     public function uploadEmoji(
         Request $request,
         FilesystemOperator $defaultStorage,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        CacheInterface $cache
     ): Response {
         $code = trim($request->request->get('code', ''));
         $file = $request->files->get('emoji_file');
@@ -402,6 +420,7 @@ final class AdminController extends AbstractController
         try {
             $content = file_get_contents($file->getPathname());
             $defaultStorage->write($storagePath, $content);
+            $cache->delete('emojis_filesystem_list');
 
             $tagsString = $request->request->get('tags', '');
             $tags = array_map('trim', explode(',', $tagsString));
@@ -429,7 +448,8 @@ final class AdminController extends AbstractController
     public function deleteEmoji(
         Request $request,
         FilesystemOperator $defaultStorage,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        CacheInterface $cache
     ): Response {
         $code = $request->request->get('code', '');
 
@@ -459,6 +479,7 @@ final class AdminController extends AbstractController
             if ($defaultStorage->has($storagePath)) {
                 $defaultStorage->delete($storagePath);
             }
+            $cache->delete('emojis_filesystem_list');
             $this->addFlash('success', $this->translator->trans('L\'émoji %code% a été supprimé.', ['%code%' => $code]));
         } catch (\Exception $e) {
             $this->addFlash('error', $this->translator->trans('Erreur lors de la suppression du fichier : %error%', ['%error%' => $e->getMessage()]));

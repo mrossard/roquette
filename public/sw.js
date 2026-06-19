@@ -26,11 +26,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Skip Mercure/SSE requests, non-GET requests, or external requests
+    // Skip Mercure/SSE requests, emojis, non-GET requests, or external requests
     if (
         event.request.method !== 'GET' ||
         !url.origin.startsWith(self.location.origin) ||
         url.pathname.startsWith('/.well-known/mercure') ||
+        url.pathname.startsWith('/emojis/') ||
         (event.request.headers.get('Accept') && event.request.headers.get('Accept').includes('text/event-stream'))
     ) {
         return;

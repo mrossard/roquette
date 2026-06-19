@@ -26,6 +26,10 @@ class AdminEmojiControllerTest extends WebTestCase
         $container = $this->client->getContainer();
         $this->entityManager = $container->get('doctrine')->getManager();
         $this->cleanup();
+
+        if ($container->has('cache.app')) {
+            $container->get('cache.app')->delete('emojis_filesystem_list');
+        }
     }
 
     protected function tearDown(): void
