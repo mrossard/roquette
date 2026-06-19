@@ -48,7 +48,7 @@
         </script>
         <script>
             (function() {
-                const theme = {% if app.user %}'{{ app.user.theme }}'{% else %}localStorage.getItem('theme') || 'dark'{% endif %};
+                const theme = {% if app.user %}'{{ app.user.theme|escape('js') }}'{% else %}localStorage.getItem('theme') || 'dark'{% endif %};
                 document.documentElement.setAttribute('data-theme', theme);
                 localStorage.setItem('theme', theme);
 

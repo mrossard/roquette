@@ -920,15 +920,37 @@ export function openExternalImageLightbox(url) {
         });
     }
 
-    // Mettre à jour le contenu
-    dialog.innerHTML = `
-        <div class="lightbox-content">
-            <button type="button" onclick="closeModal('image-lightbox')" class="btn-close-lightbox" aria-label="Fermer l'aperçu">&times;</button>
-            <img src="${url}" alt="Image">
-            <div class="lightbox-caption">
-                <a href="${url}" class="btn-lightbox-download" target="_blank" rel="noopener noreferrer">Ouvrir</a>
-            </div>
-        </div>`;
+    // Build safely via DOM API to prevent XSS from injected URLs
+    dialog.innerHTML = '';
+    const content = document.createElement('div');
+    content.className = 'lightbox-content';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'btn-close-lightbox';
+    closeBtn.setAttribute('aria-label', "Fermer l'aperçu");
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', () => closeModal('image-lightbox'));
+
+    const img = document.createElement('img');
+    img.setAttribute('src', url);
+    img.setAttribute('alt', 'Image');
+
+    const caption = document.createElement('div');
+    caption.className = 'lightbox-caption';
+
+    const link = document.createElement('a');
+    link.className = 'btn-lightbox-download';
+    link.setAttribute('href', url);
+    link.setAttribute('target', '_blank');
+    link.setAttribute('rel', 'noopener noreferrer');
+    link.textContent = 'Ouvrir';
+
+    caption.appendChild(link);
+    content.appendChild(closeBtn);
+    content.appendChild(img);
+    content.appendChild(caption);
+    dialog.appendChild(content);
 
     dialog.showModal();
 }

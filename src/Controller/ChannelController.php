@@ -629,10 +629,10 @@ final class ChannelController extends AbstractController
 
         if (!$channel->getMembers()->contains($user)) {
             return new Response(
-                '<script>alert("'
-                . $this->translator->trans("Cet utilisateur n'est pas membre de ce canal.")
-                . '");</script>',
-                200,
+                '<div class="error-message">'
+                . htmlspecialchars($this->translator->trans("Cet utilisateur n'est pas membre de ce canal."), ENT_QUOTES, 'UTF-8')
+                . '</div>',
+                400,
             );
         }
 

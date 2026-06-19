@@ -108,13 +108,14 @@ function renderOfflineMessage(msg) {
     feedItem.style.opacity = '0.7';
     feedItem.style.borderLeft = '3px solid var(--accent-orange, #f59e0b)';
 
+    const safeUsername = escapeHtml(msg.username);
     feedItem.innerHTML = `
         <div class="feed-item-header">
             <div class="feed-item-user-container">
                 <div class="avatar-container">
-                    <span class="feed-item-avatar">${msg.username.slice(0, 1).toUpperCase()}</span>
+                    <span class="feed-item-avatar">${safeUsername.slice(0, 1).toUpperCase()}</span>
                 </div>
-                <span class="feed-item-user">${msg.username}</span>
+                <span class="feed-item-user">${safeUsername}</span>
             </div>
             <span class="feed-item-time">${timeStr}</span>
             <span class="offline-status-label" style="font-size: 0.75rem; color: var(--accent-orange, #f59e0b); font-weight: 500; margin-left: 0.5rem; display: flex; align-items: center; gap: 4px;">
