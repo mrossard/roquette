@@ -10,6 +10,7 @@ use App\Repository\MessageRepository;
 use App\Service\FileUploadService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -261,6 +262,7 @@ final class FileController extends AbstractController
     #[Route('/channels/{slug}/files-list', name: 'app_channel_files_list', methods: ['GET'])]
     public function channelFilesList(
         string $slug,
+        Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
     ): Response {
@@ -270,11 +272,27 @@ final class FileController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        $messagesWithFiles = $messageRepository->findFilesByChannel($channel);
+        $beforeId = $request->query->getInt('beforeId');
+        $beforeId = $beforeId > 0 ? $beforeId : null;
+
+        $messagesWithFiles = $messageRepository->findFilesByChannel($channel, 50, $beforeId);
+        $hasMore = count($messagesWithFiles) === 50;
+        $nextBeforeId = $hasMore ? $messagesWithFiles[array_key_last($messagesWithFiles)]->getId() : null;
+
+        if ($beforeId !== null) {
+            return $this->render('dashboard/_more_files.html.twig', [
+                'activeChannel' => $channel,
+                'messagesWithFiles' => $messagesWithFiles,
+                'hasMore' => $hasMore,
+                'nextBeforeId' => $nextBeforeId,
+            ]);
+        }
 
         return $this->render('dashboard/_files_list.html.twig', [
             'activeChannel' => $channel,
             'messagesWithFiles' => $messagesWithFiles,
+            'hasMore' => $hasMore,
+            'nextBeforeId' => $nextBeforeId,
         ]);
     }
 }

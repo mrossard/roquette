@@ -738,7 +738,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  * }
  * @psalm-type TwigExtraConfig = array{
  *     cache?: bool|array{
- *         enabled?: bool|Param, // Default: false
+ *         enabled?: bool|Param, // Default: true
  *     },
  *     html?: bool|array{
  *         enabled?: bool|Param, // Default: false

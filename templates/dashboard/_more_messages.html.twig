@@ -1,7 +1,7 @@
 {% if hasMore %}
     {% include 'dashboard/_load_more_trigger.html.twig' with {
-        'channel': channel,
-        'beforeId': nextBeforeId
+        'route': 'app_channel_load_more',
+        'params': {slug: channel.slug, beforeId: nextBeforeId},
     } %}
 {% endif %}
 

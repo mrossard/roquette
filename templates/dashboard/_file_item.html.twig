@@ -1,0 +1,52 @@
+{% set fileExt = msg.fileName|split('.')|last|lower %}
+{% set isImage = msg.mimeType starts with 'image/' or fileExt in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] %}
+{% set isMedia = msg.mimeType starts with 'audio/' or msg.mimeType starts with 'video/' or fileExt in ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'mp4', 'webm', 'mov', 'avi'] %}
+{% set isDoc = not isImage and not isMedia %}
+{% set fileCategory = isImage ? 'image' : (isMedia ? 'media' : 'doc') %}
+
+<div class="files-sidebar-item" data-category="{{ fileCategory }}">
+    <div class="files-sidebar-item-top">
+        <div class="files-sidebar-item-type">
+            {% if isImage %}
+                🖼️
+            {% elseif isMedia %}
+                🎵
+            {% else %}
+                📄
+            {% endif %}
+        </div>
+        <div class="files-sidebar-item-info">
+            <span class="files-sidebar-item-name" title="{{ msg.fileName }}">{{ msg.fileName }}</span>
+            <span class="files-sidebar-item-size">{{ msg.fileSize|format_bytes }}</span>
+        </div>
+        <div class="files-sidebar-item-actions">
+            <a href="{{ path('app_file_download', {id: msg.id}) }}" class="btn-file-action" hx-boost="false" target="_blank" download title="{{ 'Télécharger'|trans }}">📥</a>
+            <a href="{{ path('app_channel', {slug: activeChannel.slug}) }}?jumpTo={{ msg.id }}" hx-boost="true" class="btn-file-action" title="{{ 'Aller au message'|trans }}">🔍</a>
+        </div>
+    </div>
+    
+    {% if isImage and (msg.virusScanStatus is null or msg.virusScanStatus == 'clean') %}
+        <div class="files-sidebar-item-preview image-preview" hx-get="{{ path('app_lightbox', {id: msg.id}) }}" hx-target="#modal-container" hx-trigger="click" style="cursor:pointer">
+            <img src="{{ path('app_file_preview', {id: msg.id}) }}" alt="{{ msg.fileName }}">
+        </div>
+    {% elseif isMedia and (msg.virusScanStatus is null or msg.virusScanStatus == 'clean') %}
+        <div class="files-sidebar-item-preview">
+            {% if msg.mimeType starts with 'audio/' or fileExt in ['mp3', 'wav', 'ogg', 'm4a', 'aac'] %}
+                <audio controls preload="none" style="width: 100%; height: 32px;">
+                    <source src="{{ path('app_file_preview', {id: msg.id}) }}" type="{{ msg.mimeType }}">
+                </audio>
+            {% else %}
+                <video controls preload="none" style="width: 100%; max-height: 120px; border-radius: 0.5rem; display: block;">
+                    <source src="{{ path('app_file_preview', {id: msg.id}) }}" type="{{ msg.mimeType }}">
+                </video>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <div class="files-sidebar-item-meta">
+        <span class="files-sidebar-item-author" style="--hue: {{ msg.author.customHue|default(200) }}">
+            {{ msg.author.displayName|default(msg.author.username) }}
+        </span>
+        <span class="files-sidebar-item-date">{{ msg.createdAt|date('d/m/Y H:i') }}</span>
+    </div>
+</div>

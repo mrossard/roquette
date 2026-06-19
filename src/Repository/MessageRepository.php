@@ -8,7 +8,6 @@ use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -82,6 +81,25 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findLatestInChannel(Channel $channel, int $limit = 50, ?int $beforeId = null): array
     {
+        $conn = $this->getEntityManager()->getConnection();
+        $idQb = $conn->createQueryBuilder()
+            ->select('id')
+            ->from('"message"')
+            ->where('channel_id = :channelId')
+            ->orderBy('id', 'DESC')
+            ->setMaxResults($limit)
+            ->setParameter('channelId', $channel->getId());
+
+        if ($beforeId !== null) {
+            $idQb->andWhere('id < :beforeId')->setParameter('beforeId', $beforeId);
+        }
+
+        $ids = array_map('intval', $idQb->fetchFirstColumn());
+
+        if ($ids === []) {
+            return [];
+        }
+
         $qb = $this
             ->createQueryBuilder('m')
             ->select(
@@ -101,17 +119,11 @@ class MessageRepository extends ServiceEntityRepository
             ->leftJoin('poll.options', 'poll_options')
             ->leftJoin('poll_options.votes', 'poll_votes')
             ->leftJoin('poll_votes.user', 'poll_vote_user')
-            ->where('m.channel = :channel');
+            ->where('m.id IN (:ids)')
+            ->orderBy('m.id', 'DESC')
+            ->setParameter('ids', $ids);
 
-        if ($beforeId !== null) {
-            $qb->andWhere('m.id < :beforeId')->setParameter('beforeId', $beforeId);
-        }
-
-        $qb->orderBy('m.id', 'DESC')->setParameter('channel', $channel)->setMaxResults($limit);
-
-        $paginator = new Paginator($qb->getQuery());
-
-        return iterator_to_array($paginator);
+        return $qb->getQuery()->getResult();
     }
 
     /**
@@ -281,6 +293,24 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findMessagesAround(Channel $channel, int $messageId, int $limit = 50): array
     {
+        $minId = max(1, $messageId - 5);
+
+        $conn = $this->getEntityManager()->getConnection();
+        $ids = $conn->fetchFirstColumn(
+            'SELECT id FROM "message"
+             WHERE channel_id = :channelId AND id >= :minId
+             ORDER BY id ASC
+             LIMIT :limit',
+            ['channelId' => $channel->getId(), 'minId' => $minId, 'limit' => $limit],
+            ['limit' => \Doctrine\DBAL\ParameterType::INTEGER],
+        );
+
+        $ids = array_map('intval', $ids);
+
+        if ($ids === []) {
+            return [];
+        }
+
         $qb = $this
             ->createQueryBuilder('m')
             ->select(
@@ -300,32 +330,32 @@ class MessageRepository extends ServiceEntityRepository
             ->leftJoin('poll.options', 'poll_options')
             ->leftJoin('poll_options.votes', 'poll_votes')
             ->leftJoin('poll_votes.user', 'poll_vote_user')
-            ->where('m.channel = :channel')
-            ->andWhere('m.id >= :minId')
-            ->setParameter('channel', $channel)
-            ->setParameter('minId', max(1, $messageId - 5))
+            ->where('m.id IN (:ids)')
             ->orderBy('m.id', 'ASC')
-            ->setMaxResults($limit);
+            ->setParameter('ids', $ids);
 
-        $paginator = new Paginator($qb->getQuery());
-
-        return iterator_to_array($paginator);
+        return $qb->getQuery()->getResult();
     }
 
     /**
      * @return Message[]
      */
-    public function findFilesByChannel(Channel $channel): array
+    public function findFilesByChannel(Channel $channel, int $limit = 50, ?int $beforeId = null): array
     {
-        return $this->createQueryBuilder('m')
+        $qb = $this->createQueryBuilder('m')
             ->select('m', 'author')
             ->join('m.author', 'author')
             ->where('m.channel = :channel')
             ->andWhere('m.filePath IS NOT NULL')
             ->orderBy('m.id', 'DESC')
-            ->setParameter('channel', $channel)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit)
+            ->setParameter('channel', $channel);
+
+        if ($beforeId !== null) {
+            $qb->andWhere('m.id < :beforeId')->setParameter('beforeId', $beforeId);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     /**
@@ -386,6 +416,42 @@ class MessageRepository extends ServiceEntityRepository
             ->setParameter('channel', $channel)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * @return Message[]
+     */
+    public function findSavedByUser(User $user, int $limit = 50, ?int $beforeId = null): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $qb = $conn->createQueryBuilder()
+            ->select('usm.message_id')
+            ->from('user_saved_messages', 'usm')
+            ->where('usm.user_id = :userId')
+            ->orderBy('usm.message_id', 'DESC')
+            ->setMaxResults($limit)
+            ->setParameter('userId', $user->getId());
+
+        if ($beforeId !== null) {
+            $qb->andWhere('usm.message_id < :beforeId')
+                ->setParameter('beforeId', $beforeId);
+        }
+
+        $ids = array_map('intval', $qb->fetchFirstColumn());
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('m')
+            ->select('m', 'author', 'channel')
+            ->join('m.author', 'author')
+            ->join('m.channel', 'channel')
+            ->where('m.id IN (:ids)')
+            ->orderBy('m.id', 'DESC')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
     }
 }
 

@@ -1,0 +1,11 @@
+{% for msg in messagesWithFiles %}
+    {% include 'dashboard/_file_item.html.twig' %}
+{% endfor %}
+{% if hasMore %}
+    {% include 'dashboard/_load_more_trigger.html.twig' with {
+        'route': 'app_channel_files_list',
+        'params': {slug: activeChannel.slug, beforeId: nextBeforeId},
+        'root': '#files-sidebar-list-container',
+        'label': 'Charger plus de fichiers'|trans,
+    } %}
+{% endif %}

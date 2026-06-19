@@ -47,6 +47,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->where('u.id != :userId')
             ->setParameter('userId', $user->getId())
             ->orderBy('u.username', 'ASC')
+            ->setMaxResults(100)
             ->getQuery()
             ->getResult();
     }

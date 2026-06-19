@@ -1,0 +1,39 @@
+{% if savedMessages is empty %}
+    <div class="empty-state" id="feed-empty-state" style="text-align: center; padding: 4rem 2rem;">
+        <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">⭐</span>
+        <h3>Aucun message enregistré</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+            Cliquez sur le bouton "Enregistrer" sur n'importe quel message dans vos canaux pour le conserver ici.
+        </p>
+    </div>
+{% else %}
+    {% if hasMore|default(false) %}
+        {% include 'dashboard/_load_more_trigger.html.twig' with {
+            'route': 'app_saved_messages_more',
+            'params': {beforeId: nextBeforeId},
+            'root': '#live-feed',
+            'label': 'Charger plus de messages'|trans,
+        } %}
+    {% endif %}
+    {% for msg in savedMessages %}
+        <div style="margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; background: rgba(255,255,255,0.02); padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.03);">
+                <span style="font-size: 0.8rem; color: var(--text-muted);">
+                    Provenance :
+                    {% if msg.channel.isDm %}
+                        {% set partner = msg.channel.getDmPartner(app.user) %}
+                        <strong>💬 Conversation privée avec {{ partner ? partner.displayName|default(partner.username) : 'un utilisateur' }}</strong>
+                    {% else %}
+                        <strong>#{{ msg.channel.name }}</strong>
+                    {% endif %}
+                </span>
+                <a href="{{ path('app_channel', {slug: msg.channel.slug}) }}" class="btn-reply-subtle" style="font-size: 0.75rem; text-decoration: none;">
+                    Y aller →
+                </a>
+            </div>
+            {% include 'dashboard/_feed_item.html.twig' with {
+                'messageObject': msg
+            } %}
+        </div>
+    {% endfor %}
+{% endif %}

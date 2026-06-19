@@ -107,8 +107,8 @@
          style="display:none"></div>
     {% if messages|length >= 50 %}
         {% include 'dashboard/_load_more_trigger.html.twig' with {
-            'channel': activeChannel,
-            'beforeId': messages[0].id
+            'route': 'app_channel_load_more',
+            'params': {slug: activeChannel.slug, beforeId: messages[0].id},
         } %}
     {% endif %}
     {% set separatorShown = false %}

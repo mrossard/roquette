@@ -1,9 +1,9 @@
 <div class="load-more-container" 
      id="load-more-trigger"
-     hx-get="{{ path('app_channel_load_more', {slug: channel.slug, beforeId: beforeId}) }}"
-     hx-trigger="intersect root:#live-feed threshold:0.1"
+     hx-get="{{ path(route, params) }}"
+     hx-trigger="intersect root:{{ root|default('#live-feed') }} threshold:0.1"
      hx-swap="outerHTML transition:false">
     <button class="btn-load-more" type="button">
-        <span class="spinner-small"></span> Charger les messages précédents
+        <span class="spinner-small"></span> {{ label|default('Charger les messages précédents'|trans) }}
     </button>
 </div>

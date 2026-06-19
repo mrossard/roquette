@@ -23,33 +23,52 @@ class ReactionRepository extends ServiceEntityRepository
     /**
      * @return array<int, Message>
      */
-    public function findDistinctMessagesByUser(User $user): array
+    public function findDistinctMessagesByUser(User $user, int $limit = 50, ?int $beforeId = null): array
     {
-        return $this
-            ->getEntityManager()
-            ->createQuery('SELECT m FROM App\Entity\Message m
+        $dql = 'SELECT m, c FROM App\Entity\Message m
+             JOIN m.channel c
              JOIN App\Entity\Reaction r WITH r.message = m
-             WHERE r.user = :user
-             GROUP BY m.id
-             ORDER BY MAX(m.createdAt) DESC')
-            ->setParameter('user', $user)
+             WHERE r.user = :user';
+
+        $params = ['user' => $user];
+
+        if ($beforeId !== null) {
+            $dql .= ' AND m.id < :beforeId';
+            $params['beforeId'] = $beforeId;
+        }
+
+        $dql .= ' GROUP BY m.id, c.id ORDER BY MAX(m.createdAt) DESC';
+
+        return $this->getEntityManager()
+            ->createQuery($dql)
+            ->setParameters($params)
+            ->setMaxResults($limit)
             ->getResult();
     }
 
     /**
      * @return array<int, Message>
      */
-    public function findDistinctMessagesByUserAndEmoji(User $user, string $emoji): array
+    public function findDistinctMessagesByUserAndEmoji(User $user, string $emoji, int $limit = 50, ?int $beforeId = null): array
     {
-        return $this
-            ->getEntityManager()
-            ->createQuery('SELECT m FROM App\Entity\Message m
+        $dql = 'SELECT m, c FROM App\Entity\Message m
+             JOIN m.channel c
              JOIN App\Entity\Reaction r WITH r.message = m
-             WHERE r.user = :user AND r.emoji = :emoji
-             GROUP BY m.id
-             ORDER BY MAX(m.createdAt) DESC')
-            ->setParameter('user', $user)
-            ->setParameter('emoji', $emoji)
+             WHERE r.user = :user AND r.emoji = :emoji';
+
+        $params = ['user' => $user, 'emoji' => $emoji];
+
+        if ($beforeId !== null) {
+            $dql .= ' AND m.id < :beforeId';
+            $params['beforeId'] = $beforeId;
+        }
+
+        $dql .= ' GROUP BY m.id, c.id ORDER BY MAX(m.createdAt) DESC';
+
+        return $this->getEntityManager()
+            ->createQuery($dql)
+            ->setParameters($params)
+            ->setMaxResults($limit)
             ->getResult();
     }
 

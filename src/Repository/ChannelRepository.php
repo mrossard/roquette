@@ -204,7 +204,7 @@ class ChannelRepository extends ServiceEntityRepository
     /** @return Channel[] */
     public function findAllPublic(): array
     {
-        return $this->findBy(['isPrivate' => false, 'parentMessage' => null], ['name' => 'ASC']);
+        return $this->findBy(['isPrivate' => false, 'parentMessage' => null], ['name' => 'ASC'], 100);
     }
 
     public function findDmBetween(\App\Entity\User $user1, \App\Entity\User $user2): ?Channel
