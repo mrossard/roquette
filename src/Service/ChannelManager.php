@@ -234,6 +234,21 @@ class ChannelManager
         return $channel;
     }
 
+    public function buildSubChannelsByParent(array $subChannels): array
+    {
+        $map = [];
+        foreach ($subChannels as $ch) {
+            if (!$ch->isSubChannel() || !$ch->getParentMessage()) {
+                continue;
+            }
+
+            $parentId = $ch->getParentMessage()->getChannel()->getId();
+            $map[$parentId][] = $ch;
+        }
+
+        return $map;
+    }
+
     private function isCurrentUserAdmin(): bool
     {
         return $this->authorizationChecker->isGranted('ROLE_ADMIN');

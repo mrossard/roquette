@@ -30,6 +30,7 @@ final class ChannelActionController extends AbstractController
 
     public function __construct(
         private TranslatorInterface $translator,
+        private ChannelManager $channelManager,
     ) {}
 
     #[Route('/channels/create', name: 'app_channel_create', methods: ['POST'])]
@@ -289,16 +290,6 @@ final class ChannelActionController extends AbstractController
     /** @param Channel[] $channels */
     private function buildSubChannelsByParent(array $channels): array
     {
-        $map = [];
-        foreach ($channels as $ch) {
-            if (!$ch->isSubChannel() || !$ch->getParentMessage()) {
-                continue;
-            }
-
-            $parentId = $ch->getParentMessage()->getChannel()->getId();
-            $map[$parentId][] = $ch;
-        }
-
-        return $map;
+        return $this->channelManager->buildSubChannelsByParent($channels);
     }
 }

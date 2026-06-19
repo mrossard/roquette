@@ -355,16 +355,7 @@ final class AdminController extends AbstractController
         if (!$customEmoji) {
             $customEmoji = new CustomEmoji();
             $customEmoji->setCode($code);
-            // Deduce filename
-            $pos = strrpos($code, ':');
-            if ($pos !== false) {
-                $name = substr($code, 0, $pos);
-                $dir = substr($code, $pos + 1);
-                $filename = $dir . '/' . basename($name . '.gif');
-            } else {
-                $filename = basename($code . '.gif');
-            }
-            $customEmoji->setFilename($filename);
+            $customEmoji->setFilename($this->deduceEmojiFilename($code));
         }
 
         $customEmoji->setTags($tags);
@@ -464,14 +455,7 @@ final class AdminController extends AbstractController
             $entityManager->remove($customEmoji);
             $entityManager->flush();
         } else {
-            $pos = strrpos($code, ':');
-            if ($pos !== false) {
-                $name = substr($code, 0, $pos);
-                $dir = substr($code, $pos + 1);
-                $filename = $dir . '/' . basename($name . '.gif');
-            } else {
-                $filename = basename($code . '.gif');
-            }
+            $filename = $this->deduceEmojiFilename($code);
         }
 
         $storagePath = 'emojis/' . $filename;
@@ -503,15 +487,7 @@ final class AdminController extends AbstractController
         if (!$customEmoji) {
             $customEmoji = new CustomEmoji();
             $customEmoji->setCode($code);
-            $pos = strrpos($code, ':');
-            if ($pos !== false) {
-                $name = substr($code, 0, $pos);
-                $dir = substr($code, $pos + 1);
-                $filename = $dir . '/' . basename($name . '.gif');
-            } else {
-                $filename = basename($code . '.gif');
-            }
-            $customEmoji->setFilename($filename);
+            $customEmoji->setFilename($this->deduceEmojiFilename($code));
         }
 
         $tags = $customEmoji->getTags();
@@ -551,5 +527,17 @@ final class AdminController extends AbstractController
         }
 
         return $this->redirectToRoute('app_admin_emojis', $request->query->all());
+    }
+
+    private function deduceEmojiFilename(string $code): string
+    {
+        $pos = strrpos($code, ':');
+        if ($pos !== false) {
+            $name = substr($code, 0, $pos);
+            $dir = substr($code, $pos + 1);
+            return $dir . '/' . basename($name . '.gif');
+        }
+
+        return basename($code . '.gif');
     }
 }

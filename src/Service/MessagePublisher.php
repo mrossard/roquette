@@ -23,8 +23,12 @@ use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
+use App\Controller\Trait\RequestValidationTrait;
+
 class MessagePublisher
 {
+    use RequestValidationTrait;
+
     public function __construct(
         private readonly ChannelRepository $channelRepository,
         private readonly MessageRepository $messageRepository,
@@ -36,6 +40,7 @@ class MessagePublisher
         private readonly Environment $twig,
         private readonly SlashCommandHandler $slashCommandHandler,
         private readonly RequestStack $requestStack,
+        private readonly MessageRenderer $messageRenderer,
         #[Autowire(service: 'limiter.message_api')]
         private readonly RateLimiterFactoryInterface $rateLimiter,
     ) {}
@@ -174,26 +179,7 @@ class MessagePublisher
 
     private function renderFeedItem(Message $message, array $extraParams = []): string
     {
-        return $this->twig->render('dashboard/_feed_item.html.twig', array_merge(
-            $this->feedItemParams($message),
-            $extraParams,
-        ));
-    }
-
-    private function feedItemParams(Message $message): array
-    {
-        return [
-            'author' => $message->getAuthor(),
-            'message' => $message->getContent(),
-            'timestamp' => $message->getCreatedAt(),
-            'message_id' => $message->getId(),
-            'updated_at' => $message->getUpdatedAt(),
-            'fileName' => $message->getFileName(),
-            'fileSize' => $message->getFileSize(),
-            'filePath' => $message->getFilePath(),
-            'mimeType' => $message->getMimeType(),
-            'messageObject' => $message,
-        ];
+        return $this->messageRenderer->renderFeedItem($message, $extraParams);
     }
 
     private function maybePrependDaySeparator(Message $previousMessage, Message $newMessage, string $renderedHtml): string
@@ -233,16 +219,6 @@ class MessagePublisher
         }
 
         $this->entityManager->persist($poll);
-    }
-
-    private function isPostMaxSizeExceeded(Request $request): bool
-    {
-        return (
-            $request->isMethod('POST')
-            && count($request->request) === 0
-            && count($request->files) === 0
-            && (int) $request->headers->get('CONTENT_LENGTH', 0) > 0
-        );
     }
 
     private function addFlash(string $type, string $message): void

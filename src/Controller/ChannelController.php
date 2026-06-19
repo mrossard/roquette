@@ -296,17 +296,7 @@ final class ChannelController extends AbstractController
     /** @param Channel[] $channels */
     private function buildSubChannelsByParent(array $channels): array
     {
-        $map = [];
-        foreach ($channels as $ch) {
-            if (!$ch->isSubChannel() || !$ch->getParentMessage()) {
-                continue;
-            }
-
-            $parentId = $ch->getParentMessage()->getChannel()->getId();
-            $map[$parentId][] = $ch;
-        }
-
-        return $map;
+        return $this->channelManager->buildSubChannelsByParent($channels);
     }
 
     private function getTypingUsers(?Channel $channel, User $currentUser, bool $isMember): array
