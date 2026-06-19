@@ -1,0 +1,304 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'Roquette - Administration Émojis'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .emoji-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            position: relative;
+        }
+        .emoji-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .emoji-preview-wrapper {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+        .emoji-preview-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .emoji-details {
+            width: 100%;
+            text-align: center;
+        }
+        .emoji-code-badge {
+            display: inline-block;
+            font-family: monospace;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--accent, #a855f7);
+            margin-bottom: 0.5rem;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .emoji-form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .emoji-form-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+        .emoji-form-input:focus {
+            border-color: var(--accent, #a855f7);
+            outline: none;
+        }
+        .emoji-actions {
+            display: flex;
+            width: 100%;
+            gap: 0.5rem;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-update-tags {
+            background: var(--accent, #a855f7);
+            color: #fff;
+            border: none;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-update-tags:hover {
+            opacity: 0.9;
+        }
+        .btn-delete-emoji {
+            background: transparent;
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .btn-delete-emoji:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+        .upload-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+        @media (max-width: 768px) {
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .search-bar {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .search-input {
+            flex-grow: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .search-input:focus {
+            border-color: var(--accent, #a855f7);
+            outline: none;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="app-container admin-layout" hx-boost="true">
+        <header class="app-header">
+            <div class="logo-area">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="{{ 'Afficher le menu'|trans }}">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+                <span class="logo-rocket">🚀</span>
+                <div class="logo-text">
+                    <h1>Roquette</h1>
+                    <p class="subtitle">Administration</p>
+                </div>
+            </div>
+
+            {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
+        </header>
+
+        <main class="dashboard-grid">
+            <section class="card glass-panel settings-panel">
+                <div class="card-header">
+                    <div>
+                        <h2>{{ 'Gestion des Émojis Personnalisés'|trans }}</h2>
+                        <p class="card-description">{{ 'Ajouter des émojis personnalisés (GIF) et leur associer des tags pour faciliter la recherche.'|trans }}</p>
+                    </div>
+                    {% include 'admin/_nav.html.twig' %}
+                </div>
+
+                <div class="card-body">
+                    {% for label, messages in app.flashes %}
+                        {% for msg in messages %}
+                            <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in">
+                                {{ msg }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <!-- Upload Form -->
+                    <div class="upload-section">
+                        <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600;">{{ 'Ajouter un nouvel émoji personnalisé'|trans }}</h3>
+                        <form action="{{ path('app_admin_emojis_upload') }}" method="POST" enctype="multipart/form-data" hx-boost="false">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+                            <div class="upload-grid">
+                                <div>
+                                    <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">{{ 'Code de l\'émoji (ex: smile, cool:dossier)'|trans }}</label>
+                                    <input type="text" name="code" class="emoji-form-input" placeholder="ex: smile" required pattern="[a-zA-Z0-9_\-\+:]+" title="Lettres, chiffres, tirets, underscores et deux-points" />
+                                </div>
+                                <div>
+                                    <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">{{ 'Tags associés (séparés par des virgules)'|trans }}</label>
+                                    <input type="text" name="tags" class="emoji-form-input" placeholder="ex: content, heureux, jaune" />
+                                </div>
+                                <div>
+                                    <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">{{ 'Fichier GIF'|trans }}</label>
+                                    <input type="file" name="emoji_file" accept="image/gif" class="emoji-form-input" required />
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn-update-tags" style="padding: 0.5rem 1.25rem;">
+                                        {{ 'Ajouter'|trans }}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <form action="{{ path('app_admin_emojis') }}" method="GET" class="search-bar">
+                        <input type="text" name="q" value="{{ q }}" placeholder="{{ 'Rechercher par nom ou tag...'|trans }}" class="search-input" />
+                        <button type="submit" class="btn-update-tags" style="padding: 0.5rem 1.25rem;">
+                            {{ 'Rechercher'|trans }}
+                        </button>
+                        {% if q != '' %}
+                            <a href="{{ path('app_admin_emojis') }}" class="btn-delete-emoji" style="display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                                {{ 'Effacer'|trans }}
+                            </a>
+                        {% endif %}
+                    </form>
+
+                    <!-- Emoji Grid -->
+                    <div class="emoji-grid">
+                        {% for emoji in emojis %}
+                            <div class="emoji-card">
+                                <div class="emoji-preview-wrapper">
+                                    <img src="/emojis/{{ emoji.filename }}" alt="[:{{ emoji.code }}]" class="emoji-preview-img" />
+                                </div>
+                                <div class="emoji-details">
+                                    <span class="emoji-code-badge">[:{{ emoji.code }}]</span>
+                                    <div class="emoji-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem; justify-content: center; width: 100%;">
+                                        {% for tag in emoji.tags %}
+                                            <form action="{{ path('app_admin_emojis_remove_tag', app.request.query.all) }}" method="POST" style="display: inline;" hx-boost="false">
+                                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+                                                <input type="hidden" name="code" value="{{ emoji.code }}">
+                                                <input type="hidden" name="tag" value="{{ tag }}">
+                                                <button type="submit" class="emoji-tag-badge" title="{{ 'Supprimer le tag'|trans }}" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer; font-family: inherit; transition: background-color 0.2s;">
+                                                    {{ tag }}
+                                                    <span style="font-weight: bold; color: #ef4444; margin-left: 0.15rem;">&times;</span>
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <span class="emoji-tag-badge-empty" style="color: var(--text-muted); font-size: 0.75rem; font-style: italic;">{{ 'Aucun tag'|trans }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <form action="{{ path('app_admin_emojis_add_tag', app.request.query.all) }}" method="POST" class="emoji-form" hx-boost="false" style="margin-top: auto; width: 100%;">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+                                    <input type="hidden" name="code" value="{{ emoji.code }}" />
+                                    
+                                    <div style="display: flex; gap: 0.25rem; width: 100%;">
+                                        <input type="text" name="tag" placeholder="{{ 'Ajouter un tag...'|trans }}" class="emoji-form-input" required style="flex-grow: 1;" />
+                                        <button type="submit" class="btn-update-tags">
+                                            +
+                                        </button>
+                                    </div>
+                                    
+                                    <div style="margin-top: 0.5rem; width: 100%;">
+                                        <button type="submit" name="delete" value="1" class="btn-delete-emoji" style="width: 100%;"
+                                                formaction="{{ path('app_admin_emojis_delete') }}"
+                                                onclick="return confirm('{{ 'Êtes-vous sûr de vouloir supprimer l\'émoji %code% ?'|trans({'%code%': emoji.code}) }}');">
+                                            {{ 'Supprimer l\'émoji'|trans }}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        {% else %}
+                            <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-muted);">
+                                {{ 'Aucun émoji trouvé.'|trans }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    {% include 'admin/_pagination.html.twig' with {
+                        routeName: 'app_admin_emojis',
+                        currentPage: page,
+                        totalPages: totalPages,
+                        totalItems: total,
+                    } %}
+                </div>
+            </section>
+        </main>
+
+        {% include 'partials/_footer.html.twig' %}
+    </div>
+{% endblock %}

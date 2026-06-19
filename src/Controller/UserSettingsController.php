@@ -215,6 +215,13 @@ final class UserSettingsController extends AbstractController
         if ($type === 'custom-emojis') {
             $matchingEmojis = [];
             try {
+                // Fetch all tags from DB for custom emojis
+                $dbEmojis = $entityManager->getRepository(\App\Entity\CustomEmoji::class)->findAll();
+                $emojiTagsMap = [];
+                foreach ($dbEmojis as $dbEmoji) {
+                    $emojiTagsMap[$dbEmoji->getCode()] = $dbEmoji->getTags();
+                }
+
                 $contents = $this->defaultStorage->listContents('emojis', true);
                 foreach ($contents as $attributes) {
                     if ($attributes->isFile()) {
@@ -238,7 +245,19 @@ final class UserSettingsController extends AbstractController
                             $code = $filePart . ':' . $dir;
                             $filename = $dir . '/' . $filePart . '.gif';
                         }
-                        if ($q === '' || str_contains(mb_strtolower($code), mb_strtolower($q))) {
+
+                        $tags = $emojiTagsMap[$code] ?? [];
+                        $matchesQ = ($q === '' || str_contains(mb_strtolower($code), mb_strtolower($q)));
+                        if (!$matchesQ && $q !== '') {
+                            foreach ($tags as $tag) {
+                                if (str_contains(mb_strtolower($tag), mb_strtolower($q))) {
+                                    $matchesQ = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if ($matchesQ) {
                             $matchingEmojis[] = [
                                 'name' => $code,
                                 'filename' => $filename,

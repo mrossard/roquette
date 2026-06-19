@@ -17,6 +17,12 @@
     </a>
 
     {% if is_granted('ROLE_ADMIN') %}
+        {% set is_active = current_route starts with 'app_admin_emojis' %}
+        <a href="{{ path('app_admin_emojis') }}"
+           class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
+            Émojis
+        </a>
+
         {% set is_active = current_route starts with 'app_admin_export' %}
         <a href="{{ path('app_admin_exports') }}"
            class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
