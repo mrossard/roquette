@@ -46,7 +46,37 @@
                 "Nouveau message": "{{ 'Nouveau message'|trans|escape('js') }}",
                 "En attente de connexion...": "{{ 'En attente de connexion...'|trans|escape('js') }}",
                 "Envoi en cours...": "{{ 'Envoi en cours...'|trans|escape('js') }}",
-                "Connexion perdue. Nouvel essai...": "{{ 'Connexion perdue. Nouvel essai...'|trans|escape('js') }}"
+                "Connexion perdue. Nouvel essai...": "{{ 'Connexion perdue. Nouvel essai...'|trans|escape('js') }}",
+                "Votre session a expiré. Redirection vers la page de connexion dans 5 secondes...": "{{ 'Votre session a expiré. Redirection vers la page de connexion dans 5 secondes...'|trans|escape('js') }}",
+                "Session expirée...": "{{ 'Session expirée...'|trans|escape('js') }}",
+                "Reconnexion": "{{ 'Reconnexion'|trans|escape('js') }}",
+                "Vérification...": "{{ 'Vérification...'|trans|escape('js') }}",
+                "Le serveur ne répond pas. Veuillez réessayer dans quelques instants.": "{{ 'Le serveur ne répond pas. Veuillez réessayer dans quelques instants.'|trans|escape('js') }}",
+                "Le fichier %fileName% dépasse la taille maximale de 10 MB.": "{{ 'Le fichier %fileName% dépasse la taille maximale de 10 MB.'|trans|escape('js') }}",
+                "Terminer l'organisation": "{{ 'Terminer l\'organisation'|trans|escape('js') }}",
+                "Ordonner les canaux": "{{ 'Ordonner les canaux'|trans|escape('js') }}",
+                "Dernier message :": "{{ 'Dernier message :'|trans|escape('js') }}",
+                "Hors ligne": "{{ 'Hors ligne'|trans|escape('js') }}",
+                "En ligne": "{{ 'En ligne'|trans|escape('js') }}",
+                "Ouvrir": "{{ 'Ouvrir'|trans|escape('js') }}",
+                "Aperçu de l'image": "{{ 'Aperçu de l\'image'|trans|escape('js') }}",
+                "Fermer l'aperçu": "{{ 'Fermer l\'aperçu'|trans|escape('js') }}",
+                "Commandes disponibles": "{{ 'Commandes disponibles'|trans|escape('js') }}",
+                "Aucun résultat": "{{ 'Aucun résultat'|trans|escape('js') }}",
+                "Poser une question à l'Assistant Roquette": "{{ 'Poser une question à l\'Assistant Roquette'|trans|escape('js') }}",
+                "Rechercher et envoyer un GIF animé": "{{ 'Rechercher et envoyer un GIF animé'|trans|escape('js') }}",
+                "Envoyer le shrug ¯\\_(ツ)_/¯": "{{ 'Envoyer le shrug ¯\\_(ツ)_/¯'|trans|escape('js') }}",
+                "Action": "{{ 'Action'|trans|escape('js') }}",
+                "Changer la couleur de votre pseudo": "{{ 'Changer la couleur de votre pseudo'|trans|escape('js') }}",
+                "Tous les canaux": "{{ 'Tous les canaux'|trans|escape('js') }}"
+            };
+
+            window.trans = function(key, placeholders = {}) {
+                let translation = window.AppTranslations[key] || key;
+                for (const [placeholder, value] of Object.entries(placeholders)) {
+                    translation = translation.replace(placeholder, value);
+                }
+                return translation;
             };
         </script>
         <script>

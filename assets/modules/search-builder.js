@@ -24,7 +24,7 @@ function populateSearchBuilderDropdowns() {
     const currentFrom = selectFrom.value;
     const currentIn = selectIn.value;
 
-    selectIn.innerHTML = '<option value="">Tous les canaux</option>';
+    selectIn.innerHTML = `<option value="">${window.trans('Tous les canaux')}</option>`;
 
     const channelLinks = document.querySelectorAll('.channel-link');
     const addedChannels = new Set();

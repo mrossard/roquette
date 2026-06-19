@@ -19,12 +19,12 @@ function safeRedirectToLogin(reason = '') {
     if (isRedirecting) return;
     isRedirecting = true;
     console.log(`Redirecting to login due to: ${reason}`);
-    showOfflineBanner(true, 'Votre session a expiré. Redirection vers la page de connexion dans 5 secondes...');
+    showOfflineBanner(true, window.trans('Votre session a expiré. Redirection vers la page de connexion dans 5 secondes...'));
 
     const reconnectBtn = document.querySelector('.offline-reconnect-btn');
     if (reconnectBtn) {
         reconnectBtn.disabled = true;
-        reconnectBtn.textContent = 'Session expirée...';
+        reconnectBtn.textContent = window.trans('Session expirée...');
     }
 
     setTimeout(() => {
@@ -188,7 +188,7 @@ export function showOfflineBanner(show, text = 'Connexion avec le serveur perdue
                     <span class="offline-banner-icon">⚠️</span>
                     <span class="offline-banner-text">${text}</span>
                 </div>
-                <button class="offline-reconnect-btn" onclick="window.manualReconnect(this)">Reconnexion</button>
+                <button class="offline-reconnect-btn" onclick="window.manualReconnect(this)">${window.trans('Reconnexion')}</button>
             `;
             banner.style.display = 'flex';
         }
@@ -203,7 +203,7 @@ export function manualReconnect(button) {
     if (isRedirecting) return;
     if (button) {
         button.disabled = true;
-        button.textContent = 'Vérification...';
+        button.textContent = window.trans('Vérification...');
     }
 
     const el = document.createElement('div');
@@ -232,9 +232,9 @@ export function manualReconnect(button) {
         }
         if (button) {
             button.disabled = false;
-            button.textContent = 'Reconnexion';
+            button.textContent = window.trans('Reconnexion');
         }
-        showOfflineBanner(true, 'Le serveur ne répond pas. Veuillez réessayer dans quelques instants.');
+        showOfflineBanner(true, window.trans('Le serveur ne répond pas. Veuillez réessayer dans quelques instants.'));
     });
 
     el.addEventListener('htmx:responseError', function onError(e) {
@@ -243,7 +243,7 @@ export function manualReconnect(button) {
         el.remove();
         if (button) {
             button.disabled = false;
-            button.textContent = 'Reconnexion';
+            button.textContent = window.trans('Reconnexion');
         }
         safeRedirectToLogin('Session invalid');
     });

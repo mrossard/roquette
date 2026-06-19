@@ -6,11 +6,11 @@ let lastAutocompleteType = '';
 const autocompleteInitialized = new WeakSet();
 
 const SLASH_COMMANDS = [
-    {name: 'help', icon: '🤖', description: 'Poser une question à l\'Assistant Roquette', usage: '/help <question>'},
-    {name: 'giphy', icon: '🎞️', description: 'Rechercher et envoyer un GIF animé', usage: '/giphy <recherche>'},
-    {name: 'shrug', icon: '🤷', description: 'Envoyer le shrug ¯\\_(ツ)_/¯', usage: '/shrug [texte]'},
-    {name: 'me', icon: '💬', description: 'Action', usage: '/me <message>'},
-    {name: 'color', icon: '🎨', description: 'Changer la couleur de votre pseudo', usage: '/color [0-360]'},
+    {name: 'help', icon: '🤖', description: window.trans('Poser une question à l\'Assistant Roquette'), usage: '/help <question>'},
+    {name: 'giphy', icon: '🎞️', description: window.trans('Rechercher et envoyer un GIF animé'), usage: '/giphy <recherche>'},
+    {name: 'shrug', icon: '🤷', description: window.trans('Envoyer le shrug ¯\\_(ツ)_/¯'), usage: '/shrug [texte]'},
+    {name: 'me', icon: '💬', description: window.trans('Action'), usage: '/me <message>'},
+    {name: 'color', icon: '🎨', description: window.trans('Changer la couleur de votre pseudo'), usage: '/color [0-360]'},
 ];
 
 function loadAutocompleteItems(type, query) {
@@ -277,7 +277,7 @@ function renderAutocompleteItems() {
         element.classList.add('command-dropdown');
         const header = document.createElement('div');
         header.className = 'autocomplete-commands-header';
-        header.textContent = 'Commandes disponibles';
+        header.textContent = window.trans('Commandes disponibles');
         element.appendChild(header);
     } else {
         element.classList.remove('command-dropdown');
@@ -547,7 +547,7 @@ window.setupGenericAutocomplete = function ({input, suggestions, onSearch, onSel
         const matches = onSearch(query);
 
         if (matches.length === 0) {
-            suggestions.innerHTML = '<div class="emoji-autocomplete-item" style="color: var(--text-muted); text-align: center; justify-content: center;">Aucun résultat</div>';
+            suggestions.innerHTML = `<div class="emoji-autocomplete-item" style="color: var(--text-muted); text-align: center; justify-content: center;">${window.trans('Aucun résultat')}</div>`;
         } else {
             suggestions.innerHTML = '';
             matches.forEach(item => {

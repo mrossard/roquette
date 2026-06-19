@@ -147,7 +147,7 @@ export function initFileUpload() {
             const file = fileInput.files[0];
             const MAX_SIZE = 10485760; // 10MB
             if (file.size > MAX_SIZE) {
-                alert(`Le fichier "${file.name}" dépasse la taille maximale autorisée de 10 Mo.`);
+                alert(window.trans('Le fichier %fileName% dépasse la taille maximale de 10 MB.', {'%fileName%': file.name}));
                 fileInput.value = '';
                 previewContainer.style.display = 'none';
                 if (textarea.value.trim() === '') {
@@ -367,7 +367,7 @@ export function updateChannelLastMessageDate(channelSlug) {
         }
     }
     dateSpan.textContent = formattedTime;
-    dateSpan.title = `Dernier message : ${fullDateTime}`;
+    dateSpan.title = `${window.trans('Dernier message :')} ${fullDateTime}`;
 }
 
 let sortableInstances = [];
@@ -427,7 +427,7 @@ export function initChannelReordering() {
         } else {
             newToggleBtn.textContent = isActive ? '✔️' : '⇅';
         }
-        newToggleBtn.title = isActive ? 'Terminer l\'organisation' : 'Ordonner les canaux';
+        newToggleBtn.title = isActive ? window.trans('Terminer l\'organisation') : window.trans('Ordonner les canaux');
 
         if (isActive) {
             lists.forEach(list => {
@@ -707,13 +707,13 @@ setInterval(() => {
         }
         const lastActive = parseInt(el.getAttribute('data-last-active'), 10);
         if (!lastActive) {
-            updateElementStatus(el, 'offline', 'Hors ligne');
+            updateElementStatus(el, 'offline', window.trans('Hors ligne'));
             return;
         }
         if (now - lastActive > 300) {
-            updateElementStatus(el, 'offline', 'Hors ligne');
+            updateElementStatus(el, 'offline', window.trans('Hors ligne'));
         } else {
-            updateElementStatus(el, 'online', 'En ligne');
+            updateElementStatus(el, 'online', window.trans('En ligne'));
         }
     });
 }, 15000);
@@ -917,7 +917,7 @@ export function openExternalImageLightbox(url) {
         dialog.className = 'modal-backdrop-dialog';
         dialog.setAttribute('role', 'dialog');
         dialog.setAttribute('aria-modal', 'true');
-        dialog.setAttribute('aria-label', "Aperçu de l'image");
+        dialog.setAttribute('aria-label', window.trans("Aperçu de l'image"));
         document.body.appendChild(dialog);
 
         // Fermer en cliquant sur le backdrop
@@ -934,7 +934,7 @@ export function openExternalImageLightbox(url) {
     const closeBtn = document.createElement('button');
     closeBtn.type = 'button';
     closeBtn.className = 'btn-close-lightbox';
-    closeBtn.setAttribute('aria-label', "Fermer l'aperçu");
+    closeBtn.setAttribute('aria-label', window.trans("Fermer l'aperçu"));
     closeBtn.innerHTML = '&times;';
     closeBtn.addEventListener('click', () => closeModal('image-lightbox'));
 
@@ -950,7 +950,7 @@ export function openExternalImageLightbox(url) {
     link.setAttribute('href', url);
     link.setAttribute('target', '_blank');
     link.setAttribute('rel', 'noopener noreferrer');
-    link.textContent = 'Ouvrir';
+    link.textContent = window.trans('Ouvrir');
 
     caption.appendChild(link);
     content.appendChild(closeBtn);
