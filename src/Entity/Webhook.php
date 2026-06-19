@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: WebhookRepository::class)]
 #[ORM\Table(name: '`webhook`')]
+#[ORM\Index(name: 'idx_webhook_channel_id', columns: ['channel_id'])]
 class Webhook
 {
     #[ORM\Id]

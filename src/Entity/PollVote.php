@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: '`poll_vote`')]
 #[ORM\UniqueConstraint(name: 'uniq_user_poll_option', columns: ['user_id', 'option_id'])]
+#[ORM\Index(name: 'idx_poll_vote_option_id', columns: ['option_id'])]
 class PollVote
 {
     #[ORM\Id]

@@ -13,6 +13,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ChannelRepository::class)]
 #[ORM\Table(name: '`channel`')]
+#[ORM\Index(name: 'idx_channel_is_private', columns: ['is_private'])]
+#[ORM\Index(name: 'idx_channel_is_dm', columns: ['is_dm'])]
 class Channel
 {
     #[ORM\Id]

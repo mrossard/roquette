@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: ReactionRepository::class)]
 #[ORM\Table(name: '`reaction`')]
 #[ORM\UniqueConstraint(name: 'uniq_message_user_emoji', columns: ['message_id', 'user_id', 'emoji'])]
+#[ORM\Index(name: 'idx_reaction_message_id', columns: ['message_id'])]
 class Reaction
 {
     #[ORM\Id]
