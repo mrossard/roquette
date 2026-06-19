@@ -68,9 +68,6 @@ class Channel
     #[ORM\JoinTable(name: 'channel_administrator')]
     private Collection $administrators;
 
-    /**
-     * @var Collection<int, Message>
-     */
     #[ORM\ManyToOne(targetEntity: Message::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Message $parentMessage = null;

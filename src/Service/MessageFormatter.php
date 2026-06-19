@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Repository\ChannelRepository;
+use App\Repository\UserRepository;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
@@ -53,13 +55,10 @@ class MessageFormatter
 
     public function __construct(
         private readonly Security $security,
-        private readonly HttpClientInterface $httpClient,
-        #[Autowire('%kernel.project_dir%')]
-        private readonly string $projectDir,
         #[Autowire('%env(EMOJI_BASE_URL)%')]
         private readonly string $emojiBaseUrl,
-        private readonly \App\Repository\ChannelRepository $channelRepository,
-        private readonly \App\Repository\UserRepository $userRepository,
+        private readonly ChannelRepository $channelRepository,
+        private readonly UserRepository $userRepository,
     ) {
         $config = [
             'html_input' => 'escape', // Échappe tout HTML brut fourni par l'utilisateur

@@ -211,35 +211,6 @@ class LinkPreviewService
     }
 
     /**
-     * Récupère le début du contenu HTML de l'URL avec un timeout strict.
-     */
-    private function fetchHtml(string $url): ?string
-    {
-        try {
-            $response = $this->httpClient->request('GET', $url, [
-                'timeout' => 1.5,
-                'headers' => [
-                    'User-Agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)',
-                ],
-                'max_redirects' => 3,
-            ]);
-
-            $content = '';
-            foreach ($this->httpClient->stream($response, 1.5) as $chunk) {
-                $content .= $chunk->getContent();
-                if (strlen($content) >= 1_048_576) {
-                    $response->cancel();
-                    break;
-                }
-            }
-
-            return $content !== '' ? $content : null;
-        } catch (\Exception) {
-            return null;
-        }
-    }
-
-    /**
      * Extrait les métadonnées Open Graph / HTML standard depuis le document HTML.
      */
     private function parseMetadata(string $url, string $html): array
