@@ -1,339 +1,616 @@
-"Connexion": "Connexion"
-"Inscription": "Inscription"
-"Connexion - Roquette": "Connexion - Roquette"
-"Inscription - Roquette": "Inscription - Roquette"
-"Accédez à votre espace Roquette en temps réel": "Accédez à votre espace Roquette en temps réel"
-"Créez un compte pour rejoindre la diffusion live": "Créez un compte pour rejoindre la diffusion live"
+Connexion: Connexion
+Inscription: Inscription
+'Connexion - Roquette': 'Connexion - Roquette'
+'Inscription - Roquette': 'Inscription - Roquette'
+'Accédez à votre espace Roquette en temps réel': 'Accédez à votre espace Roquette en temps réel'
+'Créez un compte pour rejoindre la diffusion live': 'Créez un compte pour rejoindre la diffusion live'
 "Nom d'utilisateur": "Nom d'utilisateur"
 "Nom d'utilisateur (non modifiable)": "Nom d'utilisateur (non modifiable)"
-"Entrez votre nom": "Entrez votre nom"
-"Mot de passe": "Mot de passe"
-"Nouveau mot de passe": "Nouveau mot de passe"
-"Confirmer le nouveau mot de passe": "Confirmer le nouveau mot de passe"
-"Mot de passe actuel": "Mot de passe actuel"
-"Min. 6 caractères": "Min. 6 caractères"
-"Confirmez": "Confirmez"
-"Se connecter": "Se connecter"
-"Ou": "Ou"
-"Se connecter avec OAuth2": "Se connecter avec OAuth2"
+'Entrez votre nom': 'Entrez votre nom'
+'Mot de passe': 'Mot de passe'
+'Nouveau mot de passe': 'Nouveau mot de passe'
+'Confirmer le nouveau mot de passe': 'Confirmer le nouveau mot de passe'
+'Mot de passe actuel': 'Mot de passe actuel'
+'Min. 6 caractères': 'Min. 6 caractères'
+Confirmez: Confirmez
+'Se connecter': 'Se connecter'
+Ou: Ou
+'Se connecter avec OAuth2': 'Se connecter avec OAuth2'
 "Aucun mode d'authentification n'est activé. Veuillez contacter un administrateur.": "Aucun mode d'authentification n'est activé. Veuillez contacter un administrateur."
-"Pas encore de compte ?": "Pas encore de compte ?"
+'Pas encore de compte ?': 'Pas encore de compte ?'
 "S'inscrire": "S'inscrire"
-"Vous avez déjà un compte ?": "Vous avez déjà un compte ?"
-"Mon Compte": "Mon Compte"
-"Gestion du Compte": "Gestion du Compte"
-"Personnalisez votre profil et gérez vos informations de connexion.": "Personnalisez votre profil et gérez vos informations de connexion."
-"Informations de profil": "Informations de profil"
+'Vous avez déjà un compte ?': 'Vous avez déjà un compte ?'
+'Mon Compte': 'Mon Compte'
+'Gestion du Compte': 'Gestion du Compte'
+'Personnalisez votre profil et gérez vos informations de connexion.': 'Personnalisez votre profil et gérez vos informations de connexion.'
+'Informations de profil': 'Informations de profil'
 "Nom d'affichage": "Nom d'affichage"
-"Ex: Jean Dupont": "Ex: Jean Dupont"
-"Couleur du profil": "Couleur du profil"
-"Statut de présence": "Statut de présence"
+'Ex: Jean Dupont': 'Ex: Jean Dupont'
+'Couleur du profil': 'Couleur du profil'
+'Statut de présence': 'Statut de présence'
 "Automatique (Basé sur l'activité)": "Automatique (Basé sur l'activité)"
-"En ligne": "En ligne"
-"Absent": "Absent"
-"Occupé": "Occupé"
-"Hors ligne (Invisible)": "Hors ligne (Invisible)"
-"Sauvegarder le profil": "Sauvegarder le profil"
-"Changer le mot de passe": "Changer le mot de passe"
-"Mettre à jour le mot de passe": "Mettre à jour le mot de passe"
-"Notifications de bureau": "Notifications de bureau"
+'En ligne': 'En ligne'
+Absent: Absent
+Occupé: Occupé
+'Hors ligne (Invisible)': 'Hors ligne (Invisible)'
+'Sauvegarder le profil': 'Sauvegarder le profil'
+'Changer le mot de passe': 'Changer le mot de passe'
+'Mettre à jour le mot de passe': 'Mettre à jour le mot de passe'
+'Notifications de bureau': 'Notifications de bureau'
 "Recevez des notifications en direct pour les nouveaux messages et invitations lorsque l'application est en arrière-plan.": "Recevez des notifications en direct pour les nouveaux messages et invitations lorsque l'application est en arrière-plan."
-"Notifications de bureau pour les mentions": "Notifications de bureau pour les mentions"
-"Sauvegarder les notifications": "Sauvegarder les notifications"
-"Retour au Chat": "Retour au Chat"
-"Langue": "Langue"
-"Français": "Français"
-"English": "English"
-"Statut": "Statut"
-"Automatique": "Automatique"
-"Hors ligne": "Hors ligne"
-"Déconnexion": "Déconnexion"
-"Épinglé": "Épinglé"
-"Modifier": "Modifier"
-"Inviter": "Inviter"
-"Sondage": "Sondage"
-"Votre profil a été mis à jour avec succès !": "Votre profil a été mis à jour avec succès !"
-"Vos préférences de notification ont été mises à jour !": "Vos préférences de notification ont été mises à jour !"
-"Votre mot de passe a été modifié avec succès !": "Votre mot de passe a été modifié avec succès !"
-"Tous les champs de mot de passe sont obligatoires.": "Tous les champs de mot de passe sont obligatoires."
-"Le mot de passe actuel est incorrect.": "Le mot de passe actuel est incorrect."
-"Le nouveau mot de passe et sa confirmation ne correspondent pas.": "Le nouveau mot de passe et sa confirmation ne correspondent pas."
-"Le nouveau mot de passe doit faire au moins 6 caractères.": "Le nouveau mot de passe doit faire au moins 6 caractères."
-"Teinte manquante.": "Teinte manquante."
-"Teinte invalide.": "Teinte invalide."
-"Thème invalide.": "Thème invalide."
-"Statut invalide.": "Statut invalide."
-"Message non trouvé.": "Message non trouvé."
-"Seul le créateur du canal peut épingler un message.": "Seul le créateur du canal peut épingler un message."
-"Seul le créateur du canal peut désépingler un message.": "Seul le créateur du canal peut désépingler un message."
-
-# Chat Header, Sidebar, input and details translations
-"Afficher le menu": "Afficher le menu"
-"Recherche globale (Ctrl+K)": "Recherche globale (Ctrl+K)"
-"Rechercher...": "Rechercher..."
-"Connexion au Hub...": "Connexion au Hub..."
-"Changer de thème": "Changer de thème"
-"Filtrer par nouveaux messages": "Filtrer par nouveaux messages"
-"Ordonner les canaux": "Ordonner les canaux"
-"Parcourir les canaux": "Parcourir les canaux"
-"Créer un canal": "Créer un canal"
-"Messages enregistrés": "Messages enregistrés"
-"Mes réactions": "Mes réactions"
-"Tout": "Tout"
-"Aucune réaction": "Aucune réaction"
-"Répertoire des canaux": "Répertoire des canaux"
-"Favoris": "Favoris"
-"Canaux": "Canaux"
-"Aucun canal": "Aucun canal"
-"Rechercher un canal...": "Rechercher un canal..."
-"Messages Directs": "Messages Directs"
-"Aucun message direct": "Aucun message direct"
-"Invitations": "Invitations"
-"Retirer des favoris": "Retirer des favoris"
-"Ajouter aux favoris": "Ajouter aux favoris"
-"Afficher les détails du canal": "Afficher les détails du canal"
-"Discussion directe et sécurisée avec": "Discussion directe et sécurisée avec"
-"Discussion directe privée.": "Discussion directe privée."
-"Aucune description pour ce canal.": "Aucune description pour ce canal."
-"membres": "membres"
-"membre": "membre"
-"Rétention :": "Rétention :"
-"Sans limite": "Sans limite"
-"mois": "mois"
-"Rechercher dans ce canal": "Rechercher dans ce canal"
-"Afficher uniquement les messages non lus": "Afficher uniquement les messages non lus"
-"Filtrer les messages non lus": "Filtrer les messages non lus"
-"Non lus": "Non lus"
-"Paramètres": "Paramètres"
-"Supprimer": "Supprimer"
-"Quitter": "Quitter"
-"Saisissez votre message dans #%name%...": "Saisissez votre message dans #%name%..."
-"Gras (**)": "Gras (**)"
-"Italique (*)": "Italique (*)"
-"Barré (~~)": "Barré (~~)"
-"Citation (&gt;)": "Citation (&gt;)"
-"Code en ligne (`)": "Code en ligne (`)"
-"Bloc de code (```)": "Bloc de code (```)"
-"Lien [texte](url)": "Lien [texte](url)"
-"Écrire": "Écrire"
-"Aperçu": "Aperçu"
-"Envoi en cours...": "Envoi en cours..."
-"Joindre un fichier": "Joindre un fichier"
-"Ajouter un émoji": "Ajouter un émoji"
-"Diffuser": "Diffuser"
-"Diffuser le message": "Diffuser le message"
-"Supprimer le fichier": "Supprimer le fichier"
-"Message": "Message"
-"Discuter en privé avec %username% (%status%)": "Discuter en privé avec %username% (%status%)"
-"Modifié le": "Modifié le"
-"Actions": "Actions"
-"Actions du message": "Actions du message"
-"Répondre": "Répondre"
-"Réagir": "Réagir"
-"Voulez-vous vraiment supprimer ce message ?": "Voulez-vous vraiment supprimer ce message ?"
-"Désépingler": "Désépingler"
-"Épingler": "Épingler"
-"Enregistrer dans les favoris": "Enregistrer dans les favoris"
-"Enregistré": "Enregistré"
-"Enregistrer": "Enregistrer"
-"Message épinglé dans ce canal": "Message épinglé dans ce canal"
-"Votre navigateur ne supporte pas la lecture audio.": "Votre navigateur ne supporte pas la lecture audio."
-"Votre navigateur ne supporte pas la lecture vidéo.": "Votre navigateur ne supporte pas la lecture vidéo."
-"Ouvrir le PDF": "Ouvrir le PDF"
-"Prévisualiser le texte": "Prévisualiser le texte"
-"Dernier message :": "Dernier message :"
-"et": "et"
-"%username% a réagi avec %reaction%": "%username% a réagi avec %reaction%"
-"%users% ont réagi avec %reaction%": "%users% ont réagi avec %reaction%"
-"Rechercher un émoji...": "Rechercher un émoji..."
-"Aucun émoji ne correspond": "Aucun émoji ne correspond"
-"Visages & Personnes": "Visages & Personnes"
-"Animaux & Nature": "Animaux & Nature"
-"Nourriture & Boissons": "Nourriture & Boissons"
-"Activités & Loisirs": "Activités & Loisirs"
-"Voyages & Lieux": "Voyages & Lieux"
-"Objets & Outils": "Objets & Outils"
-"Symboles": "Symboles"
-"Drapeaux": "Drapeaux"
-"Connecté au Hub": "Connecté au Hub"
-"Erreur: Hub non configuré": "Erreur: Hub non configuré"
-"Connexion interrompue": "Connexion interrompue"
-"Erreur de connexion": "Erreur de connexion"
-"Connexion au serveur instable. Reconnexion en cours...": "Connexion au serveur instable. Reconnexion en cours..."
-"Connexion au serveur perdue. Tentative de reconnexion...": "Connexion au serveur perdue. Tentative de reconnexion..."
-"Message épinglé": "Message épinglé"
-"sondage :": "sondage :"
-"Utilisateur": "Utilisateur"
-"Aller au message": "Aller au message"
-"Voir": "Voir"
-
-"Créer le compte": "Créer le compte"
-"Créer un sondage": "Créer un sondage"
+'Notifications de bureau pour les mentions': 'Notifications de bureau pour les mentions'
+'Sauvegarder les notifications': 'Sauvegarder les notifications'
+'Retour au Chat': 'Retour au Chat'
+Langue: Langue
+Français: Français
+English: English
+Statut: Statut
+Automatique: Automatique
+'Hors ligne': 'Hors ligne'
+Déconnexion: Déconnexion
+Épinglé: Épinglé
+Modifier: Modifier
+Inviter: Inviter
+Sondage: Sondage
+'Votre profil a été mis à jour avec succès !': 'Votre profil a été mis à jour avec succès !'
+'Vos préférences de notification ont été mises à jour !': 'Vos préférences de notification ont été mises à jour !'
+'Votre mot de passe a été modifié avec succès !': 'Votre mot de passe a été modifié avec succès !'
+'Tous les champs de mot de passe sont obligatoires.': 'Tous les champs de mot de passe sont obligatoires.'
+'Le mot de passe actuel est incorrect.': 'Le mot de passe actuel est incorrect.'
+'Le nouveau mot de passe et sa confirmation ne correspondent pas.': 'Le nouveau mot de passe et sa confirmation ne correspondent pas.'
+'Le nouveau mot de passe doit faire au moins 6 caractères.': 'Le nouveau mot de passe doit faire au moins 6 caractères.'
+'Teinte manquante.': 'Teinte manquante.'
+'Teinte invalide.': 'Teinte invalide.'
+'Thème invalide.': 'Thème invalide.'
+'Statut invalide.': 'Statut invalide.'
+'Message non trouvé.': 'Message non trouvé.'
+'Seul le créateur du canal peut épingler un message.': 'Seul le créateur du canal peut épingler un message.'
+'Seul le créateur du canal peut désépingler un message.': 'Seul le créateur du canal peut désépingler un message.'
+'Afficher le menu': 'Afficher le menu'
+'Recherche globale (Ctrl+K)': 'Recherche globale (Ctrl+K)'
+Rechercher...: Rechercher...
+'Connexion au Hub...': 'Connexion au Hub...'
+'Changer de thème': 'Changer de thème'
+'Filtrer par nouveaux messages': 'Filtrer par nouveaux messages'
+'Ordonner les canaux': 'Ordonner les canaux'
+'Parcourir les canaux': 'Parcourir les canaux'
+'Créer un canal': 'Créer un canal'
+'Messages enregistrés': 'Messages enregistrés'
+'Mes réactions': 'Mes réactions'
+Tout: Tout
+'Aucune réaction': 'Aucune réaction'
+'Répertoire des canaux': 'Répertoire des canaux'
+Favoris: Favoris
+Canaux: Canaux
+'Aucun canal': 'Aucun canal'
+'Rechercher un canal...': 'Rechercher un canal...'
+'Messages Directs': 'Messages Directs'
+'Aucun message direct': 'Aucun message direct'
+Invitations: Invitations
+'Retirer des favoris': 'Retirer des favoris'
+'Ajouter aux favoris': 'Ajouter aux favoris'
+'Afficher les détails du canal': 'Afficher les détails du canal'
+'Discussion directe et sécurisée avec': 'Discussion directe et sécurisée avec'
+'Discussion directe privée.': 'Discussion directe privée.'
+'Aucune description pour ce canal.': 'Aucune description pour ce canal.'
+membres: membres
+membre: membre
+'Rétention :': 'Rétention :'
+'Sans limite': 'Sans limite'
+mois: mois
+'Rechercher dans ce canal': 'Rechercher dans ce canal'
+'Afficher uniquement les messages non lus': 'Afficher uniquement les messages non lus'
+'Filtrer les messages non lus': 'Filtrer les messages non lus'
+'Non lus': 'Non lus'
+Paramètres: Paramètres
+Supprimer: Supprimer
+Quitter: Quitter
+'Saisissez votre message dans #%name%...': 'Saisissez votre message dans #%name%...'
+'Gras (**)': 'Gras (**)'
+'Italique (*)': 'Italique (*)'
+'Barré (~~)': 'Barré (~~)'
+'Citation (&gt;)': 'Citation (&gt;)'
+'Code en ligne (`)': 'Code en ligne (`)'
+'Bloc de code (```)': 'Bloc de code (```)'
+'Lien [texte](url)': 'Lien [texte](url)'
+Écrire: Écrire
+Aperçu: Aperçu
+'Envoi en cours...': 'Envoi en cours...'
+'Joindre un fichier': 'Joindre un fichier'
+'Ajouter un émoji': 'Ajouter un émoji'
+Diffuser: Diffuser
+'Diffuser le message': 'Diffuser le message'
+'Supprimer le fichier': 'Supprimer le fichier'
+Message: Message
+'Discuter en privé avec %username% (%status%)': 'Discuter en privé avec %username% (%status%)'
+'Modifié le': 'Modifié le'
+Actions: Actions
+'Actions du message': 'Actions du message'
+Répondre: Répondre
+Réagir: Réagir
+'Voulez-vous vraiment supprimer ce message ?': 'Voulez-vous vraiment supprimer ce message ?'
+Désépingler: Désépingler
+Épingler: Épingler
+'Enregistrer dans les favoris': 'Enregistrer dans les favoris'
+Enregistré: Enregistré
+Enregistrer: Enregistrer
+'Message épinglé dans ce canal': 'Message épinglé dans ce canal'
+'Votre navigateur ne supporte pas la lecture audio.': 'Votre navigateur ne supporte pas la lecture audio.'
+'Votre navigateur ne supporte pas la lecture vidéo.': 'Votre navigateur ne supporte pas la lecture vidéo.'
+'Ouvrir le PDF': 'Ouvrir le PDF'
+'Prévisualiser le texte': 'Prévisualiser le texte'
+'Dernier message :': 'Dernier message :'
+et: et
+'%username% a réagi avec %reaction%': '%username% a réagi avec %reaction%'
+'%users% ont réagi avec %reaction%': '%users% ont réagi avec %reaction%'
+'Rechercher un émoji...': 'Rechercher un émoji...'
+'Aucun émoji ne correspond': 'Aucun émoji ne correspond'
+'Visages & Personnes': 'Visages & Personnes'
+'Animaux & Nature': 'Animaux & Nature'
+'Nourriture & Boissons': 'Nourriture & Boissons'
+'Activités & Loisirs': 'Activités & Loisirs'
+'Voyages & Lieux': 'Voyages & Lieux'
+'Objets & Outils': 'Objets & Outils'
+Symboles: Symboles
+Drapeaux: Drapeaux
+'Connecté au Hub': 'Connecté au Hub'
+'Erreur: Hub non configuré': 'Erreur: Hub non configuré'
+'Connexion interrompue': 'Connexion interrompue'
+'Erreur de connexion': 'Erreur de connexion'
+'Connexion au serveur instable. Reconnexion en cours...': 'Connexion au serveur instable. Reconnexion en cours...'
+'Connexion au serveur perdue. Tentative de reconnexion...': 'Connexion au serveur perdue. Tentative de reconnexion...'
+'Message épinglé': 'Message épinglé'
+'sondage :': 'sondage :'
+Utilisateur: Utilisateur
+'Aller au message': 'Aller au message'
+Voir: Voir
+'Créer le compte': 'Créer le compte'
+'Créer un sondage': 'Créer un sondage'
 "Masquer l'aperçu": "Masquer l'aperçu"
-"Êtes-vous sûr de vouloir quitter ce canal ?": "Êtes-vous sûr de vouloir quitter ce canal ?"
+'Êtes-vous sûr de vouloir quitter ce canal ?': 'Êtes-vous sûr de vouloir quitter ce canal ?'
 "Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement.": "Êtes-vous sûr de vouloir supprimer ce canal ? Tout l'historique des messages sera perdu définitivement."
-
-# Admin
-"L'utilisateur \"%username%\" est déjà banni.": "L'utilisateur \"%username%\" est déjà banni."
-"Impossible de bannir un administrateur.": "Impossible de bannir un administrateur."
-"Vous ne pouvez pas vous bannir vous-même.": "Vous ne pouvez pas vous bannir vous-même."
-"L'utilisateur \"%username%\" a été banni.": "L'utilisateur \"%username%\" a été banni."
-"L'utilisateur \"%username%\" n'est pas banni.": "L'utilisateur \"%username%\" n'est pas banni."
-"L'utilisateur \"%username%\" a été réhabilité.": "L'utilisateur \"%username%\" a été réhabilité."
-
-# Channel
-"Le nom du canal ne peut pas être vide.": "Le nom du canal ne peut pas être vide."
-"Canal non trouvé.": "Canal non trouvé."
+'L''utilisateur "%username%" est déjà banni.': 'L''utilisateur "%username%" est déjà banni.'
+'Impossible de bannir un administrateur.': 'Impossible de bannir un administrateur.'
+'Vous ne pouvez pas vous bannir vous-même.': 'Vous ne pouvez pas vous bannir vous-même.'
+'L''utilisateur "%username%" a été banni.': 'L''utilisateur "%username%" a été banni.'
+'L''utilisateur "%username%" n''est pas banni.': 'L''utilisateur "%username%" n''est pas banni.'
+'L''utilisateur "%username%" a été réhabilité.': 'L''utilisateur "%username%" a été réhabilité.'
+'Le nom du canal ne peut pas être vide.': 'Le nom du canal ne peut pas être vide.'
+'Canal non trouvé.': 'Canal non trouvé.'
 "Vous n'avez pas accès à ce canal privé.": "Vous n'avez pas accès à ce canal privé."
-"Accès interdit": "Accès interdit"
-"Paramètre manquant": "Paramètre manquant"
-"Non autorisé.": "Non autorisé."
-"Utilisateur non trouvé.": "Utilisateur non trouvé."
-"Vous ne pouvez pas envoyer de message direct à vous-même.": "Vous ne pouvez pas envoyer de message direct à vous-même."
-"Vous ne pouvez pas rejoindre directement un canal privé.": "Vous ne pouvez pas rejoindre directement un canal privé."
+'Accès interdit': 'Accès interdit'
+'Paramètre manquant': 'Paramètre manquant'
+'Non autorisé.': 'Non autorisé.'
+'Utilisateur non trouvé.': 'Utilisateur non trouvé.'
+'Vous ne pouvez pas envoyer de message direct à vous-même.': 'Vous ne pouvez pas envoyer de message direct à vous-même.'
+'Vous ne pouvez pas rejoindre directement un canal privé.': 'Vous ne pouvez pas rejoindre directement un canal privé.'
 "Vous n'êtes pas autorisé à supprimer ce canal.": "Vous n'êtes pas autorisé à supprimer ce canal."
-"Le canal \"%channelName%\" a été supprimé.": "Le canal \"%channelName%\" a été supprimé."
-"Données invalides.": "Données invalides."
+'Le canal "%channelName%" a été supprimé.': 'Le canal "%channelName%" a été supprimé.'
+'Données invalides.': 'Données invalides.'
 "Vous n'êtes pas autorisé à modifier la rétention de ce canal.": "Vous n'êtes pas autorisé à modifier la rétention de ce canal."
-"La durée de rétention du canal \"%channelName%\" a été mise à jour.": "La durée de rétention du canal \"%channelName%\" a été mise à jour."
+'La durée de rétention du canal "%channelName%" a été mise à jour.': 'La durée de rétention du canal "%channelName%" a été mise à jour.'
 "Vous n'êtes pas autorisé à modifier les paramètres de ce canal.": "Vous n'êtes pas autorisé à modifier les paramètres de ce canal."
-"Les paramètres du canal ont été modifiés.": "Les paramètres du canal ont été modifiés."
+'Les paramètres du canal ont été modifiés.': 'Les paramètres du canal ont été modifiés.'
 "Cet utilisateur n'est pas membre de ce canal.": "Cet utilisateur n'est pas membre de ce canal."
-
-# File
-"Fichier non trouvé.": "Fichier non trouvé."
-"Non autorisé à accéder à ce fichier.": "Non autorisé à accéder à ce fichier."
+'Fichier non trouvé.': 'Fichier non trouvé.'
+'Non autorisé à accéder à ce fichier.': 'Non autorisé à accéder à ce fichier.'
 "Le fichier n'existe pas.": "Le fichier n'existe pas."
-"Contenu tronqué, téléchargez le fichier pour le lire en entier": "Contenu tronqué, téléchargez le fichier pour le lire en entier"
-
-# Message
-"Rien à prévisualiser": "Rien à prévisualiser"
-"Trop de messages envoyés. Veuillez patienter.": "Trop de messages envoyés. Veuillez patienter."
-"Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).": "Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée)."
-"Un sondage requiert au moins 2 options.": "Un sondage requiert au moins 2 options."
-"Non autorisé à modifier ce message.": "Non autorisé à modifier ce message."
-"Impossible de modifier un sondage qui a déjà des votes.": "Impossible de modifier un sondage qui a déjà des votes."
-"La question du sondage ne peut pas être vide.": "La question du sondage ne peut pas être vide."
-"Le message ne peut pas être vide.": "Le message ne peut pas être vide."
-"Non autorisé à supprimer ce message.": "Non autorisé à supprimer ce message."
-"Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`": "Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`"
-
-# Reaction
-"Emoji non supporté.": "Emoji non supporté."
-
-# Security
+'Contenu tronqué, téléchargez le fichier pour le lire en entier': 'Contenu tronqué, téléchargez le fichier pour le lire en entier'
+'Rien à prévisualiser': 'Rien à prévisualiser'
+'Trop de messages envoyés. Veuillez patienter.': 'Trop de messages envoyés. Veuillez patienter.'
+'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).': 'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).'
+'Un sondage requiert au moins 2 options.': 'Un sondage requiert au moins 2 options.'
+'Non autorisé à modifier ce message.': 'Non autorisé à modifier ce message.'
+'Impossible de modifier un sondage qui a déjà des votes.': 'Impossible de modifier un sondage qui a déjà des votes.'
+'La question du sondage ne peut pas être vide.': 'La question du sondage ne peut pas être vide.'
+'Le message ne peut pas être vide.': 'Le message ne peut pas être vide.'
+'Non autorisé à supprimer ce message.': 'Non autorisé à supprimer ce message.'
+'Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`': 'Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`'
+'Emoji non supporté.': 'Emoji non supporté.'
 "L'inscription est désactivée.": "L'inscription est désactivée."
 "Trop de tentatives d'inscription. Veuillez réessayer plus tard.": "Trop de tentatives d'inscription. Veuillez réessayer plus tard."
-"Votre compte a été créé avec succès ! Connectez-vous maintenant.": "Votre compte a été créé avec succès ! Connectez-vous maintenant."
-"Rejoindre": "Rejoindre"
-
-# Thread / Replies
-"Fil de discussion": "Fil de discussion"
-"Voir les réponses (%count%)": "Voir les réponses (%count%)"
-"Aucune réponse": "Aucune réponse"
+'Votre compte a été créé avec succès ! Connectez-vous maintenant.': 'Votre compte a été créé avec succès ! Connectez-vous maintenant.'
+Rejoindre: Rejoindre
+'Fil de discussion': 'Fil de discussion'
+'Voir les réponses (%count%)': 'Voir les réponses (%count%)'
+'Aucune réponse': 'Aucune réponse'
 "Ce message n'a pas encore de réponse.": "Ce message n'a pas encore de réponse."
-
-# Webhooks
-"Webhooks entrants": "Webhooks entrants"
-"Aucun webhook configuré pour ce canal.": "Aucun webhook configuré pour ce canal."
-"Actif": "Actif"
-"Inactif": "Inactif"
-"Êtes-vous sûr de vouloir supprimer ce webhook ?": "Êtes-vous sûr de vouloir supprimer ce webhook ?"
+'Webhooks entrants': 'Webhooks entrants'
+'Aucun webhook configuré pour ce canal.': 'Aucun webhook configuré pour ce canal.'
+Actif: Actif
+Inactif: Inactif
+'Êtes-vous sûr de vouloir supprimer ce webhook ?': 'Êtes-vous sûr de vouloir supprimer ce webhook ?'
 "Copier l'URL": "Copier l'URL"
-"Nouveau webhook (Nom)": "Nouveau webhook (Nom)"
-"Créer": "Créer"
-
-# UI / Feature Strings
-"Actualiser": "Actualiser"
-"Fermer": "Fermer"
-"Télécharger": "Télécharger"
-"Options": "Options"
-"Terminer": "Terminer"
-"Membres": "Membres"
-"Discussions": "Discussions"
-"Médias": "Médias"
-"Médiathèque": "Médiathèque"
-"Docs": "Docs"
-"Images": "Images"
-"Tous": "Tous"
-"Raccourcis": "Raccourcis"
-"Options de formatage": "Options de formatage"
-"Annuler la réponse": "Annuler la réponse"
-"Masquer les tâches terminées": "Masquer les tâches terminées"
-"Filtrer par non lus": "Filtrer par non lus"
+'Nouveau webhook (Nom)': 'Nouveau webhook (Nom)'
+Créer: Créer
+Actualiser: Actualiser
+Fermer: Fermer
+Télécharger: Télécharger
+Options: Options
+Terminer: Terminer
+Membres: Membres
+Discussions: Discussions
+Médias: Médias
+Médiathèque: Médiathèque
+Docs: Docs
+Images: Images
+Tous: Tous
+Raccourcis: Raccourcis
+'Options de formatage': 'Options de formatage'
+'Annuler la réponse': 'Annuler la réponse'
+'Masquer les tâches terminées': 'Masquer les tâches terminées'
+'Filtrer par non lus': 'Filtrer par non lus'
 "Exporter l'historique": "Exporter l'historique"
-"Retour au canal parent": "Retour au canal parent"
-"Retour au direct": "Retour au direct"
-
-# Todo / Discussion Features
-"Todo": "Todo"
-"Todos": "Todos"
-"Discussion": "Discussion"
-"Discussion todo": "Discussion todo"
-"discussion": "discussion"
-"todo": "todo"
-"Créer un canal todo": "Créer un canal todo"
-"Créer une discussion": "Créer une discussion"
-"Créer une discussion todo": "Créer une discussion todo"
-"Canal todo list": "Canal todo list"
-"Aucun canal todo. Créez-en un !": "Aucun canal todo. Créez-en un !"
-"Aucune discussion existante.": "Aucune discussion existante."
-
-# Files / Media upload
-"Analyse antivirus en cours...": "Analyse antivirus en cours..."
-"Fichier bloqué : Contenu malveillant détecté.": "Fichier bloqué : Contenu malveillant détecté."
+'Retour au canal parent': 'Retour au canal parent'
+'Retour au direct': 'Retour au direct'
+Todo: Todo
+Todos: Todos
+Discussion: Discussion
+'Discussion todo': 'Discussion todo'
+discussion: discussion
+todo: todo
+'Créer un canal todo': 'Créer un canal todo'
+'Créer une discussion': 'Créer une discussion'
+'Créer une discussion todo': 'Créer une discussion todo'
+'Canal todo list': 'Canal todo list'
+'Aucun canal todo. Créez-en un !': 'Aucun canal todo. Créez-en un !'
+'Aucune discussion existante.': 'Aucune discussion existante.'
+'Analyse antivirus en cours...': 'Analyse antivirus en cours...'
+'Fichier bloqué : Contenu malveillant détecté.': 'Fichier bloqué : Contenu malveillant détecté.'
 "Échec de l'analyse antivirus. Fichier inaccessible.": "Échec de l'analyse antivirus. Fichier inaccessible."
-"Chargement des fichiers...": "Chargement des fichiers..."
-"Aucun fichier partagé dans ce canal.": "Aucun fichier partagé dans ce canal."
-
-# Admin / Group management
+'Chargement des fichiers...': 'Chargement des fichiers...'
+'Aucun fichier partagé dans ce canal.': 'Aucun fichier partagé dans ce canal.'
 "Ce groupe est déjà importé dans l'application.": "Ce groupe est déjà importé dans l'application."
-"Ce groupe possède déjà un canal officiel.": "Ce groupe possède déjà un canal officiel."
+'Ce groupe possède déjà un canal officiel.': 'Ce groupe possède déjà un canal officiel.'
 "Paramètres d'import invalides.": "Paramètres d'import invalides."
-"Le nom du groupe ne peut pas être vide.": "Le nom du groupe ne peut pas être vide."
-"L'utilisateur \"%username%\" a été ajouté au groupe.": "L'utilisateur \"%username%\" a été ajouté au groupe."
-"L'utilisateur \"%username%\" a été retiré du groupe.": "L'utilisateur \"%username%\" a été retiré du groupe."
-"L'utilisateur \"%username%\" a été promu administrateur du groupe.": "L'utilisateur \"%username%\" a été promu administrateur du groupe."
-"L'utilisateur \"%username%\" n'est plus administrateur du groupe.": "L'utilisateur \"%username%\" n'est plus administrateur du groupe."
-"Impossible de retirer le dernier administrateur du groupe.": "Impossible de retirer le dernier administrateur du groupe."
-"Le groupe \"%name%\" a été créé avec son canal officiel.": "Le groupe \"%name%\" a été créé avec son canal officiel."
-"Le groupe \"%name%\" a été importé avec son canal officiel.": "Le groupe \"%name%\" a été importé avec son canal officiel."
-"Le groupe \"%name%\" et son canal officiel ont été supprimés.": "Le groupe \"%name%\" et son canal officiel ont été supprimés."
+'Le nom du groupe ne peut pas être vide.': 'Le nom du groupe ne peut pas être vide.'
+'L''utilisateur "%username%" a été ajouté au groupe.': 'L''utilisateur "%username%" a été ajouté au groupe.'
+'L''utilisateur "%username%" a été retiré du groupe.': 'L''utilisateur "%username%" a été retiré du groupe.'
+'L''utilisateur "%username%" a été promu administrateur du groupe.': 'L''utilisateur "%username%" a été promu administrateur du groupe.'
+'L''utilisateur "%username%" n''est plus administrateur du groupe.': 'L''utilisateur "%username%" n''est plus administrateur du groupe.'
+'Impossible de retirer le dernier administrateur du groupe.': 'Impossible de retirer le dernier administrateur du groupe.'
+'Le groupe "%name%" a été créé avec son canal officiel.': 'Le groupe "%name%" a été créé avec son canal officiel.'
+'Le groupe "%name%" a été importé avec son canal officiel.': 'Le groupe "%name%" a été importé avec son canal officiel.'
+'Le groupe "%name%" et son canal officiel ont été supprimés.': 'Le groupe "%name%" et son canal officiel ont été supprimés.'
 "L'export a été supprimé.": "L'export a été supprimé."
 "Le fichier d'export n'existe pas dans le stockage.": "Le fichier d'export n'existe pas dans le stockage."
 "Non autorisé à exporter l'historique de ce canal.": "Non autorisé à exporter l'historique de ce canal."
-
-# Channel / Discussion management
-"Discussion \"%channelName%\" créée.": "Discussion \"%channelName%\" créée."
-"Discussion créée depuis un message.": "Discussion créée depuis un message."
-"Aucune description.": "Aucune description."
-
-# Security / Antivirus
+'Discussion "%channelName%" créée.': 'Discussion "%channelName%" créée.'
+'Discussion créée depuis un message.': 'Discussion créée depuis un message.'
+'Aucune description.': 'Aucune description.'
 "L'accès à ce fichier a été bloqué par l'antivirus.": "L'accès à ce fichier a été bloqué par l'antivirus."
 "L'analyse antivirus de ce fichier est en cours.": "L'analyse antivirus de ce fichier est en cours."
-
-# Thread / Replies
-"réponses (%count%)": "réponses (%count%)"
-
-# Javascript Frontend Translations
-"Activer les notifications": "Activer les notifications"
-"Activer les notifications de bureau": "Activer les notifications de bureau"
-"Notifications actives (cliquez pour désactiver)": "Notifications actives (cliquez pour désactiver)"
-"Notifications désactivées (cliquez pour activer)": "Notifications désactivées (cliquez pour activer)"
-"Notifications bloquées. Modifiez les autorisations de votre navigateur.": "Notifications bloquées. Modifiez les autorisations de votre navigateur."
-"Notifications activées ! 🚀": "Notifications activées ! 🚀"
-"Vous recevrez désormais des alertes pour les nouveaux messages et invitations.": "Vous recevrez désormais des alertes pour les nouveaux messages et invitations."
-"Notifications réactivées ! 🔔": "Notifications réactivées ! 🔔"
-"Les alertes de bureau sont à nouveau actives.": "Les alertes de bureau sont à nouveau actives."
-"Test de notification 🚀": "Test de notification 🚀"
-"Ceci est une notification de test de Roquette.": "Ceci est une notification de test de Roquette."
-"Nouvelle invitation 🔒": "Nouvelle invitation 🔒"
-"%sender% vous a invité à rejoindre le canal #%channelName%": "%sender% vous a invité à rejoindre le canal #%channelName%"
-"Mention dans %channelName%": "Mention dans %channelName%"
-"Nouveau message 🚀": "Nouveau message 🚀"
-"@%author% vous a mentionné : %content%": "@%author% vous a mentionné : %content%"
-"En attente de connexion...": "En attente de connexion..."
-"Connexion perdue. Nouvel essai...": "Connexion perdue. Nouvel essai..."
-
-
-
+'réponses (%count%)': 'réponses (%count%)'
+'Activer les notifications': 'Activer les notifications'
+'Activer les notifications de bureau': 'Activer les notifications de bureau'
+'Notifications actives (cliquez pour désactiver)': 'Notifications actives (cliquez pour désactiver)'
+'Notifications désactivées (cliquez pour activer)': 'Notifications désactivées (cliquez pour activer)'
+'Notifications bloquées. Modifiez les autorisations de votre navigateur.': 'Notifications bloquées. Modifiez les autorisations de votre navigateur.'
+'Notifications activées ! 🚀': 'Notifications activées ! 🚀'
+'Vous recevrez désormais des alertes pour les nouveaux messages et invitations.': 'Vous recevrez désormais des alertes pour les nouveaux messages et invitations.'
+'Notifications réactivées ! 🔔': 'Notifications réactivées ! 🔔'
+'Les alertes de bureau sont à nouveau actives.': 'Les alertes de bureau sont à nouveau actives.'
+'Test de notification 🚀': 'Test de notification 🚀'
+'Ceci est une notification de test de Roquette.': 'Ceci est une notification de test de Roquette.'
+'Nouvelle invitation 🔒': 'Nouvelle invitation 🔒'
+'%sender% vous a invité à rejoindre le canal #%channelName%': '%sender% vous a invité à rejoindre le canal #%channelName%'
+'Mention dans %channelName%': 'Mention dans %channelName%'
+'Nouveau message 🚀': 'Nouveau message 🚀'
+'@%author% vous a mentionné : %content%': '@%author% vous a mentionné : %content%'
+'En attente de connexion...': 'En attente de connexion...'
+'Connexion perdue. Nouvel essai...': 'Connexion perdue. Nouvel essai...'
+"L'authentification par mot de passe est désactivée.": "L'authentification par mot de passe est désactivée."
+"Le nom d'utilisateur ne peut pas être vide.": "Le nom d'utilisateur ne peut pas être vide."
+'Le mot de passe ne peut pas être vide.': 'Le mot de passe ne peut pas être vide.'
+'Les mots de passe ne correspondent pas.': 'Les mots de passe ne correspondent pas.'
+Général: Général
+"Création du canal Général car il n'existait pas.": "Création du canal Général car il n'existait pas."
+"Création de l'utilisateur testuser car aucun utilisateur n'existait.": "Création de l'utilisateur testuser car aucun utilisateur n'existait."
+'Tous les messages sont déjà formatés !': 'Tous les messages sont déjà formatés !'
+'Formatage rétroactif terminé avec succès !': 'Formatage rétroactif terminé avec succès !'
+'Canal: #%channelName% (Rétention: %retentionMonths% mois, Seuil: %threshold%)': 'Canal: #%channelName% (Rétention: %retentionMonths% mois, Seuil: %threshold%)'
+'Émoji invalide.': 'Émoji invalide.'
+"Tags mis à jour pour l'émoji %code%.": "Tags mis à jour pour l'émoji %code%."
+'Le code et le fichier sont obligatoires.': 'Le code et le fichier sont obligatoires.'
+'Seuls les fichiers GIF sont supportés pour les émojis personnalisés.': 'Seuls les fichiers GIF sont supportés pour les émojis personnalisés.'
+'Le code contient des caractères invalides. Utilisez des lettres, chiffres, tirets, underscores ou deux-points.': 'Le code contient des caractères invalides. Utilisez des lettres, chiffres, tirets, underscores ou deux-points.'
+'Émoji %code% ajouté avec succès.': 'Émoji %code% ajouté avec succès.'
+"Erreur lors de l'enregistrement de l'émoji : %error%": "Erreur lors de l'enregistrement de l'émoji : %error%"
+"L'émoji %code% a été supprimé.": "L'émoji %code% a été supprimé."
+'Erreur lors de la suppression du fichier : %error%': 'Erreur lors de la suppression du fichier : %error%'
+'Émoji ou tag invalide.': 'Émoji ou tag invalide.'
+'Tag "%tag%" ajouté.': 'Tag "%tag%" ajouté.'
+'Tag "%tag%" retiré.': 'Tag "%tag%" retiré.'
+"Impossible d'ouvrir le fichier pour l'analyse antivirus.": "Impossible d'ouvrir le fichier pour l'analyse antivirus."
+"Le service d'analyse antivirus est temporairement indisponible.": "Le service d'analyse antivirus est temporairement indisponible."
+"Une erreur est survenue lors de l'analyse antivirus du fichier.": "Une erreur est survenue lors de l'analyse antivirus du fichier."
+'a créé un sondage : %question%': 'a créé un sondage : %question%'
+'a envoyé un fichier : %filename%': 'a envoyé un fichier : %filename%'
+'Nouveau message': 'Nouveau message'
+'Le fichier est invalide ou dépasse la taille autorisée par le serveur.': 'Le fichier est invalide ou dépasse la taille autorisée par le serveur.'
+'Le fichier dépasse la taille maximale autorisée de %maxSize% Mo.': 'Le fichier dépasse la taille maximale autorisée de %maxSize% Mo.'
+'L''extension de fichier ".%extension%" n''est pas autorisée.': 'L''extension de fichier ".%extension%" n''est pas autorisée.'
+'Le type MIME "%mimeType%" n''est pas autorisé.': 'Le type MIME "%mimeType%" n''est pas autorisé.'
+"Impossible de créer l'archive ZIP.": "Impossible de créer l'archive ZIP."
+'Nom du canal': 'Nom du canal'
+'Nom du canal...': 'Nom du canal...'
+Description: Description
+'Description (optionnelle)...': 'Description (optionnelle)...'
+'Rétention des messages': 'Rétention des messages'
+'1 mois': '1 mois'
+'3 mois': '3 mois'
+'6 mois (par défaut)': '6 mois (par défaut)'
+'12 mois': '12 mois'
+'Type de canal': 'Type de canal'
+'Canal de messagerie classique avec historique': 'Canal de messagerie classique avec historique'
+'Todo list': 'Todo list'
+'Chaque message devient une tâche à cocher': 'Chaque message devient une tâche à cocher'
+'Canal privé': 'Canal privé'
+"Abonner un groupe d'utilisateurs": "Abonner un groupe d'utilisateurs"
+'-- Aucun groupe --': '-- Aucun groupe --'
+'Faire de ce canal le canal officiel du groupe': 'Faire de ce canal le canal officiel du groupe'
+'Créer le canal': 'Créer le canal'
+'Créer un nouveau canal': 'Créer un nouveau canal'
+'Activer le statut Occupé ?': 'Activer le statut Occupé ?'
+'En passant votre statut en': 'En passant votre statut en'
+'Toutes les notifications de bureau seront désactivées.': 'Toutes les notifications de bureau seront désactivées.'
+"Le rafraîchissement en direct de l'interface (nouveaux messages) sera suspendu.": "Le rafraîchissement en direct de l'interface (nouveaux messages) sera suspendu."
+"Votre contenu et les messages reçus s'actualiseront automatiquement dès que vous changerez à nouveau de statut.": "Votre contenu et les messages reçus s'actualiseront automatiquement dès que vous changerez à nouveau de statut."
+Annuler: Annuler
+Confirmer: Confirmer
+'Rechercher des messages, canaux ou pseudos... (ex: in:general from:jean)': 'Rechercher des messages, canaux ou pseudos... (ex: in:general from:jean)'
+'Assistant de filtres': 'Assistant de filtres'
+'Auteur (from:)': 'Auteur (from:)'
+'Tous les utilisateurs': 'Tous les utilisateurs'
+'Canal (in:)': 'Canal (in:)'
+'Tous les canaux': 'Tous les canaux'
+'Pièce jointe (has:)': 'Pièce jointe (has:)'
+'Peu importe': 'Peu importe'
+'Tout fichier': 'Tout fichier'
+Image: Image
+Vidéo: Vidéo
+Audio: Audio
+PDF: PDF
+'Mots-clés recherchés': 'Mots-clés recherchés'
+'Tapez votre recherche de texte ici...': 'Tapez votre recherche de texte ici...'
+'Astuces pour affiner votre recherche :': 'Astuces pour affiner votre recherche :'
+'Filtrer par auteur': 'Filtrer par auteur'
+'Filtrer par canal ou message direct': 'Filtrer par canal ou message direct'
+'Messages contenant un fichier joint': 'Messages contenant un fichier joint'
+'Filtrer par type de fichier (image, video, pdf, etc.)': 'Filtrer par type de fichier (image, video, pdf, etc.)'
+'Saisissez des filtres ou recherchez du texte': 'Saisissez des filtres ou recherchez du texte'
+'pour fermer': 'pour fermer'
+'Membres de la conversation': 'Membres de la conversation'
+'Membres de #%channel%': 'Membres de #%channel%'
+'Rechercher un membre...': 'Rechercher un membre...'
+'Membres directs': 'Membres directs'
+(vous): (vous)
+'Lui envoyer un message direct': 'Lui envoyer un message direct'
+'Membres via groupes abonnés': 'Membres via groupes abonnés'
+'Non inscrit': 'Non inscrit'
+'Groupes abonnés à ce canal': 'Groupes abonnés à ce canal'
+Officiel: Officiel
+'6 mois': '6 mois'
+'Groupes abonnés': 'Groupes abonnés'
+'Aucun groupe abonné.': 'Aucun groupe abonné.'
+'Abonner un groupe': 'Abonner un groupe'
+'-- Sélectionner un groupe --': '-- Sélectionner un groupe --'
+Ajouter: Ajouter
+'Transformer en todo list': 'Transformer en todo list'
+'Administrateurs du canal': 'Administrateurs du canal'
+(Créateur): (Créateur)
+'Ajouter un administrateur': 'Ajouter un administrateur'
+"Saisir le nom d'un membre...": "Saisir le nom d'un membre..."
+'Enregistrer les modifications': 'Enregistrer les modifications'
+'Supprimer le canal': 'Supprimer le canal'
+'Modifier le canal': 'Modifier le canal'
+"Aperçu de l'image": "Aperçu de l'image"
+"Fermer l'aperçu": "Fermer l'aperçu"
+'Mock OAuth2 Server': 'Mock OAuth2 Server'
+"Demande d'autorisation": "Demande d'autorisation"
+"L'application <strong>Roquette</strong> souhaite se connecter à votre compte et accéder à votre profil public (nom, email).": "L'application <strong>Roquette</strong> souhaite se connecter à votre compte et accéder à votre profil public (nom, email)."
+"Choisissez un nom d'utilisateur Mock": "Choisissez un nom d'utilisateur Mock"
+'Ex: JeanDupont, SuperDev...': 'Ex: JeanDupont, SuperDev...'
+'Autoriser & Se connecter': 'Autoriser & Se connecter'
+'Roquette - Administration': 'Roquette - Administration'
+'Gestion des utilisateurs': 'Gestion des utilisateurs'
+'Bannir ou réhabiliter des utilisateurs.': 'Bannir ou réhabiliter des utilisateurs.'
+Rôle: Rôle
+Admin: Admin
+Banni: Banni
+Réhabiliter: Réhabiliter
+'Êtes-vous sûr de vouloir bannir %username% ?': 'Êtes-vous sûr de vouloir bannir %username% ?'
+Bannir: Bannir
+'Aucun utilisateur.': 'Aucun utilisateur.'
+'Roquette - Gestion des groupes': 'Roquette - Gestion des groupes'
+'Gestion des groupes': 'Gestion des groupes'
+"Créer des groupes locaux ou importer des groupes depuis l'annuaire.": "Créer des groupes locaux ou importer des groupes depuis l'annuaire."
+'Créer un groupe local': 'Créer un groupe local'
+'Nom du groupe': 'Nom du groupe'
+'Ex: Équipe Support': 'Ex: Équipe Support'
+'Rechercher un groupe (Annuaire)': 'Rechercher un groupe (Annuaire)'
+'Nom du groupe ou identifiant': 'Nom du groupe ou identifiant'
+'Ex: devs': 'Ex: devs'
+Rechercher: Rechercher
+"Résultats de la recherche dans l'annuaire": "Résultats de la recherche dans l'annuaire"
+Importé: Importé
+Importer: Importer
+'Aucun groupe trouvé pour "%searchQuery%".': 'Aucun groupe trouvé pour "%searchQuery%".'
+'Groupes enregistrés': 'Groupes enregistrés'
+'Identifiant / DN': 'Identifiant / DN'
+'Canal officiel': 'Canal officiel'
+Administrateurs: Administrateurs
+'Membres locaux': 'Membres locaux'
+Aucun: Aucun
+'Êtes-vous sûr de vouloir supprimer ce groupe ? Son canal officiel sera supprimé définitivement.': 'Êtes-vous sûr de vouloir supprimer ce groupe ? Son canal officiel sera supprimé définitivement.'
+'Aucun groupe enregistré localement.': 'Aucun groupe enregistré localement.'
+'Roquette - Administration - Exports': 'Roquette - Administration - Exports'
+'Gestion des exports de canaux': 'Gestion des exports de canaux'
+"Liste des exports d'historiques archivés, téléchargement et suppression.": "Liste des exports d'historiques archivés, téléchargement et suppression."
+Canal: Canal
+"Date d'export": "Date d'export"
+'Exporté par': 'Exporté par'
+'Nom du fichier / Taille': 'Nom du fichier / Taille'
+Supprimé: Supprimé
+Inconnu: Inconnu
+'Êtes-vous sûr de vouloir supprimer cet export ? Le fichier physique sera également détruit.': 'Êtes-vous sûr de vouloir supprimer cet export ? Le fichier physique sera également détruit.'
+'Aucun export archivé pour le moment.': 'Aucun export archivé pour le moment.'
+'Roquette - Administration - Audit Log': 'Roquette - Administration - Audit Log'
+"Logs d'audit de sécurité": "Logs d'audit de sécurité"
+'Historique des actions administratives critiques effectuées sur la plateforme.': 'Historique des actions administratives critiques effectuées sur la plateforme.'
+Date: Date
+Administrateur: Administrateur
+Action: Action
+Détails: Détails
+'Adresse IP': 'Adresse IP'
+Système: Système
+Bannissement: Bannissement
+Réhabilitation: Réhabilitation
+'Export Canal': 'Export Canal'
+Téléchargement: Téléchargement
+'Suppr. Export': 'Suppr. Export'
+'Création Canal': 'Création Canal'
+'Suppr. Canal': 'Suppr. Canal'
+'Création Groupe': 'Création Groupe'
+'Suppr. Groupe': 'Suppr. Groupe'
+"Bannissement de l'utilisateur": "Bannissement de l'utilisateur"
+"Réhabilitation de l'utilisateur": "Réhabilitation de l'utilisateur"
+'Export du canal': 'Export du canal'
+"Téléchargement d'export pour": "Téléchargement d'export pour"
+"Suppression d'export pour": "Suppression d'export pour"
+'Création du canal': 'Création du canal'
+Oui: Oui
+Non: Non
+sous-canal: sous-canal
+'Suppression du canal': 'Suppression du canal'
+'Création du groupe': 'Création du groupe'
+importé: importé
+'Suppression du groupe': 'Suppression du groupe'
+"Aucun événement d'audit enregistré.": "Aucun événement d'audit enregistré."
+'Roquette - Administration Émojis': 'Roquette - Administration Émojis'
+'Gestion des Émojis Personnalisés': 'Gestion des Émojis Personnalisés'
+'Ajouter des émojis personnalisés (GIF) et leur associer des tags pour faciliter la recherche.': 'Ajouter des émojis personnalisés (GIF) et leur associer des tags pour faciliter la recherche.'
+'Ajouter un nouvel émoji personnalisé': 'Ajouter un nouvel émoji personnalisé'
+"Code de l'émoji (ex: smile, cool:dossier)": "Code de l'émoji (ex: smile, cool:dossier)"
+'Tags associés (séparés par des virgules)': 'Tags associés (séparés par des virgules)'
+'Fichier GIF': 'Fichier GIF'
+'Rechercher par nom ou tag...': 'Rechercher par nom ou tag...'
+Effacer: Effacer
+'Supprimer le tag': 'Supprimer le tag'
+'Aucun tag': 'Aucun tag'
+'Ajouter un tag...': 'Ajouter un tag...'
+"Êtes-vous sûr de vouloir supprimer l'émoji %code% ?": "Êtes-vous sûr de vouloir supprimer l'émoji %code% ?"
+"Supprimer l'émoji": "Supprimer l'émoji"
+'Aucun émoji trouvé.': 'Aucun émoji trouvé.'
+'Roquette - Membres du groupe %group_name%': 'Roquette - Membres du groupe %group_name%'
+'Membres de %group_name%': 'Membres de %group_name%'
+'Ajouter ou retirer manuellement des membres de ce groupe.': 'Ajouter ou retirer manuellement des membres de ce groupe.'
+'Groupe synchronisé (Annuaire externe)': 'Groupe synchronisé (Annuaire externe)'
+"Ce groupe est géré dans l'annuaire externe (LDAP). La liste des membres est synchronisée automatiquement et ne peut pas être modifiée manuellement.": "Ce groupe est géré dans l'annuaire externe (LDAP). La liste des membres est synchronisée automatiquement et ne peut pas être modifiée manuellement."
+'Ajouter un membre': 'Ajouter un membre'
+'Rechercher un utilisateur': 'Rechercher un utilisateur'
+"Saisir le nom ou l'identifiant...": "Saisir le nom ou l'identifiant..."
+"Membres de l'annuaire": "Membres de l'annuaire"
+'Retirer les droits administrateur de cet utilisateur ?': 'Retirer les droits administrateur de cet utilisateur ?'
+'Retirer Admin': 'Retirer Admin'
+'Nommer Admin': 'Nommer Admin'
+"Aucun membre dans l'annuaire pour ce groupe.": "Aucun membre dans l'annuaire pour ce groupe."
+'Membres actuels': 'Membres actuels'
+'Retirer cet utilisateur du groupe ?': 'Retirer cet utilisateur du groupe ?'
+Retirer: Retirer
+"Ce groupe n'a pas encore de membre local.": "Ce groupe n'a pas encore de membre local."
+'Accès refusé - Roquette': 'Accès refusé - Roquette'
+'Accès refusé.': 'Accès refusé.'
+"Vous n'avez pas les autorisations nécessaires pour accéder à cette zone. Si vous pensez qu'il s'agit d'une erreur, contactez un administrateur.": "Vous n'avez pas les autorisations nécessaires pour accéder à cette zone. Si vous pensez qu'il s'agit d'une erreur, contactez un administrateur."
+"Retourner à l'accueil": "Retourner à l'accueil"
+'Erreur serveur - Roquette': 'Erreur serveur - Roquette'
+'Erreur interne.': 'Erreur interne.'
+"Une erreur inattendue s'est produite. L'équipe technique a été informée. Veuillez réessayer dans quelques instants.": "Une erreur inattendue s'est produite. L'équipe technique a été informée. Veuillez réessayer dans quelques instants."
+'Page non trouvée - Roquette': 'Page non trouvée - Roquette'
+'Oups ! Page introuvable.': 'Oups ! Page introuvable.'
+"La fusée Roquette a cherché partout, mais l'adresse demandée n'existe pas ou a été déplacée dans une autre galaxie.": "La fusée Roquette a cherché partout, mais l'adresse demandée n'existe pas ou a été déplacée dans une autre galaxie."
+'Votre session a expiré. Redirection vers la page de connexion dans 5 secondes...': 'Votre session a expiré. Redirection vers la page de connexion dans 5 secondes...'
+'Session expirée...': 'Session expirée...'
+Reconnexion: Reconnexion
+Vérification...: Vérification...
+'Le serveur ne répond pas. Veuillez réessayer dans quelques instants.': 'Le serveur ne répond pas. Veuillez réessayer dans quelques instants.'
+'Le fichier %fileName% dépasse la taille maximale de 10 MB.': 'Le fichier %fileName% dépasse la taille maximale de 10 MB.'
+"Terminer l'organisation": "Terminer l'organisation"
+Ouvrir: Ouvrir
+'Commandes disponibles': 'Commandes disponibles'
+'Aucun résultat': 'Aucun résultat'
+"Poser une question à l'Assistant Roquette": "Poser une question à l'Assistant Roquette"
+'Rechercher et envoyer un GIF animé': 'Rechercher et envoyer un GIF animé'
+'Envoyer le shrug ¯\_(ツ)_/¯': 'Envoyer le shrug ¯\_(ツ)_/¯'
+'Changer la couleur de votre pseudo': 'Changer la couleur de votre pseudo'
+Membre: Membre
+'Aucune description fournie.': 'Aucune description fournie.'
+'Aucun canal public': 'Aucun canal public'
+"Il n'y a pas encore de canaux publics disponibles.": "Il n'y a pas encore de canaux publics disponibles."
+'Message Direct': 'Message Direct'
+'Aucun autre membre': 'Aucun autre membre'
+"Il n'y a pas d'autres utilisateurs enregistrés pour le moment.": "Il n'y a pas d'autres utilisateurs enregistrés pour le moment."
+Question: Question
+'Posez votre question...': 'Posez votre question...'
+'Autoriser plusieurs réponses': 'Autoriser plusieurs réponses'
+'Options de réponse': 'Options de réponse'
+Option: Option
+'Ajouter une option': 'Ajouter une option'
+Publier: Publier
+'Charger les messages précédents': 'Charger les messages précédents'
+'Rechercher un membre à inviter...': 'Rechercher un membre à inviter...'
+'Saisissez un nom pour rechercher un membre.': 'Saisissez un nom pour rechercher un membre.'
+'Charger plus de fichiers': 'Charger plus de fichiers'
+'Type :': 'Type :'
+'Direct Message': 'Direct Message'
+Privé: Privé
+Public: Public
+'Messages :': 'Messages :'
+'Exporté le :': 'Exporté le :'
+'Par :': 'Par :'
+(modifié): (modifié)
+'Généré automatiquement par Roquette 🚀': 'Généré automatiquement par Roquette 🚀'
+'Invité par': 'Invité par'
+Accepter: Accepter
+Refuser: Refuser
+'🔔 Affichage des <strong>messages non lus</strong>': '🔔 Affichage des <strong>messages non lus</strong>'
+"Aujourd'hui": "Aujourd'hui"
+Hier: Hier
+'Aucun message non lu dans ce canal.': 'Aucun message non lu dans ce canal.'
+réponses: réponses
+réponse: réponse
+'🔍 <strong>%count%</strong> résultat(s) pour "<strong>%query%</strong>"': '🔍 <strong>%count%</strong> résultat(s) pour "<strong>%query%</strong>"'
+'Aucun message contenant "<strong>%query%</strong>" n''a été trouvé dans ce canal.': 'Aucun message contenant "<strong>%query%</strong>" n''a été trouvé dans ce canal.'
+'Nouveaux messages': 'Nouveaux messages'
+'Aucun message reçu': 'Aucun message reçu'
+"Les nouveaux messages apparaîtront ici dès qu'ils seront publiés.": "Les nouveaux messages apparaîtront ici dès qu'ils seront publiés."
+'Notifications de bureau activées pour ce canal (cliquez pour désactiver)': 'Notifications de bureau activées pour ce canal (cliquez pour désactiver)'
+'Notifications de bureau désactivées pour ce canal (cliquez pour activer)': 'Notifications de bureau désactivées pour ce canal (cliquez pour activer)'
+'Notifications actives': 'Notifications actives'
+Sourdine: Sourdine
+"est en train d'écrire...": "est en train d'écrire..."
+"sont en train d'écrire...": "sont en train d'écrire..."
+"Plusieurs personnes sont en train d'écrire...": "Plusieurs personnes sont en train d'écrire..."
+'Charger plus de messages': 'Charger plus de messages'
+'Inviter un membre': 'Inviter un membre'
+'Aucun membre correspondant': 'Aucun membre correspondant'
+'Sondage en cours de création...': 'Sondage en cours de création...'
+'Modifier le message': 'Modifier le message'
+'Aucun membre trouvé pour cette recherche.': 'Aucun membre trouvé pour cette recherche.'
+'Choix multiples': 'Choix multiples'
+'Choix unique': 'Choix unique'
+votes: votes
+vote: vote
+'👾 Choisir un GIF pour "%query%" :': '👾 Choisir un GIF pour "%query%" :'
+'❌ Aucun GIF trouvé pour "%query%".': '❌ Aucun GIF trouvé pour "%query%".'
+'💡 Astuces pour affiner votre recherche :': '💡 Astuces pour affiner votre recherche :'
+'Filtrer par canal': 'Filtrer par canal'
+'Messages contenant une pièce jointe': 'Messages contenant une pièce jointe'
+'Filtrer par type de fichier': 'Filtrer par type de fichier'
+'Aucun résultat trouvé': 'Aucun résultat trouvé'
+"Essayez d'autres termes de recherche ou vérifiez l'orthographe.": "Essayez d'autres termes de recherche ou vérifiez l'orthographe."
+Utilisateurs: Utilisateurs
+Messages: Messages
+dans: dans
+'Aller au message ➔': 'Aller au message ➔'
+'(Fichier joint uniquement)': '(Fichier joint uniquement)'
