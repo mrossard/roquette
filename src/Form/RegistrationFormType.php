@@ -11,9 +11,11 @@ use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\NotCompromisedPassword;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 class RegistrationFormType extends AbstractType
 {
@@ -27,6 +29,13 @@ class RegistrationFormType extends AbstractType
                     max: 180,
                     minMessage: 'Le nom d\'utilisateur doit faire au moins {{ limit }} caractères.',
                 ),
+                new Callback(function (mixed $value, ExecutionContextInterface $context) {
+                    if (is_string($value) && strcasecmp($value, User::ROBOT_USERNAME) === 0) {
+                        $context->buildViolation('Ce nom d\'utilisateur est réservé par le système.')
+                            ->setTranslationDomain('messages')
+                            ->addViolation();
+                    }
+                }),
             ],
         ])->add('plainPassword', PasswordType::class, [
             'mapped' => false,

@@ -618,3 +618,6 @@ channel.general.name: "Général"
 channel.general.description: "Le canal de discussion principal pour tout le monde."
 channel.assistant.name: "Assistant"
 channel.assistant.description: "Discussion privée avec l'Assistant"
+'Connexion impossible avec un compte système.': 'Connexion impossible avec un compte système.'
+"Ce nom d'utilisateur est réservé par le système.": "Ce nom d'utilisateur est réservé par le système."
+"Impossible de modifier ou de promouvoir le compte système de l'assistant.": "Impossible de modifier ou de promouvoir le compte système de l'assistant."

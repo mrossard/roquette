@@ -87,6 +87,63 @@ class SecurityControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function testRegisterAsRobotUserFails(): void
+    {
+        $crawler = $this->client->request('GET', '/register');
+
+        $form = $crawler
+            ->selectButton('Créer le compte')
+            ->form([
+                'registration_form[username]' => 'robot-roquette',
+                'registration_form[plainPassword]' => 'password123',
+            ]);
+
+        $this->client->submit($form);
+
+        // Should not redirect, should render the form with validation error
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('div.error-alert', 'Ce nom d\'utilisateur est réservé par le système.');
+    }
+
+    #[Test]
+    public function testRegisterAsRobotUserCaseInsensitiveFails(): void
+    {
+        $crawler = $this->client->request('GET', '/register');
+
+        $form = $crawler
+            ->selectButton('Créer le compte')
+            ->form([
+                'registration_form[username]' => 'Robot-Roquette',
+                'registration_form[plainPassword]' => 'password123',
+            ]);
+
+        $this->client->submit($form);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('div.error-alert', 'Ce nom d\'utilisateur est réservé par le système.');
+    }
+
+    #[Test]
+    public function testLoginAsRobotUserBlocked(): void
+    {
+        $crawler = $this->client->request('GET', '/login');
+
+        $form = $crawler
+            ->selectButton('Se connecter')
+            ->form([
+                '_username' => 'robot-roquette',
+                '_password' => 'some_password',
+            ]);
+
+        $this->client->submit($form);
+
+        $this->assertResponseRedirects('/login');
+
+        $this->client->followRedirect();
+        $this->assertSelectorTextContains('div.error-alert', 'Connexion impossible avec un compte système.');
+    }
+
+    #[Test]
     public function testLoginFailure(): void
     {
         $crawler = $this->client->request('GET', '/login');

@@ -100,4 +100,20 @@ class CreateAdminCommandTest extends KernelTestCase
         static::assertTrue($promotedUser->isAdmin());
         static::assertContains('ROLE_ADMIN', $promotedUser->getRoles());
     }
+
+    public function testCreateAdminCannotPromoteOrCreateRobot(): void
+    {
+        $kernel = self::$kernel;
+        $application = new Application($kernel);
+        $command = $application->find('app:create-admin');
+        $commandTester = new CommandTester($command);
+
+        $commandTester->execute([
+            'username' => 'robot-roquette',
+            'password' => 'some-pwd',
+        ]);
+
+        $output = preg_replace('/\s+/', ' ', $commandTester->getDisplay());
+        static::assertStringContainsString('Impossible de modifier ou de promouvoir le compte système de l\'assistant.', $output);
+    }
 }

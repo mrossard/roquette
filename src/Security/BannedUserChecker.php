@@ -23,6 +23,12 @@ class BannedUserChecker implements UserCheckerInterface
                 'Votre compte a été suspendu. Veuillez contacter un administrateur.',
             );
         }
+
+        if (strcasecmp($user->getUsername() ?? '', User::ROBOT_USERNAME) === 0) {
+            throw new CustomUserMessageAuthenticationException(
+                'Connexion impossible avec un compte système.',
+            );
+        }
     }
 
     public function checkPostAuth(UserInterface $user, #[\SensitiveParameter] ?TokenInterface $token = null): void {}

@@ -51,6 +51,11 @@ class CreateAdminCommand extends Command
             });
         }
 
+        if (strcasecmp($username, User::ROBOT_USERNAME) === 0) {
+            $io->error($this->translator->trans('Impossible de modifier ou de promouvoir le compte système de l\'assistant.'));
+            return Command::FAILURE;
+        }
+
         // Check if user already exists
         $userRepo = $this->em->getRepository(User::class);
         $existingUser = $userRepo->findOneBy(['username' => $username]);

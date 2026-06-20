@@ -143,6 +143,12 @@ class OAuth2Authenticator extends AbstractAuthenticator
             );
         }
 
+        if (strcasecmp($username, User::ROBOT_USERNAME) === 0) {
+            throw new CustomUserMessageAuthenticationException(
+                'Connexion impossible avec un compte système.',
+            );
+        }
+
         // 1. Search by OAuth ID and provider
         $user = $this->userRepository->findOneBy([
             'oauthId' => $oauthId,
