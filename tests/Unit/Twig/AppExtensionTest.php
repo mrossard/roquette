@@ -6,7 +6,6 @@ namespace App\Tests\Unit\Twig;
 
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
-
 use App\Repository\ChannelRepository;
 use App\Service\MessageFormatter;
 use App\Twig\AppExtension;
@@ -33,7 +32,7 @@ class AppExtensionTest extends TestCase
                 return strtr($id, $parameters);
             });
 
-        $this->extension = new AppExtension($formatter, $translator, $channelRepository, 'roquette');
+        $this->extension = new AppExtension($formatter, $translator, $channelRepository, 'roquette', '');
     }
 
     public function testFormatReactionTooltipWithSingleUser(): void

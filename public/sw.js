@@ -26,7 +26,6 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Skip Mercure/SSE requests, emojis, non-GET requests, or external requests
     if (
         event.request.method !== 'GET' ||
         !url.origin.startsWith(self.location.origin) ||
@@ -51,5 +50,47 @@ self.addEventListener('fetch', (event) => {
                     return cached || Response.error();
                 });
             })
+    );
+});
+
+self.addEventListener('push', (event) => {
+    let data = { title: 'Roquette', body: '', url: '/' };
+    if (event.data) {
+        try {
+            data = event.data.json();
+        } catch (e) {
+            data.body = event.data.text();
+        }
+    }
+
+    event.waitUntil(
+        self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            data: { url: data.url },
+            tag: data.tag || 'roquette-default',
+            renotify: true,
+            vibrate: [200, 100, 200],
+        })
+    );
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const url = event.notification.data?.url || '/';
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            for (const client of clientList) {
+                if (client.url === url && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(url);
+            }
+        })
     );
 });

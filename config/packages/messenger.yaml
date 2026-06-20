@@ -16,9 +16,15 @@ framework:
             'App\Message\LlmQueryMessage': async
             'App\Message\ScanFileMessage': async
             'App\Message\DownloadEmojiMessage': async
+            'App\Message\PushNotificationMessage': async
 
 when@test:
     framework:
         messenger:
             routing:
+                'Symfony\Component\Mercure\Update': sync
                 'App\Message\AuditLogMessage': sync
+                'App\Message\LlmQueryMessage': sync
+                'App\Message\ScanFileMessage': sync
+                'App\Message\DownloadEmojiMessage': sync
+                'App\Message\PushNotificationMessage': sync

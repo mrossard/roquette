@@ -28,6 +28,102 @@ function playNotificationSound() {
     }
 }
 
+function urlB64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+export async function subscribePush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const existing = await registration.pushManager.getSubscription();
+        if (existing) {
+            return existing;
+        }
+
+        const metaTag = document.querySelector('meta[name="vapid-public-key"]');
+        if (!metaTag) {
+            return;
+        }
+
+        const publicKey = metaTag.content;
+        if (!publicKey) {
+            return;
+        }
+
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlB64ToUint8Array(publicKey),
+        });
+
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        };
+        if (tokenMeta) {
+            headers['X-CSRF-Token'] = tokenMeta.content;
+        }
+
+        const response = await fetch('/push/subscribe', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(subscription.toJSON()),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to register push subscription');
+        }
+
+        return subscription;
+    } catch (e) {
+        console.error('Failed to subscribe to push:', e);
+    }
+}
+
+export async function unsubscribePush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+            return;
+        }
+
+        await subscription.unsubscribe();
+
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        };
+        if (tokenMeta) {
+            headers['X-CSRF-Token'] = tokenMeta.content;
+        }
+
+        await fetch('/push/unsubscribe', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({endpoint: subscription.endpoint}),
+        });
+    } catch (e) {
+        console.error('Failed to unsubscribe from push:', e);
+    }
+}
+
 export function sendDesktopNotification(title, body, icon = null, tag = null, url = null) {
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
@@ -153,6 +249,7 @@ export function setupNotificationHeaderButton() {
             Notification.requestPermission().then(newPermission => {
                 if (newPermission === 'granted') {
                     localStorage.setItem('roquette_notifications_enabled', 'true');
+                    subscribePush();
                     sendDesktopNotification(
                         trans('Notifications activées ! 🚀'),
                         trans('Vous recevrez désormais des alertes pour les nouveaux messages et invitations.')
@@ -168,10 +265,13 @@ export function setupNotificationHeaderButton() {
             updateSettingsPageUI();
 
             if (!currentlyEnabled) {
+                subscribePush();
                 sendDesktopNotification(
                     trans('Notifications réactivées ! 🔔'),
                     trans('Les alertes de bureau sont à nouveau actives.')
                 );
+            } else {
+                unsubscribePush();
             }
         }
     });
@@ -210,6 +310,7 @@ export function updateSettingsPageUI() {
             Notification.requestPermission().then(newPermission => {
                 if (newPermission === 'granted') {
                     localStorage.setItem('roquette_notifications_enabled', 'true');
+                    subscribePush();
                     sendDesktopNotification(
                         trans('Notifications activées ! 🚀'),
                         trans('Vous recevrez désormais des alertes pour les nouveaux messages et invitations.')
@@ -276,6 +377,12 @@ export function updateSettingsPageUI() {
                     testBtn.style.opacity = '0.5';
                     testBtn.style.cursor = 'not-allowed';
                 }
+            }
+
+            if (isChecked) {
+                subscribePush();
+            } else {
+                unsubscribePush();
             }
 
             const headerBtn = document.getElementById('header-notification-btn');
@@ -496,6 +603,8 @@ export function handleChannelDeletedNotification(data) {
 // Expose functions globally to keep window compatibility
 window.sendDesktopNotification = sendDesktopNotification;
 window.setupNotificationHeaderButton = setupNotificationHeaderButton;
+window.subscribePush = subscribePush;
+window.unsubscribePush = unsubscribePush;
 window.updateSettingsPageUI = updateSettingsPageUI;
 window.handleGlobalNotification = handleGlobalNotification;
 window.handleInvitationNotification = handleInvitationNotification;

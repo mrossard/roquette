@@ -2074,6 +2074,20 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         store?: string|Param, // Service name of store // Default: "Symfony\\AI\\Store\\StoreInterface"
  *     }>,
  * }
+ * @psalm-type MinishlinkWebPushConfig = array{
+ *     VAPID?: array{
+ *         subject?: scalar|Param|null,
+ *         publicKey?: scalar|Param|null,
+ *         privateKey?: scalar|Param|null,
+ *         pemFile?: scalar|Param|null,
+ *         pem?: scalar|Param|null,
+ *     },
+ *     ttl?: int|Param, // Default: 2419200
+ *     topic?: scalar|Param|null, // Default: null
+ *     urgency?: scalar|Param|null, // Default: null
+ *     timeout?: int|Param, // Default: 30
+ *     automatic_padding?: bool|Param, // Default: true
+ * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
@@ -2089,6 +2103,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     monolog?: MonologConfig,
  *     ux_icons?: UxIconsConfig,
  *     ai?: AiConfig,
+ *     minishlink_web_push?: MinishlinkWebPushConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
@@ -2106,6 +2121,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         ux_icons?: UxIconsConfig,
  *         ai?: AiConfig,
+ *         minishlink_web_push?: MinishlinkWebPushConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
@@ -2122,6 +2138,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         ux_icons?: UxIconsConfig,
  *         ai?: AiConfig,
+ *         minishlink_web_push?: MinishlinkWebPushConfig,
  *     },
  *     "when@test"?: array{
  *         imports?: ImportsConfig,
@@ -2139,6 +2156,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         ux_icons?: UxIconsConfig,
  *         ai?: AiConfig,
+ *         minishlink_web_push?: MinishlinkWebPushConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

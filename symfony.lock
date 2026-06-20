@@ -60,6 +60,9 @@
             "var/storage/.gitignore"
         ]
     },
+    "minishlink/web-push-bundle": {
+        "version": "v6.3.2"
+    },
     "php-http/discovery": {
         "version": "1.20",
         "recipe": {

@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
+use App\Message\PushNotificationMessage;
 use App\Repository\UserChannelReadRepository;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -118,6 +119,21 @@ class MercurePublisher
             ],
             'channel_notification'
         );
+
+        $title = $channelName;
+        $body = ($author->getDisplayName() ?: $author->getUsername()) . ': ' . $content;
+        $url = '/channels/' . $channel->getSlug();
+
+        foreach ($channel->getMembers() as $member) {
+            if ($member !== $author) {
+                $this->bus->dispatch(new PushNotificationMessage(
+                    userId: (int) $member->getId(),
+                    title: $title,
+                    body: $body,
+                    url: $url,
+                ));
+            }
+        }
     }
 
     // -------------------------------------------------------------------------

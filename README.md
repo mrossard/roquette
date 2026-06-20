@@ -44,6 +44,17 @@ Roquette est une application de messagerie et de collaboration en temps réel (a
    cp .env .env.local
    ```
 
+   Pour générer les clés VAPID requises pour les notifications push, vous pouvez exécuter la commande suivante :
+   ```bash
+   php -r "require 'vendor/autoload.php'; print_r(Minishlink\WebPush\VAPID::createVapidKeys());"
+   ```
+   Reportez ensuite les clés obtenues dans votre fichier `.env.local` :
+   ```env
+   VAPID_PUBLIC_KEY="votre_cle_publique"
+   VAPID_PRIVATE_KEY="votre_cle_privee"
+   VAPID_SUBJECT="mailto:votre-email@exemple.com"
+   ```
+
 4. **Démarrer les services Docker** (PostgreSQL, Mercure Hub, ClamAV, MinIO, Ollama) :
    ```bash
    docker compose up -d

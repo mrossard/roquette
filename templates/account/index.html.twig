@@ -158,9 +158,9 @@
                     <!-- Desktop Notifications Settings -->
                     <form action="{{ path('app_account') }}" method="POST" class="form-section" id="desktop-notifications-section">
                         <input type="hidden" name="action" value="notifications">
-                        <h3>{{ 'Notifications de bureau'|trans }}</h3>
+                        <h3>{{ 'Notifications'|trans }}</h3>
                         <p class="card-description" style="margin-bottom: 1.25rem;">
-                            {{ 'Recevez des notifications en direct pour les nouveaux messages et invitations lorsque l\'application est en arrière-plan.'|trans }}
+                            {{ 'Recevez des notifications pour les nouveaux messages et invitations, même lorsque le navigateur est fermé.'|trans }}
                         </p>
                         <div id="notification-settings-content">
                             <!-- Populated dynamically via JS -->

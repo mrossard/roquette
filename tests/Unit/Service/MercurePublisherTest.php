@@ -6,7 +6,6 @@ namespace App\Tests\Unit\Service;
 
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
-
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
@@ -19,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Doctrine\Common\Collections\ArrayCollection;
 
 #[AllowMockObjectsWithoutExpectations]
 class MercurePublisherTest extends TestCase
@@ -110,24 +110,30 @@ class MercurePublisherTest extends TestCase
     #[Test]
     public function publishNewMessageDispatchesToChannelAndMembers(): void
     {
-        $channel = $this->createStub(Channel::class);
-        $channel->method('getSlug')->willReturn('my-channel');
-        $channel->method('isPrivate')->willReturn(false);
-        $channel->method('isDm')->willReturn(false);
-        $channel->method('getName')->willReturn('general');
-
         $author = $this->createStub(User::class);
         $author->method('getId')->willReturn(1);
         $author->method('getUsername')->willReturn('author-user');
         $author->method('getDisplayName')->willReturn('Author Display Name');
 
+        $memberUser = $this->createStub(User::class);
+        $memberUser->method('getId')->willReturn(2);
+        $memberUser->method('getUsername')->willReturn('member-user');
+        $memberUser->method('getDisplayName')->willReturn('Member Display Name');
+
+        $channel = $this->createStub(Channel::class);
+        $channel->method('getSlug')->willReturn('my-channel');
+        $channel->method('isPrivate')->willReturn(false);
+        $channel->method('isDm')->willReturn(false);
+        $channel->method('getName')->willReturn('general');
+        $channel->method('getMembers')->willReturn(new ArrayCollection([$author, $memberUser]));
+
         $message = $this->createStub(Message::class);
         $message->method('getId')->willReturn(99);
         $message->method('getContent')->willReturn('Hello @member-user code check');
 
-        // We expect dispatch to be called twice: once for the channel HTML message, once for the channel notification.
+        // dispatch: channel HTML, channel notification, push for each non-author member (1 member)
         $this->bus
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(3))
             ->method('dispatch')
             ->willReturn(new Envelope(new \stdClass()));
 

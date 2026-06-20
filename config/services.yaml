@@ -21,6 +21,10 @@ parameters:
     ldap_default_user_search_base: ''
     ldap_default_user_search_filter: '(uid={username})'
 
+    vapid_public_key: '%env(VAPID_PUBLIC_KEY)%'
+    vapid_private_key: '%env(VAPID_PRIVATE_KEY)%'
+    vapid_subject: '%env(VAPID_SUBJECT)%'
+
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -28,6 +32,7 @@ services:
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
         bind:
             $mercureTopicPrefix: '%env(MERCURE_TOPIC_PREFIX)%'
+            $vapidPublicKey: '%vapid_public_key%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
