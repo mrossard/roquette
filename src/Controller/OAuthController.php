@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -30,6 +31,8 @@ final class OAuthController extends AbstractController
         string $mockStorePath,
         #[Autowire(env: 'bool:AUTH_OAUTH_ENABLED')]
         private bool $authOauthEnabled,
+        #[Autowire('%kernel.environment%')]
+        private string $environment,
     ) {
         $this->mockStorePath = $mockStorePath;
     }
@@ -84,6 +87,10 @@ final class OAuthController extends AbstractController
     #[Route('/oauth/mock/authorize', name: 'app_oauth_mock_authorize', methods: ['GET', 'POST'])]
     public function mockAuthorize(Request $request): Response
     {
+        if ($this->environment === 'prod') {
+            throw new NotFoundHttpException('Cette route n\'est pas disponible en production.');
+        }
+
         $clientId = $request->query->get('client_id');
         $redirectUri = $request->query->get('redirect_uri');
         $state = $request->query->get('state');
@@ -135,6 +142,10 @@ final class OAuthController extends AbstractController
     #[Route('/oauth/mock/token', name: 'app_oauth_mock_token', methods: ['POST'])]
     public function mockToken(Request $request): JsonResponse
     {
+        if ($this->environment === 'prod') {
+            throw new NotFoundHttpException('Cette route n\'est pas disponible en production.');
+        }
+
         $code = $request->request->get('code') ?? $request->query->get('code');
 
         // Sometimes the request comes as JSON body
@@ -172,6 +183,10 @@ final class OAuthController extends AbstractController
     #[Route('/oauth/mock/user', name: 'app_oauth_mock_user', methods: ['GET'])]
     public function mockUser(Request $request): JsonResponse
     {
+        if ($this->environment === 'prod') {
+            throw new NotFoundHttpException('Cette route n\'est pas disponible en production.');
+        }
+
         $authHeader = $request->headers->get('Authorization');
         $accessToken = null;
 

@@ -291,4 +291,44 @@ class OAuthControllerTest extends WebTestCase
 
         $this->client->request('GET', '/oauth/check');
     }
+
+    #[Test]
+    public function testMockEndpointsAreDisabledInProduction(): void
+    {
+        $controller = new \App\Controller\OAuthController(
+            'client_id',
+            'auth_url',
+            'redirect_uri',
+            'scope',
+            $this->mockStorePath,
+            true,
+            'prod'
+        );
+
+        $request = new \Symfony\Component\HttpFoundation\Request();
+
+        // 1. mockAuthorize
+        try {
+            $controller->mockAuthorize($request);
+            $this->fail('Expected NotFoundHttpException to be thrown for mockAuthorize in prod environment.');
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+            $this->assertSame('Cette route n\'est pas disponible en production.', $e->getMessage());
+        }
+
+        // 2. mockToken
+        try {
+            $controller->mockToken($request);
+            $this->fail('Expected NotFoundHttpException to be thrown for mockToken in prod environment.');
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+            $this->assertSame('Cette route n\'est pas disponible en production.', $e->getMessage());
+        }
+
+        // 3. mockUser
+        try {
+            $controller->mockUser($request);
+            $this->fail('Expected NotFoundHttpException to be thrown for mockUser in prod environment.');
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+            $this->assertSame('Cette route n\'est pas disponible en production.', $e->getMessage());
+        }
+    }
 }
