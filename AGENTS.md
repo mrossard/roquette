@@ -31,6 +31,7 @@ symfony server:start -d   # or port 80 via compose.override.yaml
 - **File uploads** use Flysystem (MinIO S3 in dev, configurable). ClamAV scans all uploads.
 - **AI** uses `symfony/ai-bundle` + Ollama. Model defaults to `qwen2.5:0.5b` (`.env`), overridden to `qwen2.5:3b` in
   `compose.yaml`.
+- i18n via `symfony/intl-bundle`. Everything should have French and English translations.
 
 ## Commands
 

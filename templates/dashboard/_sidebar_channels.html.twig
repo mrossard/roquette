@@ -3,7 +3,7 @@
 <details class="sidebar-section-details" data-section="channels"
          {% if channelCount <= 5 %}open{% endif %}
          style="display: block;">
-    <summary class="sidebar-section-header sidebar-section-header-channels">
+    <summary class="sidebar-section-header sidebar-section-header-channels" aria-expanded="{% if channelCount <= 5 %}true{% else %}false{% endif %}">
         <span>
             <span class="sidebar-section-toggle-icon">▼</span>
             <span class="sidebar-section-icon">#</span>

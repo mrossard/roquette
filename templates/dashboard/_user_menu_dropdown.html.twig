@@ -1,5 +1,5 @@
 <details class="user-status-dropdown-container user-menu-dropdown-container">
-    <summary class="user-status-trigger user-menu-trigger" aria-haspopup="true" style="list-style: none;">
+    <summary class="user-status-trigger user-menu-trigger" aria-haspopup="true" aria-expanded="false" style="list-style: none;">
         <span class="status-dot {{ app.user.status }}" data-username="{{ app.user.username }}" data-status-override="{{ app.user.statusOverride|default('auto') }}" data-last-active="{{ app.user.lastActiveAt ? app.user.lastActiveAt.timestamp : '' }}" style="display: inline-block;"></span>
         <span class="user-greeting-trigger"><strong style="color: hsl({{ app.user.hue }}, 90%, var(--user-hue-lightness-text));">{{ app.user.displayName|default(app.user.username) }}</strong></span>
         <span class="dropdown-chevron">▼</span>

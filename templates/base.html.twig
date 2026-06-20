@@ -117,6 +117,7 @@
         {% endif %}
     </head>
     <body hx-ext="morph,sse" {% if app.user %}{% set userTopics = get_user_mercure_topics(app.user) %}sse-connect="{{ mercure(userTopics, { subscribe: userTopics }) }}"{% endif %}>
+        <a href="#main-content" class="skip-link">{{ 'Aller au contenu principal'|trans }}</a>
         {% block body %}{% endblock %}
 
         {% if app.user %}

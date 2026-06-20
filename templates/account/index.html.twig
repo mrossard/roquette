@@ -28,7 +28,7 @@
         {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
     </header>
 
-    <main class="dashboard-grid" style="grid-template-columns: 1fr;">
+    <main class="dashboard-grid" id="main-content" style="grid-template-columns: 1fr;">
         <!-- Account Settings Panel -->
         <section class="card glass-panel settings-panel" style="flex-grow: 1;">
             {% include 'dashboard/_settings_skeleton.html.twig' %}

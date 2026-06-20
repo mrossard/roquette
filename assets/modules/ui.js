@@ -234,6 +234,15 @@ document.addEventListener('toggle', (e) => {
     }
 }, true); // Capture phase is required because toggle event does not bubble
 
+// Sync aria-expanded on all details/summary toggles
+document.addEventListener('toggle', (e) => {
+    if (e.target.tagName === 'DETAILS') {
+        const summary = e.target.querySelector(':scope > summary');
+        if (summary) {
+            summary.setAttribute('aria-expanded', e.target.open ? 'true' : 'false');
+        }
+    }
+}, true);
 
 function handleDropdownKeyDown(e) {
     const container = e.currentTarget;
@@ -719,11 +728,44 @@ setInterval(() => {
 }, 15000);
 
 
+function trapFocus(dialog) {
+    const selector = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    function getFocusable() {
+        return Array.from(dialog.querySelectorAll(selector))
+            .filter(el => el.offsetParent !== null);
+    }
+
+    function onKeydown(e) {
+        if (e.key !== 'Tab') return;
+
+        const focusable = getFocusable();
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    }
+
+    dialog.addEventListener('keydown', onKeydown);
+    dialog.addEventListener('close', () => {
+        dialog.removeEventListener('keydown', onKeydown);
+    }, { once: true });
+}
+
 export function openModal(modalId, trigger = null) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal._triggerElement = trigger || document.activeElement;
         modal.showModal();
+        trapFocus(modal);
 
         // Auto-focus first input or button inside the modal
         const focusEl = modal.querySelector('input[type="text"], input[type="search"], select, textarea, [autofocus]');
@@ -746,6 +788,7 @@ document.addEventListener('htmx:afterSwap', (e) => {
         const dialog = e.detail.target.querySelector('dialog');
         if (dialog) {
             dialog.showModal();
+            trapFocus(dialog);
             const focusEl = dialog.querySelector('input[type="text"], input[type="search"], select, textarea, [autofocus]');
             if (focusEl) {
                 setTimeout(() => focusEl.focus(), 50);
@@ -787,6 +830,7 @@ export function openGlobalSearch() {
     const input = document.getElementById('global-search-input');
     if (modal && input) {
         modal.showModal();
+        trapFocus(modal);
         input.focus();
         input.select();
     }
@@ -958,6 +1002,7 @@ export function openExternalImageLightbox(url) {
     content.appendChild(caption);
     dialog.appendChild(content);
 
+    trapFocus(dialog);
     dialog.showModal();
 }
 
