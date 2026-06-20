@@ -5,18 +5,32 @@ framework:
 
         transports:
             # https://symfony.com/doc/current/messenger.html#transport-configuration
-            async: '%env(MESSENGER_TRANSPORT_DSN)%'
+            async_high:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    stream: 'messages_high'
+                retry_strategy:
+                    max_retries: 3
+                    delay: 1000
+                    multiplier: 2
+            async_low:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    stream: 'messages_low'
+                retry_strategy:
+                    max_retries: 1
+                    delay: 5000
             failed: 'doctrine://default?queue_name=failed'
             sync: 'sync://'
 
         routing:
             # Route your messages to the transports
-            'Symfony\Component\Mercure\Update': async
-            'App\Message\AuditLogMessage': async
-            'App\Message\LlmQueryMessage': async
-            'App\Message\ScanFileMessage': async
-            'App\Message\DownloadEmojiMessage': async
-            'App\Message\PushNotificationMessage': async
+            'Symfony\Component\Mercure\Update': async_high
+            'App\Message\AuditLogMessage': async_high
+            'App\Message\PushNotificationMessage': async_high
+            'App\Message\LlmQueryMessage': async_low
+            'App\Message\ScanFileMessage': async_low
+            'App\Message\DownloadEmojiMessage': async_low
 
 when@test:
     framework:
@@ -24,7 +38,7 @@ when@test:
             routing:
                 'Symfony\Component\Mercure\Update': sync
                 'App\Message\AuditLogMessage': sync
+                'App\Message\PushNotificationMessage': sync
                 'App\Message\LlmQueryMessage': sync
                 'App\Message\ScanFileMessage': sync
                 'App\Message\DownloadEmojiMessage': sync
-                'App\Message\PushNotificationMessage': sync

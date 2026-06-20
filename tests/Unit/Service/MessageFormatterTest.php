@@ -51,8 +51,6 @@ class MessageFormatterTest extends TestCase
 
         $this->formatter = new MessageFormatter(
             $this->security,
-            $this->httpClient,
-            $this->testEmojisDir,
             'http://example.com/emojis',
             $this->channelRepository,
             $this->userRepository,
@@ -286,8 +284,6 @@ class MessageFormatterTest extends TestCase
 
         $formatter = new MessageFormatter(
             $security,
-            $this->httpClient,
-            $this->testEmojisDir,
             'http://example.com/emojis',
             $this->channelRepository,
             $this->userRepository,
