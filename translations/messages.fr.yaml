@@ -614,3 +614,7 @@ Messages: Messages
 dans: dans
 'Aller au message ➔': 'Aller au message ➔'
 '(Fichier joint uniquement)': '(Fichier joint uniquement)'
+channel.general.name: "Général"
+channel.general.description: "Le canal de discussion principal pour tout le monde."
+channel.assistant.name: "Assistant"
+channel.assistant.description: "Discussion privée avec l'Assistant"
