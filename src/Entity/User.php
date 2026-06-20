@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
@@ -27,6 +28,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 3, max: 180)]
+    #[Assert\Regex(pattern: '/^[a-zA-Z0-9_\-\.]+$/', message: 'username.regex')]
     private ?string $username = null;
 
     #[ORM\Column(length: 180)]
@@ -45,9 +49,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(nullable: true)]
+    #[Assert\Range(min: 0, max: 360)]
     private ?int $customHue = null;
 
     #[ORM\Column(length: 100, nullable: true)]
+    #[Assert\Length(max: 100)]
     private ?string $displayName = null;
 
     #[ORM\Column(nullable: true)]
@@ -66,9 +72,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private bool $mentionNotificationsEnabled = true;
 
     #[ORM\Column(length: 10, options: ['default' => 'dark'])]
+    #[Assert\Choice(choices: ['dark', 'light'])]
     private string $theme = 'dark';
 
     #[ORM\Column(length: 10, options: ['default' => 'fr'])]
+    #[Assert\Choice(choices: ['fr', 'en'])]
     private string $locale = 'fr';
 
     #[ORM\Column(options: ['default' => false])]

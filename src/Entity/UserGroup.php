@@ -8,6 +8,7 @@ use App\Repository\UserGroupRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserGroupRepository::class)]
 #[ORM\Table(name: '`user_group`')]
@@ -20,9 +21,13 @@ class UserGroup
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 255)]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 255)]
     private ?string $groupIdentifier = null;
 
     #[ORM\OneToOne(inversedBy: 'userGroup', targetEntity: Channel::class, cascade: ['persist', 'remove'])]

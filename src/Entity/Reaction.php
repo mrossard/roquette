@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Repository\ReactionRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ReactionRepository::class)]
 #[ORM\Table(name: '`reaction`')]
@@ -27,6 +28,8 @@ class Reaction
     private ?User $user = null;
 
     #[ORM\Column(length: 32)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 1, max: 32)]
     private ?string $emoji = null;
 
     public function getId(): ?int

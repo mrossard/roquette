@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Repository\CustomEmojiRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CustomEmojiRepository::class)]
 #[ORM\Table(name: '`custom_emoji`')]
@@ -18,9 +19,14 @@ class CustomEmoji
     private ?int $id = null;
 
     #[ORM\Column(length: 191)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 191)]
+    #[Assert\Regex(pattern: '/^:[a-zA-Z0-9_\-]+:$/', message: 'Le code émoji doit commencer et se terminer par ":" (ex: :mon_emoji:)')]
     private ?string $code = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private ?string $filename = null;
 
     /**

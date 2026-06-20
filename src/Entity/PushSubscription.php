@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Repository\PushSubscriptionRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PushSubscriptionRepository::class)]
 #[ORM\Table(name: '`push_subscription`')]
@@ -24,12 +25,19 @@ class PushSubscription
     private ?User $user = null;
 
     #[ORM\Column(length: 512)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 5, max: 512)]
+    #[Assert\Url]
     private ?string $endpoint = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 10, max: 255)]
     private ?string $publicKey = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 10, max: 255)]
     private ?string $authToken = null;
 
     #[ORM\Column(length: 255, nullable: true)]

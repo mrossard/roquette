@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\Order;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ChannelRepository::class)]
 #[ORM\Table(name: '`channel`')]
@@ -23,12 +24,17 @@ class Channel
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 255)]
     private ?string $name = null;
 
     #[ORM\Column(length: 255, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 255)]
     private ?string $slug = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
     private ?string $description = null;
 
     #[ORM\Column]
@@ -44,6 +50,7 @@ class Channel
     private bool $isTodoList = false;
 
     #[ORM\Column(type: 'integer', nullable: true, options: ['default' => 6])]
+    #[Assert\Range(min: 0)]
     private ?int $messageRetentionMonths = 6;
 
     #[ORM\ManyToOne(targetEntity: Message::class)]

@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\JoinColumn;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 #[ORM\Table(name: '`message`')]
@@ -25,6 +26,7 @@ class Message
     private ?int $id = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[Assert\Length(max: 10000)]
     private ?string $content = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
@@ -40,15 +42,18 @@ class Message
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
     private ?string $fileName = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
     private ?string $filePath = null;
 
     #[ORM\Column(nullable: true)]
     private ?int $fileSize = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
     private ?string $mimeType = null;
 
     #[ORM\ManyToOne(inversedBy: 'messages')]
