@@ -17,6 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -31,8 +32,8 @@ final class AdminController extends AbstractController
     private const int PER_PAGE = 25;
 
     public function __construct(
-        private LoggerInterface $logger,
-        private TranslatorInterface $translator,
+        private readonly LoggerInterface $logger,
+        private readonly TranslatorInterface $translator,
     ) {}
 
     #[Route('/admin/users', name: 'app_admin_users')]
@@ -194,8 +195,8 @@ final class AdminController extends AbstractController
             Response::HTTP_OK,
             [
                 'Content-Type' => $contentType,
-                'Content-Disposition' => \Symfony\Component\HttpFoundation\HeaderUtils::makeDisposition(
-                    \Symfony\Component\HttpFoundation\HeaderUtils::DISPOSITION_ATTACHMENT,
+                'Content-Disposition' => HeaderUtils::makeDisposition(
+                    HeaderUtils::DISPOSITION_ATTACHMENT,
                     $export->getFileName(),
                 ),
             ],
@@ -404,7 +405,7 @@ final class AdminController extends AbstractController
         // Ensure file is a GIF
         if (
             $file->getMimeType() !== 'image/gif'
-            && !str_ends_with(strtolower($file->getClientOriginalName()), '.gif')
+            || !str_ends_with(strtolower($file->getClientOriginalName()), '.gif')
         ) {
             $this->addFlash(
                 'error',
@@ -415,7 +416,7 @@ final class AdminController extends AbstractController
 
         // Sanitize code
         $sanitizedCode = preg_replace('/[^a-zA-Z0-9_\-\+:]/', '', $code);
-        if ($sanitizedCode !== $code || $sanitizedCode === '') {
+        if ($sanitizedCode !== $code) {
             $this->addFlash(
                 'error',
                 $this->translator->trans(

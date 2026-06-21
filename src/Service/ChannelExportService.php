@@ -13,17 +13,17 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
-class ChannelExportService
+readonly class ChannelExportService
 {
     public function __construct(
-        private readonly FileUploadService $fileUploadService,
-        private readonly EntityManagerInterface $entityManager,
-        private readonly AuditLoggerService $auditLogger,
-        private readonly TranslatorInterface $translator,
-        private readonly \Twig\Environment $twig,
+        private FileUploadService $fileUploadService,
+        private EntityManagerInterface $entityManager,
+        private AuditLoggerService $auditLogger,
+        private TranslatorInterface $translator,
+        private Environment $twig,
     ) {}
 
     public function export(Channel $channel, User $currentUser): Response

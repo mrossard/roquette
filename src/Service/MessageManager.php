@@ -13,7 +13,6 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
 
 class MessageManager
 {
@@ -23,7 +22,7 @@ class MessageManager
         private readonly MercurePublisher $mercurePublisher,
         private readonly FileUploadService $fileUploadService,
         private readonly TranslatorInterface $translator,
-        private readonly Environment $twig,
+        private readonly MessageRenderer $messageRenderer,
     ) {}
 
     public function editMessageForm(int $id, User $currentUser): array
@@ -133,12 +132,9 @@ class MessageManager
         $message->setUpdatedAt(new \DateTimeImmutable());
         $this->entityManager->flush();
 
-        $renderedHtml = $this->renderFeedItem($message, ['no_fade' => true]);
+        $renderedHtml = $this->messageRenderer->renderFeedItem($message, ['no_fade' => true]);
 
-        $renderedHtmlOob = $this->twig->render('dashboard/_feed_item.html.twig', array_merge(
-            $this->feedItemParams($message),
-            ['oob' => true],
-        ));
+        $renderedHtmlOob = $this->messageRenderer->renderFeedItem($message, ['oob' => true]);
 
         $this->mercurePublisher->publishToChannel(
             $message->getChannel(),
@@ -196,12 +192,9 @@ class MessageManager
         $message->setUpdatedAt(new \DateTimeImmutable());
         $this->entityManager->flush();
 
-        $renderedHtml = $this->renderFeedItem($message, ['no_fade' => true]);
+        $renderedHtml = $this->messageRenderer->renderFeedItem($message, ['no_fade' => true]);
 
-        $renderedHtmlOob = $this->twig->render('dashboard/_feed_item.html.twig', array_merge(
-            $this->feedItemParams($message),
-            ['oob' => true],
-        ));
+        $renderedHtmlOob = $this->messageRenderer->renderFeedItem($message, ['oob' => true]);
 
         $this->mercurePublisher->publishToChannel(
             $message->getChannel(),
@@ -210,30 +203,6 @@ class MessageManager
         );
 
         return ['renderedHtml' => $renderedHtml];
-    }
-
-    private function renderFeedItem(Message $message, array $extraParams = []): string
-    {
-        return $this->twig->render('dashboard/_feed_item.html.twig', array_merge(
-            $this->feedItemParams($message),
-            $extraParams,
-        ));
-    }
-
-    private function feedItemParams(Message $message): array
-    {
-        return [
-            'author' => $message->getAuthor(),
-            'message' => $message->getContent(),
-            'timestamp' => $message->getCreatedAt(),
-            'message_id' => $message->getId(),
-            'updated_at' => $message->getUpdatedAt(),
-            'fileName' => $message->getFileName(),
-            'fileSize' => $message->getFileSize(),
-            'filePath' => $message->getFilePath(),
-            'mimeType' => $message->getMimeType(),
-            'messageObject' => $message,
-        ];
     }
 
     /** @return string[] */

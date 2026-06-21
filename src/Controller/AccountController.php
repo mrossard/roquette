@@ -21,8 +21,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class AccountController extends AbstractController
 {
     public function __construct(
-        private string $mercureTopicPrefix,
-        private TranslatorInterface $translator,
+        private readonly string $mercureTopicPrefix,
+        private readonly TranslatorInterface $translator,
     ) {}
 
     #[Route('/account', name: 'app_account', methods: ['GET', 'POST'])]
@@ -33,7 +33,7 @@ final class AccountController extends AbstractController
         ChannelRepository $channelRepository,
         MessageBusInterface $bus,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         // Fetch user channels so we can still render base sidebar/layout components
@@ -78,9 +78,7 @@ final class AccountController extends AbstractController
                         'status' => $currentUser->getStatus(),
                         'statusLabel' => $currentUser->getStatusLabel(),
                         'statusOverride' => $currentUser->getStatusOverride() ?? 'auto',
-                        'lastActive' => $currentUser->getLastActiveAt()
-                            ? $currentUser->getLastActiveAt()->getTimestamp()
-                            : null,
+                        'lastActive' => $currentUser->getLastActiveAt()?->getTimestamp(),
                     ]),
                     true,
                     null,
