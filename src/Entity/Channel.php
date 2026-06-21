@@ -7,8 +7,6 @@ namespace App\Entity;
 use App\Repository\ChannelRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\Common\Collections\Criteria;
-use Doctrine\Common\Collections\Order;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -283,20 +281,6 @@ class Channel
     {
         $this->pinnedMessage = $pinnedMessage;
         return $this;
-    }
-
-    public function getLastMessage(): ?Message
-    {
-        $criteria = Criteria::create()
-            ->orderBy([
-                'createdAt' => Order::Descending,
-                'id' => Order::Descending,
-            ])
-            ->setMaxResults(1);
-
-        $result = $this->messages->matching($criteria)->first();
-
-        return $result !== false ? $result : null;
     }
 
     public function getMessageRetentionMonths(): ?int

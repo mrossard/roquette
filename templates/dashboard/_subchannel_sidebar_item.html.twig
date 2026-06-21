@@ -13,7 +13,7 @@
    title="{{ channel.name }}">
     <span class="channel-hash" style="color: var(--accent-cyan); opacity: 0.7; font-size: 0.85rem;">⊞</span>
     <span class="channel-name" style="font-size: 0.85rem;">{{ channel.name }}</span>
-    {% set lastMessage = lastMessages[channel.id] ?? channel.lastMessage %}
+    {% set lastMessage = lastMessages[channel.id]|default(null) %}
     {% if lastMessage %}
         {% set lastMessageDate = lastMessage.createdAt %}
         {% set isToday = lastMessageDate|date('Y-m-d') == 'now'|date('Y-m-d') %}

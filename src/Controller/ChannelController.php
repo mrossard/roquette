@@ -226,6 +226,7 @@ final class ChannelController extends AbstractController
     public function sidebarItem(
         string $slug,
         ChannelRepository $channelRepository,
+        MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
@@ -243,6 +244,8 @@ final class ChannelController extends AbstractController
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
 
+        $lastMessage = $messageRepository->findLastMessageForChannel($channel);
+
         $template = $channel->isSubChannel()
             ? 'dashboard/_subchannel_sidebar_item.html.twig'
             : 'dashboard/_channel_sidebar_item.html.twig';
@@ -251,6 +254,7 @@ final class ChannelController extends AbstractController
             'channel' => $channel,
             'unreadCounts' => $unreadCounts,
             'activeChannel' => null,
+            'lastMessages' => $lastMessage ? [$channel->getId() => $lastMessage] : [],
         ]);
     }
 
@@ -258,6 +262,7 @@ final class ChannelController extends AbstractController
     public function filterChannels(
         Request $request,
         ChannelRepository $channelRepository,
+        MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
@@ -278,6 +283,9 @@ final class ChannelController extends AbstractController
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
 
+        $channelIds = array_map(static fn(Channel $c) => (int) $c->getId(), $channels);
+        $lastMessages = $messageRepository->findLastMessagesForChannels($channelIds);
+
         $currentUrl = $request->headers->get('HX-Current-URL');
         $activeChannel = null;
         if ($currentUrl) {
@@ -293,6 +301,7 @@ final class ChannelController extends AbstractController
             'unreadCounts' => $unreadCounts,
             'activeChannel' => $activeChannel,
             'filterMode' => true,
+            'lastMessages' => $lastMessages,
         ]);
     }
 
