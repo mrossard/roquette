@@ -92,8 +92,12 @@ class ChannelExportService
         array $messages,
     ): Response {
         $zip = new \ZipArchive();
-        $zipFile = tempnam(sys_get_temp_dir(), 'export-');
-        if ($zipFile === false || $zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+        $tempFile = tempnam(sys_get_temp_dir(), 'export-');
+        $zipFile = $tempFile . '.zip';
+        if ($tempFile !== false && file_exists($tempFile)) {
+            unlink($tempFile);
+        }
+        if ($zipFile === false || $zip->open($zipFile, \ZipArchive::CREATE) !== true) {
             throw new \RuntimeException($this->translator->trans('Impossible de créer l\'archive ZIP.'));
         }
 

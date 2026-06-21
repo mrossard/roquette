@@ -48,7 +48,8 @@
         "twig/cache-extra": "^3.24",
         "twig/extra-bundle": "^2.12|^3.24",
         "twig/string-extra": "^3.24",
-        "twig/twig": "^2.12|^3.27.1"
+        "twig/twig": "^2.12|^3.27.1",
+        "ext-zip": "*"
     },
     "config": {
         "allow-plugins": {
