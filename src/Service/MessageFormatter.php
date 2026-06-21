@@ -96,8 +96,55 @@ class MessageFormatter
         return trim($html);
     }
 
+    private function preloadReferences(string $html): void
+    {
+        $unknownUsernames = [];
+        if (preg_match_all('/@([a-zA-Z0-9_\-\/\+]+)/u', $html, $m)) {
+            foreach (array_unique($m[1]) as $username) {
+                if (\array_key_exists($username, $this->userCache)) {
+                    continue;
+                }
+                $unknownUsernames[] = $username;
+            }
+        }
+        if ($unknownUsernames !== []) {
+            foreach ($this->userRepository->findBy(['username' => $unknownUsernames]) as $user) {
+                $this->userCache[$user->getUsername()] = $user;
+            }
+            foreach ($unknownUsernames as $u) {
+                if (\array_key_exists($u, $this->userCache)) {
+                    continue;
+                }
+                $this->userCache[$u] = null;
+            }
+        }
+
+        $unknownSlugs = [];
+        if (preg_match_all('/#([a-zA-Z0-9_-]+)/', $html, $m)) {
+            foreach (array_unique($m[1]) as $slug) {
+                if (\array_key_exists($slug, $this->channelSlugCache)) {
+                    continue;
+                }
+                $unknownSlugs[] = $slug;
+            }
+        }
+        if ($unknownSlugs !== []) {
+            foreach ($this->channelRepository->findBy(['slug' => $unknownSlugs, 'isDm' => false]) as $ch) {
+                $this->channelSlugCache[$ch->getSlug()] = $ch;
+            }
+            foreach ($unknownSlugs as $s) {
+                if (\array_key_exists($s, $this->channelSlugCache)) {
+                    continue;
+                }
+                $this->channelSlugCache[$s] = null;
+            }
+        }
+    }
+
     private function postProcessHtml(string $html): string
     {
+        $this->preloadReferences($html);
+
         // Rendre les blocs de code conformes aux classes CSS existantes
         // <pre> -> <pre class="message-code-block">
         $html = str_replace('<pre>', '<pre class="message-code-block">', $html);
