@@ -321,10 +321,11 @@ class ChannelControllerTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
         $response = $this->client->getResponse();
+        $content = $this->client->getInternalResponse()->getContent();
 
         if (class_exists(\ZipArchive::class)) {
             static::assertSame('application/zip', $response->headers->get('Content-Type'));
-            static::assertStringStartsWith('PK', $response->getContent()); // ZIP file signature
+            static::assertStringStartsWith('PK', $content); // ZIP file signature
         } else {
             static::assertSame('application/x-tar', $response->headers->get('Content-Type'));
         }
