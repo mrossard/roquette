@@ -10,6 +10,7 @@ use App\Entity\Message;
 use App\Entity\User;
 use App\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -121,15 +122,30 @@ class ChannelExportService
                         if (is_resource($fileStream)) {
                             fclose($fileStream);
                         }
-                        $zip->addFile($tmpFile, 'files/' . basename($filePath));
+                        if ($zip->addFile($tmpFile, 'files/' . basename($filePath)) !== true) {
+                            throw new \RuntimeException('Failed to add attachment to ZIP: ' . $tmpFile);
+                        }
                         $tmpFiles[] = $tmpFile;
                     }
-                } catch (\Exception) {
-                    continue;
+                } catch (\Exception $e) {
+                    throw new \RuntimeException('Error adding file to ZIP: ' . $e->getMessage(), 0, $e);
                 }
             }
         } finally {
-            $zip->close();
+            $status = $zip->getStatusString();
+            $closed = $zip->close();
+            if (!$closed) {
+                throw new \RuntimeException('ZipArchive::close() failed. Status: ' . $status);
+            }
+        }
+
+        if (!file_exists($zipFile)) {
+            throw new \RuntimeException('Zip file does not exist after closing: ' . $zipFile);
+        }
+
+        $size = filesize($zipFile);
+        if ($size === 0) {
+            throw new \RuntimeException('Zip file is empty (0 bytes) after closing: ' . $zipFile);
         }
 
         $filename = $channel->getSlug() . '-export.zip';
@@ -142,21 +158,12 @@ class ChannelExportService
             }
         }
 
-        return new StreamedResponse(
-            function () use ($zipFile) {
-                $out = fopen('php://output', 'wb');
-                $in = fopen($zipFile, 'rb');
-                stream_copy_to_stream($in, $out);
-                fclose($in);
-                fclose($out);
-                unlink($zipFile);
-            },
-            Response::HTTP_OK,
-            [
-                'Content-Type' => 'application/zip',
-                'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename),
-            ],
-        );
+        $response = new BinaryFileResponse($zipFile);
+        $response->setContentDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename);
+        $response->headers->set('Content-Type', 'application/zip');
+        $response->deleteFileAfterSend(true);
+
+        return $response;
     }
 
     private function exportAsTar(
@@ -211,21 +218,12 @@ class ChannelExportService
             }
         }
 
-        return new StreamedResponse(
-            function () use ($tarFile) {
-                $out = fopen('php://output', 'wb');
-                $in = fopen($tarFile, 'rb');
-                stream_copy_to_stream($in, $out);
-                fclose($in);
-                fclose($out);
-                unlink($tarFile);
-            },
-            Response::HTTP_OK,
-            [
-                'Content-Type' => 'application/x-tar',
-                'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename),
-            ],
-        );
+        $response = new BinaryFileResponse($tarFile);
+        $response->setContentDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename);
+        $response->headers->set('Content-Type', 'application/x-tar');
+        $response->deleteFileAfterSend(true);
+
+        return $response;
     }
 
     private function saveAndCreateExportEntity(
@@ -239,7 +237,13 @@ class ChannelExportService
         $storagePath = 'exports/' . $uniqueFilename;
 
         $stream = fopen($tempFilePath, 'rb');
-        $this->fileUploadService->writeStream($storagePath, $stream);
+        try {
+            $this->fileUploadService->writeStream($storagePath, $stream);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
 
         $export = new ChannelExport();
         $export->setChannel($channel);

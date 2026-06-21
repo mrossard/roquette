@@ -81,9 +81,7 @@ class AdminEmojiControllerTest extends WebTestCase
         $container = $this->client->getContainer();
         $mockStorage = $this->createMock(FilesystemOperator::class);
         $mockStorage
-            ->expects($this->any())
             ->method('listContents')
-            ->with('emojis', true)
             ->willReturn(new \League\Flysystem\DirectoryListing([
                 new \League\Flysystem\FileAttributes('emojis/smile.gif', 1024),
             ]));
