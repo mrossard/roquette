@@ -6,20 +6,14 @@ namespace App\Service;
 
 use App\Controller\Trait\RequestValidationTrait;
 use App\Entity\Channel;
-use App\Entity\Message;
 use App\Entity\User;
-use App\Message\LlmQueryMessage;
-use App\Message\ScanFileMessage;
 use App\Repository\ChannelRepository;
-use App\Repository\MessageRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -30,16 +24,11 @@ class MessagePublisher
 
     public function __construct(
         private readonly ChannelRepository $channelRepository,
-        private readonly MessageRepository $messageRepository,
-        private readonly EntityManagerInterface $entityManager,
-        private readonly MercurePublisher $mercurePublisher,
-        private readonly FileUploadService $fileUploadService,
-        private readonly MessageBusInterface $messageBus,
-        private readonly TranslatorInterface $translator,
-        private readonly Environment $twig,
+        private readonly MessagePublishService $publishService,
         private readonly SlashCommandHandler $slashCommandHandler,
         private readonly RequestStack $requestStack,
-        private readonly MessageRenderer $messageRenderer,
+        private readonly Environment $twig,
+        private readonly TranslatorInterface $translator,
         #[Autowire(service: 'limiter.message_api')]
         private readonly RateLimiterFactoryInterface $rateLimiter,
     ) {}
@@ -69,82 +58,41 @@ class MessagePublisher
         $messageText = $request->request->get('message', '');
         $uploadedFile = $request->files->get('file');
         $pollQuestion = $request->request->get('poll_question');
-        $isPoll = $pollQuestion !== null && $pollQuestion !== '';
 
-        if (trim($messageText) === '' && !$uploadedFile && !$isPoll) {
+        if (trim($messageText) === '' && !$uploadedFile && ($pollQuestion === null || $pollQuestion === '')) {
             return $this->renderForm($channel);
         }
 
-        if ($isPoll) {
-            $optionsData = $this->getPollOptions($request);
-
-            if (count($optionsData) < 2) {
-                return new Response($this->translator->trans('Un sondage requiert au moins 2 options.'), 400);
+        // Handle slash commands that return a direct Response
+        if ($pollQuestion === null && !$uploadedFile && str_starts_with(trim($messageText), '/')) {
+            $slashResponse = $this->slashCommandHandler->process($messageText, $channel, $currentUser);
+            if ($slashResponse !== null) {
+                return $slashResponse;
             }
+            // $messageText may have been mutated by /shrug or /me
         }
 
-        if (!$isPoll && !$uploadedFile && str_starts_with(trim($messageText), '/')) {
-            $response = $this->slashCommandHandler->process($messageText, $channel, $currentUser);
-            if ($response !== null) {
-                return $response;
-            }
-        }
-
-        $message = new Message();
-        $message->setAuthor($currentUser);
-        $message->setChannel($channel);
-
-        $replyToId = $request->request->get('replyTo');
-        if ($replyToId && !$channel->isTodoList()) {
-            $parentMessage = $this->messageRepository->find((int) $replyToId);
-            if ($parentMessage && $parentMessage->getChannel()->getId() === $channel->getId()) {
-                $message->setParentMessage($parentMessage);
-            }
-        }
-
-        if ($isPoll) {
-            $this->attachPoll($message, $request, $pollQuestion, $optionsData);
-        } else {
-            $message->setContent(trim($messageText) === '' ? null : $messageText);
-
-            if ($uploadedFile) {
-                try {
-                    $this->fileUploadService->uploadAndAttachToMessage($uploadedFile, $message);
-                    $message->setVirusScanStatus('pending');
-                } catch (\InvalidArgumentException $e) {
-                    $this->addFlash('error', $e->getMessage());
-
-                    return $this->renderForm($channel);
-                }
-            }
-        }
-
-        $this->entityManager->persist($message);
-        $this->entityManager->flush();
-
-        if ($uploadedFile) {
-            $this->messageBus->dispatch(new ScanFileMessage($message->getId()));
-        }
-
-        $renderedHtml = $this->renderFeedItem($message);
-
-        $previousMessages = $this->messageRepository->findLatestInChannel($channel, 1, $message->getId());
-        if ($previousMessages !== [] && !$channel->isTodoList()) {
-            $renderedHtml = $this->maybePrependDaySeparator($previousMessages[0], $message, $renderedHtml);
-        }
-
-        $this->mercurePublisher->publishNewMessage(
-            $channel,
-            $message,
-            $currentUser,
-            $isPoll ? 'Sondage : ' . $pollQuestion : $messageText,
-            $renderedHtml,
+        $result = $this->publishService->publish(
+            channel: $channel,
+            currentUser: $currentUser,
+            messageText: $messageText,
+            file: $uploadedFile,
+            pollQuestion: $pollQuestion,
+            pollOptions: $this->getPollOptions($request),
+            pollAllowMultiple: (bool) $request->request->get('allow_multiple'),
+            replyToId: ($replyTo = $request->request->get('replyTo')) ? (int) $replyTo : null,
         );
 
-        if ($channel->getSlug() === 'dm-robot-roquette-' . $currentUser->getSlug() && !$isPoll && !$uploadedFile) {
-            $this->messageBus->dispatch(
-                new LlmQueryMessage($messageText, $currentUser->getId(), $channel->getSlug(), 'help-' . uniqid()),
-            );
+        if (!$result->success) {
+            if ($result->error !== null && $result->statusCode === 400) {
+                return new Response($result->error, 400);
+            }
+
+            if ($result->error !== null) {
+                $this->addFlash('error', $result->error);
+            }
+
+            return $this->renderForm($channel, $result->statusCode ?? 200);
         }
 
         return $this->renderForm($channel);
@@ -169,53 +117,6 @@ class MessagePublisher
         return new Response($this->twig->render('dashboard/_input_form.html.twig', [
             'activeChannel' => $channel,
         ]), $statusCode);
-    }
-
-    private function renderFeedItem(Message $message, array $extraParams = []): string
-    {
-        return $this->messageRenderer->renderFeedItem($message, $extraParams);
-    }
-
-    private function maybePrependDaySeparator(
-        Message $previousMessage,
-        Message $newMessage,
-        string $renderedHtml,
-    ): string {
-        $previousDate = $previousMessage->getCreatedAt()->format('Y-m-d');
-        $newDate = $newMessage->getCreatedAt()->format('Y-m-d');
-
-        if ($previousDate === $newDate) {
-            return $renderedHtml;
-        }
-
-        $today = new \DateTimeImmutable()->format('Y-m-d');
-        $yesterday = new \DateTimeImmutable('-1 day')->format('Y-m-d');
-        $label = match ($newDate) {
-            $today => "Aujourd'hui",
-            $yesterday => 'Hier',
-            default => $newMessage->getCreatedAt()->format('d/m/Y'),
-        };
-
-        return $this->twig->render('dashboard/_day_separator.html.twig', ['label' => $label]) . "\n" . $renderedHtml;
-    }
-
-    private function attachPoll(Message $message, Request $request, string $pollQuestion, array $optionsData): void
-    {
-        $poll = new \App\Entity\Poll();
-        $poll->setQuestion(trim($pollQuestion));
-        $poll->setAllowMultiple((bool) $request->request->get('allow_multiple'));
-        $poll->setMessage($message);
-        $message->setPoll($poll);
-
-        $position = 0;
-        foreach ($optionsData as $optionText) {
-            $option = new \App\Entity\PollOption();
-            $option->setText($optionText);
-            $option->setPosition($position++);
-            $poll->addOption($option);
-        }
-
-        $this->entityManager->persist($poll);
     }
 
     private function addFlash(string $type, string $message): void
