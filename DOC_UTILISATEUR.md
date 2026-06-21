@@ -831,18 +831,7 @@ Modifie instantanément la couleur de votre avatar et de votre pseudo.
 /color       → teinte aléatoire
 ```
 
-### 18.3 `/giphy [recherche]`
-
-Recherche un GIF animé sur **Tenor** et affiche une grille de suggestions.
-
-1. Tapez `/giphy chat` par exemple.
-2. Une grille de GIFs s'affiche dans le champ de saisie.
-3. Cliquez sur le GIF de votre choix.
-4. Le GIF est envoyé comme message (lien markdown avec image).
-
-Pour annuler, cliquez sur le bouton d'annulation.
-
-### 18.4 `/shrug [texte]`
+### 18.3 `/shrug [texte]`
 
 Ajoute l'émoji `¯\_(ツ)_/¯` à la fin de votre texte.
 

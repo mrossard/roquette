@@ -7,7 +7,7 @@ const autocompleteInitialized = new WeakSet();
 
 const SLASH_COMMANDS = [
     {name: 'help', icon: '🤖', description: window.trans('Poser une question à l\'Assistant Roquette'), usage: '/help <question>'},
-    {name: 'giphy', icon: '🎞️', description: window.trans('Rechercher et envoyer un GIF animé'), usage: '/giphy <recherche>'},
+
     {name: 'shrug', icon: '🤷', description: window.trans('Envoyer le shrug ¯\\_(ツ)_/¯'), usage: '/shrug [texte]'},
     {name: 'me', icon: '💬', description: window.trans('Action'), usage: '/me <message>'},
     {name: 'color', icon: '🎨', description: window.trans('Changer la couleur de votre pseudo'), usage: '/color [0-360]'},

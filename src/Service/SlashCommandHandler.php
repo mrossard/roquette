@@ -8,24 +8,18 @@ use App\Entity\Channel;
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 class SlashCommandHandler
 {
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
         private readonly MessageBusInterface $messageBus,
         private readonly TranslatorInterface $translator,
         private readonly Environment $twig,
         private readonly EntityManagerInterface $entityManager,
-        #[Autowire(env: 'TENOR_API_KEY')]
-        #[\SensitiveParameter]
-        private readonly string $tenorApiKey,
     ) {}
 
     /**
@@ -90,10 +84,6 @@ class SlashCommandHandler
             return null;
         }
 
-        if ($command === 'giphy') {
-            return $this->handleGiphy($args, $channel);
-        }
-
         return null;
     }
 
@@ -147,42 +137,4 @@ class SlashCommandHandler
         return new Response($formHtml . "\n" . $oobHtml);
     }
 
-    private function handleGiphy(string $args, Channel $channel): Response
-    {
-        if ($args === '') {
-            $args = 'funny';
-        }
-
-        $giphyPreviews = [];
-        try {
-            $url = 'https://g.tenor.com/v1/search?q=' . urlencode($args) . '&key=' . $this->tenorApiKey . '&limit=6';
-            $response = $this->httpClient->request('GET', $url, ['timeout' => 3]);
-            $data = $response->toArray();
-            if (($data['results'] ?? null) !== null && $data['results'] !== []) {
-                foreach ($data['results'] as $result) {
-                    if (
-                        ($result['media'][0]['gif']['url'] ?? null) === null
-                        || $result['media'][0]['gif']['url'] === ''
-                    ) {
-                        continue;
-                    }
-
-                    $giphyPreviews[] = [
-                        'url' => $result['media'][0]['gif']['url'],
-                        'preview' =>
-                            $result['media'][0]['tinygif']['url'] ?? $result['media'][0]['gif']['preview']
-                                ?? $result['media'][0]['gif']['url'],
-                    ];
-                }
-            }
-        } catch (\Exception) {
-            $giphyPreviews = [];
-        }
-
-        return new Response($this->twig->render('dashboard/_input_form.html.twig', [
-            'activeChannel' => $channel,
-            'giphyPreviews' => $giphyPreviews,
-            'giphyQuery' => $args,
-        ]));
-    }
 }
