@@ -110,9 +110,11 @@ class PurgeExpiredMessagesCommand extends Command
         if (!$dryRun && $totalPurged > 0) {
             $this->em->flush();
             $io->success(sprintf('%d message(s) expiré(s) purgé(s) avec succès.', $totalPurged));
-        } else {
-            $io->success(sprintf('[Simulation] %d message(s) expiré(s) identifié(s).', $totalPurged));
+
+            return Command::SUCCESS;
         }
+
+        $io->success(sprintf('[Simulation] %d message(s) expiré(s) identifié(s).', $totalPurged));
 
         return Command::SUCCESS;
     }

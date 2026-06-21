@@ -6,7 +6,6 @@ namespace App\Controller;
 
 use App\Entity\Channel;
 use App\Enum\AuditAction;
-use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Service\AuditLoggerService;
 use Doctrine\ORM\EntityManagerInterface;

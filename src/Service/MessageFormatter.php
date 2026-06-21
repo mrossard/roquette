@@ -12,7 +12,6 @@ use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
 use League\CommonMark\MarkdownConverter;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Formate le contenu brut d'un message en HTML sécurisé.
@@ -295,9 +294,11 @@ class MessageFormatter
         if ($this->reverseEmojiMapping === null) {
             $this->reverseEmojiMapping = [];
             foreach (EmojiMapping::MAPPING as $code => $unicode) {
-                if (!isset($this->reverseEmojiMapping[$unicode])) {
-                    $this->reverseEmojiMapping[$unicode] = $code;
+                if (isset($this->reverseEmojiMapping[$unicode])) {
+                    continue;
                 }
+
+                $this->reverseEmojiMapping[$unicode] = $code;
             }
         }
         return $this->reverseEmojiMapping[$emoji] ?? null;

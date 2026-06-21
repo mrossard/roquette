@@ -68,16 +68,20 @@ class GroupChannelSubscriptionTest extends WebTestCase
         $channelRepo = $this->entityManager->getRepository(Channel::class);
         foreach ($channelRepo->findAll() as $channel) {
             // General channel can't be easily removed if other tests rely on it, but we can delete private test ones
-            if ($channel->getSlug() !== 'general' && !str_starts_with($channel->getSlug(), 'dm-')) {
-                $this->entityManager->remove($channel);
+            if (!($channel->getSlug() !== 'general' && !str_starts_with($channel->getSlug(), 'dm-'))) {
+                continue;
             }
+
+            $this->entityManager->remove($channel);
         }
 
         $userRepo = $this->entityManager->getRepository(User::class);
         foreach ($userRepo->findAll() as $user) {
-            if (in_array($user->getUsername(), ['manu', 'other_user'], true)) {
-                $this->entityManager->remove($user);
+            if (!in_array($user->getUsername(), ['manu', 'other_user'], true)) {
+                continue;
             }
+
+            $this->entityManager->remove($user);
         }
 
         $this->entityManager->flush();

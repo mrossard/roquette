@@ -37,10 +37,9 @@ class MessageListener
         }
 
         if (str_starts_with($content, '/me ') || $content === '/me') {
-            $meContent = $content === '/me' ? '' : substr($content, 4);
-            $message->setFormattedContent($this->formatter->format($meContent));
-        } else {
-            $message->setFormattedContent($this->formatter->format($content));
+            $content = $content === '/me' ? '' : substr($content, 4);
         }
+
+        $message->setFormattedContent($this->formatter->format($content));
     }
 }

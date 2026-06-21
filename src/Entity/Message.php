@@ -26,7 +26,7 @@ class Message
     private ?int $id = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
-    #[Assert\Length(max: 10000)]
+    #[Assert\Length(max: 10_000)]
     private ?string $content = null;
 
     #[ORM\Column(type: 'text', nullable: true)]

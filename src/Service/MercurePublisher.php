@@ -125,14 +125,16 @@ class MercurePublisher
         $url = '/channels/' . $channel->getSlug();
 
         foreach ($channel->getMembers() as $member) {
-            if ($member !== $author) {
-                $this->bus->dispatch(new PushNotificationMessage(
-                    userId: (int) $member->getId(),
-                    title: $title,
-                    body: $body,
-                    url: $url,
-                ));
+            if ($member === $author) {
+                continue;
             }
+
+            $this->bus->dispatch(new PushNotificationMessage(
+                userId: (int) $member->getId(),
+                title: $title,
+                body: $body,
+                url: $url,
+            ));
         }
     }
 

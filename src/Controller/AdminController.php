@@ -183,7 +183,7 @@ final class AdminController extends AbstractController
         $contentType = str_ends_with($export->getFileName(), '.tar') ? 'application/x-tar' : 'application/zip';
 
         return new StreamedResponse(
-            function () use ($fileUploadService, $export) {
+            static function () use ($fileUploadService, $export) {
                 $fileStream = $fileUploadService->readStream($export->getFilePath());
                 if ($fileStream) {
                     fpassthru($fileStream);

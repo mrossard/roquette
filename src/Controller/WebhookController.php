@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Controller\Trait\MessageRendererTrait;
-use App\Entity\Message;
-use App\Entity\User;
 use App\Entity\Webhook;
 use App\Repository\ChannelRepository;
-use App\Repository\UserRepository;
 use App\Repository\WebhookRepository;
-use App\Service\MercurePublisher;
+use App\Service\WebhookManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,17 +18,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class WebhookController extends AbstractController
 {
-    use MessageRendererTrait;
-
     #[Route('/api/webhooks/incoming/{token}', name: 'app_webhook_incoming', methods: ['POST'])]
     public function incoming(
         #[\SensitiveParameter]
         string $token,
         Request $request,
         WebhookRepository $webhookRepository,
-        UserRepository $userRepository,
-        EntityManagerInterface $entityManager,
-        MercurePublisher $mercurePublisher,
+        WebhookManager $webhookManager,
     ): Response {
         $webhook = $webhookRepository->findOneBy(['token' => $token]);
 
@@ -53,34 +45,14 @@ final class WebhookController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        $customName = $data['username'] ?? $data['customAuthorName'] ?? $webhook->getName();
+        $customName = $data['username'] ?? $data['customAuthorName'] ?? null;
         $customAvatar = $data['avatar_url'] ?? $data['customAuthorAvatar'] ?? null;
 
-        $robotUser = $userRepository->findOneBy(['username' => User::ROBOT_USERNAME]);
-        if (!$robotUser) {
-            $robotUser = $webhook->getCreator();
-        }
-
-        $message = new Message();
-        $message->setChannel($webhook->getChannel());
-        $message->setAuthor($robotUser);
-        $message->setContent(trim((string) $content));
-        $message->setCustomAuthorName((string) $customName);
-        if ($customAvatar !== null) {
-            $message->setCustomAuthorAvatar((string) $customAvatar);
-        }
-
-        $entityManager->persist($message);
-        $entityManager->flush();
-
-        $renderedHtml = $this->renderFeedItem($message);
-
-        $mercurePublisher->publishNewMessage(
-            $webhook->getChannel(),
-            $message,
-            $robotUser,
+        $message = $webhookManager->processIncomingWebhook(
+            $webhook,
             (string) $content,
-            $renderedHtml,
+            $customName ? (string) $customName : null,
+            $customAvatar ? (string) $customAvatar : null
         );
 
         return new JsonResponse([

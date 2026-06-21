@@ -41,7 +41,7 @@ final class EmojiController extends AbstractController
             if ($this->defaultStorage->has($storagePath)) {
                 $stream = $this->defaultStorage->readStream($storagePath);
 
-                $response = new StreamedResponse(
+                return new StreamedResponse(
                     static function () use ($stream) {
                         fpassthru($stream);
                         if (is_resource($stream)) {
@@ -54,8 +54,6 @@ final class EmojiController extends AbstractController
                         'Cache-Control' => 'public, max-age=31536000, immutable',
                     ],
                 );
-
-                return $response;
             }
         } catch (\Exception $e) {
             // Log or ignore connection issues, fall back to remote redirect

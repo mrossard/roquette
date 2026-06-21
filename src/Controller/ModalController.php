@@ -111,13 +111,15 @@ final class ModalController extends AbstractController
             // Resolve members
             $res = $this->resolveGroupMembers($sub->getGroupIdentifier(), $entityManager);
             foreach ($res['users'] as $u) {
-                if (!array_key_exists($u->getId(), $resolvedUserIds)) {
-                    $groupMembers[$u->getId()] = [
-                        'user' => $u,
-                        'viaGroup' => $groupName,
-                        'isRegistered' => true,
-                    ];
+                if (array_key_exists($u->getId(), $resolvedUserIds)) {
+                    continue;
                 }
+
+                $groupMembers[$u->getId()] = [
+                    'user' => $u,
+                    'viaGroup' => $groupName,
+                    'isRegistered' => true,
+                ];
             }
             foreach ($res['externalUsernames'] as $username) {
                 $groupMembers['ext-' . $username] = [

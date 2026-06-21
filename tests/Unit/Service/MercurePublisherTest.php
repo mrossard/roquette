@@ -7,7 +7,6 @@ namespace App\Tests\Unit\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
-use App\Entity\UserChannelRead;
 use App\Repository\UserChannelReadRepository;
 use App\Service\MercurePublisher;
 use Doctrine\Common\Collections\ArrayCollection;

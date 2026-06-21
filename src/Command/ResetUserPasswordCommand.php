@@ -73,7 +73,7 @@ class ResetUserPasswordCommand extends Command
             });
 
             $io->askHidden('Confirmer le mot de passe', function ($value) use ($password) {
-                if ($value !== $password) {
+                if (!hash_equals($password, $value)) {
                     throw new \RuntimeException($this->translator->trans('Les mots de passe ne correspondent pas.'));
                 }
 

@@ -69,6 +69,7 @@ class MessagePublisher
             if ($slashResponse !== null) {
                 return $slashResponse;
             }
+
             // $messageText may have been mutated by /shrug or /me
         }
 

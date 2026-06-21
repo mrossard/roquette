@@ -232,12 +232,14 @@ final class UserSettingsController extends AbstractController
                     try {
                         $contents = $this->defaultStorage->listContents('emojis', true);
                         foreach ($contents as $attributes) {
-                            if ($attributes->isFile()) {
-                                $list[] = [
-                                    'path' => $attributes->path(),
-                                    'size' => $attributes->fileSize(),
-                                ];
+                            if (!$attributes->isFile()) {
+                                continue;
                             }
+
+                            $list[] = [
+                                'path' => $attributes->path(),
+                                'size' => $attributes->fileSize(),
+                            ];
                         }
                     } catch (\Exception $e) {
                         // Ignore
@@ -271,10 +273,12 @@ final class UserSettingsController extends AbstractController
                     $matchesQ = $q === '' || str_contains(mb_strtolower($code), mb_strtolower($q));
                     if (!$matchesQ && $q !== '') {
                         foreach ($tags as $tag) {
-                            if (str_contains(mb_strtolower($tag), mb_strtolower($q))) {
-                                $matchesQ = true;
-                                break;
+                            if (!str_contains(mb_strtolower($tag), mb_strtolower($q))) {
+                                continue;
                             }
+
+                            $matchesQ = true;
+                            break;
                         }
                     }
 

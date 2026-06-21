@@ -139,9 +139,11 @@ class AppExtension extends AbstractExtension
             $messages = $em->getUnitOfWork()->getIdentityMap()[\App\Entity\Message::class] ?? [];
             $messageIds = [];
             foreach ($messages as $msg) {
-                if ($msg instanceof \App\Entity\Message && $msg->getId() !== null) {
-                    $messageIds[] = $msg->getId();
+                if (!($msg instanceof \App\Entity\Message && $msg->getId() !== null)) {
+                    continue;
                 }
+
+                $messageIds[] = $msg->getId();
             }
 
             if (!empty($messageIds)) {
@@ -157,9 +159,11 @@ class AppExtension extends AbstractExtension
                 }
 
                 foreach ($channels as $channel) {
-                    if ($channel->getParentMessage() !== null) {
-                        $this->subchannelCache[$channel->getParentMessage()->getId()] = $channel;
+                    if ($channel->getParentMessage() === null) {
+                        continue;
                     }
+
+                    $this->subchannelCache[$channel->getParentMessage()->getId()] = $channel;
                 }
             }
         }

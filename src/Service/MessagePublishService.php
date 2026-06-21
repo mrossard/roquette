@@ -45,10 +45,7 @@ class MessagePublishService
         $isPoll = $pollQuestion !== null && $pollQuestion !== '';
 
         if (trim($messageText) === '' && !$file && !$isPoll) {
-            return new PublishResult(
-                success: false,
-                channel: $channel,
-            );
+            return new PublishResult(success: false, channel: $channel);
         }
 
         if ($isPoll && $pollOptions !== null && count($pollOptions) < 2) {
@@ -81,11 +78,7 @@ class MessagePublishService
                     $this->fileUploadService->uploadAndAttachToMessage($file, $message);
                     $message->setVirusScanStatus('pending');
                 } catch (\InvalidArgumentException $e) {
-                    return new PublishResult(
-                        success: false,
-                        channel: $channel,
-                        error: $e->getMessage(),
-                    );
+                    return new PublishResult(success: false, channel: $channel, error: $e->getMessage());
                 }
             }
         }
@@ -118,12 +111,7 @@ class MessagePublishService
             );
         }
 
-        return new PublishResult(
-            success: true,
-            channel: $channel,
-            message: $message,
-            renderedHtml: $renderedHtml,
-        );
+        return new PublishResult(success: true, channel: $channel, message: $message, renderedHtml: $renderedHtml);
     }
 
     private function attachPoll(Message $message, string $pollQuestion, array $optionsData, bool $allowMultiple): void

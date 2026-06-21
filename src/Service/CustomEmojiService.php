@@ -42,12 +42,14 @@ class CustomEmojiService
                 try {
                     $contents = $this->defaultStorage->listContents('emojis', true);
                     foreach ($contents as $attributes) {
-                        if ($attributes->isFile()) {
-                            $list[] = [
-                                'path' => $attributes->path(),
-                                'size' => $attributes->fileSize(),
-                            ];
+                        if (!$attributes->isFile()) {
+                            continue;
                         }
+
+                        $list[] = [
+                            'path' => $attributes->path(),
+                            'size' => $attributes->fileSize(),
+                        ];
                     }
                 } catch (\Exception $e) {
                     $this->logger->warning('Failed to list emoji files from storage: {message}', [
@@ -85,10 +87,12 @@ class CustomEmojiService
                     $match = str_contains(mb_strtolower($code), mb_strtolower($q));
                     if (!$match) {
                         foreach ($tags as $tag) {
-                            if (str_contains(mb_strtolower($tag), mb_strtolower($q))) {
-                                $match = true;
-                                break;
+                            if (!str_contains(mb_strtolower($tag), mb_strtolower($q))) {
+                                continue;
                             }
+
+                            $match = true;
+                            break;
                         }
                     }
                     if (!$match) {

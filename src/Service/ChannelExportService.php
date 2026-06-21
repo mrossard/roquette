@@ -153,9 +153,11 @@ readonly class ChannelExportService
         $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $zipFile, 'zip');
 
         foreach ($tmpFiles as $tmpFile) {
-            if (file_exists($tmpFile)) {
-                unlink($tmpFile);
+            if (!file_exists($tmpFile)) {
+                continue;
             }
+
+            unlink($tmpFile);
         }
 
         $response = new BinaryFileResponse($zipFile);
@@ -213,9 +215,11 @@ readonly class ChannelExportService
         $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $tarFile, 'tar');
 
         foreach ($tmpFiles as $tmpFile) {
-            if (file_exists($tmpFile)) {
-                unlink($tmpFile);
+            if (!file_exists($tmpFile)) {
+                continue;
             }
+
+            unlink($tmpFile);
         }
 
         $response = new BinaryFileResponse($tarFile);

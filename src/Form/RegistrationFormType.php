@@ -29,7 +29,7 @@ class RegistrationFormType extends AbstractType
                     max: 180,
                     minMessage: 'Le nom d\'utilisateur doit faire au moins {{ limit }} caractères.',
                 ),
-                new Callback(function (mixed $value, ExecutionContextInterface $context) {
+                new Callback(static function (mixed $value, ExecutionContextInterface $context) {
                     if (is_string($value) && strcasecmp($value, User::ROBOT_USERNAME) === 0) {
                         $context
                             ->buildViolation('Ce nom d\'utilisateur est réservé par le système.')

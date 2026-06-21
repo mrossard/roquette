@@ -79,16 +79,20 @@ class AdminGroupControllerTest extends WebTestCase
 
         $channelRepo = $this->entityManager->getRepository(Channel::class);
         foreach ($channelRepo->findAll() as $channel) {
-            if ($channel->getSlug() !== 'general' && !str_starts_with($channel->getSlug(), 'dm-')) {
-                $this->entityManager->remove($channel);
+            if (!($channel->getSlug() !== 'general' && !str_starts_with($channel->getSlug(), 'dm-'))) {
+                continue;
             }
+
+            $this->entityManager->remove($channel);
         }
 
         $userRepo = $this->entityManager->getRepository(User::class);
         foreach ($userRepo->findAll() as $u) {
-            if (in_array($u->getUsername(), ['admin_user', 'normal_user', 'third_user'], true)) {
-                $this->entityManager->remove($u);
+            if (!in_array($u->getUsername(), ['admin_user', 'normal_user', 'third_user'], true)) {
+                continue;
             }
+
+            $this->entityManager->remove($u);
         }
 
         $this->entityManager->flush();

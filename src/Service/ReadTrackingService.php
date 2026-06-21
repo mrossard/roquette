@@ -38,9 +38,11 @@ class ReadTrackingService
 
         $neededIds = [];
         foreach ($channels as $channel) {
-            if (!array_key_exists($channel->getId(), $existingChannelIds)) {
-                $neededIds[] = $channel->getId();
+            if (array_key_exists($channel->getId(), $existingChannelIds)) {
+                continue;
             }
+
+            $neededIds[] = $channel->getId();
         }
 
         if ($neededIds === []) {
