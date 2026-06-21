@@ -11,6 +11,9 @@
 #
 
 
+# Générer les clés VAPID si absentes
+php /app/bin/console app:vapid:generate-keys --write --skip-existing
+
 # Déclencher les migrations de schéma
 php /app/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 

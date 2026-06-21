@@ -14,9 +14,6 @@ services:
       MERCURE_PUBLIC_URL: ${MERCURE_PUBLIC_URL:-https://localhost/.well-known/mercure}
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
-      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
-      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
-      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
     depends_on:
       database:
         condition: service_healthy

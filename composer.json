@@ -95,7 +95,8 @@
         "post-update-cmd": [
             "@auto-scripts"
         ],
-        "generate-emoji-mapping": "php bin/generate-emoji-mapping.php"
+        "generate-emoji-mapping": "php bin/generate-emoji-mapping.php",
+        "generate-vapid-keys": "bin/console app:vapid:generate-keys"
     },
     "conflict": {
         "symfony/symfony": "*"
