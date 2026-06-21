@@ -14,8 +14,8 @@ ux_icons:
     # Throw an exception if an icon is not
     ignore_not_found: false
 
-when@prod:
-    ux_icons:
-        iconify: false
-        # Suppress exceptions for missing icons in production
-        ignore_not_found: true
+#when@prod:
+#    ux_icons:
+#        iconify: false
+#        # Suppress exceptions for missing icons in production
+#        ignore_not_found: true
