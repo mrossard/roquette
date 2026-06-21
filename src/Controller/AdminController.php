@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\ChannelExport;
-use App\Entity\CustomEmoji;
 use App\Entity\User;
 use App\Enum\AuditAction;
 use App\Repository\AuditLogRepository;
 use App\Repository\ChannelExportRepository;
 use App\Repository\UserRepository;
 use App\Service\AuditLoggerService;
+use App\Service\CustomEmojiService;
 use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
-use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -23,7 +22,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_ADMIN')]
@@ -253,109 +251,27 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/emojis', name: 'app_admin_emojis')]
-    public function emojis(
-        Request $request,
-        FilesystemOperator $defaultStorage,
-        EntityManagerInterface $entityManager,
-        CacheInterface $cache,
-    ): Response {
+    public function emojis(Request $request, CustomEmojiService $emojiService): Response
+    {
         $page = max(1, $request->query->getInt('page', 1));
         $q = trim($request->query->get('q', ''));
 
-        // Load all custom emojis from DB
-        $dbEmojis = $entityManager->getRepository(CustomEmoji::class)->findAll();
-        $emojiTagsMap = [];
-        foreach ($dbEmojis as $dbEmoji) {
-            $emojiTagsMap[$dbEmoji->getCode()] = $dbEmoji->getTags();
-        }
-
-        $matchingEmojis = [];
-        try {
-            $files = $cache->get('emojis_filesystem_list', function () use ($defaultStorage) {
-                $list = [];
-                try {
-                    $contents = $defaultStorage->listContents('emojis', true);
-                    foreach ($contents as $attributes) {
-                        if ($attributes->isFile()) {
-                            $list[] = [
-                                'path' => $attributes->path(),
-                                'size' => $attributes->fileSize(),
-                            ];
-                        }
-                    }
-                } catch (\Exception $e) {
-                    // Ignore
-                }
-                return $list;
-            });
-
-            foreach ($files as $file) {
-                $path = $file['path'];
-                $relativePath = substr($path, \strlen('emojis/'));
-                if (!str_ends_with($relativePath, '.gif')) {
-                    continue;
-                }
-                if ($file['size'] === 0) {
-                    continue;
-                }
-                $noExt = substr($relativePath, 0, -4);
-                $parts = explode('/', $noExt);
-                $filePart = (string) array_pop($parts);
-                if (\count($parts) === 0) {
-                    $code = $filePart;
-                    $filename = $filePart . '.gif';
-                } else {
-                    $dir = implode('/', $parts);
-                    $code = $filePart . ':' . $dir;
-                    $filename = $dir . '/' . $filePart . '.gif';
-                }
-
-                $tags = $emojiTagsMap[$code] ?? [];
-
-                // Filter by search query if any (matches code or any tag)
-                if ($q !== '') {
-                    $match = str_contains(mb_strtolower($code), mb_strtolower($q));
-                    if (!$match) {
-                        foreach ($tags as $tag) {
-                            if (str_contains(mb_strtolower($tag), mb_strtolower($q))) {
-                                $match = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!$match) {
-                        continue;
-                    }
-                }
-
-                $matchingEmojis[] = [
-                    'code' => $code,
-                    'filename' => $filename,
-                    'tags' => $tags,
-                ];
-            }
-        } catch (\Exception $e) {
-            // Ignore
-        }
-
-        usort($matchingEmojis, static fn($a, $b) => strcmp($a['code'], $b['code']));
-
-        $total = count($matchingEmojis);
-        $totalPages = (int) ceil($total / self::PER_PAGE);
+        $result = $emojiService->list($q);
+        $totalPages = (int) ceil($result['total'] / self::PER_PAGE);
         $offset = ($page - 1) * self::PER_PAGE;
-        $paginatedEmojis = array_slice($matchingEmojis, $offset, self::PER_PAGE);
+        $paginatedEmojis = array_slice($result['emojis'], $offset, self::PER_PAGE);
 
         return $this->render('admin/emojis.html.twig', [
             'emojis' => $paginatedEmojis,
             'page' => $page,
             'totalPages' => $totalPages,
-            'total' => $total,
+            'total' => $result['total'],
             'q' => $q,
         ]);
     }
 
     #[Route('/admin/emojis/edit', name: 'app_admin_emojis_edit', methods: ['POST'])]
-    public function editEmoji(Request $request, EntityManagerInterface $entityManager): Response
+    public function editEmoji(Request $request, CustomEmojiService $emojiService): Response
     {
         $code = $request->request->get('code', '');
         $tagsString = $request->request->get('tags', '');
@@ -365,35 +281,21 @@ final class AdminController extends AbstractController
             return $this->redirectToRoute('app_admin_emojis');
         }
 
-        // Clean up tags
-        $tags = array_map('trim', explode(',', $tagsString));
-
-        $customEmoji = $entityManager->getRepository(CustomEmoji::class)->findOneBy(['code' => $code]);
-        if (!$customEmoji) {
-            $customEmoji = new CustomEmoji();
-            $customEmoji->setCode($code);
-            $customEmoji->setFilename($this->deduceEmojiFilename($code));
+        try {
+            $emojiService->saveTags($code, $tagsString);
+            $this->addFlash('success', $this->translator->trans('Tags mis à jour pour l\'émoji %code%.', [
+                '%code%' => $code,
+            ]));
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
         }
-
-        $customEmoji->setTags($tags);
-
-        $entityManager->persist($customEmoji);
-        $entityManager->flush();
-
-        $this->addFlash('success', $this->translator->trans('Tags mis à jour pour l\'émoji %code%.', [
-            '%code%' => $code,
-        ]));
 
         return $this->redirectToRoute('app_admin_emojis', $request->query->all());
     }
 
     #[Route('/admin/emojis/upload', name: 'app_admin_emojis_upload', methods: ['POST'])]
-    public function uploadEmoji(
-        Request $request,
-        FilesystemOperator $defaultStorage,
-        EntityManagerInterface $entityManager,
-        CacheInterface $cache,
-    ): Response {
+    public function uploadEmoji(Request $request, CustomEmojiService $emojiService): Response
+    {
         $code = trim($request->request->get('code', ''));
         $file = $request->files->get('emoji_file');
 
@@ -402,65 +304,14 @@ final class AdminController extends AbstractController
             return $this->redirectToRoute('app_admin_emojis');
         }
 
-        // Ensure file is a GIF
-        if (
-            $file->getMimeType() !== 'image/gif'
-            || !str_ends_with(strtolower($file->getClientOriginalName()), '.gif')
-        ) {
-            $this->addFlash(
-                'error',
-                $this->translator->trans('Seuls les fichiers GIF sont supportés pour les émojis personnalisés.'),
-            );
-            return $this->redirectToRoute('app_admin_emojis');
-        }
-
-        // Sanitize code
-        $sanitizedCode = preg_replace('/[^a-zA-Z0-9_\-\+:]/', '', $code);
-        if ($sanitizedCode !== $code) {
-            $this->addFlash(
-                'error',
-                $this->translator->trans(
-                    'Le code contient des caractères invalides. Utilisez des lettres, chiffres, tirets, underscores ou deux-points.',
-                ),
-            );
-            return $this->redirectToRoute('app_admin_emojis');
-        }
-
-        // Deduce storage path
-        $pos = strrpos($sanitizedCode, ':');
-        if ($pos !== false) {
-            $name = substr($sanitizedCode, 0, $pos);
-            $dir = substr($sanitizedCode, $pos + 1);
-            $filename = $dir . '/' . basename($name . '.gif');
-        } else {
-            $filename = basename($sanitizedCode . '.gif');
-        }
-
-        $storagePath = 'emojis/' . $filename;
-
         try {
-            $content = file_get_contents($file->getPathname());
-            $defaultStorage->write($storagePath, $content);
-            $cache->delete('emojis_filesystem_list');
-
-            $tagsString = $request->request->get('tags', '');
-            $tags = array_map('trim', explode(',', $tagsString));
-
-            $customEmoji = $entityManager->getRepository(CustomEmoji::class)->findOneBy(['code' => $sanitizedCode]);
-            if (!$customEmoji) {
-                $customEmoji = new CustomEmoji();
-                $customEmoji->setCode($sanitizedCode);
-                $customEmoji->setFilename($filename);
-            }
-            $customEmoji->setTags($tags);
-
-            $entityManager->persist($customEmoji);
-            $entityManager->flush();
-
+            $emojiService->upload($code, $file, $request->request->get('tags', ''));
             $this->addFlash('success', $this->translator->trans('Émoji %code% ajouté avec succès.', [
-                '%code%' => $sanitizedCode,
+                '%code%' => $code,
             ]));
-        } catch (\Exception $e) {
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
+        } catch (\RuntimeException $e) {
             $this->addFlash('error', $this->translator->trans('Erreur lors de l\'enregistrement de l\'émoji : %error%', [
                 '%error%' => $e->getMessage(),
             ]));
@@ -470,38 +321,18 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/emojis/delete', name: 'app_admin_emojis_delete', methods: ['POST'])]
-    public function deleteEmoji(
-        Request $request,
-        FilesystemOperator $defaultStorage,
-        EntityManagerInterface $entityManager,
-        CacheInterface $cache,
-    ): Response {
+    public function deleteEmoji(Request $request, CustomEmojiService $emojiService): Response
+    {
         $code = $request->request->get('code', '');
 
-        if ($code === '') {
-            $this->addFlash('error', $this->translator->trans('Émoji invalide.'));
-            return $this->redirectToRoute('app_admin_emojis');
-        }
-
-        $customEmoji = $entityManager->getRepository(CustomEmoji::class)->findOneBy(['code' => $code]);
-        if ($customEmoji) {
-            $filename = $customEmoji->getFilename();
-            $entityManager->remove($customEmoji);
-            $entityManager->flush();
-        } else {
-            $filename = $this->deduceEmojiFilename($code);
-        }
-
-        $storagePath = 'emojis/' . $filename;
         try {
-            if ($defaultStorage->has($storagePath)) {
-                $defaultStorage->delete($storagePath);
-            }
-            $cache->delete('emojis_filesystem_list');
+            $emojiService->delete($code);
             $this->addFlash('success', $this->translator->trans('L\'émoji %code% a été supprimé.', [
                 '%code%' => $code,
             ]));
-        } catch (\Exception $e) {
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
+        } catch (\RuntimeException $e) {
             $this->addFlash('error', $this->translator->trans('Erreur lors de la suppression du fichier : %error%', [
                 '%error%' => $e->getMessage(),
             ]));
@@ -511,71 +342,34 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/emojis/add-tag', name: 'app_admin_emojis_add_tag', methods: ['POST'])]
-    public function addTag(Request $request, EntityManagerInterface $entityManager): Response
+    public function addTag(Request $request, CustomEmojiService $emojiService): Response
     {
         $code = $request->request->get('code', '');
         $newTag = trim($request->request->get('tag', ''));
 
-        if ($code === '' || $newTag === '') {
-            $this->addFlash('error', $this->translator->trans('Émoji ou tag invalide.'));
-            return $this->redirectToRoute('app_admin_emojis', $request->query->all());
-        }
-
-        $customEmoji = $entityManager->getRepository(CustomEmoji::class)->findOneBy(['code' => $code]);
-        if (!$customEmoji) {
-            $customEmoji = new CustomEmoji();
-            $customEmoji->setCode($code);
-            $customEmoji->setFilename($this->deduceEmojiFilename($code));
-        }
-
-        $tags = $customEmoji->getTags();
-        if (!in_array($newTag, $tags, true)) {
-            $tags[] = $newTag;
-            $customEmoji->setTags($tags);
-            $entityManager->persist($customEmoji);
-            $entityManager->flush();
+        try {
+            $emojiService->addTag($code, $newTag);
             $this->addFlash('success', $this->translator->trans('Tag "%tag%" ajouté.', ['%tag%' => $newTag]));
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
         }
 
         return $this->redirectToRoute('app_admin_emojis', $request->query->all());
     }
 
     #[Route('/admin/emojis/remove-tag', name: 'app_admin_emojis_remove_tag', methods: ['POST'])]
-    public function removeTag(Request $request, EntityManagerInterface $entityManager): Response
+    public function removeTag(Request $request, CustomEmojiService $emojiService): Response
     {
         $code = $request->request->get('code', '');
         $tagToRemove = trim($request->request->get('tag', ''));
 
-        if ($code === '' || $tagToRemove === '') {
-            $this->addFlash('error', $this->translator->trans('Émoji ou tag invalide.'));
-            return $this->redirectToRoute('app_admin_emojis', $request->query->all());
-        }
-
-        $customEmoji = $entityManager->getRepository(CustomEmoji::class)->findOneBy(['code' => $code]);
-        if ($customEmoji) {
-            $tags = $customEmoji->getTags();
-            $key = array_search($tagToRemove, $tags, true);
-            if ($key !== false) {
-                unset($tags[$key]);
-                $customEmoji->setTags(array_values($tags));
-                $entityManager->persist($customEmoji);
-                $entityManager->flush();
-                $this->addFlash('success', $this->translator->trans('Tag "%tag%" retiré.', ['%tag%' => $tagToRemove]));
-            }
+        try {
+            $emojiService->removeTag($code, $tagToRemove);
+            $this->addFlash('success', $this->translator->trans('Tag "%tag%" retiré.', ['%tag%' => $tagToRemove]));
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
         }
 
         return $this->redirectToRoute('app_admin_emojis', $request->query->all());
-    }
-
-    private function deduceEmojiFilename(string $code): string
-    {
-        $pos = strrpos($code, ':');
-        if ($pos !== false) {
-            $name = substr($code, 0, $pos);
-            $dir = substr($code, $pos + 1);
-            return $dir . '/' . basename($name . '.gif');
-        }
-
-        return basename($code . '.gif');
     }
 }
