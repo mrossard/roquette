@@ -13,6 +13,7 @@ use Psr\Cache\CacheItemPoolInterface;
 
 #[AsDoctrineListener(Events::postPersist)]
 #[AsDoctrineListener(Events::postUpdate)]
+#[AsDoctrineListener(Events::postRemove)]
 final class MessageCacheSubscriber
 {
     public function __construct(
@@ -21,22 +22,29 @@ final class MessageCacheSubscriber
 
     public function postPersist(PostPersistEventArgs $args): void
     {
-        $entity = $args->getObject();
-        if (!$entity instanceof Message) {
-            return;
-        }
-
-        $this->invalidate($entity);
+        $this->handleEvent($args->getObject());
     }
 
     public function postUpdate(PostUpdateEventArgs $args): void
     {
-        $entity = $args->getObject();
-        if (!$entity instanceof Message) {
-            return;
-        }
+        $this->handleEvent($args->getObject());
+    }
 
-        $this->invalidate($entity);
+    public function postRemove(\Doctrine\ORM\Event\PostRemoveEventArgs $args): void
+    {
+        $this->handleEvent($args->getObject());
+    }
+
+    private function handleEvent(object $entity): void
+    {
+        if ($entity instanceof Message) {
+            $this->invalidate($entity);
+        } elseif ($entity instanceof \App\Entity\PollVote) {
+            $message = $entity->getOption()?->getPoll()?->getMessage();
+            if ($message instanceof Message) {
+                $this->invalidate($message);
+            }
+        }
     }
 
     private function invalidate(Message $message): void
@@ -50,3 +58,4 @@ final class MessageCacheSubscriber
         $this->twigCache->deleteItem('feed_item_todo_' . $id);
     }
 }
+

@@ -138,6 +138,9 @@ class PollControllerTest extends WebTestCase
         $this->client->request('POST', sprintf('/poll/%d/vote', $this->optionA->getId()));
         $this->assertResponseIsSuccessful();
 
+        // Verify that the rendered HTML contains the vote count update (1)
+        static::assertStringContainsString('(1)', $this->client->getResponse()->getContent());
+
         $this->entityManager->clear();
         $voteRepo = $this->entityManager->getRepository(PollVote::class);
         $votes = $voteRepo->findBy([

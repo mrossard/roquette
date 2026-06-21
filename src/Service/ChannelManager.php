@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\Channel;
 use App\Entity\GroupSubscription;
+use App\Entity\Message;
 use App\Entity\User;
 use App\Enum\AuditAction;
 use App\Repository\ChannelRepository;
@@ -253,6 +254,86 @@ class ChannelManager
         }
 
         return $map;
+    }
+
+    public function createSubChannel(Message $parentMessage, User $currentUser): Channel
+    {
+        return $this->doCreateSubChannel($parentMessage, $currentUser, false);
+    }
+
+    public function createTodoListSubChannel(Message $parentMessage, User $currentUser): Channel
+    {
+        return $this->doCreateSubChannel($parentMessage, $currentUser, true);
+    }
+
+    private function doCreateSubChannel(Message $parentMessage, User $currentUser, bool $isTodoList): Channel
+    {
+        $existingSubChannel = $this->channelRepository->findOneBy(['parentMessage' => $parentMessage]);
+        if ($existingSubChannel) {
+            return $existingSubChannel;
+        }
+
+        $parentChannel = $parentMessage->getChannel();
+        if ($parentChannel->isSubChannel() && !$parentChannel->isTodoList()) {
+            throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
+        }
+
+        if (!$this->channelRepository->canUserAccess($parentChannel, $currentUser)) {
+            throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
+        }
+
+        $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Discussion';
+        $name = mb_substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 40);
+
+        $slug =
+            'sc-'
+            . preg_replace('/[^a-z0-9]+/i', '-', mb_strtolower($name))
+            . '-'
+            . substr(bin2hex(random_bytes(3)), 0, 6);
+        $slug = trim($slug, '-');
+
+        if ($this->channelRepository->findOneBy(['slug' => $slug])) {
+            $slug .= '-' . rand(100, 999);
+        }
+
+        $channel = new Channel();
+        $channel->setName($name);
+        $channel->setSlug($slug);
+        $channel->setDescription($this->translator->trans('Discussion créée depuis un message.'));
+        $channel->setParentMessage($parentMessage);
+        $channel->setCreator($currentUser);
+        $channel->setIsPrivate($parentChannel->isPrivate());
+        $channel->setMessageRetentionMonths($parentChannel->getMessageRetentionMonths());
+        if ($isTodoList) {
+            $channel->setIsTodoList(true);
+        }
+
+        foreach ($parentChannel->getMembers() as $member) {
+            $channel->addMember($member);
+        }
+
+        $this->entityManager->persist($channel);
+        $this->entityManager->flush();
+
+        $this->auditLogger->log(AuditAction::CHANNEL_CREATE, $currentUser, [
+            'channel_id' => $channel->getId(),
+            'channel_name' => $channel->getName(),
+            'slug' => $channel->getSlug(),
+            'is_private' => $channel->isPrivate(),
+            'parent_channel_id' => $parentChannel->getId(),
+            'parent_message_id' => $parentMessage->getId(),
+        ]);
+
+        $this->logger->info(sprintf(
+            'Sub-channel created: "%s" (slug: "%s", todo: %s) from message #%d by user "%s"',
+            $channel->getName(),
+            $channel->getSlug(),
+            $isTodoList ? 'yes' : 'no',
+            $parentMessage->getId(),
+            $currentUser->getUsername(),
+        ));
+
+        return $channel;
     }
 
     private function isCurrentUserAdmin(): bool

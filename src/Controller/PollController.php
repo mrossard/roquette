@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\PollOption;
-use App\Entity\PollVote;
 use App\Service\MercurePublisher;
+use App\Service\MessageRenderer;
+use App\Service\PollManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,8 +18,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 final class PollController extends AbstractController
 {
-    use MessageRendererTrait;
-
     #[Route('/poll/option-field', name: 'app_poll_option_field', methods: ['POST'])]
     public function getOptionField(Request $request): Response
     {
@@ -43,6 +41,8 @@ final class PollController extends AbstractController
         int $optionId,
         EntityManagerInterface $entityManager,
         MercurePublisher $mercurePublisher,
+        PollManager $pollManager,
+        MessageRenderer $messageRenderer,
     ): Response {
         $option = $entityManager->getRepository(PollOption::class)->find($optionId);
         if (!$option) {
@@ -60,64 +60,12 @@ final class PollController extends AbstractController
             return new Response('Non autorisé.', 403);
         }
 
-        $voteRepo = $entityManager->getRepository(PollVote::class);
-        $existingVote = $voteRepo->findOneBy([
-            'option' => $option,
-            'user' => $currentUser,
-        ]);
+        $pollManager->toggleVote($option, $currentUser);
 
-        if (!$poll->isAllowMultiple()) {
-            // Find all votes by this user on this poll's options in a single query
-            $userVotes = $voteRepo
-                ->createQueryBuilder('v')
-                ->join('v.option', 'o')
-                ->where('o.poll = :poll')
-                ->andWhere('v.user = :user')
-                ->setParameter('poll', $poll)
-                ->setParameter('user', $currentUser)
-                ->getQuery()
-                ->getResult();
-
-            $wasVotedOnTarget = false;
-            foreach ($userVotes as $vote) {
-                if ($vote->getOption()->getId() === $option->getId()) {
-                    $wasVotedOnTarget = true;
-                }
-                $vote->getOption()->removeVote($vote);
-                $entityManager->remove($vote);
-            }
-
-            // If the user was not voting for this specific option, create the vote
-            if (!$wasVotedOnTarget) {
-                $newVote = new PollVote();
-                $newVote->setUser($currentUser);
-                $newVote->setOption($option);
-                $option->addVote($newVote);
-                $entityManager->persist($newVote);
-            }
-        } else {
-            // Multiple choices: simple toggle on this option
-            if ($existingVote) {
-                $option->removeVote($existingVote);
-                $entityManager->remove($existingVote);
-            } else {
-                $newVote = new PollVote();
-                $newVote->setUser($currentUser);
-                $newVote->setOption($option);
-                $option->addVote($newVote);
-                $entityManager->persist($newVote);
-            }
-        }
-
-        $entityManager->flush();
-
-        // Refresh the message association to avoid cache issues
-        $entityManager->refresh($message);
-
-        $renderedHtml = $this->renderFeedItem($message, ['no_fade' => true]);
+        $renderedHtml = $messageRenderer->renderFeedItem($message, ['no_fade' => true]);
 
         $renderedHtmlOob = $this->renderView('dashboard/_feed_item.html.twig', array_merge(
-            $this->feedItemParams($message),
+            $messageRenderer->feedItemParams($message),
             ['oob' => true],
         ));
 
@@ -137,7 +85,12 @@ final class PollController extends AbstractController
         $open = (bool) ($request->query->get('open') ?? $request->request->get('open', false));
         $messageValue = $request->query->get('message') ?? $request->request->get('message', '');
         $pollQuestion = $request->query->get('poll_question') ?? $request->request->get('poll_question', '');
-        $pollOptions = $request->query->all('poll_options') ?: $request->request->all('poll_options') ?: [];
+
+        $pollOptions = $request->query->all('poll_options');
+        if ($pollOptions === []) {
+            $pollOptions = $request->request->all('poll_options');
+        }
+
         $allowMultiple = (bool) (
             $request->query->get('allow_multiple') ?? $request->request->get('allow_multiple', false)
         );
