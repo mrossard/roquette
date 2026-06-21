@@ -6,10 +6,13 @@ namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Reaction;
+use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
+use App\Repository\ReactionRepository;
 use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -79,5 +82,53 @@ final class ReactionController extends AbstractController
         $mercurePublisher->publishToChannel($channel, $renderedHtmlOob, 'message_' . $channel->getSlug());
 
         return new Response($renderedHtml);
+    }
+
+    #[Route('/my-reactions', name: 'app_my_reactions', methods: ['GET'])]
+    #[Route('/my-reactions/{emoji}', name: 'app_my_reactions_filtered', methods: ['GET'])]
+    public function myReactions(
+        Request $request,
+        ReactionRepository $reactionRepository,
+        ChannelRepository $channelRepository,
+        ?string $emoji = null,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
+        $beforeId = $request->query->getInt('beforeId');
+        $beforeId = $beforeId > 0 ? $beforeId : null;
+
+        if ($beforeId !== null) {
+            $messages = $emoji
+                ? $reactionRepository->findDistinctMessagesByUserAndEmoji($currentUser, $emoji, 50, $beforeId)
+                : $reactionRepository->findDistinctMessagesByUser($currentUser, 50, $beforeId);
+            $hasMore = count($messages) === 50;
+            $nextBeforeId = $hasMore ? $messages[array_key_last($messages)]->getId() : null;
+
+            return $this->render('dashboard/_more_my_reactions.html.twig', [
+                'reactedMessages' => $messages,
+                'hasMore' => $hasMore,
+                'nextBeforeId' => $nextBeforeId,
+                'activeEmoji' => $emoji,
+            ]);
+        }
+
+        $channels = $channelRepository->findAllForUser($currentUser);
+        $messages = $emoji
+            ? $reactionRepository->findDistinctMessagesByUserAndEmoji($currentUser, $emoji, 50)
+            : $reactionRepository->findDistinctMessagesByUser($currentUser, 50);
+        $userEmojis = $reactionRepository->findUserEmojis($currentUser);
+        $hasMore = count($messages) === 50;
+        $nextBeforeId = $hasMore ? $messages[array_key_last($messages)]->getId() : null;
+
+        return $this->render('dashboard/my_reactions.html.twig', [
+            'channels' => $channels,
+            'reactedMessages' => $messages,
+            'userEmojis' => $userEmojis,
+            'activeEmoji' => $emoji,
+            'activeChannel' => null,
+            'hasMore' => $hasMore,
+            'nextBeforeId' => $nextBeforeId,
+        ]);
     }
 }

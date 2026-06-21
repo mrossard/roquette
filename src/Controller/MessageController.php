@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
-use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
-use App\Repository\ReactionRepository;
 use App\Service\MessageFormatter;
 use App\Service\MessageManager;
 use App\Service\MessagePublisher;
@@ -133,104 +131,5 @@ final class MessageController extends AbstractController
         }
 
         return $this->render('dashboard/_feed_item.html.twig', $this->feedItemParams($message));
-    }
-
-    #[Route('/messages/{id}/save', name: 'app_message_save_toggle', methods: ['POST'])]
-    public function toggleSaveMessage(int $id, MessageManager $messageManager): Response
-    {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
-        try {
-            $message = $messageManager->toggleSaveMessage($id, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
-
-        return $this->render('dashboard/_feed_item.html.twig', $this->feedItemParams($message));
-    }
-
-    #[Route('/saved-messages', name: 'app_saved_messages', methods: ['GET'])]
-    #[Route('/saved-messages/more', name: 'app_saved_messages_more', methods: ['GET'])]
-    public function savedMessages(
-        Request $request,
-        ChannelRepository $channelRepository,
-        MessageRepository $messageRepository,
-    ): Response {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
-        $beforeId = $request->query->getInt('beforeId');
-        $beforeId = $beforeId > 0 ? $beforeId : null;
-
-        $savedMessages = $messageRepository->findSavedByUser($currentUser, 50, $beforeId);
-        $hasMore = count($savedMessages) === 50;
-        $nextBeforeId = $hasMore ? $savedMessages[array_key_last($savedMessages)]->getId() : null;
-
-        if ($beforeId !== null) {
-            return $this->render('dashboard/_more_saved_messages.html.twig', [
-                'savedMessages' => $savedMessages,
-                'hasMore' => $hasMore,
-                'nextBeforeId' => $nextBeforeId,
-            ]);
-        }
-
-        $channels = $channelRepository->findAllForUser($currentUser);
-
-        return $this->render('dashboard/saved_messages.html.twig', [
-            'channels' => $channels,
-            'savedMessages' => $savedMessages,
-            'hasMore' => $hasMore,
-            'nextBeforeId' => $nextBeforeId,
-            'activeChannel' => null,
-        ]);
-    }
-
-    #[Route('/my-reactions', name: 'app_my_reactions', methods: ['GET'])]
-    #[Route('/my-reactions/{emoji}', name: 'app_my_reactions_filtered', methods: ['GET'])]
-    public function myReactions(
-        Request $request,
-        ReactionRepository $reactionRepository,
-        ChannelRepository $channelRepository,
-        ?string $emoji = null,
-    ): Response {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
-        $beforeId = $request->query->getInt('beforeId');
-        $beforeId = $beforeId > 0 ? $beforeId : null;
-
-        if ($beforeId !== null) {
-            $messages = $emoji
-                ? $reactionRepository->findDistinctMessagesByUserAndEmoji($currentUser, $emoji, 50, $beforeId)
-                : $reactionRepository->findDistinctMessagesByUser($currentUser, 50, $beforeId);
-            $hasMore = count($messages) === 50;
-            $nextBeforeId = $hasMore ? $messages[array_key_last($messages)]->getId() : null;
-
-            return $this->render('dashboard/_more_my_reactions.html.twig', [
-                'reactedMessages' => $messages,
-                'hasMore' => $hasMore,
-                'nextBeforeId' => $nextBeforeId,
-                'activeEmoji' => $emoji,
-            ]);
-        }
-
-        $channels = $channelRepository->findAllForUser($currentUser);
-        $messages = $emoji
-            ? $reactionRepository->findDistinctMessagesByUserAndEmoji($currentUser, $emoji, 50)
-            : $reactionRepository->findDistinctMessagesByUser($currentUser, 50);
-        $userEmojis = $reactionRepository->findUserEmojis($currentUser);
-        $hasMore = count($messages) === 50;
-        $nextBeforeId = $hasMore ? $messages[array_key_last($messages)]->getId() : null;
-
-        return $this->render('dashboard/my_reactions.html.twig', [
-            'channels' => $channels,
-            'reactedMessages' => $messages,
-            'userEmojis' => $userEmojis,
-            'activeEmoji' => $emoji,
-            'activeChannel' => null,
-            'hasMore' => $hasMore,
-            'nextBeforeId' => $nextBeforeId,
-        ]);
     }
 }
