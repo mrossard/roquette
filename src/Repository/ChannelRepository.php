@@ -47,7 +47,10 @@ class ChannelRepository extends ServiceEntityRepository
             $localGroups = $this->userGroupRepository->findGroupsForUser($user);
             $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
 
-            $this->userGroupsCache[$userId] = array_unique(array_merge($providerGroupIdentifiers, $localGroupIdentifiers));
+            $this->userGroupsCache[$userId] = array_unique(array_merge(
+                $providerGroupIdentifiers,
+                $localGroupIdentifiers,
+            ));
         }
 
         return $this->userGroupsCache[$userId];
@@ -57,13 +60,15 @@ class ChannelRepository extends ServiceEntityRepository
     {
         $groupIdentifiers = $this->getUserGroupIdentifiers($user);
 
-        $qb = $this->createQueryBuilder('c')
+        $qb = $this
+            ->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
             ->leftJoin('c.userGroup', 'ug')
             ->addSelect('ug');
 
         if (!empty($groupIdentifiers)) {
-            $qb->leftJoin('c.groupSubscriptions', 'gs')
+            $qb
+                ->leftJoin('c.groupSubscriptions', 'gs')
                 ->where('m.id = :userId OR gs.groupIdentifier IN (:groupIdentifiers)')
                 ->setParameter('groupIdentifiers', $groupIdentifiers);
         } else {
@@ -150,14 +155,16 @@ class ChannelRepository extends ServiceEntityRepository
     {
         $groupIdentifiers = $this->getUserGroupIdentifiers($user);
 
-        $qb = $this->createQueryBuilder('c')
+        $qb = $this
+            ->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
             ->where('c.isDm = false')
             ->andWhere('c.parentMessage IS NULL')
             ->andWhere('LOWER(c.name) LIKE :query OR LOWER(c.description) LIKE :query');
 
         if (!empty($groupIdentifiers)) {
-            $qb->leftJoin('c.groupSubscriptions', 'gs')
+            $qb
+                ->leftJoin('c.groupSubscriptions', 'gs')
                 ->andWhere('c.isPrivate = false OR m.id = :userId OR gs.groupIdentifier IN (:groupIdentifiers)')
                 ->setParameter('groupIdentifiers', $groupIdentifiers);
         } else {
@@ -246,7 +253,8 @@ class ChannelRepository extends ServiceEntityRepository
      */
     public function findSubchannelsByChannel(Channel $channel): array
     {
-        $result = $this->createQueryBuilder('c')
+        $result = $this
+            ->createQueryBuilder('c')
             ->join('c.parentMessage', 'pm')
             ->where('pm.channel = :channel')
             ->setParameter('channel', $channel)

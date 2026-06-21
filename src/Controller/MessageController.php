@@ -41,7 +41,10 @@ final class MessageController extends AbstractController
         }
         if (!$content) {
             $requestContent = $request->request->get('content');
-            $content = ($requestContent !== null && $requestContent !== '') ? $requestContent : $request->request->get('message', '');
+            $content =
+                $requestContent !== null && $requestContent !== ''
+                    ? $requestContent
+                    : $request->request->get('message', '');
         }
 
         $content = $slashCommandHandler->processPreview($content);
@@ -49,16 +52,15 @@ final class MessageController extends AbstractController
         $html = $messageFormatter->format($content);
 
         return new Response(
-            ($html !== '') ? $html : '<span class="preview-empty">' . $this->translator->trans('Rien à prévisualiser') . '</span>',
+            $html !== ''
+                ? $html
+                : '<span class="preview-empty">' . $this->translator->trans('Rien à prévisualiser') . '</span>',
         );
     }
 
     #[Route('/channels/{slug}/publish', name: 'app_publish', methods: ['POST'])]
-    public function publish(
-        string $slug,
-        Request $request,
-        MessagePublisher $messagePublisher,
-    ): Response {
+    public function publish(string $slug, Request $request, MessagePublisher $messagePublisher): Response
+    {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 

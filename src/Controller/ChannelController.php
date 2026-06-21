@@ -8,8 +8,8 @@ use App\Controller\Trait\ChannelAccessTrait;
 use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Channel;
 use App\Entity\Message;
-use App\Entity\UserChannelRead;
 use App\Entity\User;
+use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
@@ -142,7 +142,10 @@ final class ChannelController extends AbstractController
         $messageIds = array_map(static fn(Message $m) => $m->getId(), $messages);
         $replyCounts = $messageRepository->findReplyCounts($messageIds);
         $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($activeChannel);
-        $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(static fn(Channel $c) => $c->getId(), $channels));
+        $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(
+            static fn(Channel $c) => $c->getId(),
+            $channels,
+        ));
 
         return $this->render('dashboard/index.html.twig', [
             'channels' => $channels,
@@ -264,7 +267,10 @@ final class ChannelController extends AbstractController
         $channels = $channelRepository->findAllForUser($currentUser);
 
         if ($query !== '') {
-            $channels = array_filter($channels, static fn(Channel $c) => stripos($c->getName() ?? '', $query) !== false);
+            $channels = array_filter(
+                $channels,
+                static fn(Channel $c) => stripos($c->getName() ?? '', $query) !== false,
+            );
         }
 
         $subChannelsByParent = $this->buildSubChannelsByParent($channels);

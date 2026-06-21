@@ -62,7 +62,9 @@ class SeedLotsOfMessagesCommand extends Command
             $user->setDisplayName('Utilisateur de Test');
             $user->setPassword('nopassword');
             $this->em->persist($user);
-            $io->text($this->translator->trans('Création de l\'utilisateur testuser car aucun utilisateur n\'existait.'));
+            $io->text($this->translator->trans(
+                'Création de l\'utilisateur testuser car aucun utilisateur n\'existait.',
+            ));
         }
 
         $now = new \DateTimeImmutable();

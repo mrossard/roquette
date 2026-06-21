@@ -14,10 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-#[AsCommand(
-    name: 'ai:doc:index',
-    description: 'Indexer le guide utilisateur dans le store vectoriel',
-)]
+#[AsCommand(name: 'ai:doc:index', description: 'Indexer le guide utilisateur dans le store vectoriel')]
 final class IndexDocCommand extends Command
 {
     public function __construct(
@@ -30,21 +27,22 @@ final class IndexDocCommand extends Command
 
     protected function configure(): void
     {
-        $this
-            ->addOption('reindex', null, InputOption::VALUE_NONE, 'Supprimer et recréer la table avant indexation')
-            ->setHelp(<<<'EOF'
-La commande <info>%command.name%</info> découpe <comment>DOC_UTILISATEUR.md</comment>
-en sections, vectorise chaque section avec nomic-embed-text, et stocke
-le résultat dans PostgreSQL via pgvector.
+        $this->addOption(
+            'reindex',
+            null,
+            InputOption::VALUE_NONE,
+            'Supprimer et recréer la table avant indexation',
+        )->setHelp(<<<'EOF'
+            La commande <info>%command.name%</info> découpe <comment>DOC_UTILISATEUR.md</comment>
+            en sections, vectorise chaque section avec nomic-embed-text, et stocke
+            le résultat dans PostgreSQL via pgvector.
 
-Utilisation :
-    <info>php %command.full_name%</info>
+            Utilisation :
+                <info>php %command.full_name%</info>
 
-Avec réindexation complète :
-    <info>php %command.full_name% --reindex</info>
-EOF
-            )
-        ;
+            Avec réindexation complète :
+                <info>php %command.full_name% --reindex</info>
+            EOF);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -53,7 +51,9 @@ EOF
         $projectDir = $this->parameterBag->get('kernel.project_dir');
 
         if ($input->getOption('reindex')) {
-            $io->note('Option --reindex non implémentée directement. Utilisez bin/console ai:store:drop et ai:store:setup d\'abord.');
+            $io->note(
+                'Option --reindex non implémentée directement. Utilisez bin/console ai:store:drop et ai:store:setup d\'abord.',
+            );
         }
 
         $io->title('Indexation du guide utilisateur');

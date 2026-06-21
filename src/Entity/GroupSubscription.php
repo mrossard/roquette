@@ -9,7 +9,11 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: GroupSubscriptionRepository::class)]
 #[ORM\Table(name: '`group_subscription`')]
-#[ORM\UniqueConstraint(name: 'uniq_group_official_channel', fields: ['groupIdentifier'], options: ['where' => 'is_group_channel = true'])]
+#[ORM\UniqueConstraint(
+    name: 'uniq_group_official_channel',
+    fields: ['groupIdentifier'],
+    options: ['where' => 'is_group_channel = true'],
+)]
 class GroupSubscription
 {
     #[ORM\Id]

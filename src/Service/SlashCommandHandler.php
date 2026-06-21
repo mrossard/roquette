@@ -107,11 +107,9 @@ class SlashCommandHandler
         $user->setCustomHue($hueVal);
         $this->entityManager->flush();
 
-        return new Response(
-            $this->twig->render('dashboard/_input_form.html.twig', ['activeChannel' => null]),
-            200,
-            ['HX-Refresh' => 'true'],
-        );
+        return new Response($this->twig->render('dashboard/_input_form.html.twig', ['activeChannel' => null]), 200, [
+            'HX-Refresh' => 'true',
+        ]);
     }
 
     private function handleHelp(string $args, User $user, Channel $channel): Response
@@ -162,13 +160,18 @@ class SlashCommandHandler
             $data = $response->toArray();
             if (($data['results'] ?? null) !== null && $data['results'] !== []) {
                 foreach ($data['results'] as $result) {
-                    if (($result['media'][0]['gif']['url'] ?? null) === null || $result['media'][0]['gif']['url'] === '') {
+                    if (
+                        ($result['media'][0]['gif']['url'] ?? null) === null
+                        || $result['media'][0]['gif']['url'] === ''
+                    ) {
                         continue;
                     }
 
                     $giphyPreviews[] = [
                         'url' => $result['media'][0]['gif']['url'],
-                        'preview' => $result['media'][0]['tinygif']['url'] ?? $result['media'][0]['gif']['preview'] ?? $result['media'][0]['gif']['url'],
+                        'preview' =>
+                            $result['media'][0]['tinygif']['url'] ?? $result['media'][0]['gif']['preview']
+                                ?? $result['media'][0]['gif']['url'],
                     ];
                 }
             }
@@ -176,12 +179,10 @@ class SlashCommandHandler
             $giphyPreviews = [];
         }
 
-        return new Response(
-            $this->twig->render('dashboard/_input_form.html.twig', [
-                'activeChannel' => $channel,
-                'giphyPreviews' => $giphyPreviews,
-                'giphyQuery' => $args,
-            ]),
-        );
+        return new Response($this->twig->render('dashboard/_input_form.html.twig', [
+            'activeChannel' => $channel,
+            'giphyPreviews' => $giphyPreviews,
+            'giphyQuery' => $args,
+        ]));
     }
 }

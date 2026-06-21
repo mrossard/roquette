@@ -7,8 +7,8 @@ namespace App\Controller;
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Channel;
-use App\Entity\UserChannelRead;
 use App\Entity\User;
+use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
@@ -49,13 +49,18 @@ final class ChannelActionController extends AbstractController
         }
 
         try {
-            $channel = $channelManager->create($name, $description, [
-                'isPrivate' => $request->request->getBoolean('isPrivate', false),
-                'groupIdentifier' => $request->request->get('groupIdentifier', ''),
-                'isGroupChannel' => $request->request->getBoolean('isGroupChannel', false),
-                'isTodoList' => $request->request->getBoolean('isTodoList', false),
-                'retentionMonths' => $request->request->get('messageRetentionMonths'),
-            ], $currentUser);
+            $channel = $channelManager->create(
+                $name,
+                $description,
+                [
+                    'isPrivate' => $request->request->getBoolean('isPrivate', false),
+                    'groupIdentifier' => $request->request->get('groupIdentifier', ''),
+                    'isGroupChannel' => $request->request->getBoolean('isGroupChannel', false),
+                    'isTodoList' => $request->request->getBoolean('isTodoList', false),
+                    'retentionMonths' => $request->request->get('messageRetentionMonths'),
+                ],
+                $currentUser,
+            );
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());
 
@@ -164,7 +169,10 @@ final class ChannelActionController extends AbstractController
             }
 
             $subChannelsByParent = $this->buildSubChannelsByParent($channels);
-            $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(static fn(Channel $c) => $c->getId(), $channels));
+            $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(
+                static fn(Channel $c) => $c->getId(),
+                $channels,
+            ));
 
             $sidebarHtml = $this->renderView('dashboard/_sidebar.html.twig', [
                 'channels' => $channels,
@@ -186,10 +194,12 @@ final class ChannelActionController extends AbstractController
 
             $isMember = $activeChannel !== null && in_array($activeChannel, $channels, true);
             if ($activeChannel && $isMember) {
-                $html .= "\n" . $this->renderView('dashboard/_favorite_button_oob.html.twig', [
-                    'activeChannel' => $activeChannel,
-                    'isMember' => true,
-                ]);
+                $html .=
+                    "\n"
+                    . $this->renderView('dashboard/_favorite_button_oob.html.twig', [
+                        'activeChannel' => $activeChannel,
+                        'isMember' => true,
+                    ]);
             }
 
             return new Response($html);
@@ -251,11 +261,17 @@ final class ChannelActionController extends AbstractController
         }
 
         try {
-            $channelManager->update($channel, $name, $description, [
-                'isTodoList' => $request->request->getBoolean('isTodoList', false),
-                'retentionMonths' => $request->request->get('messageRetentionMonths'),
-                'administratorIds' => $request->request->all('administrators'),
-            ], $currentUser);
+            $channelManager->update(
+                $channel,
+                $name,
+                $description,
+                [
+                    'isTodoList' => $request->request->getBoolean('isTodoList', false),
+                    'retentionMonths' => $request->request->get('messageRetentionMonths'),
+                    'administratorIds' => $request->request->all('administrators'),
+                ],
+                $currentUser,
+            );
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             throw $this->createAccessDeniedException($e->getMessage());
         }
@@ -281,7 +297,9 @@ final class ChannelActionController extends AbstractController
         }
 
         if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
-            throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à exporter l\'historique de ce canal.'));
+            throw $this->createAccessDeniedException($this->translator->trans(
+                'Non autorisé à exporter l\'historique de ce canal.',
+            ));
         }
 
         return $channelExportService->export($channel, $currentUser);

@@ -31,7 +31,8 @@ class RegistrationFormType extends AbstractType
                 ),
                 new Callback(function (mixed $value, ExecutionContextInterface $context) {
                     if (is_string($value) && strcasecmp($value, User::ROBOT_USERNAME) === 0) {
-                        $context->buildViolation('Ce nom d\'utilisateur est réservé par le système.')
+                        $context
+                            ->buildViolation('Ce nom d\'utilisateur est réservé par le système.')
                             ->setTranslationDomain('messages')
                             ->addViolation();
                     }

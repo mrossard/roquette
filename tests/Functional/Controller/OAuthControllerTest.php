@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Controller;
 
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -302,7 +300,7 @@ class OAuthControllerTest extends WebTestCase
             'scope',
             $this->mockStorePath,
             true,
-            'prod'
+            'prod',
         );
 
         $request = new \Symfony\Component\HttpFoundation\Request();

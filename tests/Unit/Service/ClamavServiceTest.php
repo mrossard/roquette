@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Tests\Unit\Service\ClamavMockStream;
 use App\Tests\Unit\Service\ClamavServiceTestState;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 function fsockopen(string $hostname, int $port, &$errno, &$errstr, float $timeout)
 {
@@ -63,7 +61,9 @@ class ClamavServiceTest extends TestCase
     {
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->translator = $this->createMock(\Symfony\Contracts\Translation\TranslatorInterface::class);
-        $this->translator->method('trans')->willReturnCallback(static fn($id, $parameters = []) => strtr($id, $parameters));
+        $this->translator
+            ->method('trans')
+            ->willReturnCallback(static fn($id, $parameters = []) => strtr($id, $parameters));
         $this->service = new ClamavService('localhost', 3310, $this->logger, $this->translator);
 
         // Reset state

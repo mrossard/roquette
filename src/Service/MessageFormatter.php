@@ -174,7 +174,15 @@ class MessageFormatter
                 $displayName = $user->getDisplayName() ?: $user->getUsername();
                 $url = '/dm/' . urlencode($user->getUsername());
 
-                return '<a href="' . $url . '" class="' . $class . '" hx-boost="false">@' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</a>';
+                return (
+                    '<a href="'
+                    . $url
+                    . '" class="'
+                    . $class
+                    . '" hx-boost="false">@'
+                    . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8')
+                    . '</a>'
+                );
             },
             $html,
         );
@@ -185,7 +193,10 @@ class MessageFormatter
             function ($matches) {
                 $slug = $matches[1];
                 if (!array_key_exists($slug, $this->channelSlugCache)) {
-                    $this->channelSlugCache[$slug] = $this->channelRepository->findOneBy(['slug' => $slug, 'isDm' => false]);
+                    $this->channelSlugCache[$slug] = $this->channelRepository->findOneBy([
+                        'slug' => $slug,
+                        'isDm' => false,
+                    ]);
                 }
                 $channel = $this->channelSlugCache[$slug];
                 if ($channel) {
@@ -295,14 +306,24 @@ class MessageFormatter
     public function wrapUnicodeEmojis(string $text): string
     {
         $pattern = '/(?:[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{1F1E6}-\x{1F1FF}\x{1F3FB}-\x{1F3FF}]\x{FE0F}?|\x{200D})+/u';
-        return preg_replace_callback($pattern, function ($matches) {
-            $emoji = $matches[0];
-            $shortcode = $this->getShortcodeForUnicodeEmoji($emoji);
-            if ($shortcode) {
-                return '<span class="unicode-emoji" title=":' . htmlspecialchars($shortcode, ENT_QUOTES, 'UTF-8') . ':">' . $emoji . '</span>';
-            }
-            return '<span class="unicode-emoji">' . $emoji . '</span>';
-        }, $text);
+        return preg_replace_callback(
+            $pattern,
+            function ($matches) {
+                $emoji = $matches[0];
+                $shortcode = $this->getShortcodeForUnicodeEmoji($emoji);
+                if ($shortcode) {
+                    return (
+                        '<span class="unicode-emoji" title=":'
+                        . htmlspecialchars($shortcode, ENT_QUOTES, 'UTF-8')
+                        . ':">'
+                        . $emoji
+                        . '</span>'
+                    );
+                }
+                return '<span class="unicode-emoji">' . $emoji . '</span>';
+            },
+            $text,
+        );
     }
 
     private function replaceCustomEmojis(string $text): string
@@ -389,7 +410,9 @@ class MessageFormatter
         $pattern = '/(?<=^|\s):-?o(?=$|\s|[\.!?,])/i';
         return preg_replace(
             $pattern,
-            '<img src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" alt=":o" title=":o" class="message-emoji" style="vertical-align: middle;" />',
+            '<img src="'
+            . htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
+            . '" alt=":o" title=":o" class="message-emoji" style="vertical-align: middle;" />',
             $text,
         );
     }

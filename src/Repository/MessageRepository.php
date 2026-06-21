@@ -54,13 +54,13 @@ class MessageRepository extends ServiceEntityRepository
     public function searchInChannel(Channel $channel, string $query): array
     {
         $conn = $this->getEntityManager()->getConnection();
-        $ids = $conn->fetchFirstColumn(
-            'SELECT m.id FROM "message" m
+        $ids = $conn->fetchFirstColumn('SELECT m.id FROM "message" m
              WHERE m.channel_id = :channelId
                AND LOWER(m.content) LIKE :query
-             ORDER BY m.created_at DESC',
-            ['channelId' => $channel->getId(), 'query' => '%' . strtolower($query) . '%'],
-        );
+             ORDER BY m.created_at DESC', [
+            'channelId' => $channel->getId(),
+            'query' => '%' . strtolower($query) . '%',
+        ]);
 
         if ($ids === []) {
             return [];
@@ -68,7 +68,8 @@ class MessageRepository extends ServiceEntityRepository
 
         $ids = array_map('intval', $ids);
 
-        return $this->createQueryBuilder('m')
+        return $this
+            ->createQueryBuilder('m')
             ->leftJoin('m.poll', 'poll')
             ->addSelect('poll')
             ->where('m.id IN (:ids)')
@@ -86,7 +87,8 @@ class MessageRepository extends ServiceEntityRepository
     public function findLatestInChannel(Channel $channel, int $limit = 50, ?int $beforeId = null): array
     {
         $conn = $this->getEntityManager()->getConnection();
-        $idQb = $conn->createQueryBuilder()
+        $idQb = $conn
+            ->createQueryBuilder()
             ->select('id')
             ->from('"message"')
             ->where('channel_id = :channelId')
@@ -181,16 +183,13 @@ class MessageRepository extends ServiceEntityRepository
 
         $where = implode(' AND ', $conditions);
 
-        $ids = $conn->fetchFirstColumn(
-            "SELECT m.id FROM \"message\" m
+        $ids = $conn->fetchFirstColumn("SELECT m.id FROM \"message\" m
              JOIN \"user\" u ON u.id = m.author_id
              JOIN \"channel\" ch ON ch.id = m.channel_id
              LEFT JOIN channel_user cu ON cu.channel_id = ch.id AND cu.user_id = :currentUserId
              WHERE {$where}
              ORDER BY {$orderBy}
-             LIMIT 30",
-            $params,
-        );
+             LIMIT 30", $params);
 
         if ($ids === []) {
             return [];
@@ -198,7 +197,8 @@ class MessageRepository extends ServiceEntityRepository
 
         $ids = array_map('intval', $ids);
 
-        return $this->createQueryBuilder('m')
+        return $this
+            ->createQueryBuilder('m')
             ->select('m', 'author', 'channel', 'poll')
             ->join('m.author', 'author')
             ->join('m.channel', 'channel')
@@ -347,7 +347,8 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findFilesByChannel(Channel $channel, int $limit = 50, ?int $beforeId = null): array
     {
-        $qb = $this->createQueryBuilder('m')
+        $qb = $this
+            ->createQueryBuilder('m')
             ->select('m', 'author')
             ->join('m.author', 'author')
             ->where('m.channel = :channel')
@@ -393,7 +394,8 @@ class MessageRepository extends ServiceEntityRepository
             return [];
         }
 
-        $messages = $this->createQueryBuilder('m')
+        $messages = $this
+            ->createQueryBuilder('m')
             ->select('m', 'author', 'poll')
             ->join('m.author', 'author')
             ->leftJoin('m.poll', 'poll')
@@ -412,7 +414,8 @@ class MessageRepository extends ServiceEntityRepository
 
     public function findLastMessageForChannel(Channel $channel): ?Message
     {
-        return $this->createQueryBuilder('m')
+        return $this
+            ->createQueryBuilder('m')
             ->select('m', 'author', 'poll')
             ->join('m.author', 'author')
             ->leftJoin('m.poll', 'poll')
@@ -431,7 +434,8 @@ class MessageRepository extends ServiceEntityRepository
     public function findSavedByUser(User $user, int $limit = 50, ?int $beforeId = null): array
     {
         $conn = $this->getEntityManager()->getConnection();
-        $qb = $conn->createQueryBuilder()
+        $qb = $conn
+            ->createQueryBuilder()
             ->select('usm.message_id')
             ->from('user_saved_messages', 'usm')
             ->where('usm.user_id = :userId')
@@ -440,8 +444,7 @@ class MessageRepository extends ServiceEntityRepository
             ->setParameter('userId', $user->getId());
 
         if ($beforeId !== null) {
-            $qb->andWhere('usm.message_id < :beforeId')
-                ->setParameter('beforeId', $beforeId);
+            $qb->andWhere('usm.message_id < :beforeId')->setParameter('beforeId', $beforeId);
         }
 
         $ids = array_map('intval', $qb->fetchFirstColumn());
@@ -450,7 +453,8 @@ class MessageRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->createQueryBuilder('m')
+        return $this
+            ->createQueryBuilder('m')
             ->select('m', 'author', 'channel', 'poll')
             ->join('m.author', 'author')
             ->join('m.channel', 'channel')
@@ -462,4 +466,3 @@ class MessageRepository extends ServiceEntityRepository
             ->getResult();
     }
 }
-

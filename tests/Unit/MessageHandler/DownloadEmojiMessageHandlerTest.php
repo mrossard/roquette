@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\MessageHandler;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Message\DownloadEmojiMessage;
 use App\MessageHandler\DownloadEmojiMessageHandler;
 use League\Flysystem\FilesystemOperator;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -31,31 +29,25 @@ class DownloadEmojiMessageHandlerTest extends TestCase
         $response->method('getStatusCode')->willReturn(200);
         $response->method('getContent')->willReturn('gif_binary_data');
 
-        $httpClient->expects($this->once())
+        $httpClient
+            ->expects($this->once())
             ->method('request')
             ->with('GET', 'http://example.com/emojis/smile.gif')
             ->willReturn($response);
 
         // Expect storage checks and write
-        $defaultStorage->expects($this->once())
-            ->method('has')
-            ->with('emojis/smile.gif')
-            ->willReturn(false);
+        $defaultStorage->expects($this->once())->method('has')->with('emojis/smile.gif')->willReturn(false);
 
-        $defaultStorage->expects($this->once())
-            ->method('write')
-            ->with('emojis/smile.gif', 'gif_binary_data');
+        $defaultStorage->expects($this->once())->method('write')->with('emojis/smile.gif', 'gif_binary_data');
 
-        $cache->expects($this->once())
-            ->method('delete')
-            ->with('emojis_filesystem_list');
+        $cache->expects($this->once())->method('delete')->with('emojis_filesystem_list');
 
         $handler = new DownloadEmojiMessageHandler(
             $httpClient,
             $defaultStorage,
             'http://example.com/emojis/',
             $logger,
-            $cache
+            $cache,
         );
 
         $handler(new DownloadEmojiMessage('smile.gif'));

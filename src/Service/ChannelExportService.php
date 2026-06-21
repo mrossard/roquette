@@ -27,10 +27,9 @@ class ChannelExportService
 
     public function export(Channel $channel, User $currentUser): Response
     {
-        $messages = $this->entityManager->getRepository(Message::class)->findBy(
-            ['channel' => $channel],
-            ['createdAt' => 'ASC'],
-        );
+        $messages = $this->entityManager->getRepository(Message::class)->findBy(['channel' => $channel], [
+            'createdAt' => 'ASC',
+        ]);
 
         $exportData = [
             'channel' => [
@@ -42,7 +41,7 @@ class ChannelExportService
                 'isPrivate' => $channel->isPrivate(),
                 'isTodoList' => $channel->isTodoList(),
             ],
-            'exportedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            'exportedAt' => new \DateTimeImmutable()->format(\DateTimeInterface::ATOM),
             'exportedBy' => $currentUser->getUsername(),
             'messages' => [],
         ];
@@ -139,20 +138,21 @@ class ChannelExportService
             }
         }
 
-        return new StreamedResponse(function () use ($zipFile) {
-            $out = fopen('php://output', 'wb');
-            $in = fopen($zipFile, 'rb');
-            stream_copy_to_stream($in, $out);
-            fclose($in);
-            fclose($out);
-            unlink($zipFile);
-        }, Response::HTTP_OK, [
-            'Content-Type' => 'application/zip',
-            'Content-Disposition' => HeaderUtils::makeDisposition(
-                HeaderUtils::DISPOSITION_ATTACHMENT,
-                $filename,
-            ),
-        ]);
+        return new StreamedResponse(
+            function () use ($zipFile) {
+                $out = fopen('php://output', 'wb');
+                $in = fopen($zipFile, 'rb');
+                stream_copy_to_stream($in, $out);
+                fclose($in);
+                fclose($out);
+                unlink($zipFile);
+            },
+            Response::HTTP_OK,
+            [
+                'Content-Type' => 'application/zip',
+                'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename),
+            ],
+        );
     }
 
     private function exportAsTar(
@@ -207,20 +207,21 @@ class ChannelExportService
             }
         }
 
-        return new StreamedResponse(function () use ($tarFile) {
-            $out = fopen('php://output', 'wb');
-            $in = fopen($tarFile, 'rb');
-            stream_copy_to_stream($in, $out);
-            fclose($in);
-            fclose($out);
-            unlink($tarFile);
-        }, Response::HTTP_OK, [
-            'Content-Type' => 'application/x-tar',
-            'Content-Disposition' => HeaderUtils::makeDisposition(
-                HeaderUtils::DISPOSITION_ATTACHMENT,
-                $filename,
-            ),
-        ]);
+        return new StreamedResponse(
+            function () use ($tarFile) {
+                $out = fopen('php://output', 'wb');
+                $in = fopen($tarFile, 'rb');
+                stream_copy_to_stream($in, $out);
+                fclose($in);
+                fclose($out);
+                unlink($tarFile);
+            },
+            Response::HTTP_OK,
+            [
+                'Content-Type' => 'application/x-tar',
+                'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename),
+            ],
+        );
     }
 
     private function saveAndCreateExportEntity(
@@ -247,16 +248,12 @@ class ChannelExportService
         $this->entityManager->persist($export);
         $this->entityManager->flush();
 
-        $this->auditLogger->log(
-            AuditAction::CHANNEL_EXPORT,
-            $currentUser,
-            [
-                'channel_id' => $channel->getId(),
-                'channel_name' => $channel->getName(),
-                'slug' => $channel->getSlug(),
-                'export_id' => $export->getId(),
-                'file_name' => $filename,
-            ],
-        );
+        $this->auditLogger->log(AuditAction::CHANNEL_EXPORT, $currentUser, [
+            'channel_id' => $channel->getId(),
+            'channel_name' => $channel->getName(),
+            'slug' => $channel->getSlug(),
+            'export_id' => $export->getId(),
+            'file_name' => $filename,
+        ]);
     }
 }

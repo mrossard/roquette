@@ -7,8 +7,8 @@ namespace App\Controller;
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Channel;
-use App\Entity\UserChannelRead;
 use App\Entity\User;
+use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -180,7 +180,11 @@ final class ChannelMembershipController extends AbstractController
         if (!$channel->getMembers()->contains($user)) {
             return new Response(
                 '<div class="error-message">'
-                . htmlspecialchars($this->translator->trans("Cet utilisateur n'est pas membre de ce canal."), ENT_QUOTES, 'UTF-8')
+                . htmlspecialchars(
+                    $this->translator->trans("Cet utilisateur n'est pas membre de ce canal."),
+                    ENT_QUOTES,
+                    'UTF-8',
+                )
                 . '</div>',
                 400,
             );

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Controller\Trait\RequestValidationTrait;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
@@ -22,8 +23,6 @@ use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
-
-use App\Controller\Trait\RequestValidationTrait;
 
 class MessagePublisher
 {
@@ -59,7 +58,9 @@ class MessagePublisher
         if ($this->isPostMaxSizeExceeded($request)) {
             $this->addFlash(
                 'error',
-                $this->translator->trans('Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).'),
+                $this->translator->trans(
+                    'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).',
+                ),
             );
 
             return $this->renderForm($channel);
@@ -140,11 +141,7 @@ class MessagePublisher
             $renderedHtml,
         );
 
-        if (
-            $channel->getSlug() === 'dm-robot-roquette-' . $currentUser->getSlug()
-            && !$isPoll
-            && !$uploadedFile
-        ) {
+        if ($channel->getSlug() === 'dm-robot-roquette-' . $currentUser->getSlug() && !$isPoll && !$uploadedFile) {
             $this->messageBus->dispatch(
                 new LlmQueryMessage($messageText, $currentUser->getId(), $channel->getSlug(), 'help-' . uniqid()),
             );
@@ -169,12 +166,9 @@ class MessagePublisher
 
     private function renderForm(Channel $channel, int $statusCode = 200): Response
     {
-        return new Response(
-            $this->twig->render('dashboard/_input_form.html.twig', [
-                'activeChannel' => $channel,
-            ]),
-            $statusCode,
-        );
+        return new Response($this->twig->render('dashboard/_input_form.html.twig', [
+            'activeChannel' => $channel,
+        ]), $statusCode);
     }
 
     private function renderFeedItem(Message $message, array $extraParams = []): string
@@ -182,8 +176,11 @@ class MessagePublisher
         return $this->messageRenderer->renderFeedItem($message, $extraParams);
     }
 
-    private function maybePrependDaySeparator(Message $previousMessage, Message $newMessage, string $renderedHtml): string
-    {
+    private function maybePrependDaySeparator(
+        Message $previousMessage,
+        Message $newMessage,
+        string $renderedHtml,
+    ): string {
         $previousDate = $previousMessage->getCreatedAt()->format('Y-m-d');
         $newDate = $newMessage->getCreatedAt()->format('Y-m-d');
 

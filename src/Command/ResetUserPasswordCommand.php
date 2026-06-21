@@ -28,9 +28,11 @@ class ResetUserPasswordCommand extends Command
 
     protected function configure(): void
     {
-        $this
-            ->addArgument('username', InputArgument::OPTIONAL, 'Le nom d\'utilisateur')
-            ->addArgument('password', InputArgument::OPTIONAL, 'Le nouveau mot de passe');
+        $this->addArgument('username', InputArgument::OPTIONAL, 'Le nom d\'utilisateur')->addArgument(
+            'password',
+            InputArgument::OPTIONAL,
+            'Le nouveau mot de passe',
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -43,7 +45,9 @@ class ResetUserPasswordCommand extends Command
         if (!$username) {
             $username = $io->ask('Nom d\'utilisateur', null, function ($value) {
                 if ($value === null || trim((string) $value) === '') {
-                    throw new \RuntimeException($this->translator->trans('Le nom d\'utilisateur ne peut pas être vide.'));
+                    throw new \RuntimeException($this->translator->trans(
+                        'Le nom d\'utilisateur ne peut pas être vide.',
+                    ));
                 }
 
                 return $value;

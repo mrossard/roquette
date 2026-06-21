@@ -87,7 +87,8 @@ final class SubChannelController extends AbstractController
         $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Discussion';
         $name = mb_substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 40);
 
-        $slug = 'sc-'
+        $slug =
+            'sc-'
             . preg_replace('/[^a-z0-9]+/i', '-', mb_strtolower($name))
             . '-'
             . substr(bin2hex(random_bytes(3)), 0, 6);

@@ -45,14 +45,18 @@ class CreateAdminCommand extends Command
         if (!$username) {
             $username = $io->ask('Nom d\'utilisateur', null, function ($value) {
                 if ($value === null || trim((string) $value) === '') {
-                    throw new \RuntimeException($this->translator->trans('Le nom d\'utilisateur ne peut pas être vide.'));
+                    throw new \RuntimeException($this->translator->trans(
+                        'Le nom d\'utilisateur ne peut pas être vide.',
+                    ));
                 }
                 return $value;
             });
         }
 
         if (strcasecmp($username, User::ROBOT_USERNAME) === 0) {
-            $io->error($this->translator->trans('Impossible de modifier ou de promouvoir le compte système de l\'assistant.'));
+            $io->error($this->translator->trans(
+                'Impossible de modifier ou de promouvoir le compte système de l\'assistant.',
+            ));
             return Command::FAILURE;
         }
 

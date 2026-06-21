@@ -20,9 +20,7 @@ class AuditLogMessageHandler
 
     public function __invoke(AuditLogMessage $message): void
     {
-        $performedBy = $message->getPerformedById()
-            ? $this->userRepository->find($message->getPerformedById())
-            : null;
+        $performedBy = $message->getPerformedById() ? $this->userRepository->find($message->getPerformedById()) : null;
 
         $log = new AuditLog();
         $log->setAction($message->getAction());

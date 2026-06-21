@@ -98,7 +98,10 @@ final class DashboardController extends AbstractController
             $subChannelsByParent[$parentId][] = $ch;
         }
 
-        $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(static fn(Channel $c) => $c->getId(), $channels));
+        $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(
+            static fn(Channel $c) => $c->getId(),
+            $channels,
+        ));
 
         return $this->render('dashboard/directory.html.twig', [
             'channels' => $channels,

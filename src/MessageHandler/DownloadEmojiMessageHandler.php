@@ -9,8 +9,8 @@ use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[AsMessageHandler]
 class DownloadEmojiMessageHandler
@@ -58,7 +58,11 @@ class DownloadEmojiMessageHandler
                 // Save empty content as negative cache
                 $this->defaultStorage->write($storagePath, '');
                 $this->cache->delete('emojis_filesystem_list');
-                $this->logger->warning(sprintf('Failed to download emoji "%s": HTTP %d.', $path, $response->getStatusCode()));
+                $this->logger->warning(sprintf(
+                    'Failed to download emoji "%s": HTTP %d.',
+                    $path,
+                    $response->getStatusCode(),
+                ));
             }
         } catch (\Exception $e) {
             $this->logger->error(sprintf('Exception while downloading emoji "%s": %s', $path, $e->getMessage()));

@@ -30,7 +30,9 @@ class SecuritySubscriber implements EventSubscriberInterface
     {
         $authenticator = $event->getAuthenticator();
         if ($authenticator instanceof FormLoginAuthenticator && !$this->authFormEnabled) {
-            throw new CustomUserMessageAuthenticationException($this->translator->trans('L\'authentification par mot de passe est désactivée.'));
+            throw new CustomUserMessageAuthenticationException($this->translator->trans(
+                'L\'authentification par mot de passe est désactivée.',
+            ));
         }
     }
 }

@@ -36,9 +36,9 @@ class InMemoryGroupProvider implements GroupProviderInterface
             if ($searchQuery !== '') {
                 $q = strtolower($searchQuery);
                 if (
-                    !str_contains(strtolower($data['name']), $q) &&
-                    !str_contains(strtolower($data['description']), $q) &&
-                    !str_contains(strtolower($identifier), $q)
+                    !str_contains(strtolower($data['name']), $q)
+                    && !str_contains(strtolower($data['description']), $q)
+                    && !str_contains(strtolower($identifier), $q)
                 ) {
                     continue;
                 }

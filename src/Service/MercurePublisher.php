@@ -117,7 +117,7 @@ class MercurePublisher
                 'parentChannelId' => $channel->getParentMessage()?->getChannel()->getId(),
                 'parentChannelSlug' => $channel->getParentMessage()?->getChannel()->getSlug(),
             ],
-            'channel_notification'
+            'channel_notification',
         );
 
         $title = $channelName;
@@ -143,7 +143,9 @@ class MercurePublisher
     private function buildContentSummary(Message $message): string
     {
         if ($message->getPoll()) {
-            return $this->translator->trans('a créé un sondage : %question%', ['%question%' => $message->getPoll()->getQuestion()]);
+            return $this->translator->trans('a créé un sondage : %question%', [
+                '%question%' => $message->getPoll()->getQuestion(),
+            ]);
         }
 
         if ($message->getContent()) {
@@ -151,7 +153,9 @@ class MercurePublisher
         }
 
         if ($message->getFileName()) {
-            return $this->translator->trans('a envoyé un fichier : %filename%', ['%filename%' => $message->getFileName()]);
+            return $this->translator->trans('a envoyé un fichier : %filename%', [
+                '%filename%' => $message->getFileName(),
+            ]);
         }
 
         return $this->translator->trans('Nouveau message');

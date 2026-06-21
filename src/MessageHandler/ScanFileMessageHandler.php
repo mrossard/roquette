@@ -36,7 +36,11 @@ class ScanFileMessageHandler
             return;
         }
 
-        $this->logger->info(sprintf('Starting async virus scan for message %d ("%s").', $messageId, $dbMessage->getFileName()));
+        $this->logger->info(sprintf(
+            'Starting async virus scan for message %d ("%s").',
+            $messageId,
+            $dbMessage->getFileName(),
+        ));
 
         try {
             if (!$this->fileUploadService->exists($dbMessage->getFilePath())) {
@@ -57,7 +61,11 @@ class ScanFileMessageHandler
                 $this->logger->info(sprintf('File "%s" (message %d) is clean.', $dbMessage->getFileName(), $messageId));
             } else {
                 $dbMessage->setVirusScanStatus('infected');
-                $this->logger->warning(sprintf('Virus detected in "%s" (message %d). Deleting file.', $dbMessage->getFileName(), $messageId));
+                $this->logger->warning(sprintf(
+                    'Virus detected in "%s" (message %d). Deleting file.',
+                    $dbMessage->getFileName(),
+                    $messageId,
+                ));
                 $this->fileUploadService->delete($dbMessage->getFilePath());
             }
         } catch (\Exception $e) {
@@ -89,13 +97,13 @@ class ScanFileMessageHandler
                 'oob' => true, // Out of band swap!
             ]);
 
-            $this->mercurePublisher->publishToChannel(
-                $channel,
-                $html,
-                'message_' . $channel->getSlug()
-            );
+            $this->mercurePublisher->publishToChannel($channel, $html, 'message_' . $channel->getSlug());
         } catch (\Exception $e) {
-            $this->logger->error(sprintf('Failed to publish Mercure scan update for message %d: %s', $message->getId(), $e->getMessage()));
+            $this->logger->error(sprintf(
+                'Failed to publish Mercure scan update for message %d: %s',
+                $message->getId(),
+                $e->getMessage(),
+            ));
         }
     }
 }

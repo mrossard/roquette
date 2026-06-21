@@ -58,12 +58,16 @@ class ChannelManager
                 $isGroupChannel = $extra['isGroupChannel'] ?? false;
 
                 if ($isGroupChannel) {
-                    $existingGroupSub = $this->entityManager->getRepository(GroupSubscription::class)->findOneBy([
-                        'groupIdentifier' => $groupIdentifier,
-                        'isGroupChannel' => true,
-                    ]);
+                    $existingGroupSub = $this->entityManager
+                        ->getRepository(GroupSubscription::class)
+                        ->findOneBy([
+                            'groupIdentifier' => $groupIdentifier,
+                            'isGroupChannel' => true,
+                        ]);
                     if ($existingGroupSub) {
-                        throw new \InvalidArgumentException($this->translator->trans('Ce groupe possède déjà un canal officiel.'));
+                        throw new \InvalidArgumentException($this->translator->trans(
+                            'Ce groupe possède déjà un canal officiel.',
+                        ));
                     }
                 }
 
@@ -172,7 +176,9 @@ class ChannelManager
 
     public function delete(Channel $channel, User $currentUser): string
     {
-        $isAdmin = $this->isCurrentUserAdmin() || ($channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId());
+        $isAdmin =
+            $this->isCurrentUserAdmin()
+            || $channel->getCreator() && $channel->getCreator()->getId() === $currentUser->getId();
         if (!$isAdmin) {
             throw new AccessDeniedHttpException($this->translator->trans(
                 'Vous n\'êtes pas autorisé à supprimer ce canal.',

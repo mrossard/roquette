@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Service\LinkPreviewService;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Cache\CacheInterface;

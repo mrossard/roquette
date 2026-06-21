@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\User;
 use App\Entity\ChannelExport;
 use App\Entity\CustomEmoji;
-use App\Repository\UserRepository;
-use App\Repository\ChannelExportRepository;
-use App\Repository\AuditLogRepository;
-use App\Service\FileUploadService;
-use App\Service\AuditLoggerService;
+use App\Entity\User;
 use App\Enum\AuditAction;
+use App\Repository\AuditLogRepository;
+use App\Repository\ChannelExportRepository;
+use App\Repository\UserRepository;
+use App\Service\AuditLoggerService;
+use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
@@ -22,8 +22,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_ADMIN')]
 final class AdminController extends AbstractController
@@ -52,8 +52,11 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/users/{id}/ban', name: 'app_admin_user_ban', methods: ['POST'])]
-    public function banUser(User $user, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
-    {
+    public function banUser(
+        User $user,
+        EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
+    ): Response {
         if ($user->isBanned()) {
             $this->addFlash('error', $this->translator->trans('L\'utilisateur "%username%" est déjà banni.', [
                 '%username%' => $user->getUsername(),
@@ -102,8 +105,11 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/users/{id}/unban', name: 'app_admin_user_unban', methods: ['POST'])]
-    public function unbanUser(User $user, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
-    {
+    public function unbanUser(
+        User $user,
+        EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
+    ): Response {
         if (!$user->isBanned()) {
             $this->addFlash('error', $this->translator->trans('L\'utilisateur "%username%" n\'est pas banni.', [
                 '%username%' => $user->getUsername(),
@@ -162,7 +168,9 @@ final class AdminController extends AbstractController
         AuditLoggerService $auditLogger,
     ): Response {
         if (!$fileUploadService->exists($export->getFilePath())) {
-            throw $this->createNotFoundException($this->translator->trans('Le fichier d\'export n\'existe pas dans le stockage.'));
+            throw $this->createNotFoundException($this->translator->trans(
+                'Le fichier d\'export n\'existe pas dans le stockage.',
+            ));
         }
 
         /** @var User $currentUser */
@@ -175,19 +183,23 @@ final class AdminController extends AbstractController
 
         $contentType = str_ends_with($export->getFileName(), '.tar') ? 'application/x-tar' : 'application/zip';
 
-        return new StreamedResponse(function () use ($fileUploadService, $export) {
-            $fileStream = $fileUploadService->readStream($export->getFilePath());
-            if ($fileStream) {
-                fpassthru($fileStream);
-                fclose($fileStream);
-            }
-        }, Response::HTTP_OK, [
-            'Content-Type' => $contentType,
-            'Content-Disposition' => \Symfony\Component\HttpFoundation\HeaderUtils::makeDisposition(
-                \Symfony\Component\HttpFoundation\HeaderUtils::DISPOSITION_ATTACHMENT,
-                $export->getFileName(),
-            ),
-        ]);
+        return new StreamedResponse(
+            function () use ($fileUploadService, $export) {
+                $fileStream = $fileUploadService->readStream($export->getFilePath());
+                if ($fileStream) {
+                    fpassthru($fileStream);
+                    fclose($fileStream);
+                }
+            },
+            Response::HTTP_OK,
+            [
+                'Content-Type' => $contentType,
+                'Content-Disposition' => \Symfony\Component\HttpFoundation\HeaderUtils::makeDisposition(
+                    \Symfony\Component\HttpFoundation\HeaderUtils::DISPOSITION_ATTACHMENT,
+                    $export->getFileName(),
+                ),
+            ],
+        );
     }
 
     #[Route('/admin/exports/{id}/delete', name: 'app_admin_export_delete', methods: ['POST'])]
@@ -208,7 +220,11 @@ final class AdminController extends AbstractController
         try {
             $fileUploadService->delete($export->getFilePath());
         } catch (\Exception $e) {
-            $this->logger->error(sprintf('Failed to delete export file "%s": %s', $export->getFilePath(), $e->getMessage()));
+            $this->logger->error(sprintf(
+                'Failed to delete export file "%s": %s',
+                $export->getFilePath(),
+                $e->getMessage(),
+            ));
         }
 
         $entityManager->remove($export);
@@ -240,7 +256,7 @@ final class AdminController extends AbstractController
         Request $request,
         FilesystemOperator $defaultStorage,
         EntityManagerInterface $entityManager,
-        CacheInterface $cache
+        CacheInterface $cache,
     ): Response {
         $page = max(1, $request->query->getInt('page', 1));
         $q = trim($request->query->get('q', ''));
@@ -363,7 +379,9 @@ final class AdminController extends AbstractController
         $entityManager->persist($customEmoji);
         $entityManager->flush();
 
-        $this->addFlash('success', $this->translator->trans('Tags mis à jour pour l\'émoji %code%.', ['%code%' => $code]));
+        $this->addFlash('success', $this->translator->trans('Tags mis à jour pour l\'émoji %code%.', [
+            '%code%' => $code,
+        ]));
 
         return $this->redirectToRoute('app_admin_emojis', $request->query->all());
     }
@@ -373,7 +391,7 @@ final class AdminController extends AbstractController
         Request $request,
         FilesystemOperator $defaultStorage,
         EntityManagerInterface $entityManager,
-        CacheInterface $cache
+        CacheInterface $cache,
     ): Response {
         $code = trim($request->request->get('code', ''));
         $file = $request->files->get('emoji_file');
@@ -384,15 +402,26 @@ final class AdminController extends AbstractController
         }
 
         // Ensure file is a GIF
-        if ($file->getMimeType() !== 'image/gif' && !str_ends_with(strtolower($file->getClientOriginalName()), '.gif')) {
-            $this->addFlash('error', $this->translator->trans('Seuls les fichiers GIF sont supportés pour les émojis personnalisés.'));
+        if (
+            $file->getMimeType() !== 'image/gif'
+            && !str_ends_with(strtolower($file->getClientOriginalName()), '.gif')
+        ) {
+            $this->addFlash(
+                'error',
+                $this->translator->trans('Seuls les fichiers GIF sont supportés pour les émojis personnalisés.'),
+            );
             return $this->redirectToRoute('app_admin_emojis');
         }
 
         // Sanitize code
         $sanitizedCode = preg_replace('/[^a-zA-Z0-9_\-\+:]/', '', $code);
         if ($sanitizedCode !== $code || $sanitizedCode === '') {
-            $this->addFlash('error', $this->translator->trans('Le code contient des caractères invalides. Utilisez des lettres, chiffres, tirets, underscores ou deux-points.'));
+            $this->addFlash(
+                'error',
+                $this->translator->trans(
+                    'Le code contient des caractères invalides. Utilisez des lettres, chiffres, tirets, underscores ou deux-points.',
+                ),
+            );
             return $this->redirectToRoute('app_admin_emojis');
         }
 
@@ -427,9 +456,13 @@ final class AdminController extends AbstractController
             $entityManager->persist($customEmoji);
             $entityManager->flush();
 
-            $this->addFlash('success', $this->translator->trans('Émoji %code% ajouté avec succès.', ['%code%' => $sanitizedCode]));
+            $this->addFlash('success', $this->translator->trans('Émoji %code% ajouté avec succès.', [
+                '%code%' => $sanitizedCode,
+            ]));
         } catch (\Exception $e) {
-            $this->addFlash('error', $this->translator->trans('Erreur lors de l\'enregistrement de l\'émoji : %error%', ['%error%' => $e->getMessage()]));
+            $this->addFlash('error', $this->translator->trans('Erreur lors de l\'enregistrement de l\'émoji : %error%', [
+                '%error%' => $e->getMessage(),
+            ]));
         }
 
         return $this->redirectToRoute('app_admin_emojis');
@@ -440,7 +473,7 @@ final class AdminController extends AbstractController
         Request $request,
         FilesystemOperator $defaultStorage,
         EntityManagerInterface $entityManager,
-        CacheInterface $cache
+        CacheInterface $cache,
     ): Response {
         $code = $request->request->get('code', '');
 
@@ -464,9 +497,13 @@ final class AdminController extends AbstractController
                 $defaultStorage->delete($storagePath);
             }
             $cache->delete('emojis_filesystem_list');
-            $this->addFlash('success', $this->translator->trans('L\'émoji %code% a été supprimé.', ['%code%' => $code]));
+            $this->addFlash('success', $this->translator->trans('L\'émoji %code% a été supprimé.', [
+                '%code%' => $code,
+            ]));
         } catch (\Exception $e) {
-            $this->addFlash('error', $this->translator->trans('Erreur lors de la suppression du fichier : %error%', ['%error%' => $e->getMessage()]));
+            $this->addFlash('error', $this->translator->trans('Erreur lors de la suppression du fichier : %error%', [
+                '%error%' => $e->getMessage(),
+            ]));
         }
 
         return $this->redirectToRoute('app_admin_emojis');

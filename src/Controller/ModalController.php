@@ -153,9 +153,13 @@ final class ModalController extends AbstractController
     /**
      * @return array{users: \App\Entity\User[], externalUsernames: string[]}
      */
-    private function resolveGroupMembers(string $groupIdentifier, \Doctrine\ORM\EntityManagerInterface $entityManager): array
-    {
-        $localGroup = $entityManager->getRepository(\App\Entity\UserGroup::class)->findOneBy(['groupIdentifier' => $groupIdentifier]);
+    private function resolveGroupMembers(
+        string $groupIdentifier,
+        \Doctrine\ORM\EntityManagerInterface $entityManager,
+    ): array {
+        $localGroup = $entityManager
+            ->getRepository(\App\Entity\UserGroup::class)
+            ->findOneBy(['groupIdentifier' => $groupIdentifier]);
         if ($localGroup) {
             return [
                 'users' => $localGroup->getMembers()->toArray(),

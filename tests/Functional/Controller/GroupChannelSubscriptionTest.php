@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Entity\Channel;
 use App\Entity\GroupSubscription;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -115,7 +113,7 @@ class GroupChannelSubscriptionTest extends WebTestCase
         $this->client->loginUser($this->nonMemberUser);
         $this->client->followRedirects(true);
         $this->client->request('GET', '/channels/dev-channel');
-        
+
         $this->assertSelectorTextContains('.alert-error', "Vous n'avez pas accès à ce canal privé.");
     }
 }

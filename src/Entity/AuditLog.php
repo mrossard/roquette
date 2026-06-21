@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\AuditAction;
 use App\Repository\AuditLogRepository;
 use Doctrine\ORM\Mapping as ORM;
-use App\Enum\AuditAction;
 
 #[ORM\Entity(repositoryClass: AuditLogRepository::class)]
 #[ORM\Table(name: '`audit_log`')]

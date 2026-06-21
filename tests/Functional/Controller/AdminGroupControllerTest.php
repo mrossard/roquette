@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Entity\AuditLog;
-use App\Enum\AuditAction;
 use App\Entity\Channel;
 use App\Entity\GroupSubscription;
 use App\Entity\User;
 use App\Entity\UserGroup;
+use App\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -108,7 +106,7 @@ class AdminGroupControllerTest extends WebTestCase
     public function testAdminCanCreateLocalGroupAndAddRemoveMembers(): void
     {
         $this->client->loginUser($this->adminUser);
-        
+
         // 1. Get index page
         $crawler = $this->client->request('GET', '/admin/groups');
         $this->assertResponseIsSuccessful();
@@ -135,10 +133,12 @@ class AdminGroupControllerTest extends WebTestCase
         static::assertSame($group->getId(), $logs[0]->getDetails()['group_id']);
 
         // Verify group subscription was created
-        $sub = $this->entityManager->getRepository(GroupSubscription::class)->findOneBy([
-            'groupIdentifier' => $group->getGroupIdentifier(),
-            'isGroupChannel' => true,
-        ]);
+        $sub = $this->entityManager
+            ->getRepository(GroupSubscription::class)
+            ->findOneBy([
+                'groupIdentifier' => $group->getGroupIdentifier(),
+                'isGroupChannel' => true,
+            ]);
         static::assertNotNull($sub);
         static::assertSame($group->getChannel()->getId(), $sub->getChannel()->getId());
 
@@ -166,7 +166,11 @@ class AdminGroupControllerTest extends WebTestCase
 
         // 4. Remove member
         $this->client->loginUser($this->adminUser);
-        $this->client->request('POST', sprintf('/admin/groups/%d/members/%d/remove', $group->getId(), $this->normalUser->getId()));
+        $this->client->request('POST', sprintf(
+            '/admin/groups/%d/members/%d/remove',
+            $group->getId(),
+            $this->normalUser->getId(),
+        ));
         $this->assertResponseRedirects(sprintf('/admin/groups/%d/members', $group->getId()));
         $this->client->followRedirect();
 
@@ -225,7 +229,7 @@ class AdminGroupControllerTest extends WebTestCase
             'name' => 'Support Team',
         ]);
         $this->assertResponseRedirects('/admin/groups');
-        
+
         $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
         $group = $this->entityManager->getRepository(UserGroup::class)->findOneBy(['name' => 'Support Team']);
         static::assertNotNull($group);
@@ -246,7 +250,7 @@ class AdminGroupControllerTest extends WebTestCase
         $user3->setUsername('third_user');
         $user3->setRoles(['ROLE_USER']);
         $user3->setPassword($passwordHasher->hashPassword($user3, 'password123'));
-        
+
         $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
         $this->entityManager->persist($user3);
         $this->entityManager->flush();
@@ -289,7 +293,11 @@ class AdminGroupControllerTest extends WebTestCase
         static::assertTrue($group->isAdministrator($user3));
 
         // Can demote user3 from group administrator
-        $this->client->request('POST', sprintf('/admin/groups/%d/administrators/%d/remove', $group->getId(), $user3->getId()));
+        $this->client->request('POST', sprintf(
+            '/admin/groups/%d/administrators/%d/remove',
+            $group->getId(),
+            $user3->getId(),
+        ));
         $this->assertResponseRedirects(sprintf('/admin/groups/%d/members', $group->getId()));
         $this->client->followRedirect();
 
@@ -327,7 +335,7 @@ class AdminGroupControllerTest extends WebTestCase
         $this->client->request('POST', '/admin/groups/create', [
             'name' => 'IT Department',
         ]);
-        
+
         $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
         $group = $this->entityManager->getRepository(UserGroup::class)->findOneBy(['name' => 'IT Department']);
         static::assertNotNull($group);
@@ -344,7 +352,11 @@ class AdminGroupControllerTest extends WebTestCase
         ]);
         $this->assertResponseStatusCodeSame(403);
 
-        $this->client->request('POST', sprintf('/admin/groups/%d/members/%d/remove', $group->getId(), $this->adminUser->getId()));
+        $this->client->request('POST', sprintf(
+            '/admin/groups/%d/members/%d/remove',
+            $group->getId(),
+            $this->adminUser->getId(),
+        ));
         $this->assertResponseStatusCodeSame(403);
 
         $this->client->request('POST', sprintf('/admin/groups/%d/administrators/add', $group->getId()), [

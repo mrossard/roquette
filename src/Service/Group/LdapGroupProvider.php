@@ -40,7 +40,12 @@ class LdapGroupProvider implements GroupProviderInterface
             return false;
         }
 
-        $url = sprintf('%s://%s:%d', $this->config['encryption'] === 'ssl' ? 'ldaps' : 'ldap', $this->config['host'], $this->config['port']);
+        $url = sprintf(
+            '%s://%s:%d',
+            $this->config['encryption'] === 'ssl' ? 'ldaps' : 'ldap',
+            $this->config['host'],
+            $this->config['port'],
+        );
         $conn = ldap_connect($url);
         if (!$conn) {
             $this->logger->error('Failed to connect to LDAP server: ' . $url);
@@ -102,7 +107,11 @@ class LdapGroupProvider implements GroupProviderInterface
     private function getUserDn(User $user, $conn): string
     {
         $userVal = $user->getUsername();
-        if ($this->config['group_membership_value'] !== 'dn' || !$this->config['user_search_base'] || !$this->config['user_search_filter']) {
+        if (
+            $this->config['group_membership_value'] !== 'dn'
+            || !$this->config['user_search_base']
+            || !$this->config['user_search_filter']
+        ) {
             return $userVal;
         }
 
@@ -136,7 +145,11 @@ class LdapGroupProvider implements GroupProviderInterface
 
         $search = ldap_search($conn, $this->config['group_search_base'], $filter);
         if (!$search) {
-            $this->logger->error(sprintf('LDAP search failed in base "%s" with filter "%s"', $this->config['group_search_base'], $this->config['group_search_filter']));
+            $this->logger->error(sprintf(
+                'LDAP search failed in base "%s" with filter "%s"',
+                $this->config['group_search_base'],
+                $this->config['group_search_filter'],
+            ));
             return [];
         }
 
@@ -158,14 +171,23 @@ class LdapGroupProvider implements GroupProviderInterface
         $userVal = $this->getUserDn($user, $conn);
         $escapedUserVal = ldap_escape($userVal, '', LDAP_ESCAPE_FILTER);
 
-        $finalFilter = sprintf('(&%s(%s=%s))', $this->config['group_search_filter'], $this->config['group_membership_attribute'], $escapedUserVal);
+        $finalFilter = sprintf(
+            '(&%s(%s=%s))',
+            $this->config['group_search_filter'],
+            $this->config['group_membership_attribute'],
+            $escapedUserVal,
+        );
         if (str_contains($this->config['group_search_filter'], '{userVal}')) {
             $finalFilter = str_replace('{userVal}', $escapedUserVal, $this->config['group_search_filter']);
         }
 
         $search = ldap_search($conn, $this->config['group_search_base'], $finalFilter);
         if (!$search) {
-            $this->logger->error(sprintf('LDAP search failed in base "%s" with filter "%s"', $this->config['group_search_base'], $finalFilter));
+            $this->logger->error(sprintf(
+                'LDAP search failed in base "%s" with filter "%s"',
+                $this->config['group_search_base'],
+                $finalFilter,
+            ));
             return [];
         }
 

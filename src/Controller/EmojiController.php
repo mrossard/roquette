@@ -52,7 +52,7 @@ final class EmojiController extends AbstractController
                     [
                         'Content-Type' => 'image/gif',
                         'Cache-Control' => 'public, max-age=31536000, immutable',
-                    ]
+                    ],
                 );
 
                 return $response;

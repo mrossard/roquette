@@ -144,8 +144,11 @@ final class NotificationController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/messages/{id}/replies', name: 'app_message_replies', methods: ['GET'])]
-    public function replies(int $id, MessageRepository $messageRepository, ChannelRepository $channelRepository): Response
-    {
+    public function replies(
+        int $id,
+        MessageRepository $messageRepository,
+        ChannelRepository $channelRepository,
+    ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 

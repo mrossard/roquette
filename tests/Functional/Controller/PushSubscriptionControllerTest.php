@@ -67,20 +67,13 @@ class PushSubscriptionControllerTest extends WebTestCase
     #[Test]
     public function testSubscribe(): void
     {
-        $this->client->request(
-            'POST',
-            '/push/subscribe',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'endpoint' => 'https://example.com/push/abc123',
-                'keys' => [
-                    'p256dh' => 'test_public_key_123',
-                    'auth' => 'test_auth_token_456',
-                ],
-            ]),
-        );
+        $this->client->request('POST', '/push/subscribe', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'endpoint' => 'https://example.com/push/abc123',
+            'keys' => [
+                'p256dh' => 'test_public_key_123',
+                'auth' => 'test_auth_token_456',
+            ],
+        ]));
 
         self::assertSame(201, $this->client->getResponse()->getStatusCode());
 
@@ -107,20 +100,13 @@ class PushSubscriptionControllerTest extends WebTestCase
         $this->entityManager->persist($subscription);
         $this->entityManager->flush();
 
-        $this->client->request(
-            'POST',
-            '/push/subscribe',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'endpoint' => 'https://example.com/push/dup',
-                'keys' => [
-                    'p256dh' => 'new_key',
-                    'auth' => 'new_token',
-                ],
-            ]),
-        );
+        $this->client->request('POST', '/push/subscribe', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'endpoint' => 'https://example.com/push/dup',
+            'keys' => [
+                'p256dh' => 'new_key',
+                'auth' => 'new_token',
+            ],
+        ]));
 
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
 
@@ -138,14 +124,9 @@ class PushSubscriptionControllerTest extends WebTestCase
     #[Test]
     public function testSubscribeInvalidData(): void
     {
-        $this->client->request(
-            'POST',
-            '/push/subscribe',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode(['endpoint' => 'https://example.com/push/bad']),
-        );
+        $this->client->request('POST', '/push/subscribe', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'endpoint' => 'https://example.com/push/bad',
+        ]));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
     }

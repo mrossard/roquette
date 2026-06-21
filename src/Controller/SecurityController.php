@@ -79,7 +79,10 @@ final class SecurityController extends AbstractController
             $limiter = $loginApiLimiter->create($request->getClientIp());
             if (false === $limiter->consume(1)->isAccepted()) {
                 $logger->warning(sprintf('Registration rate limit exceeded for IP %s', $request->getClientIp()));
-                $this->addFlash('error', $this->translator->trans('Trop de tentatives d\'inscription. Veuillez réessayer plus tard.'));
+                $this->addFlash(
+                    'error',
+                    $this->translator->trans('Trop de tentatives d\'inscription. Veuillez réessayer plus tard.'),
+                );
                 return $this->render(
                     'security/register.html.twig',
                     [

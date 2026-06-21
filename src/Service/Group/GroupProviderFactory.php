@@ -19,7 +19,10 @@ class GroupProviderFactory implements ServiceSubscriberInterface
         $serviceId = match (strtolower($this->providerType)) {
             'ldap' => LdapGroupProvider::class,
             'in_memory', 'inmemory' => InMemoryGroupProvider::class,
-            default => throw new \InvalidArgumentException(sprintf('Unknown group provider type "%s"', $this->providerType)),
+            default => throw new \InvalidArgumentException(sprintf(
+                'Unknown group provider type "%s"',
+                $this->providerType,
+            )),
         };
 
         return $this->locator->get($serviceId);

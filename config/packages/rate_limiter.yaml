@@ -11,3 +11,11 @@ framework:
             policy: 'token_bucket'
             limit: 20
             rate: { interval: '1 minute', amount: 10 }
+
+when@test:
+    framework:
+        rate_limiter:
+            login_api:
+                limit: 1000
+            message_api:
+                limit: 1000

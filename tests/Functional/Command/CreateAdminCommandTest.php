@@ -114,6 +114,9 @@ class CreateAdminCommandTest extends KernelTestCase
         ]);
 
         $output = preg_replace('/\s+/', ' ', $commandTester->getDisplay());
-        static::assertStringContainsString('Impossible de modifier ou de promouvoir le compte système de l\'assistant.', $output);
+        static::assertStringContainsString(
+            'Impossible de modifier ou de promouvoir le compte système de l\'assistant.',
+            $output,
+        );
     }
 }

@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Service\ClamavService;
 use App\Service\FileUploadService;
 use League\Flysystem\FilesystemOperator;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -32,7 +30,9 @@ class FileUploadServiceTest extends TestCase
         $this->clamavService->method('scanFile')->willReturn(true);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->translator = $this->createMock(\Symfony\Contracts\Translation\TranslatorInterface::class);
-        $this->translator->method('trans')->willReturnCallback(static fn($id, $parameters = []) => strtr($id, $parameters));
+        $this->translator
+            ->method('trans')
+            ->willReturnCallback(static fn($id, $parameters = []) => strtr($id, $parameters));
         $this->service = new FileUploadService($this->storage, $this->clamavService, $this->logger, $this->translator);
     }
 
@@ -112,6 +112,7 @@ class FileUploadServiceTest extends TestCase
 
         $this->service->upload($file);
     }
+
     #[Test]
     public function uploadUsesServerGuessedMimeType(): void
     {
@@ -125,9 +126,7 @@ class FileUploadServiceTest extends TestCase
         $file->method('getSize')->willReturn(1024);
         $file->method('getPathname')->willReturn(__FILE__);
 
-        $this->storage
-            ->expects($this->once())
-            ->method('writeStream');
+        $this->storage->expects($this->once())->method('writeStream');
 
         $result = $this->service->upload($file);
 

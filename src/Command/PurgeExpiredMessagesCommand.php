@@ -74,14 +74,11 @@ class PurgeExpiredMessagesCommand extends Command
                 continue;
             }
 
-            $io->section($this->translator->trans(
-                'Canal: #%channelName% (Rétention: %retentionMonths% mois, Seuil: %threshold%)',
-                [
-                    '%channelName%' => $channel->getName(),
-                    '%retentionMonths%' => $retentionMonths,
-                    '%threshold%' => $threshold->format('Y-m-d H:i:s'),
-                ],
-            ));
+            $io->section($this->translator->trans('Canal: #%channelName% (Rétention: %retentionMonths% mois, Seuil: %threshold%)', [
+                '%channelName%' => $channel->getName(),
+                '%retentionMonths%' => $retentionMonths,
+                '%threshold%' => $threshold->format('Y-m-d H:i:s'),
+            ]));
 
             foreach ($messages as $message) {
                 if (!$this->em->contains($message)) {

@@ -254,7 +254,7 @@ final class FileController extends AbstractController
             throw $this->createAccessDeniedException(
                 $message->getVirusScanStatus() === 'pending'
                     ? $this->translator->trans('L\'analyse antivirus de ce fichier est en cours.')
-                    : $this->translator->trans('L\'accès à ce fichier a été bloqué par l\'antivirus.')
+                    : $this->translator->trans('L\'accès à ce fichier a été bloqué par l\'antivirus.'),
             );
         }
     }
@@ -296,4 +296,3 @@ final class FileController extends AbstractController
         ]);
     }
 }
-

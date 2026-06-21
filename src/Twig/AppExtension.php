@@ -145,7 +145,8 @@ class AppExtension extends AbstractExtension
             }
 
             if (!empty($messageIds)) {
-                $channels = $this->channelRepository->createQueryBuilder('c')
+                $channels = $this->channelRepository
+                    ->createQueryBuilder('c')
                     ->where('c.parentMessage IN (:messageIds)')
                     ->setParameter('messageIds', $messageIds)
                     ->getQuery()

@@ -8,8 +8,8 @@ use Minishlink\WebPush\VAPID;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(name: 'app:vapid:generate-keys', description: 'Génère les clés VAPID pour les notifications push.')]
@@ -17,9 +17,17 @@ class GenerateVapidKeysCommand extends Command
 {
     protected function configure(): void
     {
-        $this
-            ->addOption('write', 'w', InputOption::VALUE_NONE, 'Écrit les clés générées directement dans le fichier .env.local sans confirmation.')
-            ->addOption('skip-existing', 's', InputOption::VALUE_NONE, 'Ne génère pas de nouvelles clés si elles sont déjà présentes.');
+        $this->addOption(
+            'write',
+            'w',
+            InputOption::VALUE_NONE,
+            'Écrit les clés générées directement dans le fichier .env.local sans confirmation.',
+        )->addOption(
+            'skip-existing',
+            's',
+            InputOption::VALUE_NONE,
+            'Ne génère pas de nouvelles clés si elles sont déjà présentes.',
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -38,8 +46,8 @@ class GenerateVapidKeysCommand extends Command
 
         $io->section('Clés VAPID générées');
 
-        $io->writeln('VAPID_PUBLIC_KEY='.$publicKey);
-        $io->writeln('VAPID_PRIVATE_KEY='.$privateKey);
+        $io->writeln('VAPID_PUBLIC_KEY=' . $publicKey);
+        $io->writeln('VAPID_PRIVATE_KEY=' . $privateKey);
         $io->writeln('');
 
         $shouldWrite = $input->getOption('write') || $io->confirm('Écrire ces clés dans .env.local ?', true);
@@ -48,7 +56,7 @@ class GenerateVapidKeysCommand extends Command
             $envLocalPath = $this->findEnvLocal();
 
             if ($envLocalPath === null) {
-                $path = dirname(__DIR__, 2).'/.env.local';
+                $path = dirname(__DIR__, 2) . '/.env.local';
                 if (is_writable(dirname($path))) {
                     touch($path);
                 }
@@ -56,7 +64,7 @@ class GenerateVapidKeysCommand extends Command
             }
 
             if ($envLocalPath === null) {
-                $io->warning("Fichier .env.local introuvable et impossible à créer. Copiez les clés manuellement.");
+                $io->warning('Fichier .env.local introuvable et impossible à créer. Copiez les clés manuellement.');
                 return Command::SUCCESS;
             }
 
@@ -86,25 +94,24 @@ class GenerateVapidKeysCommand extends Command
         $publicKey = $_ENV['VAPID_PUBLIC_KEY'] ?? null;
         $privateKey = $_ENV['VAPID_PRIVATE_KEY'] ?? null;
 
-        return ($publicKey !== null && $publicKey !== '')
-            && ($privateKey !== null && $privateKey !== '');
+        return $publicKey !== null && $publicKey !== '' && ($privateKey !== null && $privateKey !== '');
     }
 
     private function findEnvLocal(): ?string
     {
-        $path = dirname(__DIR__, 2).'/.env.local';
+        $path = dirname(__DIR__, 2) . '/.env.local';
 
         return file_exists($path) ? realpath($path) : null;
     }
 
     private function updateOrAppend(string $content, string $key, string $value): string
     {
-        $pattern = '/^'.preg_quote($key, '/').'=.*$/m';
+        $pattern = '/^' . preg_quote($key, '/') . '=.*$/m';
 
         if (preg_match($pattern, $content)) {
-            return preg_replace($pattern, $key.'='.$value, $content);
+            return preg_replace($pattern, $key . '=' . $value, $content);
         }
 
-        return rtrim($content, "\n")."\n".$key.'='.$value."\n";
+        return rtrim($content, "\n") . "\n" . $key . '=' . $value . "\n";
     }
 }

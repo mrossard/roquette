@@ -45,20 +45,24 @@ final class ChannelGroupController extends AbstractController
             $isOfficial = $request->request->getBoolean('newGroupIsOfficial', false);
 
             if ($isOfficial) {
-                $existingGroupSub = $entityManager->getRepository(GroupSubscription::class)->findOneBy([
-                    'groupIdentifier' => $newGroupIdentifier,
-                    'isGroupChannel' => true,
-                ]);
+                $existingGroupSub = $entityManager
+                    ->getRepository(GroupSubscription::class)
+                    ->findOneBy([
+                        'groupIdentifier' => $newGroupIdentifier,
+                        'isGroupChannel' => true,
+                    ]);
                 if ($existingGroupSub) {
                     $this->addFlash('error', $this->translator->trans('Ce groupe possède déjà un canal officiel.'));
                     return $this->forward(ModalController::class . '::editModal', ['slug' => $slug]);
                 }
             }
 
-            $existingSub = $entityManager->getRepository(GroupSubscription::class)->findOneBy([
-                'channel' => $channel,
-                'groupIdentifier' => $newGroupIdentifier,
-            ]);
+            $existingSub = $entityManager
+                ->getRepository(GroupSubscription::class)
+                ->findOneBy([
+                    'channel' => $channel,
+                    'groupIdentifier' => $newGroupIdentifier,
+                ]);
 
             if (!$existingSub) {
                 $sub = new GroupSubscription();
@@ -73,7 +77,11 @@ final class ChannelGroupController extends AbstractController
         return $this->forward(ModalController::class . '::editModal', ['slug' => $slug]);
     }
 
-    #[Route('/channels/{slug}/unsubscribe-group/{subscriptionId}', name: 'app_channel_unsubscribe_group', methods: ['POST'])]
+    #[Route(
+        '/channels/{slug}/unsubscribe-group/{subscriptionId}',
+        name: 'app_channel_unsubscribe_group',
+        methods: ['POST'],
+    )]
     public function unsubscribeGroup(
         string $slug,
         int $subscriptionId,

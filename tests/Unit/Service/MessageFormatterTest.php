@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Service\MessageFormatter;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -31,21 +29,23 @@ class MessageFormatterTest extends TestCase
         $this->httpClient = $this->createMock(HttpClientInterface::class);
         $this->channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
         $this->userRepository = $this->createMock(\App\Repository\UserRepository::class);
-        $this->userRepository->method('findOneBy')->willReturnCallback(function ($criteria) {
-            $username = $criteria['username'] ?? null;
-            if ($username === 'alice' || $username === 'bob') {
-                $user = $this->createStub(\App\Entity\User::class);
-                $user->method('getUsername')->willReturn($username);
-                $user->method('getUserIdentifier')->willReturn($username);
-                if ($username === 'alice') {
-                    $user->method('getDisplayName')->willReturn('Alice de Merveilles');
-                } else {
-                    $user->method('getDisplayName')->willReturn(null);
+        $this->userRepository
+            ->method('findOneBy')
+            ->willReturnCallback(function ($criteria) {
+                $username = $criteria['username'] ?? null;
+                if ($username === 'alice' || $username === 'bob') {
+                    $user = $this->createStub(\App\Entity\User::class);
+                    $user->method('getUsername')->willReturn($username);
+                    $user->method('getUserIdentifier')->willReturn($username);
+                    if ($username === 'alice') {
+                        $user->method('getDisplayName')->willReturn('Alice de Merveilles');
+                    } else {
+                        $user->method('getDisplayName')->willReturn(null);
+                    }
+                    return $user;
                 }
-                return $user;
-            }
-            return null;
-        });
+                return null;
+            });
 
         $this->testEmojisDir = __DIR__ . '/../../../var/test_emojis';
 
@@ -121,7 +121,10 @@ class MessageFormatterTest extends TestCase
     public function formatWrapsUnicodeEmojis(): void
     {
         $result = $this->formatter->format('*italique 🙂*');
-        $this->assertStringContainsString('<em>italique <span class="unicode-emoji" title=":slight_smile:">🙂</span></em>', $result);
+        $this->assertStringContainsString(
+            '<em>italique <span class="unicode-emoji" title=":slight_smile:">🙂</span></em>',
+            $result,
+        );
     }
 
     #[Test]
@@ -255,7 +258,10 @@ class MessageFormatterTest extends TestCase
     public function formatRendersMentionSpan(): void
     {
         $result = $this->formatter->format('Bonjour @alice !');
-        $this->assertStringContainsString('<a href="/dm/alice" class="mention" hx-boost="false">@Alice de Merveilles</a>', $result);
+        $this->assertStringContainsString(
+            '<a href="/dm/alice" class="mention" hx-boost="false">@Alice de Merveilles</a>',
+            $result,
+        );
     }
 
     #[Test]
@@ -291,7 +297,10 @@ class MessageFormatterTest extends TestCase
         $result = $formatter->format('Bonjour @alice !');
 
         $this->assertStringContainsString('class="mention mention-me"', $result);
-        $this->assertStringContainsString('<a href="/dm/alice" class="mention mention-me" hx-boost="false">@Alice de Merveilles</a>', $result);
+        $this->assertStringContainsString(
+            '<a href="/dm/alice" class="mention mention-me" hx-boost="false">@Alice de Merveilles</a>',
+            $result,
+        );
     }
 
     // -------------------------------------------------------------------------

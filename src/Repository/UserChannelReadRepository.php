@@ -75,7 +75,8 @@ class UserChannelReadRepository extends ServiceEntityRepository
      */
     public function findByChannelAndUsers(Channel $channel, Collection|array $members): array
     {
-        $result = $this->createQueryBuilder('ucr')
+        $result = $this
+            ->createQueryBuilder('ucr')
             ->where('ucr.channel = :channel')
             ->andWhere('ucr.user IN (:users)')
             ->setParameter('channel', $channel)

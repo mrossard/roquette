@@ -15,7 +15,7 @@ use Doctrine\Persistence\Event\LifecycleEventArgs;
 class MessageListener
 {
     public function __construct(
-        private readonly MessageFormatter $formatter
+        private readonly MessageFormatter $formatter,
     ) {}
 
     public function prePersist(Message $message, LifecycleEventArgs $event): void

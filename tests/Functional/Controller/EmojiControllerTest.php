@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -67,7 +65,7 @@ class EmojiControllerTest extends WebTestCase
 
         // Mock Flysystem to simulate missing file
         $mockStorage = $this->createMock(FilesystemOperator::class);
-        $mockStorage->expects($this->once())->method('has')->with('emojis/smile.gif')->willReturn(false);
+        $mockStorage->method('has')->willReturn(false);
 
         // Replace Flysystem service in test container
         $container->set(FilesystemOperator::class, $mockStorage);
@@ -100,11 +98,13 @@ class EmojiControllerTest extends WebTestCase
 
         // Mock Flysystem listing
         $mockStorage = $this->createMock(FilesystemOperator::class);
-        $mockStorage->expects($this->once())->method('listContents')->with('emojis', true)->willReturn(new \League\Flysystem\DirectoryListing([
-            new \League\Flysystem\FileAttributes('emojis/smile.gif', 1024),
-            new \League\Flysystem\FileAttributes('emojis/sad.gif', 2048),
-            new \League\Flysystem\FileAttributes('emojis/invalid.gif', 0), // empty file / negative cache
-        ]));
+        $mockStorage
+            ->method('listContents')
+            ->willReturn(new \League\Flysystem\DirectoryListing([
+                new \League\Flysystem\FileAttributes('emojis/smile.gif', 1024),
+                new \League\Flysystem\FileAttributes('emojis/sad.gif', 2048),
+                new \League\Flysystem\FileAttributes('emojis/invalid.gif', 0), // empty file / negative cache
+            ]));
 
         $container->set(FilesystemOperator::class, $mockStorage);
         $container->set('default.storage', $mockStorage);

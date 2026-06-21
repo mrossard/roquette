@@ -221,9 +221,7 @@ final readonly class LlmQueryHandler
             $retrieved = $this->retriever->retrieve($question, ['limit' => 5]);
             foreach ($retrieved as $doc) {
                 if ($doc->getMetadata()->hasText()) {
-                    $title = $doc->getMetadata()->hasTitle()
-                        ? $doc->getMetadata()->getTitle()
-                        : $doc->getId();
+                    $title = $doc->getMetadata()->hasTitle() ? $doc->getMetadata()->getTitle() : $doc->getId();
                     $chunks[] = '### ' . $title . "\n" . $doc->getMetadata()->getText();
                 }
             }

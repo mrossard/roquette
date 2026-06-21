@@ -55,7 +55,7 @@ readonly class SecurityHeadersSubscriber implements EventSubscriberInterface
         }
 
         $connectSrc = "'self' " . $mercureHost;
-        $imgSrc = "'self' data: https://media.tenor.com " . $emojiHost . " https://*"; // Allow remote custom user avatars via https
+        $imgSrc = "'self' data: https://media.tenor.com " . $emojiHost . ' https://*'; // Allow remote custom user avatars via https
         $styleSrc = "'self' 'unsafe-inline' https://fonts.googleapis.com";
         $fontSrc = "'self' https://fonts.gstatic.com";
         $scriptSrc = "'self' 'unsafe-inline' 'unsafe-eval' data:"; // Keep unsafe-inline for inline translations and theme scripts; unsafe-eval for HTMX hx-on:* handlers
@@ -66,7 +66,7 @@ readonly class SecurityHeadersSubscriber implements EventSubscriberInterface
             $styleSrc,
             $imgSrc,
             $fontSrc,
-            $connectSrc
+            $connectSrc,
         );
 
         $response->headers->set('Content-Security-Policy', $csp);

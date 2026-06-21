@@ -10,8 +10,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -40,8 +40,7 @@ class BackfillMessageFormattingCommand extends Command
         $force = $input->getOption('force');
 
         $qb = $this->em->createQueryBuilder();
-        $qb->select('COUNT(m.id)')
-            ->from(Message::class, 'm');
+        $qb->select('COUNT(m.id)')->from(Message::class, 'm');
         if (!$force) {
             $qb->where('m.formattedContent IS NULL');
         }
@@ -60,8 +59,7 @@ class BackfillMessageFormattingCommand extends Command
 
         while ($processed < $total) {
             $qbFetch = $this->em->createQueryBuilder();
-            $qbFetch->select('m')
-                ->from(Message::class, 'm');
+            $qbFetch->select('m')->from(Message::class, 'm');
             if (!$force) {
                 $qbFetch->where('m.formattedContent IS NULL');
             } else {

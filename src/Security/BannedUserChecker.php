@@ -25,9 +25,7 @@ class BannedUserChecker implements UserCheckerInterface
         }
 
         if (strcasecmp($user->getUsername() ?? '', User::ROBOT_USERNAME) === 0) {
-            throw new CustomUserMessageAuthenticationException(
-                'Connexion impossible avec un compte système.',
-            );
+            throw new CustomUserMessageAuthenticationException('Connexion impossible avec un compte système.');
         }
     }
 

@@ -35,9 +35,9 @@ class MessageManager
         }
 
         if ($message->isPoll() && $message->getPoll()->getTotalVotes() > 0) {
-            throw new BadRequestHttpException(
-                $this->translator->trans('Impossible de modifier un sondage qui a déjà des votes.'),
-            );
+            throw new BadRequestHttpException($this->translator->trans(
+                'Impossible de modifier un sondage qui a déjà des votes.',
+            ));
         }
 
         return ['message' => $message];

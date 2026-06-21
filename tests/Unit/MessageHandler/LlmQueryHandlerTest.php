@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\MessageHandler;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
 use App\MessageHandler\LlmQueryHandler;
 use App\Repository\UserRepository;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\AI\Store\RetrieverInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -45,9 +43,7 @@ class LlmQueryHandlerTest extends TestCase
 
         $llmService->expects($this->once())->method('generateTextStream')->willReturn($generator);
 
-        $messageFormatter
-            ->method('format')
-            ->willReturnCallback(static fn($text) => '<p>' . $text . '</p>');
+        $messageFormatter->method('format')->willReturnCallback(static fn($text) => '<p>' . $text . '</p>');
 
         $hub->expects($this->atLeastOnce())->method('publish')->with(static::isInstanceOf(Update::class));
 

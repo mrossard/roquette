@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-use App\Entity\User;
 use App\Entity\CustomEmoji;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -60,7 +60,7 @@ class AdminEmojiControllerTest extends WebTestCase
         $user = new User();
         $user->setUsername('test_admin_emoji_user');
         $user->setRoles(['ROLE_ADMIN']);
-        
+
         $container = $this->client->getContainer();
         $passwordHasher = $container->get('security.user_password_hasher');
         $user->setPassword($passwordHasher->hashPassword($user, 'password123'));
@@ -80,9 +80,13 @@ class AdminEmojiControllerTest extends WebTestCase
 
         $container = $this->client->getContainer();
         $mockStorage = $this->createMock(FilesystemOperator::class);
-        $mockStorage->expects($this->any())->method('listContents')->with('emojis', true)->willReturn(new \League\Flysystem\DirectoryListing([
-            new \League\Flysystem\FileAttributes('emojis/smile.gif', 1024),
-        ]));
+        $mockStorage
+            ->expects($this->any())
+            ->method('listContents')
+            ->with('emojis', true)
+            ->willReturn(new \League\Flysystem\DirectoryListing([
+                new \League\Flysystem\FileAttributes('emojis/smile.gif', 1024),
+            ]));
 
         $container->set(FilesystemOperator::class, $mockStorage);
         $container->set('default.storage', $mockStorage);

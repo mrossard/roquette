@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-use App\Entity\User;
+use App\Entity\AuditLog;
 use App\Entity\Channel;
 use App\Entity\ChannelExport;
-use App\Entity\AuditLog;
+use App\Entity\User;
 use App\Enum\AuditAction;
 use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -157,7 +157,9 @@ class AdminControllerTest extends WebTestCase
         static::assertNull($updatedUser->getBannedAt());
 
         // Verify AuditLog was created for unban
-        $logsUnban = $this->entityManager->getRepository(AuditLog::class)->findBy(['action' => AuditAction::USER_UNBAN]);
+        $logsUnban = $this->entityManager
+            ->getRepository(AuditLog::class)
+            ->findBy(['action' => AuditAction::USER_UNBAN]);
         static::assertCount(1, $logsUnban);
         static::assertSame($this->normalUser->getUsername(), $logsUnban[0]->getDetails()['username']);
     }
@@ -205,10 +207,7 @@ class AdminControllerTest extends WebTestCase
 
         $response = $this->client->getResponse();
         static::assertInstanceOf(StreamedResponse::class, $response);
-        static::assertStringContainsString(
-            'test-export.zip',
-            $response->headers->get('Content-Disposition') ?? '',
-        );
+        static::assertStringContainsString('test-export.zip', $response->headers->get('Content-Disposition') ?? '');
     }
 
     #[Test]

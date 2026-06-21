@@ -32,18 +32,19 @@ class LlmServiceTest extends TestCase
 
         $deferredResult = new DeferredResult($resultConverter, $rawResult);
 
-        $platform->expects($this->once())
+        $platform
+            ->expects($this->once())
             ->method('invoke')
             ->with(
                 'test-model',
                 $this->isInstanceOf(MessageBag::class),
-                $this->callback(static fn($opts) => ($opts['stream'] ?? false) === true)
+                $this->callback(static fn($opts) => ($opts['stream'] ?? false) === true),
             )
             ->willReturn($deferredResult);
 
         $llmService = new LlmService($platform, 'test-model', 'System prompt');
         $generatorResult = $llmService->generateTextStream('test prompt');
-        
+
         $chunks = iterator_to_array($generatorResult);
         $this->assertSame(['Hello ', 'world!'], $chunks);
     }
@@ -64,12 +65,13 @@ class LlmServiceTest extends TestCase
 
         $deferredResult = new DeferredResult($resultConverter, $rawResult);
 
-        $platform->expects($this->once())
+        $platform
+            ->expects($this->once())
             ->method('invoke')
             ->with(
                 'test-model',
                 $this->isInstanceOf(MessageBag::class),
-                $this->callback(static fn($opts) => ($opts['stream'] ?? false) === true)
+                $this->callback(static fn($opts) => ($opts['stream'] ?? false) === true),
             )
             ->willReturn($deferredResult);
 
@@ -96,14 +98,11 @@ class LlmServiceTest extends TestCase
         $deferredResult = new DeferredResult($resultConverter, $rawResult);
 
         $messageBag = new MessageBag();
-        
-        $platform->expects($this->once())
+
+        $platform
+            ->expects($this->once())
             ->method('invoke')
-            ->with(
-                'test-model',
-                $messageBag,
-                $this->callback(static fn($opts) => ($opts['stream'] ?? false) === true)
-            )
+            ->with('test-model', $messageBag, $this->callback(static fn($opts) => ($opts['stream'] ?? false) === true))
             ->willReturn($deferredResult);
 
         $llmService = new LlmService($platform, 'test-model', 'System prompt');

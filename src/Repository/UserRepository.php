@@ -103,8 +103,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function countAll(bool $withRobot = false): int
     {
-        $qb = $this->createQueryBuilder('u')
-            ->select('COUNT(u.id)');
+        $qb = $this->createQueryBuilder('u')->select('COUNT(u.id)');
 
         if (!$withRobot) {
             $qb->andWhere('u.username != :robot')->setParameter('robot', User::ROBOT_USERNAME);

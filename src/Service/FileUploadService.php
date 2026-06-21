@@ -101,9 +101,9 @@ class FileUploadService
                 'File upload failed validation: file "%s" is invalid or exceeds PHP post size limit.',
                 $file->getClientOriginalName(),
             ));
-            throw new \InvalidArgumentException(
-                $this->translator->trans('Le fichier est invalide ou dépasse la taille autorisée par le serveur.'),
-            );
+            throw new \InvalidArgumentException($this->translator->trans(
+                'Le fichier est invalide ou dépasse la taille autorisée par le serveur.',
+            ));
         }
 
         $origExt = $file->getClientOriginalExtension();
@@ -125,10 +125,9 @@ class FileUploadService
                 $file->getSize(),
                 self::MAX_FILE_SIZE,
             ));
-            throw new \InvalidArgumentException($this->translator->trans(
-                'Le fichier dépasse la taille maximale autorisée de %maxSize% Mo.',
-                ['%maxSize%' => (self::MAX_FILE_SIZE / 1024) / 1024],
-            ));
+            throw new \InvalidArgumentException($this->translator->trans('Le fichier dépasse la taille maximale autorisée de %maxSize% Mo.', [
+                '%maxSize%' => (self::MAX_FILE_SIZE / 1024) / 1024,
+            ]));
         }
 
         if (!in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
@@ -137,10 +136,9 @@ class FileUploadService
                 $extension,
                 $file->getClientOriginalName(),
             ));
-            throw new \InvalidArgumentException($this->translator->trans(
-                'L\'extension de fichier ".%extension%" n\'est pas autorisée.',
-                ['%extension%' => $extension],
-            ));
+            throw new \InvalidArgumentException($this->translator->trans('L\'extension de fichier ".%extension%" n\'est pas autorisée.', [
+                '%extension%' => $extension,
+            ]));
         }
 
         if (!in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
@@ -149,10 +147,10 @@ class FileUploadService
                 $mimeType,
                 $file->getClientOriginalName(),
             ));
-            throw new \InvalidArgumentException($this->translator->trans('Le type MIME "%mimeType%" n\'est pas autorisé.', ['%mimeType%' => $mimeType]));
+            throw new \InvalidArgumentException($this->translator->trans('Le type MIME "%mimeType%" n\'est pas autorisé.', [
+                '%mimeType%' => $mimeType,
+            ]));
         }
-
-
 
         $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
         $safeFilename = preg_replace('/[^A-Za-z0-9_\-]/', '_', $originalFilename);

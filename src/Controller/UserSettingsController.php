@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use League\Flysystem\FilesystemOperator;
 use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
+use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_USER')]
 final class UserSettingsController extends AbstractController
@@ -213,7 +213,7 @@ final class UserSettingsController extends AbstractController
         string $type,
         Request $request,
         EntityManagerInterface $entityManager,
-        CacheInterface $cache
+        CacheInterface $cache,
     ): Response {
         $q = $request->query->get('q', '');
 
@@ -268,7 +268,7 @@ final class UserSettingsController extends AbstractController
                     }
 
                     $tags = $emojiTagsMap[$code] ?? [];
-                    $matchesQ = ($q === '' || str_contains(mb_strtolower($code), mb_strtolower($q)));
+                    $matchesQ = $q === '' || str_contains(mb_strtolower($code), mb_strtolower($q));
                     if (!$matchesQ && $q !== '') {
                         foreach ($tags as $tag) {
                             if (str_contains(mb_strtolower($tag), mb_strtolower($q))) {

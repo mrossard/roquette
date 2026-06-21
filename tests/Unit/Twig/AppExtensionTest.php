@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Twig;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
 use App\Repository\ChannelRepository;
 use App\Service\MessageFormatter;
 use App\Twig\AppExtension;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 

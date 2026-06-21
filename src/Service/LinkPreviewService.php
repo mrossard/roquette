@@ -228,8 +228,10 @@ class LinkPreviewService
         $title = html_entity_decode(trim(strip_tags($title)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         // 2. Description
-        $descriptionNode = $crawler->filter('meta[property="og:description"], meta[name="description"], meta[name="twitter:description"]');
-        $description = $descriptionNode->count() > 0 ? ($descriptionNode->first()->attr('content') ?? '') : '';
+        $descriptionNode = $crawler->filter(
+            'meta[property="og:description"], meta[name="description"], meta[name="twitter:description"]',
+        );
+        $description = $descriptionNode->count() > 0 ? $descriptionNode->first()->attr('content') ?? '' : '';
         $description = html_entity_decode(trim(strip_tags($description)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         // 3. Image
@@ -255,7 +257,11 @@ class LinkPreviewService
         // 4. Nom du site
         $siteNameNode = $crawler->filter('meta[property="og:site_name"]');
         if ($siteNameNode->count() > 0) {
-            $siteName = html_entity_decode(trim(strip_tags($siteNameNode->first()->attr('content') ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $siteName = html_entity_decode(
+                trim(strip_tags($siteNameNode->first()->attr('content') ?? '')),
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8',
+            );
         } else {
             $siteName = parse_url($url, PHP_URL_HOST);
         }

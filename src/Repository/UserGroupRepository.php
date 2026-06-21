@@ -24,7 +24,8 @@ class UserGroupRepository extends ServiceEntityRepository
      */
     public function findGroupsForUser(User $user): array
     {
-        return $this->createQueryBuilder('g')
+        return $this
+            ->createQueryBuilder('g')
             ->join('g.members', 'm')
             ->where('m.id = :userId')
             ->setParameter('userId', $user->getId())
@@ -37,7 +38,8 @@ class UserGroupRepository extends ServiceEntityRepository
      */
     public function findAdministeredGroupsForUser(User $user): array
     {
-        return $this->createQueryBuilder('g')
+        return $this
+            ->createQueryBuilder('g')
             ->join('g.administrators', 'a')
             ->where('a.id = :userId')
             ->setParameter('userId', $user->getId())
@@ -47,15 +49,13 @@ class UserGroupRepository extends ServiceEntityRepository
 
     public function countAll(): int
     {
-        return (int) $this->createQueryBuilder('g')
-            ->select('COUNT(g.id)')
-            ->getQuery()
-            ->getSingleScalarResult();
+        return (int) $this->createQueryBuilder('g')->select('COUNT(g.id)')->getQuery()->getSingleScalarResult();
     }
 
     public function countAdministeredGroupsForUser(User $user): int
     {
-        return (int) $this->createQueryBuilder('g')
+        return (int) $this
+            ->createQueryBuilder('g')
             ->select('COUNT(g.id)')
             ->join('g.administrators', 'a')
             ->where('a.id = :userId')
@@ -69,7 +69,8 @@ class UserGroupRepository extends ServiceEntityRepository
      */
     public function findPaginatedAll(int $page, int $perPage = 25): array
     {
-        return $this->createQueryBuilder('g')
+        return $this
+            ->createQueryBuilder('g')
             ->orderBy('g.name', 'ASC')
             ->setFirstResult(($page - 1) * $perPage)
             ->setMaxResults($perPage)
@@ -82,7 +83,8 @@ class UserGroupRepository extends ServiceEntityRepository
      */
     public function findPaginatedAdministeredGroupsForUser(User $user, int $page, int $perPage = 25): array
     {
-        return $this->createQueryBuilder('g')
+        return $this
+            ->createQueryBuilder('g')
             ->join('g.administrators', 'a')
             ->where('a.id = :userId')
             ->setParameter('userId', $user->getId())

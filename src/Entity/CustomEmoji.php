@@ -21,7 +21,10 @@ class CustomEmoji
     #[ORM\Column(length: 191)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 2, max: 191)]
-    #[Assert\Regex(pattern: '/^:[a-zA-Z0-9_\-]+:$/', message: 'Le code émoji doit commencer et se terminer par ":" (ex: :mon_emoji:)')]
+    #[Assert\Regex(
+        pattern: '/^:[a-zA-Z0-9_\-]+:$/',
+        message: 'Le code émoji doit commencer et se terminer par ":" (ex: :mon_emoji:)',
+    )]
     private ?string $code = null;
 
     #[ORM\Column(length: 255)]

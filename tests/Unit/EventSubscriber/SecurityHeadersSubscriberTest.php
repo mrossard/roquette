@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\EventSubscriber;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\EventSubscriber\SecurityHeadersSubscriber;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +24,7 @@ class SecurityHeadersSubscriberTest extends TestCase
 
         $subscriber = new SecurityHeadersSubscriber(
             'http://localhost:3000/.well-known/mercure',
-            'http://localhost:8080/emojis'
+            'http://localhost:8080/emojis',
         );
 
         $subscriber->onKernelResponse($event);

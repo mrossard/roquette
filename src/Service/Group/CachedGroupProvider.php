@@ -41,7 +41,7 @@ class CachedGroupProvider implements GroupProviderInterface
             $item->expiresAfter($this->ttl);
             return $this->delegate->getGroupByIdentifier($identifier);
         });
-     }
+    }
 
     public function getGroupMembers(string $groupIdentifier): array
     {

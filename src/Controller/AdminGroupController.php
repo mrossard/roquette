@@ -8,8 +8,10 @@ use App\Entity\Channel;
 use App\Entity\GroupSubscription;
 use App\Entity\User;
 use App\Entity\UserGroup;
+use App\Enum\AuditAction;
 use App\Repository\UserGroupRepository;
 use App\Repository\UserRepository;
+use App\Service\AuditLoggerService;
 use App\Service\Group\GroupProviderInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -18,8 +20,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use App\Service\AuditLoggerService;
-use App\Enum\AuditAction;
 
 final class AdminGroupController extends AbstractController
 {
@@ -82,8 +82,11 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/create', name: 'app_admin_group_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
-    {
+    public function create(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
+    ): Response {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $name = trim($request->request->get('name', ''));
@@ -124,8 +127,11 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/import', name: 'app_admin_group_import', methods: ['POST'])]
-    public function import(Request $request, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
-    {
+    public function import(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
+    ): Response {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $identifier = $request->request->get('identifier');
@@ -173,8 +179,11 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/{id}/delete', name: 'app_admin_group_delete', methods: ['POST'])]
-    public function delete(UserGroup $userGroup, EntityManagerInterface $entityManager, AuditLoggerService $auditLogger): Response
-    {
+    public function delete(
+        UserGroup $userGroup,
+        EntityManagerInterface $entityManager,
+        AuditLoggerService $auditLogger,
+    ): Response {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $name = $userGroup->getName();
@@ -203,11 +212,8 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/{id}/members/autocomplete', name: 'app_admin_group_member_autocomplete', methods: ['GET'])]
-    public function memberAutocomplete(
-        UserGroup $userGroup,
-        Request $request,
-        UserRepository $userRepository,
-    ): Response {
+    public function memberAutocomplete(UserGroup $userGroup, Request $request, UserRepository $userRepository): Response
+    {
         $this->checkAccessToGroup($userGroup);
 
         $query = trim($request->query->get('search', ''));
@@ -251,8 +257,10 @@ final class AdminGroupController extends AbstractController
 
         if ($isExternal) {
             $externalUsernames = $this->groupProvider->getGroupMembers($userGroup->getGroupIdentifier());
-            $registeredUsers = $entityManager->getRepository(\App\Entity\User::class)->findBy(['username' => $externalUsernames]);
-            
+            $registeredUsers = $entityManager
+                ->getRepository(\App\Entity\User::class)
+                ->findBy(['username' => $externalUsernames]);
+
             $registeredUsersByUsername = [];
             foreach ($registeredUsers as $u) {
                 $registeredUsersByUsername[$u->getUsername()] = $u;
@@ -278,8 +286,12 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/{id}/members/add', name: 'app_admin_group_member_add', methods: ['POST'])]
-    public function addMember(UserGroup $userGroup, Request $request, UserRepository $userRepository, EntityManagerInterface $entityManager): Response
-    {
+    public function addMember(
+        UserGroup $userGroup,
+        Request $request,
+        UserRepository $userRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
         $this->checkAccessToGroup($userGroup);
 
         $userId = $request->request->getInt('userId');
@@ -301,8 +313,12 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/{id}/members/{userId}/remove', name: 'app_admin_group_member_remove', methods: ['POST'])]
-    public function removeMember(UserGroup $userGroup, int $userId, UserRepository $userRepository, EntityManagerInterface $entityManager): Response
-    {
+    public function removeMember(
+        UserGroup $userGroup,
+        int $userId,
+        UserRepository $userRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
         $this->checkAccessToGroup($userGroup);
 
         $user = $userRepository->find($userId);
@@ -349,7 +365,11 @@ final class AdminGroupController extends AbstractController
         return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
     }
 
-    #[Route('/admin/groups/{id}/administrators/{userId}/remove', name: 'app_admin_group_administrator_remove', methods: ['POST'])]
+    #[Route(
+        '/admin/groups/{id}/administrators/{userId}/remove',
+        name: 'app_admin_group_administrator_remove',
+        methods: ['POST'],
+    )]
     public function removeAdministrator(
         UserGroup $userGroup,
         int $userId,
@@ -367,7 +387,10 @@ final class AdminGroupController extends AbstractController
 
         // Prevent removing the last admin
         if ($userGroup->getAdministrators()->count() <= 1 && $userGroup->getAdministrators()->contains($user)) {
-            $this->addFlash('error', $this->translator->trans('Impossible de retirer le dernier administrateur du groupe.'));
+            $this->addFlash(
+                'error',
+                $this->translator->trans('Impossible de retirer le dernier administrateur du groupe.'),
+            );
             return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
         }
 
@@ -394,8 +417,11 @@ final class AdminGroupController extends AbstractController
         }
     }
 
-    private function createOfficialChannelForGroup(string $groupName, string $groupIdentifier, EntityManagerInterface $entityManager): Channel
-    {
+    private function createOfficialChannelForGroup(
+        string $groupName,
+        string $groupIdentifier,
+        EntityManagerInterface $entityManager,
+    ): Channel {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 

@@ -74,7 +74,7 @@ class UserBootstrapService
             $needsFlush = true;
         } else {
             // Update translation if language changed and it needs sync
-            if ($general->getName() !== $generalName && ($generalName !== 'channel.general.name')) {
+            if ($general->getName() !== $generalName && $generalName !== 'channel.general.name') {
                 $general->setName($generalName);
                 $general->setDescription($generalDesc);
                 $needsFlush = true;
@@ -100,7 +100,7 @@ class UserBootstrapService
             $this->entityManager->persist($robotUser);
             $needsFlush = true;
         } else {
-            if ($robotUser->getDisplayName() !== $assistantName && ($assistantName !== 'channel.assistant.name')) {
+            if ($robotUser->getDisplayName() !== $assistantName && $assistantName !== 'channel.assistant.name') {
                 $robotUser->setDisplayName($assistantName);
                 $needsFlush = true;
             }
@@ -122,7 +122,7 @@ class UserBootstrapService
             $needsFlush = true;
         } else {
             $channelNeedsFlush = false;
-            if ($robotChannel->getName() !== $assistantName && ($assistantName !== 'channel.assistant.name')) {
+            if ($robotChannel->getName() !== $assistantName && $assistantName !== 'channel.assistant.name') {
                 $robotChannel->setName($assistantName);
                 $robotChannel->setDescription($assistantDesc);
                 $channelNeedsFlush = true;

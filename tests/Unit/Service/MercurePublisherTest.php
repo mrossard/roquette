@@ -4,21 +4,20 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\UserChannelReadRepository;
 use App\Service\MercurePublisher;
+use Doctrine\Common\Collections\ArrayCollection;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Doctrine\Common\Collections\ArrayCollection;
 
 #[AllowMockObjectsWithoutExpectations]
 class MercurePublisherTest extends TestCase

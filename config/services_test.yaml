@@ -1,0 +1,15 @@
+parameters:
+    # Reference unused Mercure env vars in test environment to prevent DI container compilation errors
+    unused_mercure_url: '%env(default::MERCURE_URL)%'
+    unused_mercure_public_url: '%env(default::MERCURE_PUBLIC_URL)%'
+
+services:
+    App\Tests\Functional\Stub\HubStub:
+        autowire: true
+        autoconfigure: true
+
+    Symfony\Component\Mercure\HubInterface:
+        alias: App\Tests\Functional\Stub\HubStub
+
+    mercure.hub.default:
+        alias: App\Tests\Functional\Stub\HubStub

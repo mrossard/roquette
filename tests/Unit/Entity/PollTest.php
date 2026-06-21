@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Entity;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Entity\Poll;
 use App\Entity\PollOption;
 use App\Entity\PollVote;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\MessageHandler;
 
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-
-
 use App\Entity\Message;
 use App\Message\ScanFileMessage;
 use App\MessageHandler\ScanFileMessageHandler;
@@ -15,6 +12,7 @@ use App\Service\ClamavService;
 use App\Service\FileUploadService;
 use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
@@ -62,7 +60,7 @@ class ScanFileMessageHandlerTest extends TestCase
             $em,
             $mercurePublisher,
             $twig,
-            $logger
+            $logger,
         );
 
         $handler(new ScanFileMessage(42));
@@ -109,7 +107,7 @@ class ScanFileMessageHandlerTest extends TestCase
             $em,
             $mercurePublisher,
             $twig,
-            $logger
+            $logger,
         );
 
         $handler(new ScanFileMessage(42));
