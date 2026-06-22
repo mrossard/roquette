@@ -22,7 +22,7 @@ class Message
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(type: 'bigint')]
     private ?int $id = null;
 
     #[ORM\Column(type: 'text', nullable: true)]

@@ -3,6 +3,8 @@ doctrine:
         url: '%env(resolve:DATABASE_URL)%'
         mapping_types:
             vector: string
+        types:
+            bigint: App\Doctrine\Type\BigIntToIntegerType
         schema_filter: '~^(?!doc_chunks$)~'
 
         # IMPORTANT: You MUST configure your server version,
