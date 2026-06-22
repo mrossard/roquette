@@ -46,6 +46,29 @@ class MessageFormatterTest extends TestCase
                 }
                 return null;
             });
+        $this->userRepository
+            ->method('findBy')
+            ->willReturnCallback(function ($criteria) {
+                $usernames = $criteria['username'] ?? [];
+                if (!is_array($usernames)) {
+                    $usernames = [$usernames];
+                }
+                $users = [];
+                foreach ($usernames as $username) {
+                    if ($username === 'alice' || $username === 'bob') {
+                        $user = $this->createStub(\App\Entity\User::class);
+                        $user->method('getUsername')->willReturn($username);
+                        $user->method('getUserIdentifier')->willReturn($username);
+                        if ($username === 'alice') {
+                            $user->method('getDisplayName')->willReturn('Alice de Merveilles');
+                        } else {
+                            $user->method('getDisplayName')->willReturn(null);
+                        }
+                        $users[] = $user;
+                    }
+                }
+                return $users;
+            });
 
         $this->testEmojisDir = __DIR__ . '/../../../var/test_emojis';
 
@@ -463,13 +486,14 @@ class MessageFormatterTest extends TestCase
     {
         $channel = $this->createMock(\App\Entity\Channel::class);
         $channel->method('getName')->willReturn('Général');
+        $channel->method('getSlug')->willReturn('general');
         $channel->method('isPrivate')->willReturn(false);
 
         $this->channelRepository
             ->expects($this->once())
-            ->method('findOneBy')
-            ->with(['slug' => 'general', 'isDm' => false])
-            ->willReturn($channel);
+            ->method('findBy')
+            ->with(['slug' => ['general'], 'isDm' => false])
+            ->willReturn([$channel]);
 
         $result = $this->formatter->format('Rejoignez #general pour discuter !');
         $this->assertStringContainsString(

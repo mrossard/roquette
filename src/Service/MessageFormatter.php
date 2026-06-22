@@ -99,7 +99,7 @@ class MessageFormatter
     private function preloadReferences(string $html): void
     {
         $unknownUsernames = [];
-        if (preg_match_all('/@([a-zA-Z0-9_\-\/\+]+)/u', $html, $m)) {
+        if (preg_match_all('/@([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_\-]+)*)/u', $html, $m)) {
             foreach (array_unique($m[1]) as $username) {
                 if (\array_key_exists($username, $this->userCache)) {
                     continue;
@@ -204,7 +204,7 @@ class MessageFormatter
         $currentUsername = $currentUser?->getUserIdentifier();
 
         $html = preg_replace_callback(
-            '/@([a-zA-Z0-9_à-ÿÀ-Ÿ-]+)/u',
+            '/@([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_\-]+)*)/u',
             function ($matches) use ($currentUsername) {
                 $username = $matches[1];
                 if (!array_key_exists($username, $this->userCache)) {
