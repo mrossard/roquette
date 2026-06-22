@@ -1,4 +1,6 @@
 // assets/offline.js
+import { fetchWithCsrf } from './csrf.js';
+
 const trans = (key) => (window.AppTranslations && window.AppTranslations[key]) || key;
 
 // Array to hold offline messages in memory (also synced to localStorage)
@@ -167,17 +169,11 @@ export function syncOfflineMessages() {
             }
         }
 
-        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        const headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest'
-        };
-        if (csrfMeta) {
-            headers['X-CSRF-Token'] = csrfMeta.content;
-        }
-        fetch(msg.postUrl, {
+        fetchWithCsrf(msg.postUrl, {
             method: 'POST',
-            headers,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
             body: new URLSearchParams({message: msg.content})
         })
             .then(res => {

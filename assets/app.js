@@ -4,6 +4,7 @@ import htmx from 'htmx.org';
 window.htmx = htmx;
 import 'htmx-ext-sse';
 import {initializeChannelScroll, adjustScrollForLinkPreview} from './modules/scroll.js';
+import {getFreshCsrfToken} from './modules/csrf.js';
 
 
 import { Idiomorph } from 'idiomorph';
@@ -568,6 +569,26 @@ document.body.addEventListener('htmx:beforeTransition', (event) => {
 document.body.addEventListener('htmx:oobAfterSwap', (evt) => {
     if (window.highlightAllCodeBlocks && evt.detail.target) {
         window.highlightAllCodeBlocks(evt.detail.target);
+    }
+});
+
+// Global HTMX listener to handle CSRF token refresh on 403 response, then retry the request once
+document.body.addEventListener('htmx:responseError', async (evt) => {
+    const xhr = evt.detail.xhr;
+    const requestConfig = evt.detail.requestConfig;
+
+    if (xhr.status === 403 && requestConfig && requestConfig.verb !== 'GET' && !requestConfig._csrfRetried) {
+        requestConfig._csrfRetried = true;
+
+        const freshToken = await getFreshCsrfToken();
+        if (freshToken) {
+            // Update request headers with the new token
+            requestConfig.headers = requestConfig.headers || {};
+            requestConfig.headers['X-CSRF-Token'] = freshToken;
+
+            // Re-run the AJAX request via HTMX
+            window.htmx.ajax(requestConfig.verb, requestConfig.path, requestConfig);
+        }
     }
 });
 
