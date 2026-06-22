@@ -167,12 +167,17 @@ export function syncOfflineMessages() {
             }
         }
 
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        if (csrfMeta) {
+            headers['X-CSRF-Token'] = csrfMeta.content;
+        }
         fetch(msg.postUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
+            headers,
             body: new URLSearchParams({message: msg.content})
         })
             .then(res => {
