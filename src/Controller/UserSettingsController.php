@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Channel;
+use App\Entity\Message;
+use App\Entity\User;
+use App\Repository\MessageRepository;
 use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
@@ -12,6 +16,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -20,7 +25,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class UserSettingsController extends AbstractController
 {
     public function __construct(
-        private TranslatorInterface $translator,
+        private readonly TranslatorInterface $translator,
         private readonly FilesystemOperator $defaultStorage,
     ) {}
 
@@ -31,7 +36,7 @@ final class UserSettingsController extends AbstractController
     #[Route('/user/update-color', name: 'app_user_update_color', methods: ['POST'])]
     public function updateColor(Request $request, EntityManagerInterface $entityManager): Response
     {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $hue = $request->request->get('hue');
@@ -57,7 +62,7 @@ final class UserSettingsController extends AbstractController
     #[Route('/user/update-theme', name: 'app_user_update_theme', methods: ['POST'])]
     public function updateTheme(EntityManagerInterface $entityManager): Response
     {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $newTheme = $currentUser->getTheme() === 'dark' ? 'light' : 'dark';
@@ -77,7 +82,7 @@ final class UserSettingsController extends AbstractController
         EntityManagerInterface $entityManager,
         MercurePublisher $mercurePublisher,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $status = $request->request->get('status');
@@ -93,9 +98,7 @@ final class UserSettingsController extends AbstractController
                     'status' => $currentUser->getStatus(),
                     'statusLabel' => $currentUser->getStatusLabel(),
                     'statusOverride' => $currentUser->getStatusOverride() ?? 'auto',
-                    'lastActive' => $currentUser->getLastActiveAt()
-                        ? $currentUser->getLastActiveAt()->getTimestamp()
-                        : null,
+                    'lastActive' => $currentUser->getLastActiveAt()?->getTimestamp(),
                 ],
                 true,
                 'user_status_changed',
@@ -117,6 +120,14 @@ final class UserSettingsController extends AbstractController
         return new Response(null, 204);
     }
 
+    #[Route('/csrf-token', name: 'app_csrf_token', methods: ['GET'])]
+    public function csrfToken(CsrfTokenManagerInterface $csrfTokenManager): JsonResponse
+    {
+        return new JsonResponse([
+            'token' => $csrfTokenManager->getToken('app')->getValue(),
+        ]);
+    }
+
     // -------------------------------------------------------------------------
     // API: list users
     // -------------------------------------------------------------------------
@@ -124,11 +135,11 @@ final class UserSettingsController extends AbstractController
     #[Route('/api/users', name: 'app_api_users', methods: ['GET'])]
     public function apiUsers(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $q = $request->query->get('q', '');
-        $qb = $entityManager->getRepository(\App\Entity\User::class)->createQueryBuilder('u');
+        $qb = $entityManager->getRepository(User::class)->createQueryBuilder('u');
         if ($q !== '') {
             $qb->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')->setParameter(
                 'q',
@@ -153,7 +164,7 @@ final class UserSettingsController extends AbstractController
     #[Route('/api/users-options', name: 'app_api_users_options', methods: ['GET'])]
     public function apiUsersOptions(EntityManagerInterface $entityManager): Response
     {
-        $users = $entityManager->getRepository(\App\Entity\User::class)->findBy([], ['displayName' => 'ASC']);
+        $users = $entityManager->getRepository(User::class)->findBy([], ['displayName' => 'ASC']);
 
         return $this->render('api/_user_options.html.twig', [
             'users' => $users,
@@ -167,7 +178,7 @@ final class UserSettingsController extends AbstractController
     #[Route('/api/channels', name: 'app_api_channels', methods: ['GET'])]
     public function apiChannels(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
         if (!$currentUser) {
             return new JsonResponse([], Response::HTTP_UNAUTHORIZED);
@@ -175,7 +186,7 @@ final class UserSettingsController extends AbstractController
 
         $q = $request->query->get('q', '');
         $qb = $entityManager
-            ->getRepository(\App\Entity\Channel::class)
+            ->getRepository(Channel::class)
             ->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
             ->where('c.isDm = false')
@@ -303,7 +314,7 @@ final class UserSettingsController extends AbstractController
         }
 
         if ($type === 'users') {
-            $qb = $entityManager->getRepository(\App\Entity\User::class)->createQueryBuilder('u');
+            $qb = $entityManager->getRepository(User::class)->createQueryBuilder('u');
             if ($q !== '') {
                 $qb->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')->setParameter(
                     'q',
@@ -319,7 +330,7 @@ final class UserSettingsController extends AbstractController
 
         $currentUser = $this->getUser();
         $qb = $entityManager
-            ->getRepository(\App\Entity\Channel::class)
+            ->getRepository(Channel::class)
             ->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
             ->where('c.isDm = false')
@@ -346,7 +357,7 @@ final class UserSettingsController extends AbstractController
     #[Route('/messages/{id}/pin', name: 'app_message_pin', methods: ['POST'])]
     public function pinMessage(
         int $id,
-        \App\Repository\MessageRepository $messageRepository,
+        MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
         MercurePublisher $mercurePublisher,
     ): Response {
@@ -355,7 +366,7 @@ final class UserSettingsController extends AbstractController
             return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $channel = $message->getChannel();
@@ -391,7 +402,7 @@ final class UserSettingsController extends AbstractController
     #[Route('/messages/{id}/unpin', name: 'app_message_unpin', methods: ['POST'])]
     public function unpinMessage(
         int $id,
-        \App\Repository\MessageRepository $messageRepository,
+        MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
         MercurePublisher $mercurePublisher,
     ): Response {
@@ -400,7 +411,7 @@ final class UserSettingsController extends AbstractController
             return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
-        /** @var \App\Entity\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $channel = $message->getChannel();
@@ -428,7 +439,7 @@ final class UserSettingsController extends AbstractController
     // Private helper
     // -------------------------------------------------------------------------
 
-    private function renderMessageItem(\App\Entity\Message $message, bool $oob = false): string
+    private function renderMessageItem(Message $message, bool $oob = false): string
     {
         return $this->renderView('dashboard/_feed_item.html.twig', [
             'author' => $message->getAuthor(),

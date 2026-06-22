@@ -1,5 +1,54 @@
 const trans = (key) => (window.AppTranslations && window.AppTranslations[key]) || key;
 
+async function getFreshCsrfToken() {
+    try {
+        const response = await fetch('/csrf-token', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (response.status === 401 || response.status === 403) {
+            window.location.reload();
+            return null;
+        }
+        const data = await response.json();
+        if (data && data.token) {
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            if (csrfMeta) {
+                csrfMeta.content = data.token;
+            }
+            return data.token;
+        }
+    } catch (e) {
+        console.error('Failed to get fresh CSRF token:', e);
+    }
+    return null;
+}
+
+async function fetchWithCsrf(url, options = {}) {
+    options.headers = options.headers || {};
+    options.headers['X-Requested-With'] = 'XMLHttpRequest';
+    const method = (options.method || 'GET').toUpperCase();
+    if (method !== 'GET' && method !== 'HEAD') {
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (csrfMeta) {
+            options.headers['X-CSRF-Token'] = csrfMeta.content;
+        }
+    }
+    try {
+        let response = await fetch(url, options);
+        if (response.status === 401 || response.status === 403) {
+            const freshToken = await getFreshCsrfToken();
+            if (freshToken) {
+                options.headers['X-CSRF-Token'] = freshToken;
+                response = await fetch(url, options);
+            }
+        }
+        return response;
+    } catch (e) {
+        console.error('fetchWithCsrf error:', e);
+        throw e;
+    }
+}
+
 function isCurrentUserBusy() {
     const statusBadge = document.getElementById('mercure-status');
     if (!statusBadge) return false;
@@ -472,13 +521,7 @@ export function handleGlobalNotification(data) {
 
     if (data.channelSlug === activeChannelSlug && isPageActive) {
         // We are currently viewing this channel and the page is active, so mark it as read in the DB in background
-        const readUrl = `/channels/${data.channelSlug}/read`;
-        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        const headers = {'X-Requested-With': 'XMLHttpRequest'};
-        if (csrfMeta) {
-            headers['X-CSRF-Token'] = csrfMeta.content;
-        }
-        fetch(readUrl, {method: 'POST', headers});
+        fetchWithCsrf(`/channels/${data.channelSlug}/read`, {method: 'POST'}).catch(() => {});
     } else {
         // We are on another channel, show/increment the unread badge
         if (channelLink) {
@@ -501,9 +544,10 @@ export function handleGlobalNotification(data) {
             if (!subChannelLink) {
                 const parentLinks = document.querySelectorAll(`.channel-link[data-channel-id="${data.parentChannelId}"]:not(.subchannel-link)`);
                 if (parentLinks.length > 0) {
-                    fetch(`/channels/${data.channelSlug}/sidebar-item`)
+                    fetchWithCsrf(`/channels/${data.channelSlug}/sidebar-item`)
                         .then(response => response.text())
                         .then(html => {
+                            if (!html) return;
                             parentLinks.forEach(parentLink => {
                                 const group = parentLink.closest('.channel-group');
                                 const container = group?.querySelector('.channel-subchannels');
@@ -646,13 +690,7 @@ export function markActiveChannelAsReadIfFocused() {
             badge.style.display = 'none';
         }
 
-        const readUrl = `/channels/${activeChannelSlug}/read`;
-        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        const headers = {'X-Requested-With': 'XMLHttpRequest'};
-        if (csrfMeta) {
-            headers['X-CSRF-Token'] = csrfMeta.content;
-        }
-        fetch(readUrl, {method: 'POST', headers});
+        fetchWithCsrf(`/channels/${activeChannelSlug}/read`, {method: 'POST'}).catch(() => {});
         updateFaviconUnreadCount();
     }
 }
