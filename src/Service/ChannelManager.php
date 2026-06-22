@@ -15,6 +15,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ChannelManager
@@ -27,20 +28,24 @@ class ChannelManager
         private readonly LoggerInterface $logger,
         private readonly TranslatorInterface $translator,
         private readonly AuthorizationCheckerInterface $authorizationChecker,
+        private readonly SluggerInterface $slugger,
     ) {}
 
     public function create(string $name, string $description, array $extra, User $currentUser): Channel
     {
-        $slug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($name));
-        $slug = trim($slug, '-');
-
+        $slug = strtolower($this->slugger->slug($name)->toString());
         if ($slug === '') {
             $slug = 'channel-' . uniqid();
         }
 
-        $existing = $this->channelRepository->findOneBy(['slug' => $slug]);
-        if ($existing) {
-            $slug = $slug . '-' . rand(100, 999);
+        $baseSlug = $slug;
+        $count = 1;
+        while ($this->channelRepository->findOneBy(['slug' => $slug])) {
+            $slug = $baseSlug . '-' . rand(100, 999);
+            if ($count++ > 20) {
+                $slug = $baseSlug . '-' . uniqid();
+                break;
+            }
         }
 
         $channel = new Channel();
@@ -123,16 +128,24 @@ class ChannelManager
         }
 
         if ($channel->getName() !== $name) {
-            $newSlug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($name));
-            $newSlug = trim($newSlug, '-');
+            $newSlug = strtolower($this->slugger->slug($name)->toString());
             if ($newSlug === '') {
                 $newSlug = 'channel-' . uniqid();
             }
 
             if ($newSlug !== $channel->getSlug()) {
-                $existing = $this->channelRepository->findOneBy(['slug' => $newSlug]);
-                if ($existing && $existing->getId() !== $channel->getId()) {
-                    $newSlug = $newSlug . '-' . rand(100, 999);
+                $baseSlug = $newSlug;
+                $count = 1;
+                while (true) {
+                    $existing = $this->channelRepository->findOneBy(['slug' => $newSlug]);
+                    if (!$existing || $existing->getId() === $channel->getId()) {
+                        break;
+                    }
+                    $newSlug = $baseSlug . '-' . rand(100, 999);
+                    if ($count++ > 20) {
+                        $newSlug = $baseSlug . '-' . uniqid();
+                        break;
+                    }
                 }
                 $channel->setSlug($newSlug);
             }
@@ -285,15 +298,20 @@ class ChannelManager
         $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Discussion';
         $name = mb_substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 40);
 
-        $slug =
-            'sc-'
-            . preg_replace('/[^a-z0-9]+/i', '-', mb_strtolower($name))
-            . '-'
-            . substr(bin2hex(random_bytes(3)), 0, 6);
-        $slug = trim($slug, '-');
+        $sluggedName = strtolower($this->slugger->slug($name)->toString());
+        if ($sluggedName === '') {
+            $sluggedName = 'discussion';
+        }
+        $slug = 'sc-' . $sluggedName . '-' . substr(bin2hex(random_bytes(3)), 0, 6);
 
-        if ($this->channelRepository->findOneBy(['slug' => $slug])) {
-            $slug .= '-' . rand(100, 999);
+        $baseSlug = $slug;
+        $count = 1;
+        while ($this->channelRepository->findOneBy(['slug' => $slug])) {
+            $slug = $baseSlug . '-' . rand(100, 999);
+            if ($count++ > 20) {
+                $slug = $baseSlug . '-' . uniqid();
+                break;
+            }
         }
 
         $channel = new Channel();
