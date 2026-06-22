@@ -26,7 +26,7 @@ readonly class ChannelExportService
         private Environment $twig,
     ) {}
 
-    public function export(Channel $channel, User $currentUser): Response
+    public function generate(Channel $channel, User $currentUser): ChannelExport
     {
         $messages = $this->entityManager->getRepository(Message::class)->findBy(['channel' => $channel], [
             'createdAt' => 'ASC',
@@ -79,19 +79,19 @@ readonly class ChannelExportService
         ]);
 
         if (class_exists(\ZipArchive::class)) {
-            return $this->exportAsZip($channel, $currentUser, $exportData, $htmlContent, $messages);
+            return $this->generateZip($channel, $currentUser, $exportData, $htmlContent, $messages);
         }
 
-        return $this->exportAsTar($channel, $currentUser, $exportData, $htmlContent, $messages);
+        return $this->generateTar($channel, $currentUser, $exportData, $htmlContent, $messages);
     }
 
-    private function exportAsZip(
+    private function generateZip(
         Channel $channel,
         User $currentUser,
         array $exportData,
         string $htmlContent,
         array $messages,
-    ): Response {
+    ): ChannelExport {
         $zip = new \ZipArchive();
         $tempFile = tempnam(sys_get_temp_dir(), 'export-');
         $zipFile = $tempFile . '.zip';
@@ -143,38 +143,30 @@ readonly class ChannelExportService
             throw new \RuntimeException('Zip file does not exist after closing: ' . $zipFile);
         }
 
-        $size = filesize($zipFile);
-        if ($size === 0) {
-            throw new \RuntimeException('Zip file is empty (0 bytes) after closing: ' . $zipFile);
-        }
-
         $filename = $channel->getSlug() . '-export.zip';
 
-        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $zipFile, 'zip');
+        $export = $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $zipFile, 'zip');
 
+        // Cleanup
         foreach ($tmpFiles as $tmpFile) {
-            if (!file_exists($tmpFile)) {
-                continue;
+            if (file_exists($tmpFile)) {
+                unlink($tmpFile);
             }
-
-            unlink($tmpFile);
+        }
+        if (file_exists($zipFile)) {
+            unlink($zipFile);
         }
 
-        $response = new BinaryFileResponse($zipFile);
-        $response->setContentDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename);
-        $response->headers->set('Content-Type', 'application/zip');
-        $response->deleteFileAfterSend(true);
-
-        return $response;
+        return $export;
     }
 
-    private function exportAsTar(
+    private function generateTar(
         Channel $channel,
         User $currentUser,
         array $exportData,
         string $htmlContent,
         array $messages,
-    ): Response {
+    ): ChannelExport {
         $tarFile = tempnam(sys_get_temp_dir(), 'export-') . '.tar';
         $tar = new \PharData($tarFile);
 
@@ -206,28 +198,24 @@ readonly class ChannelExportService
                 }
             }
         } finally {
-            // PharData writes on object destruction; force it
             unset($tar);
         }
 
         $filename = $channel->getSlug() . '-export.tar';
 
-        $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $tarFile, 'tar');
+        $export = $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $tarFile, 'tar');
 
+        // Cleanup
         foreach ($tmpFiles as $tmpFile) {
-            if (!file_exists($tmpFile)) {
-                continue;
+            if (file_exists($tmpFile)) {
+                unlink($tmpFile);
             }
-
-            unlink($tmpFile);
+        }
+        if (file_exists($tarFile)) {
+            unlink($tarFile);
         }
 
-        $response = new BinaryFileResponse($tarFile);
-        $response->setContentDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename);
-        $response->headers->set('Content-Type', 'application/x-tar');
-        $response->deleteFileAfterSend(true);
-
-        return $response;
+        return $export;
     }
 
     private function saveAndCreateExportEntity(
@@ -236,7 +224,7 @@ readonly class ChannelExportService
         string $filename,
         string $tempFilePath,
         string $extension,
-    ): void {
+    ): ChannelExport {
         $uniqueFilename = $channel->getSlug() . '-' . uniqid() . '.' . $extension;
         $storagePath = 'exports/' . $uniqueFilename;
 
@@ -267,5 +255,7 @@ readonly class ChannelExportService
             'export_id' => $export->getId(),
             'file_name' => $filename,
         ]);
+
+        return $export;
     }
 }

@@ -93,6 +93,11 @@ class ChannelControllerTest extends WebTestCase
             $this->entityManager->remove($user);
         }
 
+        $exportRepo = $this->entityManager->getRepository(\App\Entity\ChannelExport::class);
+        foreach ($exportRepo->findAll() as $export) {
+            $this->entityManager->remove($export);
+        }
+
         $this->entityManager->flush();
     }
 
@@ -313,19 +318,39 @@ class ChannelControllerTest extends WebTestCase
         $this->entityManager->flush();
 
         // Mock FileUploadService to prevent S3 connection errors
+        $this->client->disableReboot();
         $mock = $this->createMock(\App\Service\FileUploadService::class);
+        $mock->method('exists')->willReturn(true);
+        $stream = fopen('php://memory', 'r+');
+        fwrite($stream, 'zipped_data');
+        rewind($stream);
+        $mock->method('readStream')->willReturn($stream);
         $this->client->getContainer()->set(\App\Service\FileUploadService::class, $mock);
 
         // 2. Request export
         $this->client->request('GET', sprintf('/channels/%s/export', $this->channel->getSlug()));
 
         $this->assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        static::assertStringContainsString('Export demandé', $content);
+
+        // 3. Verify database has the export
+        $exportRepo = $this->entityManager->getRepository(\App\Entity\ChannelExport::class);
+        $exports = $exportRepo->findAll();
+        static::assertCount(1, $exports);
+        $export = $exports[0];
+        static::assertSame($this->channel->getName(), $export->getChannelName());
+        static::assertSame($this->testUser->getId(), $export->getExportedBy()->getId());
+
+        // 4. Request download of the export
+        $this->client->request('GET', sprintf('/exports/%d/download', $export->getId()));
+        $this->assertResponseIsSuccessful();
         $response = $this->client->getResponse();
-        $content = $this->client->getInternalResponse()->getContent();
+        $dlContent = $this->client->getInternalResponse()->getContent();
+        static::assertSame('zipped_data', $dlContent);
 
         if (class_exists(\ZipArchive::class)) {
             static::assertSame('application/zip', $response->headers->get('Content-Type'));
-            static::assertStringStartsWith('PK', $content); // ZIP file signature
         } else {
             static::assertSame('application/x-tar', $response->headers->get('Content-Type'));
         }

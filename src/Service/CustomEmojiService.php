@@ -27,96 +27,36 @@ class CustomEmojiService
     /**
      * @return array{emojis: array<int, array{code: string, filename: string, tags: array<int, string>}>, total: int}
      */
-    public function list(string $q): array
+    public function list(string $q, int $page = 1, int $limit = 25): array
     {
-        $dbEmojis = $this->emojiRepository->findAll();
-        $emojiTagsMap = [];
-        foreach ($dbEmojis as $dbEmoji) {
-            $emojiTagsMap[$dbEmoji->getCode()] = $dbEmoji->getTags();
+        $qb = $this->emojiRepository->createQueryBuilder('e');
+
+        if ($q !== '') {
+            $qb->where('LOWER(e.code) LIKE :q OR LOWER(CAST(e.tags AS text)) LIKE :q')->setParameter(
+                'q',
+                '%' . mb_strtolower($q) . '%',
+            );
         }
+
+        $qb->orderBy('e.code', 'ASC');
+
+        $qb->setFirstResult(($page - 1) * $limit)->setMaxResults($limit);
+
+        $paginator = new \Doctrine\ORM\Tools\Pagination\Paginator($qb->getQuery());
+        $total = count($paginator);
 
         $matchingEmojis = [];
-        try {
-            $files = $this->cache->get(self::FILESYSTEM_CACHE_KEY, function () {
-                $list = [];
-                try {
-                    $contents = $this->defaultStorage->listContents('emojis', true);
-                    foreach ($contents as $attributes) {
-                        if (!$attributes->isFile()) {
-                            continue;
-                        }
-
-                        $list[] = [
-                            'path' => $attributes->path(),
-                            'size' => $attributes->fileSize(),
-                        ];
-                    }
-                } catch (\Exception $e) {
-                    $this->logger->warning('Failed to list emoji files from storage: {message}', [
-                        'message' => $e->getMessage(),
-                    ]);
-                }
-
-                return $list;
-            });
-
-            foreach ($files as $file) {
-                $path = $file['path'];
-                $relativePath = substr($path, \strlen('emojis/'));
-                if (!str_ends_with($relativePath, '.gif')) {
-                    continue;
-                }
-                if ($file['size'] === 0) {
-                    continue;
-                }
-                $noExt = substr($relativePath, 0, -4);
-                $parts = explode('/', $noExt);
-                $filePart = (string) array_pop($parts);
-                if (\count($parts) === 0) {
-                    $code = $filePart;
-                    $filename = $filePart . '.gif';
-                } else {
-                    $dir = implode('/', $parts);
-                    $code = $filePart . ':' . $dir;
-                    $filename = $dir . '/' . $filePart . '.gif';
-                }
-
-                $tags = $emojiTagsMap[$code] ?? [];
-
-                if ($q !== '') {
-                    $match = str_contains(mb_strtolower($code), mb_strtolower($q));
-                    if (!$match) {
-                        foreach ($tags as $tag) {
-                            if (!str_contains(mb_strtolower($tag), mb_strtolower($q))) {
-                                continue;
-                            }
-
-                            $match = true;
-                            break;
-                        }
-                    }
-                    if (!$match) {
-                        continue;
-                    }
-                }
-
-                $matchingEmojis[] = [
-                    'code' => $code,
-                    'filename' => $filename,
-                    'tags' => $tags,
-                ];
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning('Failed to process emoji list: {message}', [
-                'message' => $e->getMessage(),
-            ]);
+        foreach ($paginator as $emoji) {
+            $matchingEmojis[] = [
+                'code' => $emoji->getCode(),
+                'filename' => $emoji->getFilename(),
+                'tags' => $emoji->getTags(),
+            ];
         }
-
-        usort($matchingEmojis, static fn($a, $b) => strcmp($a['code'], $b['code']));
 
         return [
             'emojis' => $matchingEmojis,
-            'total' => count($matchingEmojis),
+            'total' => $total,
         ];
     }
 

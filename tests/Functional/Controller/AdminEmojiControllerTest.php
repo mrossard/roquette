@@ -78,6 +78,13 @@ class AdminEmojiControllerTest extends WebTestCase
         $this->loginAdmin();
         $this->client->disableReboot();
 
+        $smileEmoji = new CustomEmoji();
+        $smileEmoji->setCode('smile');
+        $smileEmoji->setFilename('smile.gif');
+        $smileEmoji->setTags([]);
+        $this->entityManager->persist($smileEmoji);
+        $this->entityManager->flush();
+
         $container = $this->client->getContainer();
         $mockStorage = $this->createMock(FilesystemOperator::class);
         $mockStorage

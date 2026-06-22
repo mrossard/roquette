@@ -8,6 +8,7 @@ use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Repository\MessageRepository;
+use App\Service\CustomEmojiService;
 use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
@@ -225,83 +226,23 @@ final class UserSettingsController extends AbstractController
         Request $request,
         EntityManagerInterface $entityManager,
         CacheInterface $cache,
+        CustomEmojiService $emojiService,
     ): Response {
         $q = $request->query->get('q', '');
 
         if ($type === 'custom-emojis') {
             $matchingEmojis = [];
             try {
-                // Fetch all tags from DB for custom emojis
-                $dbEmojis = $entityManager->getRepository(\App\Entity\CustomEmoji::class)->findAll();
-                $emojiTagsMap = [];
-                foreach ($dbEmojis as $dbEmoji) {
-                    $emojiTagsMap[$dbEmoji->getCode()] = $dbEmoji->getTags();
-                }
-
-                $files = $cache->get('emojis_filesystem_list', function () {
-                    $list = [];
-                    try {
-                        $contents = $this->defaultStorage->listContents('emojis', true);
-                        foreach ($contents as $attributes) {
-                            if (!$attributes->isFile()) {
-                                continue;
-                            }
-
-                            $list[] = [
-                                'path' => $attributes->path(),
-                                'size' => $attributes->fileSize(),
-                            ];
-                        }
-                    } catch (\Exception $e) {
-                        // Ignore
-                    }
-                    return $list;
-                });
-
-                foreach ($files as $file) {
-                    $path = $file['path'];
-                    $relativePath = substr($path, \strlen('emojis/'));
-                    if (!str_ends_with($relativePath, '.gif')) {
-                        continue;
-                    }
-                    // Skip empty files (negative cache of failed downloads)
-                    if ($file['size'] === 0) {
-                        continue;
-                    }
-                    $noExt = substr($relativePath, 0, -4);
-                    $parts = explode('/', $noExt);
-                    $filePart = (string) array_pop($parts);
-                    if (\count($parts) === 0) {
-                        $code = $filePart;
-                        $filename = $filePart . '.gif';
-                    } else {
-                        $dir = implode('/', $parts);
-                        $code = $filePart . ':' . $dir;
-                        $filename = $dir . '/' . $filePart . '.gif';
-                    }
-
-                    $tags = $emojiTagsMap[$code] ?? [];
-                    $matchesQ = $q === '' || str_contains(mb_strtolower($code), mb_strtolower($q));
-                    if (!$matchesQ && $q !== '') {
-                        foreach ($tags as $tag) {
-                            if (!str_contains(mb_strtolower($tag), mb_strtolower($q))) {
-                                continue;
-                            }
-
-                            $matchesQ = true;
-                            break;
-                        }
-                    }
-
-                    if ($matchesQ) {
-                        $matchingEmojis[] = [
-                            'name' => $code,
-                            'filename' => $filename,
-                        ];
-                    }
+                // Fetch paginated/sorted emojis matching $q
+                $result = $emojiService->list($q, 1, 100);
+                foreach ($result['emojis'] as $emoji) {
+                    $matchingEmojis[] = [
+                        'name' => $emoji['code'],
+                        'filename' => $emoji['filename'],
+                    ];
                 }
             } catch (\Exception $e) {
-                // Ignore if storage fails or folder doesn't exist
+                // Ignore if query fails
             }
 
             usort($matchingEmojis, static fn($a, $b) => strcmp($a['name'], $b['name']));

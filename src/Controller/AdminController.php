@@ -256,13 +256,11 @@ final class AdminController extends AbstractController
         $page = max(1, $request->query->getInt('page', 1));
         $q = trim($request->query->get('q', ''));
 
-        $result = $emojiService->list($q);
+        $result = $emojiService->list($q, $page, self::PER_PAGE);
         $totalPages = (int) ceil($result['total'] / self::PER_PAGE);
-        $offset = ($page - 1) * self::PER_PAGE;
-        $paginatedEmojis = array_slice($result['emojis'], $offset, self::PER_PAGE);
 
         return $this->render('admin/emojis.html.twig', [
-            'emojis' => $paginatedEmojis,
+            'emojis' => $result['emojis'],
             'page' => $page,
             'totalPages' => $totalPages,
             'total' => $result['total'],

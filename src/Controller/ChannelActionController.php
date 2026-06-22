@@ -7,17 +7,25 @@ namespace App\Controller;
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Channel;
+use App\Entity\ChannelExport;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
+use App\Enum\AuditAction;
+use App\Message\GenerateExportMessage;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
+use App\Service\AuditLoggerService;
 use App\Service\ChannelExportService;
 use App\Service\ChannelManager;
+use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -285,7 +293,7 @@ final class ChannelActionController extends AbstractController
     public function exportChannel(
         string $slug,
         ChannelRepository $channelRepository,
-        ChannelExportService $channelExportService,
+        MessageBusInterface $messageBus,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -302,7 +310,59 @@ final class ChannelActionController extends AbstractController
             ));
         }
 
-        return $channelExportService->export($channel, $currentUser);
+        $messageBus->dispatch(new GenerateExportMessage($channel->getId(), $currentUser->getId()));
+
+        return $this->render('dashboard/export_requested.html.twig', [
+            'channel' => $channel,
+        ]);
+    }
+
+    #[Route('/exports/{id}/download', name: 'app_export_download', methods: ['GET'])]
+    public function downloadExport(
+        ChannelExport $export,
+        FileUploadService $fileUploadService,
+        AuditLoggerService $auditLogger,
+    ): Response {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+
+        if (!$this->isGranted('ROLE_ADMIN') && $export->getExportedBy() !== $currentUser) {
+            throw $this->createAccessDeniedException($this->translator->trans(
+                'Non autorisé à télécharger cet export.',
+            ));
+        }
+
+        if (!$fileUploadService->exists($export->getFilePath())) {
+            throw $this->createNotFoundException($this->translator->trans(
+                'Le fichier d\'export n\'existe pas dans le stockage.',
+            ));
+        }
+
+        $auditLogger->log(AuditAction::EXPORT_DOWNLOAD, $currentUser, [
+            'export_id' => $export->getId(),
+            'file_name' => $export->getFileName(),
+            'channel_name' => $export->getChannelName(),
+        ]);
+
+        $contentType = str_ends_with($export->getFileName(), '.tar') ? 'application/x-tar' : 'application/zip';
+
+        return new StreamedResponse(
+            static function () use ($fileUploadService, $export) {
+                $fileStream = $fileUploadService->readStream($export->getFilePath());
+                if ($fileStream) {
+                    fpassthru($fileStream);
+                    fclose($fileStream);
+                }
+            },
+            Response::HTTP_OK,
+            [
+                'Content-Type' => $contentType,
+                'Content-Disposition' => HeaderUtils::makeDisposition(
+                    HeaderUtils::DISPOSITION_ATTACHMENT,
+                    $export->getFileName(),
+                ),
+            ],
+        );
     }
 
     /** @param Channel[] $channels */

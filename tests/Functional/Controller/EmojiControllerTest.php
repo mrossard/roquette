@@ -45,6 +45,12 @@ class EmojiControllerTest extends WebTestCase
         foreach ($testUsers as $user) {
             $this->entityManager->remove($user);
         }
+
+        $emojiRepo = $this->entityManager->getRepository(\App\Entity\CustomEmoji::class);
+        foreach ($emojiRepo->findBy(['code' => ['smile', 'sad', 'invalid']]) as $emoji) {
+            $this->entityManager->remove($emoji);
+        }
+
         $this->entityManager->flush();
     }
 
@@ -93,6 +99,19 @@ class EmojiControllerTest extends WebTestCase
 
         $this->client->loginUser($user);
         $this->client->disableReboot();
+
+        // Create custom emojis in database to align with database-driven custom emoji list
+        $smileEmoji = new \App\Entity\CustomEmoji();
+        $smileEmoji->setCode('smile');
+        $smileEmoji->setFilename('smile.gif');
+        $this->entityManager->persist($smileEmoji);
+
+        $sadEmoji = new \App\Entity\CustomEmoji();
+        $sadEmoji->setCode('sad');
+        $sadEmoji->setFilename('sad.gif');
+        $this->entityManager->persist($sadEmoji);
+
+        $this->entityManager->flush();
 
         $container = $this->client->getContainer();
 

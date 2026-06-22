@@ -22,6 +22,7 @@ class DownloadEmojiMessageHandler
         private readonly string $emojiBaseUrl,
         private readonly LoggerInterface $logger,
         private readonly CacheInterface $cache,
+        private readonly \Doctrine\ORM\EntityManagerInterface $entityManager,
     ) {}
 
     public function __invoke(DownloadEmojiMessage $message): void
@@ -53,7 +54,35 @@ class DownloadEmojiMessageHandler
                 $content = $response->getContent();
                 $this->defaultStorage->write($storagePath, $content);
                 $this->cache->delete('emojis_filesystem_list');
-                $this->logger->info(sprintf('Emoji "%s" saved successfully to local storage.', $path));
+
+                // Derive code and filename
+                $noExt = substr($path, 0, -4);
+                $parts = explode('/', $noExt);
+                $filePart = (string) array_pop($parts);
+                if (\count($parts) === 0) {
+                    $code = $filePart;
+                    $filename = $filePart . '.gif';
+                } else {
+                    $dir = implode('/', $parts);
+                    $code = $filePart . ':' . $dir;
+                    $filename = $dir . '/' . $filePart . '.gif';
+                }
+
+                $customEmojiRepo = $this->entityManager->getRepository(\App\Entity\CustomEmoji::class);
+                $customEmoji = $customEmojiRepo->findOneBy(['code' => $code]);
+                if (!$customEmoji) {
+                    $customEmoji = new \App\Entity\CustomEmoji();
+                    $customEmoji->setCode($code);
+                    $customEmoji->setFilename($filename);
+                    $customEmoji->setTags([]);
+                    $this->entityManager->persist($customEmoji);
+                    $this->entityManager->flush();
+                }
+
+                $this->logger->info(sprintf(
+                    'Emoji "%s" saved successfully to local storage and registered in DB.',
+                    $path,
+                ));
             } else {
                 // Save empty content as negative cache
                 $this->defaultStorage->write($storagePath, '');
