@@ -31,6 +31,7 @@ framework:
             'App\Message\LlmQueryMessage': async_low
             'App\Message\ScanFileMessage': async_low
             'App\Message\DownloadEmojiMessage': async_low
+            'Symfony\Component\Mailer\Messenger\SendEmailMessage': async_low
 
 when@test:
     framework:
