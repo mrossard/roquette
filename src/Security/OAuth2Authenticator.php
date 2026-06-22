@@ -135,6 +135,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
         $username = (string) (
             $userData[$this->usernameField] ?? $userData['username'] ?? $userData['email'] ?? $userData['login'] ?? null
         );
+        $email = is_string($userData['mail'] ?? null) ? $userData['mail'] : null;
 
         if (!$oauthId || !$username) {
             $this->logger->error('Incomplete user info returned by OAuth2 server.', ['userData' => $userData]);
@@ -165,6 +166,10 @@ class OAuth2Authenticator extends AbstractAuthenticator
                     );
                 }
 
+                if ($email !== null && $user->getEmail() === null) {
+                    $user->setEmail($email);
+                }
+
                 $user->setOauthId($oauthId);
                 $user->setOauthProvider('generic');
                 $this->entityManager->flush();
@@ -181,6 +186,11 @@ class OAuth2Authenticator extends AbstractAuthenticator
                 $user->setDisplayName($username);
                 $user->setOauthId($oauthId);
                 $user->setOauthProvider('generic');
+
+                if ($email !== null) {
+                    $user->setEmail($email);
+                    $user->setEmailVerifiedAt(new \DateTimeImmutable());
+                }
 
                 // Set a random secure password
                 $randomPassword = bin2hex(random_bytes(16));
@@ -202,6 +212,18 @@ class OAuth2Authenticator extends AbstractAuthenticator
                 throw new CustomUserMessageAuthenticationException(
                     'Votre compte a été suspendu. Veuillez contacter un administrateur.',
                 );
+            }
+
+            if ($email !== null && $user->getEmail() === null) {
+                $user->setEmail($email);
+                $user->setEmailVerifiedAt(new \DateTimeImmutable());
+                $this->entityManager->flush();
+                $this->logger->info(sprintf(
+                    'Filled missing email "%s" for OAuth user "%s" (ID: %d).',
+                    $email,
+                    $user->getUsername(),
+                    $user->getId(),
+                ));
             }
 
             $this->logger->debug(sprintf(

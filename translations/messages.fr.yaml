@@ -620,3 +620,28 @@ channel.assistant.description: "Discussion privée avec l'Assistant"
 'Connexion impossible avec un compte système.': 'Connexion impossible avec un compte système.'
 "Ce nom d'utilisateur est réservé par le système.": "Ce nom d'utilisateur est réservé par le système."
 "Impossible de modifier ou de promouvoir le compte système de l'assistant.": "Impossible de modifier ou de promouvoir le compte système de l'assistant."
+Adresse email: Adresse email
+'Adresse email (non modifiable)': 'Adresse email (non modifiable)'
+"Nom d'utilisateur ou email": "Nom d'utilisateur ou email"
+'Entrez votre nom ou email': 'Entrez votre nom ou email'
+Vérifié: Vérifié
+'Non vérifié': 'Non vérifié'
+"Renvoyer l'email de vérification": "Renvoyer l'email de vérification"
+'Votre compte a été créé avec succès ! Un email de vérification vous a été envoyé.': 'Votre compte a été créé avec succès ! Un email de vérification vous a été envoyé.'
+'Votre adresse email a été vérifiée avec succès !': 'Votre adresse email a été vérifiée avec succès !'
+'Lien de vérification invalide ou expiré.': 'Lien de vérification invalide ou expiré.'
+'Email de vérification renvoyé !': 'Email de vérification renvoyé !'
+'Votre adresse email est déjà vérifiée.': 'Votre adresse email est déjà vérifiée.'
+"Aucune adresse email associée à votre compte.": "Aucune adresse email associée à votre compte."
+"Impossible d'envoyer l'email de vérification. Veuillez réessayer plus tard.": "Impossible d'envoyer l'email de vérification. Veuillez réessayer plus tard."
+'exemple@email.com': 'exemple@email.com'
+'Vérification de votre adresse email Roquette': 'Vérification de votre adresse email Roquette'
+'Vérification de votre adresse email': 'Vérification de votre adresse email'
+"Bonjour %username%": "Bonjour %username%"
+"Merci d'avoir créé un compte sur Roquette ! Pour vérifier votre adresse email, veuillez cliquer sur le lien ci-dessous :": "Merci d'avoir créé un compte sur Roquette ! Pour vérifier votre adresse email, veuillez cliquer sur le lien ci-dessous :"
+'Vérifier mon adresse email': 'Vérifier mon adresse email'
+"Si vous n'avez pas créé de compte sur Roquette, ignorez cet email.": "Si vous n'avez pas créé de compte sur Roquette, ignorez cet email."
+'Ce lien de vérification expirera dans 24 heures.': 'Ce lien de vérification expirera dans 24 heures.'
+'Cette adresse email est déjà utilisée.': 'Cette adresse email est déjà utilisée.'
+'Veuillez saisir une adresse email.': 'Veuillez saisir une adresse email.'
+'Veuillez saisir une adresse email valide.': 'Veuillez saisir une adresse email valide.'

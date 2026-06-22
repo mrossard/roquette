@@ -10,6 +10,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -28,11 +29,10 @@ class CreateAdminCommand extends Command
 
     protected function configure(): void
     {
-        $this->addArgument(
-            'username',
-            InputArgument::OPTIONAL,
-            'Le nom d\'utilisateur de l\'administrateur',
-        )->addArgument('password', InputArgument::OPTIONAL, 'Le mot de passe de l\'administrateur');
+        $this
+            ->addArgument('username', InputArgument::OPTIONAL, 'Le nom d\'utilisateur de l\'administrateur')
+            ->addArgument('password', InputArgument::OPTIONAL, 'Le mot de passe de l\'administrateur')
+            ->addOption('email', null, InputOption::VALUE_OPTIONAL, 'Adresse email de l\'administrateur');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -41,6 +41,7 @@ class CreateAdminCommand extends Command
 
         $username = $input->getArgument('username');
         $password = $input->getArgument('password');
+        $email = $input->getOption('email');
 
         if (!$username) {
             $username = $io->ask('Nom d\'utilisateur', null, function ($value) {
@@ -96,6 +97,10 @@ class CreateAdminCommand extends Command
         $user->setUsername($username);
         $user->setAdmin(true);
         $user->setRoles(['ROLE_USER', 'ROLE_ADMIN']);
+
+        if ($email !== null) {
+            $user->setEmail($email);
+        }
 
         $hashedPassword = $this->passwordHasher->hashPassword($user, $password);
         $user->setPassword($hashedPassword);

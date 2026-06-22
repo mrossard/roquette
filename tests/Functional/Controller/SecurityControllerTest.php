@@ -37,7 +37,12 @@ class SecurityControllerTest extends WebTestCase
     private function cleanupUsers(): void
     {
         $userRepository = $this->entityManager->getRepository(User::class);
-        $testUsers = $userRepository->findBy(['username' => ['test_user_functional', 'test_user_login']]);
+        $testUsers = $userRepository->findBy(['username' => [
+            'test_user_functional',
+            'test_user_login',
+            'turlututu',
+            'Turlututu',
+        ]]);
 
         foreach ($testUsers as $user) {
             $this->entityManager->remove($user);
@@ -72,6 +77,7 @@ class SecurityControllerTest extends WebTestCase
             ->selectButton('Créer le compte')
             ->form([
                 'registration_form[username]' => 'test_user_functional',
+                'registration_form[email]' => 'test@example.com',
                 'registration_form[plainPassword]' => 'password123',
             ]);
 
@@ -85,6 +91,42 @@ class SecurityControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function testRegisterClashingSlugFails(): void
+    {
+        $crawler = $this->client->request('GET', '/register');
+
+        $form = $crawler
+            ->selectButton('Créer le compte')
+            ->form([
+                'registration_form[username]' => 'turlututu',
+                'registration_form[email]' => 'test1@example.com',
+                'registration_form[plainPassword]' => 'password123',
+            ]);
+
+        $this->client->submit($form);
+        $this->assertResponseRedirects('/login');
+
+        // Re-create client to isolate session
+        self::ensureKernelShutdown();
+        $this->client = self::createClient();
+
+        $crawler = $this->client->request('GET', '/register');
+
+        $form = $crawler
+            ->selectButton('Créer le compte')
+            ->form([
+                'registration_form[username]' => 'Turlututu',
+                'registration_form[email]' => 'test2@example.com',
+                'registration_form[plainPassword]' => 'password123',
+            ]);
+
+        $this->client->submit($form);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('div.error-alert', 'Ce nom d\'utilisateur est déjà pris.');
+    }
+
+    #[Test]
     public function testRegisterAsRobotUserFails(): void
     {
         $crawler = $this->client->request('GET', '/register');
@@ -93,6 +135,7 @@ class SecurityControllerTest extends WebTestCase
             ->selectButton('Créer le compte')
             ->form([
                 'registration_form[username]' => 'robot-roquette',
+                'registration_form[email]' => 'robot@example.com',
                 'registration_form[plainPassword]' => 'password123',
             ]);
 
@@ -112,6 +155,7 @@ class SecurityControllerTest extends WebTestCase
             ->selectButton('Créer le compte')
             ->form([
                 'registration_form[username]' => 'Robot-Roquette',
+                'registration_form[email]' => 'robot@example.com',
                 'registration_form[plainPassword]' => 'password123',
             ]);
 

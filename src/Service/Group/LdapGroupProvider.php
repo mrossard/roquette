@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Service\Group;
 
 use App\Entity\User;
+use LDAP\Connection;
 use Psr\Log\LoggerInterface;
 
-class LdapGroupProvider implements GroupProviderInterface
+readonly class LdapGroupProvider implements GroupProviderInterface
 {
     /**
      * @param array{
@@ -26,20 +27,15 @@ class LdapGroupProvider implements GroupProviderInterface
      * } $config
      */
     public function __construct(
-        private readonly LoggerInterface $logger,
-        private readonly array $config,
+        private LoggerInterface $logger,
+        private array $config,
     ) {}
 
     /**
-     * @return \LDAP\Connection|false
+     * @return Connection|false
      */
-    private function getConnection()
+    private function getConnection(): false|Connection
     {
-        if (!function_exists('ldap_connect')) {
-            $this->logger->error('The LDAP PHP extension is not installed.');
-            return false;
-        }
-
         $url = sprintf(
             '%s://%s:%d',
             $this->config['encryption'] === 'ssl' ? 'ldaps' : 'ldap',
@@ -102,7 +98,7 @@ class LdapGroupProvider implements GroupProviderInterface
     }
 
     /**
-     * @param \LDAP\Connection $conn
+     * @param Connection $conn
      */
     private function getUserDn(User $user, $conn): string
     {

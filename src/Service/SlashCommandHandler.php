@@ -136,5 +136,4 @@ class SlashCommandHandler
 
         return new Response($formHtml . "\n" . $oobHtml);
     }
-
 }

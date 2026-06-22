@@ -58,4 +58,3 @@ final class MessageCacheSubscriber
         $this->twigCache->deleteItem('feed_item_todo_' . $id);
     }
 }
-

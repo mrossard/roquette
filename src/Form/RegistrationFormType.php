@@ -7,11 +7,13 @@ namespace App\Form;
 use App\Entity\User;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Callback;
+use Symfony\Component\Validator\Constraints\Email;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\NotCompromisedPassword;
@@ -38,6 +40,12 @@ class RegistrationFormType extends AbstractType
                     }
                 }),
             ],
+        ])->add('email', EmailType::class, [
+            'constraints' => [
+                new NotBlank(message: 'Veuillez saisir une adresse email.'),
+                new Email(message: 'Veuillez saisir une adresse email valide.'),
+                new Length(max: 180, maxMessage: 'L\'adresse email ne doit pas dépasser {{ limit }} caractères.'),
+            ],
         ])->add('plainPassword', PasswordType::class, [
             'mapped' => false,
             'attr' => ['autocomplete' => 'new-password'],
@@ -61,6 +69,12 @@ class RegistrationFormType extends AbstractType
             'data_class' => User::class,
             'constraints' => [
                 new UniqueEntity(fields: 'username', message: 'Ce nom d\'utilisateur est déjà pris.'),
+                new UniqueEntity(fields: 'email', message: 'Cette adresse email est déjà utilisée.'),
+                new UniqueEntity(
+                    fields: 'slug',
+                    errorPath: 'username',
+                    message: 'Ce nom d\'utilisateur est déjà pris.',
+                ),
             ],
         ]);
     }

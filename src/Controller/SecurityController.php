@@ -10,9 +10,12 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -24,6 +27,7 @@ final class SecurityController extends AbstractController
         #[Autowire(env: 'bool:AUTH_OAUTH_ENABLED')]
         private bool $authOauthEnabled,
         private TranslatorInterface $translator,
+        private MailerInterface $mailer,
     ) {}
 
     #[Route('/login', name: 'app_login')]
@@ -105,9 +109,53 @@ final class SecurityController extends AbstractController
                 implode(', ', $user->getRoles()),
             ));
 
+            $email = $user->getEmail();
+            if ($email !== null) {
+                $token = bin2hex(random_bytes(32));
+                $user->setEmailVerificationToken($token);
+                $entityManager->flush();
+
+                $verificationUrl = $this->generateUrl(
+                    'app_verify_email',
+                    ['token' => $token],
+                    UrlGeneratorInterface::ABSOLUTE_URL,
+                );
+
+                try {
+                    $emailMessage = new Email()
+                        ->from('noreply@roquette.local')
+                        ->to($email)
+                        ->subject($this->translator->trans('Vérification de votre adresse email Roquette'))
+                        ->html($this->renderView('emails/verify_email.html.twig', [
+                            'user' => $user,
+                            'verificationUrl' => $verificationUrl,
+                        ]))
+                        ->text($this->renderView('emails/verify_email.txt.twig', [
+                            'user' => $user,
+                            'verificationUrl' => $verificationUrl,
+                        ]));
+
+                    $this->mailer->send($emailMessage);
+                    $logger->info(sprintf(
+                        'Verification email sent to "%s" for user "%s".',
+                        $email,
+                        $user->getUsername(),
+                    ));
+                } catch (\Throwable $e) {
+                    $logger->error(sprintf(
+                        'Failed to send verification email to "%s" for user "%s": %s',
+                        $email,
+                        $user->getUsername(),
+                        $e->getMessage(),
+                    ));
+                }
+            }
+
             $this->addFlash(
                 'success',
-                $this->translator->trans('Votre compte a été créé avec succès ! Connectez-vous maintenant.'),
+                $this->translator->trans(
+                    'Votre compte a été créé avec succès ! Un email de vérification vous a été envoyé.',
+                ),
             );
             return $this->redirectToRoute('app_login');
         }

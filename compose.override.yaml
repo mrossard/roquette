@@ -14,6 +14,14 @@ services:
       MERCURE_PUBLIC_URL: 'https://lutins-devoauth.u-bordeaux.fr/.well-known/mercure'
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
+      MAILER_DSN: smtp://mailer:1025
     volumes:
       - ./:/app
 
+###> symfony/mailer ###
+  mailer:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+###< symfony/mailer ###

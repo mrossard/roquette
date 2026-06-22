@@ -36,9 +36,9 @@
         {% if auth_form_enabled %}
         <form action="{{ path('app_login') }}" method="post" class="input-form">
             <div class="input-group">
-                <label for="username">{{ "Nom d'utilisateur"|trans }}</label>
+                <label for="username">{{ "Nom d'utilisateur ou email"|trans }}</label>
                 <input type="text" id="username" name="_username" value="{{ last_username }}" required
-                       autocomplete="username" autofocus placeholder="{{ 'Entrez votre nom'|trans }}">
+                       autocomplete="username" autofocus placeholder="{{ 'Entrez votre nom ou email'|trans }}">
             </div>
 
             <div class="input-group">

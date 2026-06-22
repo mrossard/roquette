@@ -1,0 +1,8 @@
+{{ 'Bonjour %username%'|trans({'%username%': user.displayName|default(user.username)}) }},
+
+{{ 'Merci d\'avoir créé un compte sur Roquette ! Pour vérifier votre adresse email, veuillez cliquer sur le lien ci-dessous :'|trans }}
+
+{{ verificationUrl }}
+
+{{ 'Si vous n\'avez pas créé de compte sur Roquette, ignorez cet email.'|trans }}
+{{ 'Ce lien de vérification expirera dans 24 heures.'|trans }}

@@ -60,6 +60,19 @@
                         </div>
 
                         <div class="input-group">
+                            <label for="email-static">{{ "Adresse email (non modifiable)"|trans }}</label>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <input type="email" id="email-static" value="{{ user.email }}" disabled
+                                       style="opacity: 0.6; cursor: not-allowed; background: var(--bg-input-sidebar); border: 1px solid var(--border-input); flex: 1;">
+                                {% if user.emailVerified %}
+                                    <span style="color: var(--success); font-size: 0.85rem; white-space: nowrap;">✓ {{ 'Vérifié'|trans }}</span>
+                                {% else %}
+                                    <span style="color: var(--warning); font-size: 0.85rem; white-space: nowrap;">{{ 'Non vérifié'|trans }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="input-group">
                             <label for="displayName">{{ "Nom d'affichage"|trans }}</label>
                             <input type="text" name="displayName" id="displayName" value="{{ user.displayName }}"
                                    placeholder="{{ 'Ex: Jean Dupont'|trans }}" maxlength="30">

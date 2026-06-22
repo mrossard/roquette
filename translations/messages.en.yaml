@@ -620,3 +620,28 @@ channel.assistant.description: "Private discussion with the Assistant"
 'Connexion impossible avec un compte système.': 'Cannot log in using a system account.'
 "Ce nom d'utilisateur est réservé par le système.": "This username is reserved by the system."
 "Impossible de modifier ou de promouvoir le compte système de l'assistant.": "Cannot modify or promote the system assistant account."
+Adresse email: Email
+'Adresse email (non modifiable)': 'Email (cannot be changed)'
+"Nom d'utilisateur ou email": 'Username or email'
+'Entrez votre nom ou email': 'Enter your name or email'
+Vérifié: Verified
+'Non vérifié': 'Unverified'
+"Renvoyer l'email de vérification": 'Resend verification email'
+'Votre compte a été créé avec succès ! Un email de vérification vous a été envoyé.': 'Your account has been created successfully! A verification email has been sent to you.'
+'Votre adresse email a été vérifiée avec succès !': 'Your email address has been verified successfully!'
+'Lien de vérification invalide ou expiré.': 'Invalid or expired verification link.'
+'Email de vérification renvoyé !': 'Verification email resent!'
+'Votre adresse email est déjà vérifiée.': 'Your email address is already verified.'
+"Aucune adresse email associée à votre compte.": 'No email address associated with your account.'
+"Impossible d'envoyer l'email de vérification. Veuillez réessayer plus tard.": 'Unable to send verification email. Please try again later.'
+'exemple@email.com': 'you@example.com'
+'Vérification de votre adresse email Roquette': 'Verify your Roquette email address'
+'Vérification de votre adresse email': 'Verify your email address'
+"Bonjour %username%": "Hello %username%"
+"Merci d'avoir créé un compte sur Roquette ! Pour vérifier votre adresse email, veuillez cliquer sur le lien ci-dessous :": 'Thank you for creating a Roquette account! To verify your email address, please click the link below:'
+'Vérifier mon adresse email': 'Verify my email address'
+"Si vous n'avez pas créé de compte sur Roquette, ignorez cet email.": 'If you did not create a Roquette account, please ignore this email.'
+'Ce lien de vérification expirera dans 24 heures.': 'This verification link will expire in 24 hours.'
+'Cette adresse email est déjà utilisée.': 'This email address is already in use.'
+'Veuillez saisir une adresse email.': 'Please enter an email address.'
+'Veuillez saisir une adresse email valide.': 'Please enter a valid email address.'

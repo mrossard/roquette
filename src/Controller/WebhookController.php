@@ -52,7 +52,7 @@ final class WebhookController extends AbstractController
             $webhook,
             (string) $content,
             $customName ? (string) $customName : null,
-            $customAvatar ? (string) $customAvatar : null
+            $customAvatar ? (string) $customAvatar : null,
         );
 
         return new JsonResponse([

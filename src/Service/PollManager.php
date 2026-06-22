@@ -65,10 +65,11 @@ class PollManager
         }
 
         $this->entityManager->flush();
-//        $this->entityManager->refresh($poll->getMessage());
-//        $this->entityManager->refresh($poll);
-//        foreach ($poll->getOptions() as $opt) {
-//            $this->entityManager->refresh($opt);
-//        }
+
+        //        $this->entityManager->refresh($poll->getMessage());
+        //        $this->entityManager->refresh($poll);
+        //        foreach ($poll->getOptions() as $opt) {
+        //            $this->entityManager->refresh($opt);
+        //        }
     }
 }

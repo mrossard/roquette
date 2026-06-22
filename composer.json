@@ -7,7 +7,9 @@
         "php": ">=8.4",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "ext-ldap": "*",
         "ext-mbstring": "*",
+        "ext-zip": "*",
         "doctrine/doctrine-bundle": "^3.2.4",
         "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.6.7",
@@ -31,6 +33,7 @@
         "symfony/form": "8.0.*",
         "symfony/framework-bundle": "8.0.*",
         "symfony/http-client": "8.0.*",
+        "symfony/mailer": "8.0.*",
         "symfony/mercure-bundle": "^0.4.2",
         "symfony/messenger": "8.0.*",
         "symfony/mime": "8.0.*",
@@ -48,8 +51,7 @@
         "twig/cache-extra": "^3.24",
         "twig/extra-bundle": "^2.12|^3.24",
         "twig/string-extra": "^3.24",
-        "twig/twig": "^2.12|^3.27.1",
-        "ext-zip": "*"
+        "twig/twig": "^2.12|^3.27.1"
     },
     "config": {
         "allow-plugins": {

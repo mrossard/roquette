@@ -6,9 +6,16 @@ security:
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
         app_user_provider:
+            chain:
+                providers: [app_user_username, app_user_email]
+        app_user_username:
             entity:
                 class: App\Entity\User
                 property: username
+        app_user_email:
+            entity:
+                class: App\Entity\User
+                property: email
 
     firewalls:
         dev:

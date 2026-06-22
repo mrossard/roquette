@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Vérification de votre adresse email'|trans }}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <tr>
+            <td style="text-align: center; padding: 30px 0;">
+                <span style="font-size: 48px;">🚀</span>
+                <h1 style="color: #333; margin: 10px 0 5px;">Roquette</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="background: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h2 style="color: #333; margin-top: 0;">{{ 'Vérification de votre adresse email'|trans }}</h2>
+                <p style="color: #666; line-height: 1.6;">
+                    {{ 'Bonjour %username%'|trans({'%username%': user.displayName|default(user.username)}) }},
+                </p>
+                <p style="color: #666; line-height: 1.6;">
+                    {{ 'Merci d\'avoir créé un compte sur Roquette ! Pour vérifier votre adresse email, veuillez cliquer sur le lien ci-dessous :'|trans }}
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                    <tr>
+                        <td style="background: #5865F2; border-radius: 8px; text-align: center;">
+                            <a href="{{ verificationUrl }}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">{{ 'Vérifier mon adresse email'|trans }}</a>
+                        </td>
+                    </tr>
+                </table>
+                <p style="color: #999; font-size: 14px; line-height: 1.5;">
+                    {{ 'Si vous n\'avez pas créé de compte sur Roquette, ignorez cet email.'|trans }}
+                </p>
+                <p style="color: #999; font-size: 14px; line-height: 1.5;">
+                    {{ 'Ce lien de vérification expirera dans 24 heures.'|trans }}
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+                <p>Roquette — Symfony + HTMX + Mercure</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
