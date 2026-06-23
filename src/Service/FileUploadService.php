@@ -7,6 +7,7 @@ namespace App\Service;
 use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\Mime\MimeTypes;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -31,6 +32,8 @@ class FileUploadService
         'xlsx',
         'ppt',
         'pptx',
+        'json',
+        'html',
         'mp3',
         'ogg',
         'wav',
@@ -54,6 +57,8 @@ class FileUploadService
         'application/pdf',
         'text/plain',
         'text/markdown',
+        'application/json',
+        'text/html',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'application/vnd.ms-excel',
@@ -83,7 +88,6 @@ class FileUploadService
 
     public function __construct(
         private FilesystemOperator $defaultStorage,
-        private ClamavService $clamavService,
         private LoggerInterface $logger,
         private TranslatorInterface $translator,
     ) {}
@@ -142,14 +146,30 @@ class FileUploadService
         }
 
         if (!in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
-            $this->logger->warning(sprintf(
-                'File upload failed validation: MIME type "%s" for file "%s" is not allowed.',
-                $mimeType,
-                $file->getClientOriginalName(),
-            ));
-            throw new \InvalidArgumentException($this->translator->trans('Le type MIME "%mimeType%" n\'est pas autorisé.', [
-                '%mimeType%' => $mimeType,
-            ]));
+            // Content-based MIME detection can misidentify text files (e.g.,
+            // markdown with code blocks detected as JavaScript). When the
+            // extension is explicitly allowed, fall back to the standard MIME
+            // type mapped to that extension.
+            if (in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
+                $mimeFromExt = (new MimeTypes())->getMimeTypes($extension);
+                foreach ($mimeFromExt as $candidate) {
+                    if (in_array($candidate, self::ALLOWED_MIME_TYPES, true)) {
+                        $mimeType = $candidate;
+                        break;
+                    }
+                }
+            }
+
+            if (!in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
+                $this->logger->warning(sprintf(
+                    'File upload failed validation: MIME type "%s" for file "%s" is not allowed.',
+                    $mimeType,
+                    $file->getClientOriginalName(),
+                ));
+                throw new \InvalidArgumentException($this->translator->trans('Le type MIME "%mimeType%" n\'est pas autorisé.', [
+                    '%mimeType%' => $mimeType,
+                ]));
+            }
         }
 
         $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);

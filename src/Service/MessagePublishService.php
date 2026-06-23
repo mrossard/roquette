@@ -11,6 +11,7 @@ use App\Message\LlmQueryMessage;
 use App\Message\ScanFileMessage;
 use App\Repository\MessageRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -77,7 +78,7 @@ class MessagePublishService
                 try {
                     $this->fileUploadService->uploadAndAttachToMessage($file, $message);
                     $message->setVirusScanStatus('pending');
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     return new PublishResult(success: false, channel: $channel, error: $e->getMessage());
                 }
             }

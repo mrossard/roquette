@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
-use App\Service\ClamavService;
 use App\Service\FileUploadService;
 use League\Flysystem\FilesystemOperator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -18,7 +17,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 class FileUploadServiceTest extends TestCase
 {
     private FilesystemOperator&MockObject $storage;
-    private ClamavService&MockObject $clamavService;
     private LoggerInterface&MockObject $logger;
     private \Symfony\Contracts\Translation\TranslatorInterface&MockObject $translator;
     private FileUploadService $service;
@@ -26,14 +24,12 @@ class FileUploadServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->storage = $this->createMock(FilesystemOperator::class);
-        $this->clamavService = $this->createMock(ClamavService::class);
-        $this->clamavService->method('scanFile')->willReturn(true);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->translator = $this->createMock(\Symfony\Contracts\Translation\TranslatorInterface::class);
         $this->translator
             ->method('trans')
             ->willReturnCallback(static fn($id, $parameters = []) => strtr($id, $parameters));
-        $this->service = new FileUploadService($this->storage, $this->clamavService, $this->logger, $this->translator);
+        $this->service = new FileUploadService($this->storage, $this->logger, $this->translator);
     }
 
     #[Test]
@@ -52,19 +48,45 @@ class FileUploadServiceTest extends TestCase
     }
 
     #[Test]
-    public function uploadRejectsUnallowedMimeType(): void
+    public function uploadFallsBackToExtensionBasedMimeType(): void
     {
         $file = $this->createMock(UploadedFile::class);
         $file->method('isValid')->willReturn(true);
-        $file->method('getClientOriginalName')->willReturn('test.png');
-        $file->method('getClientOriginalExtension')->willReturn('png');
-        // Let's pass an invalid mime type for a PNG extension
-        $file->method('getClientMimeType')->willReturn('text/html');
+        $file->method('getClientOriginalName')->willReturn('doc.md');
+        $file->method('getClientOriginalExtension')->willReturn('md');
+        // Content-based detection incorrectly returns text/javascript
+        $file->method('getMimeType')->willReturn('text/javascript');
+        $file->method('getSize')->willReturn(1024);
+        $file->method('getPathname')->willReturn(__FILE__);
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Le type MIME "text/html" n\'est pas autorisé.');
+        $this->storage
+            ->expects($this->once())
+            ->method('writeStream');
 
-        $this->service->upload($file);
+        $result = $this->service->upload($file);
+
+        $this->assertSame('text/markdown', $result['mimeType']);
+    }
+
+    #[Test]
+    public function uploadAcceptsJsonFiles(): void
+    {
+        $file = $this->createMock(UploadedFile::class);
+        $file->method('isValid')->willReturn(true);
+        $file->method('getClientOriginalName')->willReturn('data.json');
+        $file->method('getClientOriginalExtension')->willReturn('json');
+        $file->method('getClientMimeType')->willReturn('application/json');
+        $file->method('getSize')->willReturn(512);
+        $file->method('getPathname')->willReturn(__FILE__);
+
+        $this->storage
+            ->expects($this->once())
+            ->method('writeStream');
+
+        $result = $this->service->upload($file);
+
+        $this->assertSame('data.json', $result['fileName']);
+        $this->assertSame('application/json', $result['mimeType']);
     }
 
     #[Test]

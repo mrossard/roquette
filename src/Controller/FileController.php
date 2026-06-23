@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
+use App\Entity\Message;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Service\FileUploadService;
@@ -13,6 +14,7 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -111,10 +113,7 @@ final class FileController extends AbstractController
             },
             200,
             [
-                'Content-Type' =>
-                    $message->getMimeType() !== null && $message->getMimeType() !== ''
-                        ? $message->getMimeType()
-                        : 'application/octet-stream',
+                'Content-Type' => self::previewContentType($message),
                 'Content-Disposition' => HeaderUtils::makeDisposition(
                     HeaderUtils::DISPOSITION_INLINE,
                     $message->getFileName(),
@@ -248,7 +247,7 @@ final class FileController extends AbstractController
         return $fallback;
     }
 
-    private function checkVirusScanStatus(\App\Entity\Message $message): void
+    private function checkVirusScanStatus(Message $message): void
     {
         if ($message->getVirusScanStatus() !== null && $message->getVirusScanStatus() !== 'clean') {
             throw $this->createAccessDeniedException(
@@ -268,7 +267,7 @@ final class FileController extends AbstractController
     ): Response {
         try {
             $channel = $this->findAndAuthorizeChannel($slug, $channelRepository);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+        } catch (HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
@@ -294,5 +293,20 @@ final class FileController extends AbstractController
             'hasMore' => $hasMore,
             'nextBeforeId' => $nextBeforeId,
         ]);
+    }
+
+    /**
+     * Returns the Content-Type to use for inline preview.
+     * HTML files are served as text/plain to prevent browser rendering.
+     */
+    private static function previewContentType(Message $message): string
+    {
+        $mimeType = $message->getMimeType();
+
+        if ($mimeType === null || $mimeType === '') {
+            return 'application/octet-stream';
+        }
+
+        return strtolower($mimeType) === 'text/html' ? 'text/plain' : $mimeType;
     }
 }
