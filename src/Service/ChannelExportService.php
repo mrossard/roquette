@@ -10,9 +10,9 @@ use App\Entity\Message;
 use App\Entity\User;
 use App\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\HeaderUtils;
-use Symfony\Component\HttpFoundation\Response;
+
+
+
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -149,9 +149,9 @@ readonly class ChannelExportService
 
         // Cleanup
         foreach ($tmpFiles as $tmpFile) {
-            if (file_exists($tmpFile)) {
-                unlink($tmpFile);
-            }
+            if (!(file_exists($tmpFile))) { continue; }
+
+unlink($tmpFile);
         }
         if (file_exists($zipFile)) {
             unlink($zipFile);
@@ -207,9 +207,9 @@ readonly class ChannelExportService
 
         // Cleanup
         foreach ($tmpFiles as $tmpFile) {
-            if (file_exists($tmpFile)) {
-                unlink($tmpFile);
-            }
+            if (!(file_exists($tmpFile))) { continue; }
+
+unlink($tmpFile);
         }
         if (file_exists($tarFile)) {
             unlink($tarFile);

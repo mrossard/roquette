@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
+use App\Repository\ChannelRepository;
+use App\Repository\UserRepository;
 use App\Service\MessageFormatter;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -18,8 +20,8 @@ class MessageFormatterTest extends TestCase
     private MessageFormatter $formatter;
     private Security $security;
     private HttpClientInterface $httpClient;
-    private \App\Repository\ChannelRepository $channelRepository;
-    private \App\Repository\UserRepository $userRepository;
+    private ChannelRepository $channelRepository;
+    private UserRepository $userRepository;
     private string $testEmojisDir;
 
     protected function setUp(): void
@@ -27,8 +29,8 @@ class MessageFormatterTest extends TestCase
         $this->security = $this->createStub(Security::class);
         $this->security->method('getUser')->willReturn(null);
         $this->httpClient = $this->createMock(HttpClientInterface::class);
-        $this->channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
-        $this->userRepository = $this->createMock(\App\Repository\UserRepository::class);
+        $this->channelRepository = $this->createMock(ChannelRepository::class);
+        $this->userRepository = $this->createMock(UserRepository::class);
         $this->userRepository
             ->method('findOneBy')
             ->willReturnCallback(function ($criteria) {
@@ -55,8 +57,9 @@ class MessageFormatterTest extends TestCase
                 }
                 $users = [];
                 foreach ($usernames as $username) {
-                    if ($username === 'alice' || $username === 'bob') {
-                        $user = $this->createStub(\App\Entity\User::class);
+                    if (!($username === 'alice' || $username === 'bob')) { continue; }
+
+$user = $this->createStub(\App\Entity\User::class);
                         $user->method('getUsername')->willReturn($username);
                         $user->method('getUserIdentifier')->willReturn($username);
                         if ($username === 'alice') {
@@ -65,7 +68,6 @@ class MessageFormatterTest extends TestCase
                             $user->method('getDisplayName')->willReturn(null);
                         }
                         $users[] = $user;
-                    }
                 }
                 return $users;
             });

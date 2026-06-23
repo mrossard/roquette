@@ -25,7 +25,7 @@ final class EmailVerificationController extends AbstractController
     ) {}
 
     #[Route('/verify-email/{token}', name: 'app_verify_email', methods: ['GET'])]
-    public function verify(string $token, EntityManagerInterface $entityManager): Response
+    public function verify(#[\SensitiveParameter] string $token, EntityManagerInterface $entityManager): Response
     {
         $user = $entityManager
             ->getRepository(User::class)

@@ -331,7 +331,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->emailVerificationToken;
     }
 
-    public function setEmailVerificationToken(?string $emailVerificationToken): static
+    public function setEmailVerificationToken(#[\SensitiveParameter] ?string $emailVerificationToken): static
     {
         $this->emailVerificationToken = $emailVerificationToken;
 
