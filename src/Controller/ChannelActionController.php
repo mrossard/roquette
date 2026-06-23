@@ -16,7 +16,6 @@ use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
 use App\Service\AuditLoggerService;
-use App\Service\ChannelExportService;
 use App\Service\ChannelManager;
 use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,6 +24,8 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -86,13 +87,13 @@ final class ChannelActionController extends AbstractController
 
         try {
             $channel = $channelManager->findChannelBySlug($slug);
-        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+        } catch (NotFoundHttpException) {
             return $this->redirectToRoute('app_dashboard');
         }
 
         try {
             $redirectSlug = $channelManager->delete($channel, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+        } catch (HttpExceptionInterface $e) {
             throw $this->createAccessDeniedException($e->getMessage());
         }
 
@@ -224,7 +225,7 @@ final class ChannelActionController extends AbstractController
 
         try {
             $channel = $channelManager->findChannelBySlug($slug);
-        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+        } catch (NotFoundHttpException) {
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -236,7 +237,7 @@ final class ChannelActionController extends AbstractController
 
         try {
             $channelManager->updateRetention($channel, $retentionVal, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+        } catch (HttpExceptionInterface $e) {
             throw $this->createAccessDeniedException($e->getMessage());
         }
 
@@ -255,7 +256,7 @@ final class ChannelActionController extends AbstractController
 
         try {
             $channel = $channelManager->findChannelBySlug($slug);
-        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+        } catch (NotFoundHttpException) {
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -280,7 +281,7 @@ final class ChannelActionController extends AbstractController
                 ],
                 $currentUser,
             );
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+        } catch (HttpExceptionInterface $e) {
             throw $this->createAccessDeniedException($e->getMessage());
         }
 
@@ -300,7 +301,7 @@ final class ChannelActionController extends AbstractController
 
         try {
             $channel = $this->findAndAuthorizeChannel($slug, $channelRepository);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+        } catch (HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 

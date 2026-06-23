@@ -194,6 +194,7 @@
                                       data-confirm="{{ 'Êtes-vous sûr de vouloir quitter ce canal ?'|trans }}"
                                       hx-boost="false"
                                       style="margin: 0; padding: 0; display: block; width: 100%;">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                     <button type="submit" class="user-status-option"
                                             style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;"
                                             role="menuitem">

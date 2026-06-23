@@ -39,6 +39,7 @@
                                 <form action="{{ path('app_channel_leave', {slug: channel.slug}) }}" method="POST"
                                       style="flex: 1;" hx-boost="false"
                                       data-confirm="Quitter le canal #{{ channel.name }} ?">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                     <button type="submit" class="btn-logout"
                                             style="width: 100%; text-align: center; cursor: pointer; padding: 0.6rem;">
                                         {{ 'Quitter'|trans }}
