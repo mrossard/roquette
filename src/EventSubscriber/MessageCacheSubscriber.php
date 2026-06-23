@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\EventSubscriber;
 
+use App\Entity\Channel;
 use App\Entity\Message;
+use App\Entity\PollVote;
+use App\Twig\AppExtension;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\PostPersistEventArgs;
+use Doctrine\ORM\Event\PostRemoveEventArgs;
 use Doctrine\ORM\Event\PostUpdateEventArgs;
 use Doctrine\ORM\Events;
 use Psr\Cache\CacheItemPoolInterface;
@@ -14,10 +18,11 @@ use Psr\Cache\CacheItemPoolInterface;
 #[AsDoctrineListener(Events::postPersist)]
 #[AsDoctrineListener(Events::postUpdate)]
 #[AsDoctrineListener(Events::postRemove)]
-final class MessageCacheSubscriber
+final readonly class MessageCacheSubscriber
 {
     public function __construct(
-        private readonly CacheItemPoolInterface $twigCache,
+        private CacheItemPoolInterface $twigCache,
+        private AppExtension $appExtension,
     ) {}
 
     public function postPersist(PostPersistEventArgs $args): void
@@ -30,7 +35,7 @@ final class MessageCacheSubscriber
         $this->handleEvent($args->getObject());
     }
 
-    public function postRemove(\Doctrine\ORM\Event\PostRemoveEventArgs $args): void
+    public function postRemove(PostRemoveEventArgs $args): void
     {
         $this->handleEvent($args->getObject());
     }
@@ -39,7 +44,12 @@ final class MessageCacheSubscriber
     {
         if ($entity instanceof Message) {
             $this->invalidate($entity);
-        } elseif ($entity instanceof \App\Entity\PollVote) {
+        } elseif ($entity instanceof Channel) {
+            $message = $entity->getParentMessage();
+            if ($message instanceof Message) {
+                $this->invalidate($message);
+            }
+        } elseif ($entity instanceof PollVote) {
             $message = $entity->getOption()?->getPoll()?->getMessage();
             if ($message instanceof Message) {
                 $this->invalidate($message);
@@ -56,5 +66,6 @@ final class MessageCacheSubscriber
 
         $this->twigCache->deleteItem('feed_item_body_' . $id);
         $this->twigCache->deleteItem('feed_item_todo_' . $id);
+        $this->appExtension->resetSubchannelCache();
     }
 }

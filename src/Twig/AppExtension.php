@@ -126,6 +126,11 @@ class AppExtension extends AbstractExtension
 
     private ?array $subchannelCache = null;
 
+    public function resetSubchannelCache(): void
+    {
+        $this->subchannelCache = null;
+    }
+
     public function getSubchannel(\App\Entity\Message $message): ?Channel
     {
         $messageId = $message->getId();
