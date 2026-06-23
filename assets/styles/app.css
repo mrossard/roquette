@@ -27,5 +27,6 @@
 @import './components/files-sidebar.css';
 @import './components/skeletons.css';
 @import './components/settings.css';
+@import './components/admin-emoji.css';
 
 @import './utilities.css';
