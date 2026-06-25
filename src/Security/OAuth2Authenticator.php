@@ -69,7 +69,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
         $session = $request->getSession();
         $storedState = $session->get('oauth2state');
 
-        if (!$state || $state !== $storedState) {
+        if (!$state || !hash_equals($state, $storedState)) {
             $this->logger->warning('OAuth2 state validation failed. Possible CSRF attack.');
             throw new CustomUserMessageAuthenticationException(
                 'La validation de l\'état de sécurité (CSRF) a échoué. Veuillez réessayer.',
