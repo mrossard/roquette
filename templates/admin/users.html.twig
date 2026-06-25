@@ -94,6 +94,7 @@
                                         {% if u.bannedAt %}
                                             <form action="{{ path('app_admin_user_unban', {id: u.id}) }}" method="POST"
                                                   class="action-inline" hx-boost="false">
+                                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                 <button type="submit" class="btn-submit btn-action btn-action--rehab">
                                                     {{ 'Réhabiliter'|trans }}
                                                 </button>
@@ -104,6 +105,7 @@
                                             <form action="{{ path('app_admin_user_ban', {id: u.id}) }}" method="POST"
                                                   class="action-inline" hx-boost="false"
                                                   data-confirm="{{ 'Êtes-vous sûr de vouloir bannir %username% ?'|trans({ '%username%': u.username }) }}">
+                                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                 <button type="submit" class="btn-delete-channel btn-action">
                                                     {{ 'Bannir'|trans }}
                                                 </button>
