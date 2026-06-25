@@ -10,14 +10,13 @@ use App\Repository\ChannelRepository;
 use App\Service\ChannelAccessService;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Contracts\Service\Attribute\Required;
 
 trait ChannelAccessTrait
 {
     private ChannelAccessService $channelAccessService;
 
-    /**
-     * @required
-     */
+    #[Required]
     public function setChannelAccessService(ChannelAccessService $channelAccessService): void
     {
         $this->channelAccessService = $channelAccessService;

@@ -38,8 +38,8 @@ final class ChannelActionController extends AbstractController
     use ChannelAccessTrait;
 
     public function __construct(
-        private TranslatorInterface $translator,
-        private ChannelManager $channelManager,
+        private readonly TranslatorInterface $translator,
+        private readonly ChannelManager $channelManager,
     ) {}
 
     #[Route('/channels/create', name: 'app_channel_create', methods: ['POST'])]
