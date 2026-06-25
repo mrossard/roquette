@@ -7,8 +7,7 @@ php-version = "8.4.0"
 [source]
 workspace = "."
 paths = ["mate/src/", "src/", "tests/"]
-includes = ["vendor"]
-excludes = []
+excludes = ["vendor"]
 
 [source.glob]
 literal-separator = true
