@@ -237,7 +237,7 @@ final class ChannelController extends AbstractController
             return new Response($this->translator->trans('Canal non trouvé.'), 404);
         }
 
-        if (!$channelRepository->canUserAccess($channel, $currentUser)) {
+        if (!$this->channelAccessService->canUserAccess($channel, $currentUser)) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 

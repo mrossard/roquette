@@ -7,11 +7,22 @@ namespace App\Controller\Trait;
 use App\Entity\Channel;
 use App\Entity\User;
 use App\Repository\ChannelRepository;
+use App\Service\ChannelAccessService;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 trait ChannelAccessTrait
 {
+    private ChannelAccessService $channelAccessService;
+
+    /**
+     * @required
+     */
+    public function setChannelAccessService(ChannelAccessService $channelAccessService): void
+    {
+        $this->channelAccessService = $channelAccessService;
+    }
+
     /**
      * Resolves the channel by slug and verifies if the current user has access to it.
      *
@@ -28,7 +39,7 @@ trait ChannelAccessTrait
             throw new NotFoundHttpException('Canal non trouvé.');
         }
 
-        if (!$currentUser || !$channelRepository->canUserAccess($channel, $currentUser)) {
+        if (!$currentUser || !$this->channelAccessService->canUserAccess($channel, $currentUser)) {
             throw new AccessDeniedHttpException('Non autorisé.');
         }
 

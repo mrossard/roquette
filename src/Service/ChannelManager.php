@@ -23,6 +23,7 @@ class ChannelManager
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ChannelRepository $channelRepository,
+        private readonly ChannelAccessService $channelAccessService,
         private readonly MercurePublisher $mercurePublisher,
         private readonly AuditLoggerService $auditLogger,
         private readonly LoggerInterface $logger,
@@ -291,7 +292,7 @@ class ChannelManager
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
         }
 
-        if (!$this->channelRepository->canUserAccess($parentChannel, $currentUser)) {
+        if (!$this->channelAccessService->canUserAccess($parentChannel, $currentUser)) {
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
         }
 

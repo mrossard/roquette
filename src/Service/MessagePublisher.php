@@ -24,6 +24,7 @@ class MessagePublisher
 
     public function __construct(
         private readonly ChannelRepository $channelRepository,
+        private readonly ChannelAccessService $channelAccessService,
         private readonly MessagePublishService $publishService,
         private readonly SlashCommandHandler $slashCommandHandler,
         private readonly RequestStack $requestStack,
@@ -106,7 +107,7 @@ class MessagePublisher
             throw new NotFoundHttpException($this->translator->trans('Canal non trouvé.'));
         }
 
-        if (!$this->channelRepository->canUserAccess($channel, $currentUser)) {
+        if (!$this->channelAccessService->canUserAccess($channel, $currentUser)) {
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
         }
 

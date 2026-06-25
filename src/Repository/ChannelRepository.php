@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Channel;
+use App\Entity\GroupSubscription;
 use App\Entity\User;
+use App\Entity\UserGroup;
+use App\Service\Group\GroupProviderInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -14,68 +17,50 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ChannelRepository extends ServiceEntityRepository
 {
-    private array $userGroupsCache = [];
-
     public function __construct(
         ManagerRegistry $registry,
-        private readonly \App\Service\Group\GroupProviderInterface $groupProvider,
-        private readonly UserGroupRepository $userGroupRepository,
+        private readonly GroupProviderInterface $groupProvider,
     ) {
         parent::__construct($registry, Channel::class);
     }
 
-    /**
-     * @return string[]
-     */
-    private function getUserGroupIdentifiers(\App\Entity\User $user): array
+    public function findAllForUser(User $user): array
     {
-        $userId = $user->getId();
-        if ($userId === null) {
-            $providerGroups = $this->groupProvider->getGroupsForUser($user);
-            $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
-
-            $localGroups = $this->userGroupRepository->findGroupsForUser($user);
-            $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
-
-            return array_unique(array_merge($providerGroupIdentifiers, $localGroupIdentifiers));
-        }
-
-        if (!isset($this->userGroupsCache[$userId])) {
-            $providerGroups = $this->groupProvider->getGroupsForUser($user);
-            $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
-
-            $localGroups = $this->userGroupRepository->findGroupsForUser($user);
-            $localGroupIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
-
-            $this->userGroupsCache[$userId] = array_unique(array_merge(
-                $providerGroupIdentifiers,
-                $localGroupIdentifiers,
-            ));
-        }
-
-        return $this->userGroupsCache[$userId];
-    }
-
-    public function findAllForUser(\App\Entity\User $user): array
-    {
-        $groupIdentifiers = $this->getUserGroupIdentifiers($user);
+        $providerGroups = $this->groupProvider->getGroupsForUser($user);
+        $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
 
         $qb = $this
             ->createQueryBuilder('c')
-            ->leftJoin('c.members', 'm')
             ->leftJoin('c.userGroup', 'ug')
             ->addSelect('ug');
 
-        if (!empty($groupIdentifiers)) {
-            $qb
-                ->leftJoin('c.groupSubscriptions', 'gs')
-                ->where('m.id = :userId OR gs.groupIdentifier IN (:groupIdentifiers)')
-                ->setParameter('groupIdentifiers', $groupIdentifiers);
-        } else {
-            $qb->where('m.id = :userId');
+        $conditions = $qb->expr()->orX(
+            $qb->expr()->isMemberOf(':userId', 'c.members'),
+        );
+
+        $localGroupDql = $this->getEntityManager()->createQueryBuilder()
+            ->select('IDENTITY(gs_local.channel)')
+            ->from(GroupSubscription::class, 'gs_local')
+            ->join(UserGroup::class, 'ug_local', 'WITH', 'ug_local.groupIdentifier = gs_local.groupIdentifier')
+            ->join('ug_local.members', 'ugm_local')
+            ->where('ugm_local.id = :userId')
+            ->getDQL();
+
+        $conditions->add($qb->expr()->in('c.id', $localGroupDql));
+
+        if (!empty($providerGroupIdentifiers)) {
+            $externalGroupDql = $this->getEntityManager()->createQueryBuilder()
+                ->select('IDENTITY(gs_ext.channel)')
+                ->from(GroupSubscription::class, 'gs_ext')
+                ->where('gs_ext.groupIdentifier IN (:providerGroupIdentifiers)')
+                ->getDQL();
+
+            $conditions->add($qb->expr()->in('c.id', $externalGroupDql));
+            $qb->setParameter('providerGroupIdentifiers', $providerGroupIdentifiers);
         }
 
         $joinedChannels = $qb
+            ->where($conditions)
             ->setParameter('userId', $user->getId())
             ->orderBy('c.createdAt', 'ASC')
             ->getQuery()
@@ -113,7 +98,7 @@ class ChannelRepository extends ServiceEntityRepository
         return $this->findBy(['isPrivate' => false, 'parentMessage' => null], ['name' => 'ASC'], 100);
     }
 
-    public function findDmBetween(\App\Entity\User $user1, \App\Entity\User $user2): ?Channel
+    public function findDmBetween(User $user1, User $user2): ?Channel
     {
         $qb = $this
             ->createQueryBuilder('c')
@@ -151,9 +136,10 @@ class ChannelRepository extends ServiceEntityRepository
         return null;
     }
 
-    public function searchByName(string $query, \App\Entity\User $user): array
+    public function searchByName(string $query, User $user): array
     {
-        $groupIdentifiers = $this->getUserGroupIdentifiers($user);
+        $providerGroups = $this->groupProvider->getGroupsForUser($user);
+        $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
 
         $qb = $this
             ->createQueryBuilder('c')
@@ -162,54 +148,39 @@ class ChannelRepository extends ServiceEntityRepository
             ->andWhere('c.parentMessage IS NULL')
             ->andWhere('LOWER(c.name) LIKE :query OR LOWER(c.description) LIKE :query');
 
-        if (!empty($groupIdentifiers)) {
-            $qb
-                ->leftJoin('c.groupSubscriptions', 'gs')
-                ->andWhere('c.isPrivate = false OR m.id = :userId OR gs.groupIdentifier IN (:groupIdentifiers)')
-                ->setParameter('groupIdentifiers', $groupIdentifiers);
-        } else {
-            $qb->andWhere('c.isPrivate = false OR m.id = :userId');
+        $accessConditions = $qb->expr()->orX(
+            'c.isPrivate = false',
+            'm.id = :userId',
+        );
+
+        $localGroupDql = $this->_em->createQueryBuilder()
+            ->select('IDENTITY(gs_local.channel)')
+            ->from(GroupSubscription::class, 'gs_local')
+            ->join(UserGroup::class, 'ug_local', 'WITH', 'ug_local.groupIdentifier = gs_local.groupIdentifier')
+            ->join('ug_local.members', 'ugm_local')
+            ->where('ugm_local.id = :userId')
+            ->getDQL();
+
+        $accessConditions->add($qb->expr()->in('c.id', $localGroupDql));
+
+        if (!empty($providerGroupIdentifiers)) {
+            $externalGroupDql = $this->_em->createQueryBuilder()
+                ->select('IDENTITY(gs_ext.channel)')
+                ->from(GroupSubscription::class, 'gs_ext')
+                ->where('gs_ext.groupIdentifier IN (:providerGroupIdentifiers)')
+                ->getDQL();
+
+            $accessConditions->add($qb->expr()->in('c.id', $externalGroupDql));
+            $qb->setParameter('providerGroupIdentifiers', $providerGroupIdentifiers);
         }
 
         return $qb
             ->setParameter('query', '%' . strtolower($query) . '%')
             ->setParameter('userId', $user->getId())
+            ->andWhere($accessConditions)
             ->setMaxResults(5)
             ->getQuery()
             ->getResult();
-    }
-
-    public function canUserAccess(Channel $channel, User $user): bool
-    {
-        if (!$channel->isPrivate()) {
-            return true;
-        }
-
-        // Direct member
-        if ($channel->getMembers()->contains($user)) {
-            return true;
-        }
-
-        // Creator is always allowed
-        if ($channel->getCreator() && $channel->getCreator()->getId() === $user->getId()) {
-            return true;
-        }
-
-        // Check group subscriptions
-        $subscriptions = $channel->getGroupSubscriptions();
-        if ($subscriptions->isEmpty()) {
-            return false;
-        }
-
-        $userGroupIdentifiers = $this->getUserGroupIdentifiers($user);
-
-        foreach ($subscriptions as $subscription) {
-            if (in_array($subscription->getGroupIdentifier(), $userGroupIdentifiers, true)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /** @return Channel[] */
