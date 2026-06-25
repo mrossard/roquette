@@ -10,7 +10,6 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: ChannelExportRepository::class)]
 #[ORM\Table(name: '`channel_export`')]
 #[ORM\Index(name: 'idx_channel_export_created_at', columns: ['created_at'])]
-#[ORM\Cache(usage: 'READ_ONLY', region: 'read_only')]
 class ChannelExport
 {
     #[ORM\Id]
