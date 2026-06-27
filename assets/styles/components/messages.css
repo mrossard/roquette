@@ -192,7 +192,7 @@
         order: 2;
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.15s ease;
+        transition: opacity 0.15s ease, transform 0.15s ease;
         display: flex;
         align-items: center;
         margin-left: auto;
@@ -203,6 +203,58 @@
     .feed-item.is-todo-channel-item:has(.reaction-picker.show) .feed-item-header {
         opacity: 1;
         pointer-events: auto;
+    }
+
+    @media (min-width: 768px) {
+        .feed-item.is-todo-channel-item {
+            padding-right: 2rem;
+        }
+
+        .feed-item.is-todo-channel-item .feed-item-header {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%) scale(0.95);
+            background: var(--bg-dropdown-opaque);
+            border: 1px solid var(--border-glass);
+            border-radius: 0.5rem;
+            padding: 0.25rem 0.35rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            margin: 0;
+        }
+
+        .feed-item.is-todo-channel-item:hover .feed-item-header,
+        .feed-item.is-todo-channel-item:focus-within .feed-item-header,
+        .feed-item.is-todo-channel-item:has(.reaction-picker.show) .feed-item-header,
+        .feed-item.is-todo-channel-item:has(.feed-item-actions-list.show) .feed-item-header {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(-50%) scale(1);
+        }
+
+        .feed-item.is-todo-channel-item .feed-item-header .feed-item-actions-list .btn-reply-subtle span {
+            display: none;
+        }
+
+        .feed-item.is-todo-channel-item .feed-item-header .btn-reply-subtle {
+            opacity: 0.8;
+            margin-left: 0.15rem;
+            padding: 0.2rem 0.35rem;
+        }
+
+        .feed-item.is-todo-channel-item .feed-item-header .btn-reply-subtle:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .feed-item.is-todo-channel-item .feed-item-header .btn-reply-subtle .action-icon,
+        .feed-item.is-todo-channel-item .feed-item-header .btn-reply-subtle svg {
+            width: 14px !important;
+            height: 14px !important;
+            font-size: 14px !important;
+        }
     }
 
     .feed-item.is-todo-channel-item.todo-completed {
@@ -668,6 +720,31 @@
             padding-left: 2.2rem;
             word-break: break-word;
             overflow-wrap: break-word;
+        }
+
+        .feed-item.is-todo-channel-item {
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+
+        .feed-item.is-todo-channel-item .feed-item-body {
+            flex: 1 1 100%;
+            min-width: 0;
+        }
+
+        .feed-item.is-todo-channel-item .feed-item-header {
+            order: 0;
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .feed-item.is-todo-channel-item .btn-todo-discussion {
+            order: 0;
+        }
+
+        .feed-item.is-todo-channel-item .message-reactions-container {
+            order: 0;
+            margin-left: auto;
         }
     }
 }
