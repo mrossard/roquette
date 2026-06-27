@@ -16,15 +16,32 @@ function playNotificationSound() {
     if (!soundEnabled) return;
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 400;
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.15);
+        const now = ctx.currentTime;
+        
+        // Ascending harmonic chime: D5 (587.33Hz), E5 (659.25Hz), A5 (880.00Hz)
+        const notes = [
+            { freq: 587.33, delay: 0.00, duration: 0.12 },
+            { freq: 659.25, delay: 0.06, duration: 0.12 },
+            { freq: 880.00, delay: 0.12, duration: 0.25 }
+        ];
+        
+        notes.forEach(note => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(note.freq, now + note.delay);
+            
+            // Prevent popping by fading in and out nicely
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.12, now + note.delay + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + note.delay + note.duration);
+            
+            osc.start(now + note.delay);
+            osc.stop(now + note.delay + note.duration);
+        });
     } catch (e) {
         // Silently ignore audio errors
     }
