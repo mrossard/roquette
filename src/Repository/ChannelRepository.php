@@ -153,7 +153,7 @@ class ChannelRepository extends ServiceEntityRepository
             'm.id = :userId',
         );
 
-        $localGroupDql = $this->_em->createQueryBuilder()
+        $localGroupDql = $this->getEntityManager()->createQueryBuilder()
             ->select('IDENTITY(gs_local.channel)')
             ->from(GroupSubscription::class, 'gs_local')
             ->join(UserGroup::class, 'ug_local', 'WITH', 'ug_local.groupIdentifier = gs_local.groupIdentifier')
@@ -164,7 +164,7 @@ class ChannelRepository extends ServiceEntityRepository
         $accessConditions->add($qb->expr()->in('c.id', $localGroupDql));
 
         if (!empty($providerGroupIdentifiers)) {
-            $externalGroupDql = $this->_em->createQueryBuilder()
+            $externalGroupDql = $this->getEntityManager()->createQueryBuilder()
                 ->select('IDENTITY(gs_ext.channel)')
                 ->from(GroupSubscription::class, 'gs_ext')
                 ->where('gs_ext.groupIdentifier IN (:providerGroupIdentifiers)')
