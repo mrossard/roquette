@@ -26,7 +26,7 @@ symfony server:start -d   # or port 80 via compose.override.yaml
 - **HTMX + Idiomorph** — UI is driven by HTMX with morph-swaps (`hx-swap="morph:outerHTML"`). No React/Vue/Alpine.
 - **Real-time via Mercure** (SSE), not WebSockets.
 - **Messenger** with Doctrine transport for async — `LlmQueryMessage` and `Mercure\Update` are routed to `async`.
-- **Sessions in PostgreSQL** via `PdoSessionHandler` (`sessions` table).
+- **Sessions via Redis** (`handler_id: '%env(REDIS_URL)%'`).
 - **Rate limiting** uses Symfony rate-limiter (see `config/packages/rate_limiter.yaml`).
 - **File uploads** use Flysystem (MinIO S3 in dev, configurable). ClamAV scans all uploads.
 - **AI** uses `symfony/ai-bundle` + Ollama. Model defaults to `qwen2.5:0.5b` (`.env`), overridden to `qwen2.5:3b` in
