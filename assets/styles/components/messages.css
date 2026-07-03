@@ -157,27 +157,19 @@
         height: auto;
     }
 
-    .btn-todo-discussion {
-        background: var(--accent-cyan);
-        color: var(--text-btn-publish);
-        text-decoration: none;
-        padding: 0.25rem 0.60rem;
-        border-radius: 0.25rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        transition: var(--transition-smooth);
-        order: 3;
-        margin-right: 0.25rem;
+    .subchannel-indicator {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.7rem;
+        font-weight: 500;
         white-space: nowrap;
         display: inline-flex;
         align-items: center;
-    }
-
-    .btn-todo-discussion:hover {
-        background: var(--accent-cyan);
-        filter: brightness(1.15);
-        color: var(--text-btn-publish);
-        text-decoration: none;
+        gap: 0.2rem;
+        opacity: 0.75;
+        user-select: none;
+        order: 3;
     }
 
     .feed-item.is-todo-channel-item .message-reactions-container {
@@ -207,53 +199,120 @@
 
     @media (min-width: 768px) {
         .feed-item.is-todo-channel-item {
-            padding-right: 2rem;
+            padding-right: 0.75rem; /* Standardize padding to match other feed items */
         }
 
+        /* Reset the todo channel item header so it does not position absolutely, 
+           as actions are now positioned absolutely at the top right of the feed-item. */
         .feed-item.is-todo-channel-item .feed-item-header {
+            position: static;
+            transform: none;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            margin: 0;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Unified, floating desktop styling for all message action toolbars */
+        .feed-item-actions {
             position: absolute;
-            right: 0.5rem;
-            top: 50%;
-            transform: translateY(-50%) scale(0.95);
+            top: -16px;
+            right: 1rem;
+            z-index: 50;
+            display: inline-flex;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            transform: translateY(4px);
             background: var(--bg-dropdown-opaque);
-            border: 1px solid var(--border-glass);
+            border: 1px solid var(--dropdown-border);
             border-radius: 0.5rem;
-            padding: 0.25rem 0.35rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            padding: 2px 4px;
+            box-shadow: 0 4px 12px var(--dropdown-shadow);
             backdrop-filter: blur(10px);
-            z-index: 10;
             margin: 0;
         }
 
-        .feed-item.is-todo-channel-item:hover .feed-item-header,
-        .feed-item.is-todo-channel-item:focus-within .feed-item-header,
-        .feed-item.is-todo-channel-item:has(.reaction-picker.show) .feed-item-header,
-        .feed-item.is-todo-channel-item:has(.feed-item-actions-list.show) .feed-item-header {
+        /* Show the action buttons on message hover, focus, or active menu/picker */
+        .feed-item:hover .feed-item-actions,
+        .feed-item:focus-within .feed-item-actions,
+        .feed-item:has(.reaction-picker.show) .feed-item-actions,
+        .feed-item:has(.feed-item-actions-list.show) .feed-item-actions {
             opacity: 1;
             pointer-events: auto;
-            transform: translateY(-50%) scale(1);
+            transform: translateY(0);
         }
 
-        .feed-item.is-todo-channel-item .feed-item-header .feed-item-actions-list .btn-reply-subtle span {
+        /* Unified action buttons list layout */
+        .feed-item-actions-list {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        /* Style the action buttons to be modern, cohesive icon-only buttons */
+        .feed-item:hover .feed-item-actions-list .btn-reply-subtle,
+        .feed-item:focus-within .feed-item-actions-list .btn-reply-subtle,
+        .feed-item-actions-list .btn-reply-subtle {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.35rem;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            opacity: 0.85;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .feed-item-actions-list .btn-reply-subtle:hover {
+            opacity: 1 !important;
+            color: var(--accent-cyan) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            transform: translateY(-1.5px);
+        }
+
+        .feed-item-actions-list .btn-delete-subtle:hover {
+            background: rgba(239, 68, 68, 0.12) !important;
+            border-color: rgba(239, 68, 68, 0.25) !important;
+            color: var(--accent-red, #ff5b5b) !important;
+            transform: translateY(-1.5px);
+        }
+
+        .feed-item-actions-list .btn-save-subtle.is-saved:hover {
+            background: rgba(255, 193, 7, 0.15) !important;
+            border-color: rgba(255, 193, 7, 0.3) !important;
+            color: #ffc107 !important;
+            transform: translateY(-1.5px);
+        }
+
+        /* Hide text labels on desktop to keep the toolbar clean and homogeneous */
+        .feed-item-actions-list .btn-reply-subtle span {
             display: none;
         }
 
-        .feed-item.is-todo-channel-item .feed-item-header .btn-reply-subtle {
-            opacity: 0.8;
-            margin-left: 0.15rem;
-            padding: 0.2rem 0.35rem;
-        }
-
-        .feed-item.is-todo-channel-item .feed-item-header .btn-reply-subtle:hover {
-            opacity: 1;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .feed-item.is-todo-channel-item .feed-item-header .btn-reply-subtle .action-icon,
-        .feed-item.is-todo-channel-item .feed-item-header .btn-reply-subtle svg {
+        /* Ensure all icons within actions are sized perfectly */
+        .feed-item-actions-list .btn-reply-subtle .action-icon,
+        .feed-item-actions-list .btn-reply-subtle svg {
             width: 14px !important;
             height: 14px !important;
             font-size: 14px !important;
+        }
+
+        /* Ensure emoji reaction picker triggers position nicely */
+        .add-reaction-trigger-container {
+            display: inline-flex;
+            align-items: center;
         }
     }
 
@@ -336,6 +395,10 @@
         opacity: 0;
         transition: var(--transition-smooth);
         margin-left: 0.5rem;
+    }
+
+    .btn-reply-subtle * {
+        pointer-events: none;
     }
 
     .feed-item:hover .btn-reply-subtle,
@@ -705,6 +768,19 @@
         background: rgba(255, 91, 91, 0.1);
     }
 
+    /* Highlight direct subchannel/todo link button inside action list */
+    .feed-item-actions-list a.btn-subchannel-direct-link {
+        color: var(--accent-cyan) !important;
+        background: rgba(6, 182, 212, 0.12) !important;
+        border: 1px solid rgba(6, 182, 212, 0.3) !important;
+        opacity: 1 !important;
+    }
+    .feed-item-actions-list a.btn-subchannel-direct-link:hover {
+        background: rgba(6, 182, 212, 0.22) !important;
+        border-color: rgba(6, 182, 212, 0.45) !important;
+        opacity: 1 !important;
+    }
+
     @media (max-width: 767px) {
         .feed-container {
             padding-right: 0 !important;
@@ -738,7 +814,7 @@
             margin-right: 0;
         }
 
-        .feed-item.is-todo-channel-item .btn-todo-discussion {
+        .feed-item.is-todo-channel-item .subchannel-indicator {
             order: 0;
         }
 

@@ -16,28 +16,6 @@
         position: relative;
     }
 
-    @media (min-width: 768px) {
-        .feed-item.is-me-message .feed-item-actions {
-            position: absolute;
-            right: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background: var(--bg-base);
-            padding-left: 0.5rem;
-            margin-left: 0;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-            border-radius: 4px;
-        }
-
-        .feed-item.is-me-message:hover .feed-item-actions,
-        .feed-item.is-me-message:focus-within .feed-item-actions,
-        .feed-item.is-me-message:has(.feed-item-actions-list.show) .feed-item-actions {
-            opacity: 1;
-            pointer-events: auto;
-        }
-    }
 
     .feed-item.is-me-message:hover {
         background: rgba(255, 255, 255, 0.02);

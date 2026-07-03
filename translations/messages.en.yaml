@@ -128,6 +128,7 @@ Actions: Actions
 'Actions du message': 'Message Actions'
 Répondre: Reply
 Réagir: React
+'Compléter ou réagir': 'Complete or react'
 'Voulez-vous vraiment supprimer ce message ?': 'Are you sure you want to delete this message?'
 Désépingler: Unpin
 Épingler: Pin
@@ -252,6 +253,8 @@ todo: todo
 'Créer un canal todo': 'Create todo channel'
 'Créer une discussion': 'Create discussion'
 'Créer une discussion todo': 'Create todo discussion'
+'Aller à la discussion': 'Go to discussion'
+'Aller au todo': 'Go to todo'
 'Canal todo list': 'Todo list channel'
 'Aucun canal todo. Créez-en un !': 'No todo channel. Create one!'
 'Aucune discussion existante.': 'No existing discussion.'

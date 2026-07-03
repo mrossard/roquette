@@ -102,6 +102,22 @@
                     <span class="feed-item-pinned-indicator"
                           title="{{ 'Message épinglé dans ce canal'|trans }}">📌 {{ 'Épinglé'|trans }}</span>
                 {% endif %}
+                {% set subChannel = messageObject ? (subchannelByParentMessageId[message_id] ?? get_subchannel(messageObject)) : null %}
+                {% set hasSubChannel = subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}
+                {% if hasSubChannel %}
+                    {% set subUnread = unreadCounts[subChannel.id]|default(null) %}
+                    {% set subCount = subUnread ? subUnread.count : 0 %}
+                    <span class="subchannel-indicator" title="{{ subChannel.isTodoList() ? 'Ce message a un todo'|trans : 'Ce message a une discussion'|trans }}">
+                        {% if subChannel.isTodoList() %}
+                            ✅ {{ 'todo'|trans }}
+                        {% else %}
+                            💬 {{ 'discussion'|trans }}
+                        {% endif %}
+                        {% if subCount > 0 %}
+                            <span class="unread-badge feed-item-unread-badge">{{ subCount }}</span>
+                        {% endif %}
+                    </span>
+                {% endif %}
             {% endif %}
             {% include 'dashboard/_feed_item_actions.html.twig' %}
         </div>
@@ -140,30 +156,18 @@
             {% endcache %}
 
             {% if messageObject is defined and messageObject and not messageObject.poll and message is defined and message is not empty and message != '' %}
-                {% set subChannel = messageObject and (messageChannel is null or not messageChannel.isTodoList()) ? (subchannelByParentMessageId[message_id] ?? get_subchannel(messageObject)) : null %}
-                {% set hasSubChannel = subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}
                 {% set msgReplyCount = replyCounts[message_id]|default(messageObject ? messageObject.replies|length : 0) %}
                 {% set hasReplies = msgReplyCount > 0 %}
-                {% if hasSubChannel or hasReplies %}
+                {% if hasReplies %}
                     <div class="feed-item-actions-wrapper">
                         <div class="feed-item-action-buttons">
-                            {% if hasSubChannel %}
-                                {% set subUnread = unreadCounts[subChannel.id]|default(null) %}
-                                {% set subCount = subUnread ? subUnread.count : 0 %}
-                                <a href="{{ path('app_channel', {slug: subChannel.slug}) }}" class="btn-todo-discussion"
-                                   hx-boost="false">
-                                    {{ subChannel.isTodoList() ? 'todo'|trans : 'discussion'|trans }}{% if subCount > 0 %} <span class="unread-badge feed-item-unread-badge">{{ subCount }}</span>{% endif %}
-                                </a>
-                            {% endif %}
-                            {% if hasReplies %}
-                                <a href="#"
-                                   hx-get="{{ path('app_message_replies', {id: message_id}) }}"
-                                   hx-target="#live-feed"
-                                   hx-swap="innerHTML transition:false"
-                                   class="thread-link">
-                                    💬 {{ 'réponses (%count%)'|trans({'%count%': msgReplyCount}) }}
-                                </a>
-                            {% endif %}
+                            <a href="#"
+                               hx-get="{{ path('app_message_replies', {id: message_id}) }}"
+                               hx-target="#live-feed"
+                               hx-swap="innerHTML transition:false"
+                               class="thread-link">
+                                💬 {{ 'réponses (%count%)'|trans({'%count%': msgReplyCount}) }}
+                            </a>
                         </div>
                     </div>
                 {% endif %}
@@ -178,10 +182,16 @@
             {% if subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}
                 {% set subUnread = unreadCounts[subChannel.id]|default(null) %}
                 {% set subCount = subUnread ? subUnread.count : 0 %}
-                <a href="{{ path('app_channel', {slug: subChannel.slug}) }}" class="btn-todo-discussion"
-                   hx-boost="false">
-                    {{ subChannel.isTodoList() ? 'todo'|trans : 'discussion'|trans }}{% if subCount > 0 %} <span class="unread-badge feed-item-unread-badge">{{ subCount }}</span>{% endif %}
-                </a>
+                <span class="subchannel-indicator">
+                    {% if subChannel.isTodoList() %}
+                        ✅ {{ 'todo'|trans }}
+                    {% else %}
+                        💬 {{ 'discussion'|trans }}
+                    {% endif %}
+                    {% if subCount > 0 %}
+                        <span class="unread-badge feed-item-unread-badge">{{ subCount }}</span>
+                    {% endif %}
+                </span>
             {% endif %}
             {% include 'dashboard/_feed_item_reactions.html.twig' %}
         {% endif %}

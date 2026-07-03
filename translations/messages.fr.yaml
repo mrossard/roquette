@@ -128,6 +128,7 @@ Actions: Actions
 'Actions du message': 'Actions du message'
 Répondre: Répondre
 Réagir: Réagir
+'Compléter ou réagir': 'Compléter ou réagir'
 'Voulez-vous vraiment supprimer ce message ?': 'Voulez-vous vraiment supprimer ce message ?'
 Désépingler: Désépingler
 Épingler: Épingler
@@ -252,6 +253,8 @@ todo: todo
 'Créer un canal todo': 'Créer un canal todo'
 'Créer une discussion': 'Créer une discussion'
 'Créer une discussion todo': 'Créer une discussion todo'
+'Aller à la discussion': 'Aller à la discussion'
+'Aller au todo': 'Aller au todo'
 'Canal todo list': 'Canal todo list'
 'Aucun canal todo. Créez-en un !': 'Aucun canal todo. Créez-en un !'
 'Aucune discussion existante.': 'Aucune discussion existante.'
