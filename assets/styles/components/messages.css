@@ -173,11 +173,14 @@
     }
 
     .feed-item.is-todo-channel-item .message-reactions-container {
-        display: flex;
+        display: inline-flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
         gap: 0.25rem;
-        order: 4;
         margin: 0;
         padding: 0;
+        align-items: center;
+        order: 4;
     }
 
     .feed-item.is-todo-channel-item .feed-item-header {
@@ -187,14 +190,24 @@
         transition: opacity 0.15s ease, transform 0.15s ease;
         display: flex;
         align-items: center;
-        margin-left: auto;
         margin-right: 0.5rem;
     }
 
-    .feed-item.is-todo-channel-item:hover .feed-item-header,
-    .feed-item.is-todo-channel-item:has(.reaction-picker.show) .feed-item-header {
+    .feed-item.is-todo-channel-item:not(.is-me-message):hover .feed-item-header,
+    .feed-item.is-todo-channel-item:not(.is-me-message):has(.reaction-picker.show) .feed-item-header {
         opacity: 1;
         pointer-events: auto;
+    }
+
+    .feed-item.is-todo-channel-item.is-me-message .feed-item-header {
+        opacity: 1;
+        pointer-events: auto;
+        order: 1;
+        margin-right: 0;
+    }
+
+    .feed-item.is-todo-channel-item.is-me-message .feed-item-body {
+        order: 2;
     }
 
     @media (min-width: 768px) {
@@ -806,12 +819,11 @@
         .feed-item.is-todo-channel-item .feed-item-body {
             flex: 1 1 100%;
             min-width: 0;
+            order: 0;
         }
 
-        .feed-item.is-todo-channel-item .feed-item-header {
-            order: 0;
-            margin-left: 0;
-            margin-right: 0;
+        .feed-item.is-todo-channel-item:not(.is-me-message) .feed-item-header {
+            display: none;
         }
 
         .feed-item.is-todo-channel-item .subchannel-indicator {
@@ -820,6 +832,7 @@
 
         .feed-item.is-todo-channel-item .message-reactions-container {
             order: 0;
+            padding: 0;
             margin-left: auto;
         }
     }
