@@ -8,31 +8,32 @@ Bienvenue dans le guide de l'utilisateur de **Roquette**, plateforme de messager
 
 1. [Présentation générale](#1-présentation-générale)
 2. [Prise en main](#2-prise-en-main)
-3. [Gestion du compte et personnalisation](#3-gestion-du-compte-et-personnalisation)
-4. [Interface utilisateur](#4-interface-utilisateur)
-5. [Canaux de discussion](#5-canaux-de-discussion)
-6. [Discussions (sous-canaux)](#6-discussions-sous-canaux)
-7. [Todo lists (listes de tâches)](#7-todo-lists-listes-de-tâches)
-8. [Messagerie](#8-messagerie)
-9. [Formatage des messages (Markdown)](#9-formatage-des-messages-markdown)
-10. [Mentions et références](#10-mentions-et-références)
-11. [Émojis et réactions](#11-émojis-et-réactions)
-12. [Fils de discussion (Threads)](#12-fils-de-discussion-threads)
-13. [Épinglage de messages](#13-épinglage-de-messages)
-14. [Sondages](#14-sondages)
-15. [Fichiers et médias](#15-fichiers-et-médias)
-16. [Aperçus de liens](#16-aperçus-de-liens)
-17. [Webhooks entrants](#17-webhooks-entrants)
-18. [Commandes slash](#18-commandes-slash)
-19. [Recherche](#19-recherche)
-20. [Notifications et mise en sourdine](#20-notifications-et-mise-en-sourdine)
-21. [Messages enregistrés](#21-messages-enregistrés)
-22. [Mes réactions](#22-mes-réactions)
-23. [Assistant virtuel et synthèse IA](#23-assistant-virtuel-et-synthèse-ia)
-24. [Administration](#24-administration)
-25. [Export de l'historique](#25-export-de-lhistorique)
-26. [Limitations et contraintes techniques](#26-limitations-et-contraintes-techniques)
-27. [Dépannage et FAQ](#27-dépannage-et-faq)
+3. [Espaces de travail (Workspaces)](#3-espaces-de-travail-workspaces)
+4. [Gestion du compte et personnalisation](#4-gestion-du-compte-et-personnalisation)
+5. [Interface utilisateur](#5-interface-utilisateur)
+6. [Canaux de discussion](#6-canaux-de-discussion)
+7. [Discussions (sous-canaux)](#7-discussions-sous-canaux)
+8. [Todo lists (listes de tâches)](#8-todo-lists-listes-de-tâches)
+9. [Messagerie](#9-messagerie)
+10. [Formatage des messages (Markdown)](#10-formatage-des-messages-markdown)
+11. [Mentions et références](#11-mentions-et-références)
+12. [Émojis et réactions](#12-émojis-et-réactions)
+13. [Fils de discussion (Threads)](#13-fils-de-discussion-threads)
+14. [Épinglage de messages](#14-épinglage-de-messages)
+15. [Sondages](#15-sondages)
+16. [Fichiers et médias](#16-fichiers-et-médias)
+17. [Aperçus de liens](#17-aperçus-de-liens)
+18. [Webhooks entrants](#18-webhooks-entrants)
+19. [Commandes slash](#19-commandes-slash)
+20. [Recherche](#20-recherche)
+21. [Notifications et mise en sourdine](#21-notifications-et-mise-en-sourdine)
+22. [Messages enregistrés](#22-messages-enregistrés)
+23. [Mes réactions](#23-mes-réactions)
+24. [Assistant virtuel et synthèse IA](#24-assistant-virtuel-et-synthèse-ia)
+25. [Administration](#25-administration)
+26. [Export de l'historique](#26-export-de-lhistorique)
+27. [Limitations et contraintes techniques](#27-limitations-et-contraintes-techniques)
+28. [Dépannage et FAQ](#28-dépannage-et-faq)
 
 ---
 
@@ -40,12 +41,14 @@ Bienvenue dans le guide de l'utilisateur de **Roquette**, plateforme de messager
 
 ### 1.1 Qu'est-ce que Roquette ?
 
-Roquette est une application web de messagerie instantanée et de collaboration en équipe. Elle permet à des groupes d'utilisateurs de communiquer en temps réel via des canaux de discussion publics ou privés, d'échanger des fichiers, de créer des sondages, de organiser des tâches, et de bénéficier d'un assistant IA.
+Roquette est une application web de messagerie instantanée et de collaboration en équipe. Elle permet à des groupes d'utilisateurs de communiquer en temps réel via des espaces de travail cloisonnés (workspaces) contenant des canaux de discussion publics ou privés, d'échanger des fichiers, de créer des sondages, d'organiser des tâches sous forme de todo lists et de bénéficier d'un assistant IA.
 
 ### 1.2 Technologies utilisées
 
 - **Temps réel** : Les messages et événements sont diffusés instantanément via Mercure (Server-Sent Events, SSE). Pas de WebSocket ni de polling.
 - **Interface** : Rendu côté serveur avec Symfony Twig + HTMX. Pas de framework JavaScript (React, Vue, etc.). Les mises à jour DOM utilisent Idiomorph (morphing) pour des transitions fluides.
+- **Stockage de fichiers** : Flysystem (compatible MinIO S3 ou stockage local selon la configuration).
+- **Sessions et Cache** : Redis pour la persistance des sessions et du cache.
 - **Base de données** : PostgreSQL 16.
 - **IA** : Modèle de langage (LLM) via Ollama, intégré avec `symfony/ai-bundle`.
 
@@ -53,12 +56,13 @@ Roquette est une application web de messagerie instantanée et de collaboration 
 
 | Concept | Description |
 |---|---|
-| **Canal** | Espace de discussion thématique. Peut être public (visible par tous) ou privé (visible uniquement sur invitation). |
-| **Message direct (DM)** | Canal privé entre deux utilisateurs. |
-| **Sous-canal / Discussion** | Canal fils rattaché à un message parent d'un canal principal, permettant de creuser un sujet sans polluer le flux principal. |
+| **Espace de travail (Workspace)** | Conteneur organisationnel regroupant un ensemble de membres et de canaux. L'application possède un espace public par défaut auquel tout le monde a accès. |
+| **Canal** | Espace de discussion thématique au sein d'un workspace. Peut être public (visible par tous les membres du workspace) ou privé (visible uniquement sur invitation). |
+| **Message direct (DM)** | Canal privé entre deux utilisateurs au sein d'un workspace. |
+| **Sous-canal / Discussion** | Canal fils rattaché à un message parent d'un canal principal, permettant de creuser un sujet sans polluer le flux principal du workspace. |
 | **Todo list** | Canal dont chaque message est une tâche. |
 | **Assistant** | Canal DM privé avec l'agent IA intégré. |
-| **Favori** | Canal épinglé en haut de la barre latérale pour un accès rapide. |
+| **Favori** | Canal ou sous-canal épinglé en haut de la barre latérale pour un accès rapide. |
 | **Fil de discussion (Thread)** | Réponses chaînées à un message, affichées dans le flux principal. |
 
 ---
@@ -77,7 +81,9 @@ Roquette est une application web de messagerie instantanée et de collaboration 
 ### 2.2 Connexion
 
 1. Saisissez votre nom d'utilisateur et mot de passe.
-2. Si l'authentification OAuth2 est configurée, un bouton de connexion externe est disponible (ex: Google, GitHub).
+2. Si l'authentification OAuth2 est configurée, un bouton de connexion externe est disponible (ex: Google, GitHub). 
+   > [!NOTE]
+   > En environnement de développement, un fournisseur d'autorisation OAuth2 simulé (Mock OAuth2 Provider) permet de tester et faire la démonstration de la connexion OAuth2 sans configuration externe requise.
 3. Une connexion réussie vous redirige vers le tableau de bord principal (`/`).
 
 ### 2.3 Déconnexion
@@ -103,18 +109,72 @@ L'écran principal (tableau de bord) se compose de quatre zones :
 └─────────────────────────────────────────────────────────────┘
 ```
 
-- **Barre latérale (gauche)** : Raccourcis, favoris, canaux todo, canaux, messages directs, invitations.
+- **Sélecteur de Workspace (en haut de la sidebar)** : Permet de basculer d'un espace de travail à un autre. Un menu d'actions rapide (icône engrenage ⚙️) permet de configurer l'espace, d'inviter des membres ou d'afficher la liste des membres.
+- **Barre latérale (gauche)** : Raccourcis, favoris, canaux todo, canaux, messages directs et invitations liés au workspace actif.
 - **Fenêtre centrale** : Messages du canal actif + champ de saisie.
-- **Panneau droit** : Liste des sous-canaux du canal actif (visible uniquement si le canal a des discussions).
-- **Panneau fichiers** : Bibliothèque média du canal actif (fichiers, images, documents).
+- **Panneau droit** : Liste des sous-canaux du canal actif (visible uniquement si le canal a des discussions) ou médiathèque.
 
 ---
 
-## 3. Gestion du compte et personnalisation
+## 3. Espaces de travail (Workspaces)
+
+### 3.1 Présentation des workspaces
+
+Les espaces de travail (workspaces) permettent de cloisonner l'application en différents environnements collaboratifs distincts. Chaque workspace possède ses propres membres, ses propres canaux et ses propres droits d'accès. 
+Par défaut, Roquette comprend un espace public nommé **Public**, accessible à l'ensemble des utilisateurs inscrits.
+
+### 3.2 Créer un workspace
+
+Tout utilisateur peut créer un nouvel espace de travail :
+1. Cliquez sur le sélecteur d'espace de travail en haut de la barre latérale gauche ou accédez à `/workspaces`.
+2. Cliquez sur le bouton **Créer un espace** / **Créer un workspace**.
+3. Remplissez le formulaire :
+   - **Nom de l'espace** (obligatoire) : Le nom affiché de l'espace.
+   - **Description** (optionnel) : Une brève description de son objectif.
+4. Validez. L'espace est créé et un canal par défaut `#general` y est automatiquement configuré. Vous êtes désigné comme le créateur et premier membre de cet espace.
+
+### 3.3 Navigation et changement d'espace
+
+- **Sélecteur d'espace** : Situé tout en haut de la barre latérale gauche, il affiche l'espace actuellement actif. Cliquez dessus pour ouvrir un menu déroulant listant tous vos espaces de travail et permettant de passer de l'un à l'autre d'un simple clic.
+- **Tableau de bord des espaces** : Accessible à l'adresse `/workspaces`. Il présente une vue d'ensemble de tous les espaces dont vous faites partie, avec le nombre de membres et de canaux de chaque espace, un bouton pour les ouvrir directement et la possibilité de gérer leurs paramètres si vous en êtes le créateur.
+- **Indicateurs d'activité (badges)** : Le sélecteur affiche un badge rouge indiquant le nombre total de messages non lus dans vos autres espaces de travail. Dans le menu déroulant, chaque espace affiche individuellement son propre compteur de messages non lus.
+- **Persistance de l'espace actif** : L'application conserve l'identifiant du workspace actif en session. Même si vous naviguez sur des routes globales (comme les DMs ou la recherche), vous restez rattaché au workspace précédemment sélectionné.
+
+### 3.4 Paramètres et Avatar (Créateurs et Administrateurs)
+
+Le créateur d'un espace de travail ou un administrateur système peut en modifier les paramètres :
+1. Dans le sélecteur d'espace (en haut de la sidebar), cliquez sur l'icône d'engrenage (⚙️) puis sélectionnez **Paramètres de l'espace** (ou cliquez sur le bouton de configuration sur le tableau de bord des workspaces).
+2. Vous pouvez alors modifier :
+   - Le **Nom** de l'espace.
+   - La **Description** de l'espace.
+   - L'**Avatar** : Téléversez une image personnalisée pour identifier l'espace (formats acceptés: JPG, JPEG, PNG, GIF, WEBP, SVG ; taille maximale de 10 Mo). Vous pouvez également cocher "Supprimer l'avatar" pour restaurer l'avatar par défaut.
+3. Si aucun avatar n'est configuré, Roquette génère automatiquement un avatar textuel avec les deux premières lettres du nom de l'espace sur un fond de couleur déterminé de manière déterministe par rapport au nom.
+
+### 3.5 Gestion des membres et invitations
+
+- **Membres de l'espace** : Cliquez sur l'engrenage (⚙️) du sélecteur d'espace puis sur **Membres de l'espace** pour afficher la liste des membres actuels.
+- **Inviter des membres** : Pour les espaces de travail privés, l'accès se fait uniquement sur invitation. Le créateur de l'espace ou un administrateur peut inviter des utilisateurs en ouvrant la boîte de dialogue d'invitation, en saisissant leur nom d'utilisateur ou nom d'affichage, puis en cliquant sur **Inviter**.
+- **Gestion des invitations** : Les invitations en attente s'affichent dans la barre latérale gauche (section "Invitations") ainsi que sur le tableau de bord des espaces (`/workspaces`). L'utilisateur invité peut accepter ou refuser l'invitation.
+
+### 3.6 Quitter un workspace
+
+Un membre peut décider de quitter un espace de travail privé en accédant aux paramètres de l'espace. 
+> [!WARNING]
+> Il est impossible de quitter l'espace de travail public par défaut.
+
+### 3.7 Suppression d'un workspace
+
+Le créateur de l'espace ou un administrateur global peut supprimer définitivement un espace de travail.
+- Cette action supprime immédiatement l'espace, tous ses canaux associés, tous les messages, fichiers partagés, et redirige les utilisateurs connectés vers l'accueil.
+- L'espace public par défaut ne peut pas être supprimé.
+
+---
+
+## 4. Gestion du compte et personnalisation
 
 Accédez à **Mon compte** via le menu utilisateur (en haut à droite).
 
-### 3.1 Informations de profil
+### 4.1 Informations de profil
 
 | Champ | Contrainte | Description |
 |---|---|---|
@@ -122,9 +182,9 @@ Accédez à **Mon compte** via le menu utilisateur (en haut à droite).
 | **Nom d'affichage** | 30 caractères max | Nom visible par les autres utilisateurs. Si vide, le nom d'utilisateur est utilisé. |
 | **Couleur du profil (teinte)** | 0-360 (HSL Hue) | Couleur de l'avatar et du pseudo. Se met à jour en temps réel. Curseur interactif. |
 | **Langue** | `fr` ou `en` | Langue de l'interface. |
-| **Statut de présence** | Voir section 3.2 | Surcharge manuelle du statut. |
+| **Statut de présence** | Voir section 4.2 | Surcharge manuelle du statut. |
 
-### 3.2 Statut de présence
+### 4.2 Statut de présence
 
 Cinq statuts disponibles :
 
@@ -138,13 +198,13 @@ Cinq statuts disponibles :
 
 Le statut est visible via un point de couleur sur l'avatar dans la barre latérale, l'en-tête de canal, et chaque message. Le dernier instant d'activité est tracé (`lastActiveAt`). Un utilisateur inactif pendant une durée configurable passe automatiquement en "Absent".
 
-### 3.3 Changement de mot de passe
+### 4.3 Changement de mot de passe
 
 1. Remplissez les trois champs : mot de passe actuel, nouveau mot de passe, confirmation.
 2. Contraintes : le mot de passe actuel doit être valide, le nouveau mot de passe doit faire au moins 6 caractères, la confirmation doit correspondre.
 3. Validation : le formulaire affiche une erreur si un champ est vide ou si les contraintes ne sont pas respectées.
 
-### 3.4 Notifications de bureau
+### 4.4 Notifications de bureau
 
 | Option | Description |
 |---|---|
@@ -153,15 +213,15 @@ Le statut est visible via un point de couleur sur l'avatar dans la barre latéra
 
 La souscription aux notifications push est gérée dynamiquement côté navigateur (API Notification + Service Worker).
 
-### 3.5 Thème clair / sombre
+### 4.5 Thème clair / sombre
 
-Basculez entre les thèmes depuis le menu utilisateur (icône soleil/lune) ou depuis le bouton dédié dans l'en-tête. Le choix est persistant et appliqué instantanément sans rechargement de page.
+Baspullez entre les thèmes depuis le menu utilisateur (icône soleil/lune) ou depuis le bouton dédié dans l'en-tête. Le choix est persistant et appliqué instantanément sans rechargement de page.
 
 ---
 
-## 4. Interface utilisateur
+## 5. Interface utilisateur
 
-### 4.1 Barre d'en-tête (Header)
+### 5.1 Barre d'en-tête (Header)
 
 Éléments présents dans l'en-tête :
 
@@ -172,33 +232,29 @@ Basculez entre les thèmes depuis le menu utilisateur (icône soleil/lune) ou de
 - **Bascule thème** : icône soleil/lune.
 - **Menu utilisateur** : avatar, nom, sélecteur de statut, lien "Mon compte", lien "Administration" (admin uniquement), déconnexion.
 
-### 4.2 Barre latérale (Sidebar)
+### 5.2 Barre latérale (Sidebar)
 
 La barre latérale gauche est organisée en sections verticales :
 
-1. **Raccourcis** :
+1. **Sélecteur de Workspace** : Permet de basculer de workspace, de configurer ou d'inviter des membres sur l'espace actif.
+2. **Raccourcis** :
    - Messages enregistrés
    - Mes réactions
    - Canal Assistant (🤖)
-
-2. **Favoris** : Canaux marqués comme favoris (★). Les sous-canaux sont listés avec leur compteur de messages non lus.
-
-3. **Todo lists** : Canaux de type todo list. Bouton "+" pour en créer un nouveau. Les sous-canaux sont affichés avec un badge `↳ #parent`.
-
-4. **Canaux** : Tous les canaux (hors DM, todo, favoris). Les sous-canaux sont imbriqués sous leur parent.
-
-5. **Messages directs** : Tous les DM (hors canal Assistant). Un point de statut coloré indique la présence du destinataire.
-
-6. **Invitations** : Invitations en attente pour les canaux privés, avec boutons Accepter / Refuser.
+3. **Favoris** : Canaux marqués comme favoris (★). Les sous-canaux sont listés avec leur compteur de messages non lus.
+4. **Todo lists** : Canaux de type todo list. Bouton "+" pour en créer un nouveau. Les sous-canaux sont affichés avec un badge `↳ #parent`.
+5. **Canaux** : Tous les canaux de l'espace (hors DM, todo, favoris). Les sous-canaux sont imbriqués sous leur parent.
+6. **Messages directs** : Tous les DM de l'espace (hors canal Assistant). Un point de statut coloré indique la présence du destinataire.
+7. **Invitations** : Invitations en attente pour les canaux privés de l'espace, avec boutons Accepter / Refuser.
 
 **Actions sur la barre latérale** :
 
 - **Créer un canal** : Depuis le menu d'options (⋮) en haut de la sidebar.
-- **Filtrer par non lus** : N'affiche que les canaux avec des messages non lus.
-- **Réorganiser** : Active le mode glisser-déposer pour réordonner les canaux. Cliquez sur "Terminé" pour sauvegarder.
-- **Parcourir** : Ouvre l'annuaire des canaux publics.
+- **Filtrer par non lus** : N'affiche que les canaux de l'espace actif avec des messages non lus.
+- **Réouvrir / Réorganiser** : Active le mode glisser-déposer pour réordonner les canaux. Cliquez sur "Terminé" pour sauvegarder.
+- **Parcourir** : Ouvre l'annuaire des canaux publics du workspace actif.
 
-### 4.3 En-tête de canal
+### 5.3 En-tête de canal
 
 Affiché en haut de la fenêtre de discussion, il contient :
 
@@ -220,7 +276,7 @@ Affiché en haut de la fenêtre de discussion, il contient :
   - Quitter le canal
   - Supprimer le canal (administrateurs uniquement)
 
-### 4.4 Panneau des discussions (latéral droit)
+### 5.4 Panneau des discussions (latéral droit)
 
 Lorsqu'un canal possède des sous-canaux (discussions), un panneau latéral droit s'affiche. Il liste :
 
@@ -229,7 +285,7 @@ Lorsqu'un canal possède des sous-canaux (discussions), un panneau latéral droi
 - Le compteur de messages non lus.
 - Un bouton de paramètres pour le créateur du sous-canal.
 
-### 4.5 Panneau des fichiers (latéral droit)
+### 5.5 Panneau des fichiers (latéral droit)
 
 Onglets : **Tous** / **Images** / **Documents** / **Média**.
 
@@ -244,20 +300,20 @@ Chaque fichier affiche :
 
 ---
 
-## 5. Canaux de discussion
+## 6. Canaux de discussion
 
-### 5.1 Types de canaux
+### 6.1 Types de canaux
 
 | Type | Description |
 |---|---|
-| **Canal public** | Visible et accessible par tous les utilisateurs. N'importe qui peut le rejoindre ou le quitter. |
-| **Canal privé** | Invisible pour les non-membres. L'accès nécessite une invitation par un membre existant. |
-| **Message direct (DM)** | Canal privé entre deux utilisateurs. S'ouvre via l'annuaire ou en cliquant sur un utilisateur. Automatiquement créé au premier message. |
+| **Canal public** | Visible et accessible par tous les membres du workspace. N'importe qui peut le rejoindre ou le quitter. |
+| **Canal privé** | Invisible pour les non-membres. L'accès nécessite une invitation par un membre existant ou l'appartenance à un groupe synchronisé. |
+| **Message direct (DM)** | Canal privé entre deux utilisateurs. S'ouvre via l'annuaire ou en cliquant sur un utilisateur. |
 | **Canal Assistant** | DM dédié avec l'assistant IA (🤖). Automatiquement lié dans les raccourcis. |
-| **Canal Todo list** | Canal dont chaque message est une tâche (voir section 7). |
-| **Discussion (sous-canal)** | Sous-canal rattaché à un message parent (voir section 6). |
+| **Canal Todo list** | Canal dont chaque message est une tâche (voir section 8). |
+| **Discussion (sous-canal)** | Sous-canal rattaché à un message parent (voir section 7). |
 
-### 5.2 Créer un canal
+### 6.2 Créer un canal
 
 1. Cliquez sur le menu d'options (⋮) dans la barre latérale, puis **Créer un canal**.
 2. Remplissez les champs :
@@ -269,51 +325,54 @@ Chaque fichier affiche :
 | **Rétention des messages** | 1, 3, 6, 12 mois ou Illimité | Durée de conservation avant purge automatique. |
 | **Type de canal** | Discussion ou Todo list | Définit le comportement du canal. |
 | **Canal privé** | Oui/Non | Restreint l'accès aux membres invités. |
-| **Abonnement de groupe** | Optionnel | Permet d'abonner automatiquement tous les membres d'un groupe. Peut être défini comme "Canal officiel" du groupe. |
+| **Abonnement de groupe** | Optionnel | Permet d'abonner automatiquement tous les membres d'un groupe d'utilisateurs. Peut être défini comme "Canal officiel" du groupe. |
 
 3. Confirmez la création. Les membres voient apparaître le canal dans leur barre latérale en temps réel.
 
-### 5.3 Rejoindre un canal public
+### 6.3 Rejoindre un canal public
 
 Depuis l'annuaire (`/channels/directory`) ou le bouton **Parcourir** dans la sidebar, cliquez sur **Rejoindre** à côté du canal souhaité.
 
-### 5.4 Quitter un canal
+### 6.4 Quitter un canal
 
 Depuis le menu d'actions (⋮) de l'en-tête du canal, sélectionnez **Quitter le canal**. Vous ne recevrez plus les messages de ce canal.
 
-### 5.5 Inviter des membres (canaux privés)
+### 6.5 Inviter des membres (canaux privés)
 
 1. Depuis le menu d'actions (⋮) de l'en-tête, sélectionnez **Inviter**.
 2. Recherchez un utilisateur par son nom.
 3. Cliquez sur **Inviter**. L'utilisateur recevra une invitation dans sa barre latérale.
 4. L'utilisateur invité peut **Accepter** ou **Refuser** l'invitation.
 
-### 5.6 Paramètres du canal (administrateurs)
+### 6.6 Paramètres du canal (administrateurs)
 
 Depuis **Paramètres** dans le menu d'actions (⋮) :
 
 - Modifier le nom (20 caractères max).
 - Modifier la description (50 caractères max).
 - Modifier la période de rétention des messages.
-- Gérer les abonnements de groupe (ajout/suppression, canal officiel).
-- Gérer les administrateurs :
+- **Gestion des abonnements de groupe** :
+  - **Lier un groupe** : Saisissez l'identifiant du groupe à abonner. Les utilisateurs du groupe sont synchronisés en temps réel.
+  - **Canal officiel** : Déterminez si ce canal est le canal officiel du groupe d'utilisateurs (un seul canal officiel autorisé par groupe).
+  - **Désabonner un groupe** : Retirer la liaison avec un groupe d'utilisateurs.
+- Gérer les administrateurs du canal :
   - Rechercher un utilisateur pour l'ajouter comme administrateur.
   - Retirer un administrateur (sauf le créateur).
   - Le créateur est listé séparément et ne peut pas être retiré.
 - Supprimer le canal.
 
-### 5.7 Favoris
+### 6.7 Favoris
 
 Cliquez sur l'étoile (★) à côté du nom d'un canal (dans l'en-tête ou la barre latérale) pour l'ajouter aux favoris. Les favoris apparaissent en haut de la barre latérale dans une section dédiée.
 
-### 5.8 Réorganisation des canaux
+### 6.8 Réorganisation des canaux
 
 1. Cliquez sur le bouton d'organisation (⇅ ou ✔️) dans la sidebar.
 2. Activez le mode réorganisation : les canaux deviennent glissables.
 3. Glissez-déposez les canaux pour changer leur ordre.
 4. Cliquez sur **Terminé** pour sauvegarder l'ordre.
 
-### 5.9 Rétention des messages
+### 6.9 Rétention des messages
 
 Les administrateurs peuvent configurer une politique de rétention :
 - **1 mois** : les messages de plus d'un mois sont automatiquement supprimés.
@@ -322,27 +381,27 @@ Les administrateurs peuvent configurer une politique de rétention :
 
 La purge est automatique et s'exécute côté serveur.
 
-### 5.10 Annuaire des canaux
+### 6.10 Annuaire des canaux
 
 Accessible depuis :
 - Le bouton **Parcourir** dans la sidebar.
 - L'URL `/channels/directory`.
 
-L'annuaire présente deux onglets :
+L'annuaire présente deux onglets (filtrés sur le workspace actif) :
 1. **Canaux publics** : liste de tous les canaux publics avec nom, description, nombre de membres, politique de rétention, boutons Rejoindre/Quitter/Ouvrir.
-2. **Membres** : liste de tous les utilisateurs avec avatar, nom, statut, bouton pour ouvrir un DM.
+2. **Membres** : liste de tous les utilisateurs du workspace avec avatar, nom, statut, bouton pour ouvrir un DM.
 
 La recherche filtre les résultats en temps réel au fur et à mesure de la saisie.
 
 ---
 
-## 6. Discussions (sous-canaux)
+## 7. Discussions (sous-canaux)
 
-### 6.1 Qu'est-ce qu'une discussion ?
+### 7.1 Qu'est-ce qu'une discussion ?
 
 Une **discussion** (ou sous-canal) est un canal secondaire rattaché à un message parent. Elle permet d'approfondir un sujet spécifique sans encombrer le flux principal.
 
-### 6.2 Créer une discussion
+### 7.2 Créer une discussion
 
 Depuis un message :
 
@@ -355,7 +414,7 @@ Depuis un message :
    - **Visibilité** : hérite du niveau de confidentialité du parent (public/privé).
    - **Rétention** : hérite de la politique du parent.
 
-### 6.3 Navigation
+### 7.3 Navigation
 
 - Les sous-canaux du canal actif sont listés dans le panneau latéral droit.
 - Cliquez sur un sous-canal pour y accéder.
@@ -364,15 +423,15 @@ Depuis un message :
   - Un bouton **Retour au canal parent**.
 - Les sous-canaux apparaissent dans la barre latérale, imbriqués sous leur parent.
 
-### 6.4 Supprimer une discussion
+### 7.4 Supprimer une discussion
 
 Depuis le panneau des discussions, le créateur peut supprimer le sous-canal via le bouton de paramètres.
 
 ---
 
-## 7. Todo lists (listes de tâches)
+## 8. Todo lists (listes de tâches)
 
-### 7.1 Créer un canal todo
+### 8.1 Créer un canal todo
 
 Deux méthodes :
 
@@ -381,23 +440,23 @@ Deux méthodes :
 
 Depuis la sidebar, un bouton "+" dans la section **Todo** permet de créer directement un nouveau canal todo.
 
-### 7.2 Gérer les tâches
+### 8.2 Gérer les tâches
 
 - Chaque message envoyé dans un canal todo devient une **tâche**.
 - La tâche s'affiche comme un message normal mais avec une case à cocher visuelle.
 
-### 7.3 Marquer une tâche comme terminée
+### 8.3 Marquer une tâche comme terminée
 
 1. Survolez la tâche.
 2. Ouvrez le menu d'actions (•••) ou le sélecteur rapide d'émojis.
 3. Sélectionnez l'émoji ✅ (coche verte).
 4. Le message s'affiche alors **barré** (rayé) pour indiquer qu'il est terminé.
 
-### 7.4 Masquer les tâches terminées
+### 8.4 Masquer les tâches terminées
 
 Utilisez le bouton **Masquer les tâches terminées** dans l'en-tête du canal pour n'afficher que les tâches en cours.
 
-### 7.5 Discussion associée à une tâche
+### 8.5 Discussion associée à une tâche
 
 Chaque tâche peut avoir une discussion dédiée pour échanger sur son avancement :
 
@@ -407,16 +466,16 @@ Chaque tâche peut avoir une discussion dédiée pour échanger sur son avanceme
 
 ---
 
-## 8. Messagerie
+## 9. Messagerie
 
-### 8.1 Envoyer un message
+### 9.1 Envoyer un message
 
 1. Saisissez votre texte dans le champ de saisie en bas de la fenêtre.
 2. Appuyez sur **Entrée** pour envoyer.
 3. Utilisez **Shift + Entrée** pour insérer un saut de ligne.
 4. Vous pouvez aussi cliquer sur le bouton d'envoi (avion en papier).
 
-### 8.2 Modifier un message
+### 9.2 Modifier un message
 
 1. Survolez votre message.
 2. Cliquez sur le menu d'actions (•••).
@@ -426,7 +485,7 @@ Chaque tâche peut avoir une discussion dédiée pour échanger sur son avanceme
 
 La mention `(modifié)` / `(modified)` apparaît à côté de l'horodatage.
 
-### 8.3 Supprimer un message
+### 9.3 Supprimer un message
 
 1. Survolez votre message.
 2. Cliquez sur le menu d'actions (•••).
@@ -435,7 +494,7 @@ La mention `(modifié)` / `(modified)` apparaît à côté de l'horodatage.
 
 La suppression est définitive.
 
-### 8.4 Répondre à un message (citation)
+### 9.4 Répondre à un message (citation)
 
 1. Survolez le message auquel vous voulez répondre.
 2. Cliquez sur le bouton **Répondre** (icône de réponse).
@@ -443,7 +502,7 @@ La suppression est définitive.
 4. Saisissez votre message et envoyez-le.
 5. Votre message sera lié au message parent.
 
-### 8.5 Indicateur de saisie
+### 9.5 Indicateur de saisie
 
 Lorsqu'un membre est en train d'écrire dans le canal actif, un indicateur discret s'affiche en bas du flux :
 
@@ -453,7 +512,7 @@ Lorsqu'un membre est en train d'écrire dans le canal actif, un indicateur discr
 
 L'indicateur disparaît automatiquement après quelques secondes d'inactivité.
 
-### 8.6 Messages d'action (/me)
+### 9.6 Messages d'action (/me)
 
 Les messages commençant par `/me` sont affichés différemment :
 
@@ -464,11 +523,11 @@ Ils sont traités comme des actions et non comme des messages de dialogue.
 
 ---
 
-## 9. Formatage des messages (Markdown)
+## 10. Formatage des messages (Markdown)
 
 Roquette supporte le **Markdown standard** et le **GitHub Flavored Markdown (GFM)**.
 
-### 9.1 Syntaxe de formatage
+### 10.1 Syntaxe de formatage
 
 | Style | Syntaxe | Résultat |
 |---|---|---|
@@ -484,7 +543,7 @@ Roquette supporte le **Markdown standard** et le **GitHub Flavored Markdown (GFM
 | Lien | `[texte](url)` | Lien cliquable |
 | Image | `![alt](url)` | Image intégrée |
 
-### 9.2 Blocs de code
+### 10.2 Blocs de code
 
 Utilisez trois accents graves ouvrants et fermants avec le nom du langage pour la coloration syntaxique :
 
@@ -496,11 +555,11 @@ function hello(): string {
 
 Langages supportés : php, js, python, html, css, sql, bash, json, yaml, etc. (via highlight.js).
 
-### 9.3 Aperçu en direct
+### 10.3 Aperçu en direct
 
 Dans le champ de saisie, cliquez sur l'onglet **Aperçu** pour voir le rendu Markdown de votre message avant de l'envoyer. L'aperçu est généré côté serveur.
 
-### 9.4 Barre d'outils de formatage
+### 10.4 Barre d'outils de formatage
 
 Le champ de saisie dispose d'une barre d'outils avec des boutons pour insérer rapidement :
 
@@ -516,9 +575,9 @@ Le champ de saisie dispose d'une barre d'outils avec des boutons pour insérer r
 
 ---
 
-## 10. Mentions et références
+## 11. Mentions et références
 
-### 10.1 Mentionner un utilisateur
+### 11.1 Mentionner un utilisateur
 
 Tapez `@` suivi du nom d'utilisateur :
 
@@ -528,14 +587,14 @@ Tapez `@` suivi du nom d'utilisateur :
 
 **Autocomplétion** : en tapant `@`, une liste de suggestions d'utilisateurs apparaît.
 
-### 10.2 Référencer un canal
+### 11.2 Référencer un canal
 
 Tapez `#` suivi du slug d'un canal :
 
 - `#general` : lien cliquable vers le canal "general" (si vous y avez accès).
 - La référence se transforme automatiquement en lien après envoi.
 
-### 10.3 Autocomplétion avancée
+### 11.3 Autocomplétion avancée
 
 Le système d'autocomplétion supporte trois types :
 
@@ -547,9 +606,9 @@ Le système d'autocomplétion supporte trois types :
 
 ---
 
-## 11. Émojis et réactions
+## 12. Émojis et réactions
 
-### 11.1 Émojis dans les messages
+### 12.1 Émojis dans les messages
 
 - **Codes courts** : `:rocket:` devient 🚀, `:fire:` devient 🔥.
 - **Émoticones textuelles** : conversion automatique :
@@ -557,13 +616,13 @@ Le système d'autocomplétion supporte trois types :
   - `<3` → ❤️
   - `:D` → 😀
   - `;)` → 😉
-  - `:(` → 🙁
+  - `:TargetContent` → 🙁
   - `:/` → 😐
   - `:p` → 😋
   - `;D` → 😉
-- **Émojis personnalisés** : `[:nom_emoji]` (si configurés sur le serveur).
+- **Émojis personnalisés** : `[:nom_emoji]` (si configurés sur le serveur et importés par l'administrateur).
 
-### 11.2 Réagir à un message
+### 12.2 Réagir à un message
 
 1. Survolez un message.
 2. Cliquez sur le sélecteur d'émojis (icône de smiley).
@@ -571,30 +630,30 @@ Le système d'autocomplétion supporte trois types :
 4. Dans un canal todo, ✅ est également disponible.
 5. Vous pouvez aussi sélectionner n'importe quel émoji dans le sélecteur complet.
 
-### 11.3 Ajouter son vote à une réaction existante
+### 12.3 Ajouter son vote à une réaction existante
 
 Cliquez sur une réaction déjà présente sous un message pour ajouter votre propre vote (+1).
 
-### 11.4 Voir qui a réagi
+### 12.4 Voir qui a réagi
 
 Survolez une réaction avec la souris : une infobulle liste les utilisateurs qui ont ajouté cette réaction.
 
-### 11.5 Retirer sa réaction
+### 12.5 Retirer sa réaction
 
 Cliquez à nouveau sur une réaction que vous avez déjà sélectionnée pour retirer votre vote.
 
 ---
 
-## 12. Fils de discussion (Threads)
+## 13. Fils de discussion (Threads)
 
-### 12.1 Créer un fil de discussion
+### 13.1 Créer un fil de discussion
 
 1. Survolez un message.
 2. Cliquez sur le bouton **Répondre** (ou menu d'actions → **Répondre**).
 3. Saisissez votre réponse dans le champ qui s'affiche (bannière `↩ @utilisateur`).
 4. Envoyez. Votre message est lié comme réponse au message parent.
 
-### 12.2 Consulter un fil
+### 13.2 Consulter un fil
 
 - Sous un message ayant des réponses, un lien s'affiche : `💬 Voir les réponses (N)`.
 - Cliquez dessus pour charger l'intégralité du fil dans le flux principal.
@@ -603,44 +662,44 @@ Cliquez à nouveau sur une réaction que vous avez déjà sélectionnée pour re
   - Toutes les réponses dans l'ordre chronologique.
   - Un bouton **Retour au direct** pour revenir à l'affichage normal du canal.
 
-### 12.3 Comportement temps réel
+### 13.3 Comportement temps réel
 
 - Lorsque vous consultez un fil, les nouveaux messages du canal principal ne s'affichent pas (pour éviter les distractions).
 - Un badge de messages non lus s'affiche sur le canal pour signaler l'activité.
 
 ---
 
-## 13. Épinglage de messages
+## 14. Épinglage de messages
 
-### 13.1 Prérequis
+### 14.1 Prérequis
 
 Seuls le **créateur du canal** et les **administrateurs** peuvent épingler/désépingler des messages.
 
-### 13.2 Épingler un message
+### 14.2 Épingler un message
 
 1. Survolez le message.
 2. Menu d'actions (•••) → **Épingler**.
 3. Une bannière apparaît en haut du canal avec le contenu du message épinglé.
 
-### 13.3 Voir le message épinglé
+### 14.3 Voir le message épinglé
 
 - La bannière en haut du canal affiche le message épinglé actuel.
 - Cliquez sur **Voir** pour faire défiler automatiquement jusqu'au message d'origine dans le flux.
 
-### 13.4 Désépingler un message
+### 14.4 Désépingler un message
 
 - Cliquez sur la croix (✕) de la bannière d'épinglage.
 - Ou menu d'actions (•••) du message → **Désépingler**.
 
-### 13.5 Limitation
+### 14.5 Limitation
 
 Un seul message peut être épinglé à la fois dans un canal. Épingler un nouveau message remplace le précédent.
 
 ---
 
-## 14. Sondages
+## 15. Sondages
 
-### 14.1 Créer un sondage
+### 15.1 Créer un sondage
 
 1. Cliquez sur l'icône **Sondage** dans la barre d'outils de formatage.
 2. Le composeur de sondage s'ouvre dans le champ de saisie.
@@ -649,7 +708,7 @@ Un seul message peut être épinglé à la fois dans un canal. Épingler un nouv
 5. Activez éventuellement **Autoriser les choix multiples**.
 6. Cliquez sur **Publier**.
 
-### 14.2 Voter
+### 15.2 Voter
 
 - Les options de réponse s'affichent avec :
   - Un diagramme à barres proportionnel (largeur relative au nombre de votes).
@@ -659,33 +718,33 @@ Un seul message peut être épinglé à la fois dans un canal. Épingler un nouv
 - Cliquez sur une option pour voter.
 - Si les choix multiples sont activés, vous pouvez sélectionner plusieurs options.
 
-### 14.3 Modifier un sondage
+### 15.3 Modifier un sondage
 
 1. Survolez le sondage.
 2. Menu d'actions (•••) → **Modifier**.
 3. Vous pouvez modifier la question, les options, et le type (choix unique/multiple).
 
-### 14.4 Temps réel
+### 15.4 Temps réel
 
 Les votes s'actualisent en temps réel pour tous les utilisateurs via Mercure SSE.
 
 ---
 
-## 15. Fichiers et médias
+## 16. Fichiers et médias
 
-### 15.1 Envoyer un fichier
+### 16.1 Envoyer un fichier
 
 Deux méthodes :
 
 1. **Glisser-déposer** : faites glisser un fichier depuis votre explorateur vers la fenêtre de discussion.
 2. **Bouton trombone** : cliquez sur le bouton de jointure dans le champ de saisie pour sélectionner un fichier.
 
-### 15.2 Limites
+### 16.2 Limites
 
 - Taille maximale : **10 Mo** par fichier.
 - Types acceptés : tous types de fichiers (images, documents, vidéos, audio, archives, etc.).
 
-### 15.3 Scan antivirus (ClamAV)
+### 16.3 Scan antivirus (ClamAV)
 
 Tous les fichiers téléversés sont analysés par **ClamAV** :
 
@@ -696,7 +755,7 @@ Tous les fichiers téléversés sont analysés par **ClamAV** :
 | **Fichier infecté** | Message "Fichier bloqué" — le téléchargement est impossible. |
 | **Erreur d'analyse** | Message "Analyse impossible" — le fichier est accessible mais l'analyse a échoué. |
 
-### 15.4 Prévisualisations
+### 16.4 Prévisualisations
 
 | Type | Comportement |
 |---|---|
@@ -706,7 +765,7 @@ Tous les fichiers téléversés sont analysés par **ClamAV** :
 | **PDF** | Lien de visualisation directe (ouvre dans un nouvel onglet). |
 | **Fichier texte** | Bouton **Aperçu texte** qui charge le contenu avec coloration syntaxique. |
 
-### 15.5 Médiathèque (bibliothèque de fichiers)
+### 16.5 Médiathèque (bibliothèque de fichiers)
 
 Le panneau latéral des fichiers liste tous les fichiers partagés dans le canal actif, organisé par onglets :
 
@@ -719,9 +778,9 @@ Chaque fichier peut être téléchargé ou contextualisé ("Aller au message").
 
 ---
 
-## 16. Aperçus de liens
+## 17. Aperçus de liens
 
-### 16.1 Fonctionnement
+### 17.1 Fonctionnement
 
 Lorsque vous partagez une URL dans un message, Roquette tente de générer automatiquement un **aperçu enrichi** :
 
@@ -730,27 +789,27 @@ Lorsque vous partagez une URL dans un message, Roquette tente de générer autom
 - Image de couverture (Open Graph).
 - Nom du site.
 
-### 16.2 Délai d'affichage
+### 17.2 Délai d'affichage
 
 L'aperçu est chargé de manière asynchrone après l'envoi du message, avec un délai (lazy loading via Intersection Observer).
 
-### 16.3 Masquer un aperçu
+### 17.3 Masquer un aperçu
 
 Si vous êtes l'auteur du message, vous pouvez masquer l'aperçu en cliquant sur la croix (✕) de la carte d'aperçu.
 
-### 16.4 Images distantes
+### 17.4 Images distantes
 
 Les URLs pointant directement vers des images (`.jpg`, `.png`, `.gif`, `.webp`, etc.) sont rendues inline dans le flux, sans carte d'aperçu. Cliquez dessus pour les ouvrir en lightbox.
 
 ---
 
-## 17. Webhooks entrants
+## 18. Webhooks entrants
 
-### 17.1 Présentation
+### 18.1 Présentation
 
 Les webhooks entrants permettent à des applications externes (GitHub, GitLab, serveurs de monitoring, scripts CI/CD, etc.) de publier automatiquement des messages dans un canal Roquette via une requête HTTP POST.
 
-### 17.2 Configuration (administrateurs du canal)
+### 18.2 Configuration (administrateurs du canal)
 
 1. Ouvrez le menu de configuration du canal (Paramètres).
 2. Sélectionnez l'onglet **Webhooks entrants**.
@@ -759,7 +818,7 @@ Les webhooks entrants permettent à des applications externes (GitHub, GitLab, s
 5. Copiez l'URL générée contenant un jeton de sécurité unique.
 6. Collez cette URL dans l'application externe.
 
-### 17.3 Gestion des webhooks
+### 18.3 Gestion des webhooks
 
 | Action | Description |
 |---|---|
@@ -767,7 +826,7 @@ Les webhooks entrants permettent à des applications externes (GitHub, GitLab, s
 | **Supprimer** | Supprime définitivement le webhook. Le jeton n'est plus valide. |
 | **Copier l'URL** | Permet de récupérer l'URL du webhook. |
 
-### 17.4 Format du payload (JSON)
+### 18.4 Format du payload (JSON)
 
 URL d'appel : `POST /api/webhooks/incoming/{token}`
 
@@ -789,7 +848,7 @@ Corps de la requête (Content-Type: `application/json`) :
 | `username` | `customAuthorName` | Non | Nom d'affichage personnalisé de l'émetteur. |
 | `avatar_url` | `customAuthorAvatar` | Non | URL de l'avatar personnalisé de l'émetteur. |
 
-### 17.5 Exemple avec cURL
+### 18.5 Exemple avec cURL
 
 ```bash
 curl -X POST "https://roquette.exemple.com/api/webhooks/incoming/abc123token" \
@@ -803,11 +862,11 @@ curl -X POST "https://roquette.exemple.com/api/webhooks/incoming/abc123token" \
 
 ---
 
-## 18. Commandes slash
+## 19. Commandes slash
 
 Les commandes slash s'utilisent en début de message dans le champ de saisie.
 
-### 18.1 `/me [action]`
+### 19.1 `/me [action]`
 
 Affiche un message d'action à la troisième personne.
 
@@ -817,7 +876,7 @@ Affiche un message d'action à la troisième personne.
 ```
 **Résultat** : `* Jean prend une pause café *` (affiché en italique)
 
-### 18.2 `/color [teinte]`
+### 19.2 `/color [teinte]`
 
 Modifie instantanément la couleur de votre avatar et de votre pseudo.
 
@@ -831,7 +890,7 @@ Modifie instantanément la couleur de votre avatar et de votre pseudo.
 /color       → teinte aléatoire
 ```
 
-### 18.3 `/shrug [texte]`
+### 19.3 `/shrug [texte]`
 
 Ajoute l'émoji `¯\_(ツ)_/¯` à la fin de votre texte.
 
@@ -841,7 +900,7 @@ Ajoute l'émoji `¯\_(ツ)_/¯` à la fin de votre texte.
 ```
 **Résultat** : `je ne sais pas ¯\_(ツ)_/¯`
 
-### 18.5 `/help [question]`
+### 19.4 `/help [question]`
 
 Pose une question à l'Assistant IA sur l'utilisation de Roquette.
 
@@ -853,13 +912,13 @@ Pose une question à l'Assistant IA sur l'utilisation de Roquette.
 /help Comment créer un sondage ?
 ```
 
-Voir aussi la [section 23](#23-assistant-virtuel-et-synthèse-ia) pour plus d'options.
+Voir aussi la [section 24](#24-assistant-virtuel-et-synthèse-ia) pour plus d'options.
 
 ---
 
-## 19. Recherche
+## 20. Recherche
 
-### 19.1 Recherche globale (Ctrl+K)
+### 20.1 Recherche globale (Ctrl+K)
 
 Accessible depuis :
 - Le raccourci clavier **Ctrl+K** (ou **Cmd+K** sur macOS).
@@ -879,28 +938,28 @@ Accessible depuis :
   - **Utilisateurs** : avatar, nom, lien DM.
   - **Messages** : extrait du contenu, nom du canal, lien "Aller au message", indicateur de fichier joint.
 
-### 19.2 Recherche par canal
+### 20.2 Recherche par canal
 
 - Champ de recherche dans l'en-tête du canal.
 - Résultats filtrés dans le canal actif uniquement.
 - Option **Non lus uniquement** pour limiter aux messages non lus.
 - Debounce de 400ms pour éviter les appels inutiles.
 
-### 19.3 Filtre "Non lus"
+### 20.3 Filtre "Non lus"
 
 Depuis l'en-tête du canal, activez le filtre **Non lus** pour n'afficher que les messages que vous n'avez pas encore vus. Un compteur indique le nombre de messages non lus. Un bouton **Retour au direct** permet de revenir à l'affichage normal.
 
 ---
 
-## 20. Notifications et mise en sourdine
+## 21. Notifications et mise en sourdine
 
-### 20.1 Notifications de bureau
+### 21.1 Notifications de bureau
 
 Configurables depuis **Mon compte** :
 - **Activation globale** : active/désactive toutes les notifications de bureau.
 - **Mentions uniquement** : ne notifier que lorsque vous êtes mentionné (`@username`).
 
-### 20.2 Mettre en sourdine un canal (Mute)
+### 21.2 Mettre en sourdine un canal (Mute)
 
 Si un canal est trop actif :
 
@@ -911,64 +970,64 @@ Si un canal est trop actif :
 
 Pour réactiver, cliquez à nouveau sur l'icône.
 
-### 20.3 Mode "Occupé"
+### 21.3 Mode "Occupé"
 
 Lorsque vous passez votre statut en **Occupé** :
 - Les notifications de bureau sont suspendues.
 - Le rafraîchissement automatique de l'interface est suspendu.
 - Une modale de confirmation s'affiche pour vous prévenir.
 
-### 20.4 Heartbeat (ping)
+### 21.4 Heartbeat (ping)
 
 Un ping périodique (toutes les 60 secondes) est envoyé au serveur pour maintenir votre session active et mettre à jour votre statut de présence.
 
 ---
 
-## 21. Messages enregistrés
+## 22. Messages enregistrés
 
-### 21.1 Enregistrer un message
+### 22.1 Enregistrer un message
 
 1. Survolez un message.
 2. Cliquez sur l'étoile (⭐) dans la barre d'actions.
 3. L'étoile se remplit : le message est enregistré.
 
-### 21.2 Consulter ses messages enregistrés
+### 22.2 Consulter ses messages enregistrés
 
 - Depuis la barre latérale : cliquez sur **Messages enregistrés** dans la section **Raccourcis**.
 - URL : `/saved-messages`.
 - La page affiche la liste chronologique inversée de tous vos messages enregistrés, avec le nom du canal source.
 - Cliquez sur un message pour accéder à son contexte dans le canal d'origine.
 
-### 21.3 Retirer un message
+### 22.3 Retirer un message
 
 - Cliquez à nouveau sur l'étoile (⭐) d'un message enregistré.
 - Ou depuis la page "Messages enregistrés", cliquez sur l'étoile pour le retirer.
 
 ---
 
-## 22. Mes réactions
+## 23. Mes réactions
 
-### 22.1 Consulter ses réactions
+### 23.1 Consulter ses réactions
 
 - Depuis la barre latérale : cliquez sur **Mes réactions** dans la section **Raccourcis**.
 - URL : `/my-reactions`.
 - La page affiche tous les messages sur lesquels vous avez ajouté une réaction, classés chronologiquement.
 
-### 22.2 Filtrer par émoji
+### 23.2 Filtrer par émoji
 
 - Une barre de filtrage en haut de la page liste tous les émojis que vous avez utilisés.
 - Cliquez sur un émoji pour filtrer : seuls les messages avec cet émoji spécifique sont affichés.
 - URL avec filtre : `/my-reactions/{emoji}` (ex: `/my-reactions/❤️`).
 
-### 22.3 Utilité
+### 23.3 Utilité
 
 Cette fonctionnalité vous permet de retrouver facilement les discussions auxquelles vous avez participé activement, sans avoir à parcourir l'historique complet.
 
 ---
 
-## 23. Assistant virtuel et synthèse IA
+## 24. Assistant virtuel et synthèse IA
 
-### 23.1 Présentation
+### 24.1 Présentation
 
 L'Assistant virtuel Roquette est propulsé par un modèle de langage (LLM) via Ollama. Il peut vous aider à :
 
@@ -976,7 +1035,7 @@ L'Assistant virtuel Roquette est propulsé par un modèle de langage (LLM) via O
 - Résumer des canaux de discussion.
 - Répondre à des questions générales.
 
-### 23.2 Commande `/help`
+### 24.2 Commande `/help`
 
 Depuis **n'importe quel canal**, saisissez :
 
@@ -989,7 +1048,7 @@ Fonctionnement :
 2. Il recherche dans la documentation de l'application.
 3. La réponse s'affiche de manière privée (visible uniquement par vous) directement dans le flux du canal actif.
 
-### 23.3 Canal privé Assistant (🤖)
+### 24.3 Canal privé Assistant (🤖)
 
 Accédez au canal privé de l'Assistant depuis la barre latérale (section **Raccourcis**).
 
@@ -1005,10 +1064,10 @@ Fais-moi un résumé du canal #projet-x
 
 Fonctionnement du résumé :
 1. L'Assistant priorise les **messages non lus** du canal désigné.
-2. S'il n'y a aucun message non lus, il génère une synthèse thématique des **100 derniers messages**.
+2. S'il n'y a aucun message non lu, il génère une synthèse thématique des **100 derniers messages**.
 3. Le résumé apparaît dans votre canal privé Assistant.
 
-### 23.4 Retour en temps réel (streaming)
+### 24.4 Retour en temps réel (streaming)
 
 Lors d'une requête complexe, l'Assistant affiche des étapes de progression :
 
@@ -1017,15 +1076,15 @@ Lors d'une requête complexe, l'Assistant affiche des étapes de progression :
 3. `Résumé du canal... ⏳` (pour les résumés)
 4. La réponse définitive s'affiche.
 
-### 23.5 Navigation pendant la génération
+### 24.5 Navigation pendant la génération
 
 Si vous changez de canal pendant que l'Assistant génère une réponse :
 
 - La réponse ne perturbe pas votre lecture actuelle.
-- Un badge de message non lus apparaît sur le lien `🤖 Assistant` dans la barre latérale.
+- Un badge de message non lu apparaît sur le lien `🤖 Assistant` dans la barre latérale.
 - La réponse est disponible quand vous revenez.
 
-### 23.6 Configuration (administrateur)
+### 24.6 Configuration (administrateur)
 
 Le modèle LLM est configurable dans `.env.local` :
 
@@ -1037,13 +1096,13 @@ LLM_SYSTEM_PROMPT="Tu es l'Assistant Roquette, un assistant virtuel d'aide pour 
 
 ---
 
-## 24. Administration
+## 25. Administration
 
-### 24.1 Accès
+### 25.1 Accès
 
-Accessible depuis le menu utilisateur → **Administration**, ou via l'URL `/admin/users`. Cette section est réservée aux utilisateurs ayant le rôle `ROLE_ADMIN`.
+Accessible depuis le menu utilisateur → **Administration**, ou via l'URL `/admin/users`. Cette section est réservée aux utilisateurs ayant le rôle `ROLE_ADMIN` ou, pour la section groupes, aux gestionnaires de groupes.
 
-### 24.2 Gestion des utilisateurs
+### 25.2 Gestion des utilisateurs
 
 **URL** : `/admin/users`
 
@@ -1063,35 +1122,27 @@ Actions disponibles :
 
 Pagination : 25 utilisateurs par page.
 
-### 24.3 Gestion des groupes
+### 25.3 Gestion des groupes
 
 **URL** : `/admin/groups`
 
-Permet de gérer des groupes d'utilisateurs (utiles pour l'abonnement automatique aux canaux).
+Permet de gérer des groupes d'utilisateurs (utiles pour l'abonnement automatique aux canaux officiels).
+> [!NOTE]
+> Les utilisateurs nommés administrateurs d'un groupe spécifique (sans être administrateurs globaux de l'application) peuvent également accéder à ce panel pour gérer uniquement les membres des groupes qu'ils administrent.
 
 Fonctionnalités :
 
-- **Créer un groupe local** : nom + identifiant unique.
+- **Créer un groupe local** : nom + identifiant unique. Un canal privé officiel est automatiquement créé en association.
 - **Rechercher dans l'annuaire** (LDAP/externe) : si configuré.
 - **Importer des groupes** depuis l'annuaire externe.
-- Lister les groupes locaux avec :
+- Lister les groupes administrés avec :
   - Nom et identifiant (DN pour LDAP).
   - Canal officiel lié (le cas échéant).
   - Administrateurs du groupe.
   - Nombre de membres.
-  - Actions : gérer les membres, modifier, supprimer.
+  - Actions : gérer les membres (ajouter, supprimer ou nommer administrateur de groupe), modifier, supprimer.
 
-**Gestion des membres d'un groupe** :
-
-- **Groupes locaux** :
-  - Ajouter un membre via autocomplétion.
-  - Nommer un administrateur du groupe.
-  - Retirer un membre ou un administrateur.
-- **Groupes externes (synchro)** :
-  - Liste en lecture seule.
-  - Les utilisateurs sans compte sont marqués "Non enregistré".
-
-### 24.4 Gestion des exports
+### 25.4 Gestion des exports
 
 **URL** : `/admin/exports`
 
@@ -1103,7 +1154,7 @@ Tableau listant tous les exports d'historique de canaux :
 - Nom du fichier et taille.
 - Actions : télécharger, supprimer.
 
-### 24.5 Journaux d'audit
+### 25.5 Journaux d'audit
 
 **URL** : `/admin/audit-logs`
 
@@ -1119,15 +1170,33 @@ Consigne toutes les actions critiques des administrateurs :
 
 Pagination : 25 entrées par page.
 
+### 25.6 Gestion des émojis personnalisés
+
+**URL** : `/admin/emojis`
+
+Permet aux administrateurs globaux de téléverser et de gérer la bibliothèque d'émojis personnalisés mis à disposition des utilisateurs.
+- **Ajouter un émoji** : Renseignez un code d'appel (par exemple `smile` pour l'appeler via `[:smile]`) et téléversez un fichier image (le format GIF est supporté pour les émojis animés). Des étiquettes (tags) séparées par des virgules peuvent être renseignées pour faciliter la recherche.
+- **Rechercher** : Un champ permet de chercher un émoji par son code ou ses tags.
+- **Gérer les tags** : Modifiez à tout moment les étiquettes de recherche associées à un émoji ou utilisez les boutons rapides d'ajout/suppression directement sur les badges.
+- **Supprimer** : Supprime définitivement l'émoji du serveur et de son stockage.
+
+### 25.7 Gestion des espaces de travail (Workspaces)
+
+**URL** : `/admin/workspaces`
+
+Permet aux administrateurs globaux de visualiser l'ensemble des espaces de travail actifs sur l'application.
+- Une liste répertorie tous les espaces, leur type (public/privé), leur créateur et leurs statistiques.
+- Les administrateurs peuvent forcer la suppression d'un espace de travail (à l'exception de l'espace public par défaut).
+
 ---
 
-## 25. Export de l'historique
+## 26. Export de l'historique
 
-### 25.1 Fonctionnalité
+### 26.1 Fonctionnalité
 
 Les **administrateurs du canal** peuvent exporter l'historique complet des messages d'un canal sous forme de page HTML standalone.
 
-### 25.2 Procédure
+### 26.2 Procédure
 
 1. Ouvrez le canal souhaité.
 2. Menu d'actions (⋮) → **Exporter**.
@@ -1137,19 +1206,21 @@ Les **administrateurs du canal** peuvent exporter l'historique complet des messa
    - Code formaté avec coloration syntaxique.
 4. Le fichier est téléchargeable et auto-suffisant (ne nécessite pas de connexion pour être consulté).
 
-### 25.3 Accès aux exports (administration)
+### 26.3 Accès aux exports (administration)
 
 Les administrateurs système peuvent consulter, télécharger et supprimer tous les exports depuis la page **Administration → Exports**.
 
 ---
 
-## 26. Limitations et contraintes techniques
+## 27. Limitations et contraintes techniques
 
 | Élément | Limite |
 |---|---|
 | **Taille maximale d'un fichier** | 10 Mo |
+| **Taille maximale d'un avatar (profil / workspace)** | 10 Mo |
 | **Longueur du nom d'affichage** | 30 caractères |
 | **Longueur du nom d'un canal** | 20 caractères |
+| **Longueur du nom d'un workspace** | Non vide, 50 caractères max recommandés |
 | **Longueur de la description d'un canal** | 50 caractères |
 | **Longueur du nom d'une discussion** | 40 caractères (troncature du message source) |
 | **Longueur minimale du mot de passe** | 6 caractères |
@@ -1164,59 +1235,67 @@ Les administrateurs système peuvent consulter, télécharger et supprimer tous 
 
 ---
 
-## 27. Dépannage et FAQ
+## 28. Dépannage et FAQ
 
-### 27.1 Je ne reçois pas de messages en temps réel
+### 28.1 Je ne reçois pas de messages en temps réel
 
 - Vérifiez l'indicateur de connexion Mercure dans l'en-tête (vert = connecté, rouge = déconnecté).
 - Vérifiez que votre navigateur supporte les Server-Sent Events (tous les navigateurs modernes).
 - Si vous êtes en mode **Occupé**, le rafraîchissement est suspendu.
 
-### 27.2 Un fichier est bloqué
+### 28.2 Un fichier est bloqué
 
 Le fichier a été détecté comme potentiellement malveillant par ClamAV. Contactez votre administrateur si vous pensez qu'il s'agit d'un faux positif.
 
-### 27.3 Je n'arrive pas à modifier un message
+### 28.3 Je n'arrive pas à modifier un message
 
 Vous ne pouvez modifier que vos propres messages. Les messages des autres utilisateurs ne sont pas modifiables.
 
-### 27.4 Je ne vois pas le bouton "Épingler"
+### 28.4 Je ne vois pas le bouton "Épingler"
 
 Seuls le créateur du canal et les administrateurs peuvent épingler des messages.
 
-### 27.5 Comment retrouver un message que j'ai vu récemment ?
+### 28.5 Comment retrouver un message que j'ai vu récemment ?
 
 Utilisez la **Recherche globale** (Ctrl+K) avec des mots-clés, ou la **Recherche par canal** dans l'en-tête.
 
-### 27.6 Comment être alerté quand quelqu'un me mentionne ?
+### 28.6 Comment être alerté quand quelqu'un me mentionne ?
 
 1. Allez dans **Mon compte**.
 2. Activez les **notifications de bureau** et l'option **Notifications pour les mentions uniquement**.
 3. Assurez-vous que votre navigateur autorise les notifications.
 
-### 27.7 Les notifications de bureau ne fonctionnent pas
+### 28.7 Les notifications de bureau ne fonctionnent pas
 
 - Vérifiez les permissions de notification dans votre navigateur.
 - Vérifiez que les notifications ne sont pas en sourdine au niveau du système d'exploitation.
 - Vérifiez que le canal n'est pas en sourdine (🔕 dans l'en-tête).
 
-### 27.8 L'Assistant IA ne répond pas
+### 28.8 L'Assistant IA ne répond pas
 
 - Vérifiez que le service Ollama est en cours d'exécution (`docker compose ps`).
 - Vérifiez la configuration dans `.env.local` (modèle, endpoint).
 - L'Assistant peut prendre quelques instants pour répondre aux requêtes complexes.
 
-### 27.9 Comment supprimer mon compte ?
+### 28.9 Comment supprimer mon compte ?
 
 La suppression de compte n'est pas disponible depuis l'interface utilisateur. Contactez un administrateur.
 
-### 27.10 Erreur 403 / 404 / 500
+### 28.10 Erreur 403 / 404 / 500
 
 Des pages d'erreur personnalisées sont affichées selon le type d'erreur :
 - **403** : accès refusé (vous n'avez pas les permissions nécessaires).
 - **404** : page ou canal introuvable.
 - **500** : erreur interne du serveur (contactez un administrateur).
 
+### 28.11 Comment rejoindre un espace de travail privé ?
+
+Vous devez y être invité par le créateur du workspace ou par un administrateur global. Une fois l'invitation envoyée, elle s'affiche dans votre section "Invitations" de la barre latérale ainsi que sur votre tableau de bord des espaces (`/workspaces`).
+
+### 28.12 Je ne trouve pas d'option pour quitter ou supprimer le workspace "Public"
+
+L'espace de travail public est l'espace communautaire permanent par défaut de Roquette. Aucun utilisateur ne peut le quitter, et il ne peut pas être supprimé par les administrateurs afin de garantir une base de discussion commune permanente.
+
 ---
 
-*Document généré le 14 juin 2026. Pour toute question, contactez l'équipe technique.*
+*Document généré le 4 juillet 2026. Pour toute question, contactez l'équipe technique.*
