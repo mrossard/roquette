@@ -1,4 +1,4 @@
-<div class="sidebar-workspace-selector">
+<div class="sidebar-workspace-selector banner-style">
     {% set currentWorkspace = null %}
     {% if activeChannel and activeChannel.workspace %}
         {% set currentWorkspace = activeChannel.workspace %}
@@ -31,16 +31,74 @@
     {% endfor %}
 
     <details class="workspace-dropdown-details">
-        <summary class="workspace-dropdown-trigger" aria-expanded="false">
+        <summary class="workspace-dropdown-trigger banner-trigger" aria-expanded="false">
             {% if currentWorkspace %}
-                <span class="workspace-current-name">{{ currentWorkspace.name }}</span>
+                {% if currentWorkspace.avatarPath %}
+                    <span class="workspace-avatar-wrapper">
+                        <img src="{{ path('app_workspace_avatar', {slug: currentWorkspace.slug}) }}" alt="Avatar" class="workspace-avatar-img">
+                        <span class="workspace-active-dot"></span>
+                    </span>
+                {% else %}
+                    {# Avatar généré dynamiquement #}
+                    {% set initials = currentWorkspace.name|slice(0, 2)|upper %}
+                    {% set charToHue = {
+                        'A': 15, 'B': 30, 'C': 45, 'D': 60, 'E': 75, 'F': 90, 'G': 105, 'H': 120, 'I': 135, 'J': 150, 'K': 165, 'L': 180, 'M': 195,
+                        'N': 210, 'O': 225, 'P': 240, 'Q': 255, 'R': 270, 'S': 285, 'T': 300, 'U': 315, 'V': 330, 'W': 345, 'X': 360, 'Y': 20, 'Z': 50
+                    } %}
+                    {% set firstChar = currentWorkspace.name|slice(0, 1)|upper %}
+                    {% set hue = charToHue[firstChar]|default(200) %}
+                    <span class="workspace-avatar" style="--ws-hue: {{ hue }}deg;">
+                        {{ initials }}
+                        <span class="workspace-active-dot"></span>
+                    </span>
+                {% endif %}
+                
+                <div class="workspace-info-meta">
+                    <div class="banner-top">
+                        <span class="workspace-current-name-large">{{ currentWorkspace.name }}</span>
+                        {% if totalOtherWorkspaceUnread > 0 %}
+                            <span class="other-workspace-unread-badge">{{ totalOtherWorkspaceUnread }}</span>
+                        {% endif %}
+                        <span class="workspace-dropdown-arrow">▼</span>
+                        
+                        <details class="user-status-dropdown-container workspace-gear-btn" onclick="event.stopPropagation();">
+                            <summary class="user-status-trigger workspace-gear-trigger" aria-expanded="false" title="{{ "Actions de l'espace"|trans }}">
+                                ⚙️
+                            </summary>
+                            <div class="user-status-dropdown-menu" role="menu">
+                                {% if (currentWorkspace.creator and currentWorkspace.creator.id == app.user.id) or is_granted('ROLE_ADMIN') %}
+                                    <button class="user-status-option" role="menuitem"
+                                            hx-get="{{ path('app_workspace_settings_modal', {slug: currentWorkspace.slug}) }}"
+                                            hx-target="#modal-container">
+                                        <span class="option-icon">⚙️</span>
+                                        <span class="option-label">{{ "Paramètres de l'espace"|trans }}</span>
+                                    </button>
+                                    <button class="user-status-option" role="menuitem"
+                                            hx-get="{{ path('app_workspace_invite_modal', {slug: currentWorkspace.slug}) }}"
+                                            hx-target="#modal-container">
+                                        <span class="option-icon">✉️</span>
+                                        <span class="option-label">{{ 'Inviter'|trans }}</span>
+                                    </button>
+                                {% endif %}
+                                <button class="user-status-option" role="menuitem"
+                                        hx-get="{{ path('app_workspace_members_modal', {slug: currentWorkspace.slug}) }}"
+                                        hx-target="#modal-container">
+                                    <span class="option-icon">👥</span>
+                                    <span class="option-label">{{ "Membres de l'espace"|trans }}</span>
+                                </button>
+                            </div>
+                        </details>
+                    </div>
+                </div>
             {% else %}
-                <span class="workspace-current-name">{{ 'Sélectionner un espace'|trans }}</span>
+                <span class="workspace-avatar anonymous">?</span>
+                <div class="workspace-info-meta">
+                    <div class="banner-top">
+                        <span class="workspace-current-name-large">{{ 'Sélectionner un espace'|trans }}</span>
+                        <span class="workspace-dropdown-arrow">▼</span>
+                    </div>
+                </div>
             {% endif %}
-            {% if totalOtherWorkspaceUnread > 0 %}
-                <span class="other-workspace-unread-badge">{{ totalOtherWorkspaceUnread }}</span>
-            {% endif %}
-            <span class="workspace-dropdown-arrow">▼</span>
         </summary>
         <div class="workspace-dropdown-menu" role="menu">
             {% for ws in workspaces %}
@@ -48,7 +106,11 @@
                    class="workspace-dropdown-item {% if currentWorkspace and ws.id == currentWorkspace.id %}active{% endif %}"
                    role="menuitem"
                    data-workspace-id="{{ ws.id }}">
-                    <span class="workspace-item-icon">{{ ws.isPublic ? '🌐' : '🔒' }}</span>
+                    {% if ws.avatarPath %}
+                        <img src="{{ path('app_workspace_avatar', {slug: ws.slug}) }}" alt="Avatar" class="workspace-item-avatar-mini">
+                    {% else %}
+                        <span class="workspace-item-icon">{{ ws.isPublic ? '🌐' : '🔒' }}</span>
+                    {% endif %}
                     <span class="workspace-item-name">{{ ws.name }}</span>
                     {% if workspaceUnreadCounts[ws.id] is defined and workspaceUnreadCounts[ws.id] > 0 and (not currentWorkspace or ws.id != currentWorkspace.id) %}
                         <span class="workspace-unread-badge">{{ workspaceUnreadCounts[ws.id] }}</span>
@@ -68,21 +130,12 @@
     </details>
 
     {% if currentWorkspace %}
-        <div class="workspace-actions-row">
-            {% if (currentWorkspace.creator and currentWorkspace.creator.id == app.user.id) or is_granted('ROLE_ADMIN') %}
-                <button class="ws-action-btn"
-                        hx-get="{{ path('app_workspace_settings_modal', {slug: currentWorkspace.slug}) }}"
-                        hx-target="#modal-container"
-                        title="{{ "Paramètres de l'espace"|trans }}">⚙️</button>
-                <button class="ws-action-btn"
-                        hx-get="{{ path('app_workspace_invite_modal', {slug: currentWorkspace.slug}) }}"
-                        hx-target="#modal-container"
-                        title="{{ 'Inviter'|trans }}">✉️</button>
+        <div class="workspace-description-row">
+            {% if currentWorkspace.description %}
+                <p class="workspace-current-description-full">{{ currentWorkspace.description }}</p>
+            {% else %}
+                <p class="workspace-current-description-full">{{ currentWorkspace.isPublic ? '🌐 Espace Public'|trans : '🔒 Espace Privé'|trans }}</p>
             {% endif %}
-            <button class="ws-action-btn"
-                    hx-get="{{ path('app_workspace_members_modal', {slug: currentWorkspace.slug}) }}"
-                    hx-target="#modal-container"
-                    title="{{ "Membres de l'espace"|trans }}">👥</button>
         </div>
     {% endif %}
 </div>

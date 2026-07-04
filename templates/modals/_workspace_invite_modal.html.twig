@@ -1,37 +1,21 @@
 {% embed 'partials/_modal_layout.html.twig' with {
     id: 'workspace-invite-modal',
+    content_style: 'max-width: 480px !important;',
     title: ('Inviter dans "' ~ workspace.name ~ '"')|trans
 } %}
     {% block modal_body %}
-        <div id="workspace-invite-results">
-            <div class="input-group">
-                <label for="invite-search">{{ 'Rechercher un membre à inviter...'|trans }}</label>
-                <input type="text" id="invite-search" name="q" class="input-sidebar"
-                       placeholder="{{ 'Saisissez un nom pour rechercher un membre.'|trans }}"
-                       hx-get="{{ path('app_workspace_invite_search', {slug: workspace.slug}) }}"
-                       hx-trigger="keyup changed delay:300ms"
-                       hx-target="#workspace-invite-results"
-                       hx-swap="outerHTML">
-            </div>
+        <div class="input-group" style="margin-bottom: 0.5rem;">
+            <label for="invite-search" style="font-weight: 600; font-size: 0.95rem; display: block; margin-bottom: 0.5rem; color: var(--text-primary);">{{ 'Rechercher un membre à inviter...'|trans }}</label>
+            <input type="text" id="invite-search" name="q" class="input-sidebar"
+                   placeholder="{{ 'Saisissez un nom pour rechercher un membre.'|trans }}"
+                   hx-get="{{ path('app_workspace_invite_search', {slug: workspace.slug}) }}"
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#workspace-invite-users"
+                   hx-swap="innerHTML">
+        </div>
 
-            <div id="workspace-invite-users" style="margin-top: 1rem;">
-                {% if usersToInvite is defined and usersToInvite is not empty %}
-                    {% for user in usersToInvite %}
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border-glass);">
-                            <span>{{ user.displayName|default(user.username) }}</span>
-                            <form action="{{ path('app_workspace_invite', {slug: workspace.slug}) }}" method="POST" style="display: inline;">
-                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
-                                <input type="hidden" name="userId" value="{{ user.id }}">
-                                <button type="submit" class="btn-publish" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">
-                                    {{ 'Inviter'|trans }}
-                                </button>
-                            </form>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p style="color: var(--text-muted); font-size: 0.85rem;">{{ 'Aucun membre trouvé.'|trans }}</p>
-                {% endif %}
-            </div>
+        <div id="workspace-invite-users" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.25rem; margin-top: 0.75rem;">
+            {% include 'modals/_workspace_invite_results.html.twig' with {'workspace': workspace, 'usersToInvite': [], 'searched': false} %}
         </div>
     {% endblock %}
 {% endembed %}

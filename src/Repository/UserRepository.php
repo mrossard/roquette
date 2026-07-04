@@ -52,6 +52,22 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getResult();
     }
 
+    /** @return User[] */
+    public function findMembersForWorkspace(\App\Entity\Workspace $workspace, User $exceptUser): array
+    {
+        return $this->createQueryBuilder('u')
+            ->join('u.workspaces', 'w')
+            ->where('w.id = :workspaceId')
+            ->andWhere('u.id != :exceptUserId')
+            ->andWhere('u.username != :robot')
+            ->setParameter('workspaceId', $workspace->getId())
+            ->setParameter('exceptUserId', $exceptUser->getId())
+            ->setParameter('robot', User::ROBOT_USERNAME)
+            ->orderBy('u.username', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     /** @return User[] Users not already members of $channel and without a pending invitation */
     public function findInvitableForChannel(Channel $channel, User $currentUser, ?string $searchQuery = null): array
     {

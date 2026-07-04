@@ -3,7 +3,7 @@
     title: ('Paramètres de l\'espace "' ~ workspace.name ~ '"')|trans
 } %}
     {% block modal_body %}
-        <form action="{{ path('app_workspace_edit', {slug: workspace.slug}) }}" method="POST" hx-boost="false">
+        <form action="{{ path('app_workspace_edit', {slug: workspace.slug}) }}" method="POST" enctype="multipart/form-data" hx-boost="false">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
             <div class="input-group">
                 <label for="ws-name">{{ "Nom de l'espace"|trans }}</label>
@@ -14,6 +14,23 @@
                 <label for="ws-description">{{ 'Description'|trans }}</label>
                 <input type="text" id="ws-description" name="description" value="{{ workspace.description ?? '' }}"
                        maxlength="255" class="input-sidebar">
+            </div>
+            
+            {% if workspace.avatarPath %}
+                <div class="input-group" style="margin-top: 0.5rem;">
+                    <label>{{ "Avatar actuel"|trans }}</label>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem;">
+                        <img src="{{ path('app_workspace_avatar', {slug: workspace.slug}) }}" alt="Avatar" style="width: 48px; height: 48px; border-radius: 0.6rem; object-fit: cover; border: 1px solid var(--border-glass);">
+                        <button type="submit" name="delete_avatar" value="1" class="btn-publish" style="background: var(--accent-red); margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; color: #fff;">
+                            {{ "Supprimer l'avatar"|trans }}
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="input-group" style="margin-top: 0.5rem;">
+                <label for="ws-avatar">{{ 'Importer un avatar'|trans }}</label>
+                <input type="file" id="ws-avatar" name="avatar" accept="image/*" class="input-sidebar">
             </div>
 
             <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">{{ 'Enregistrer les modifications'|trans }}</button>

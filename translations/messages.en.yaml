@@ -80,6 +80,9 @@ Rechercher...: Search...
 Tout: All
 'Aucune réaction': 'No reactions'
 'Répertoire des canaux': 'Channel Directory'
+'Répertoire & Annuaire': 'Directory & Members'
+'Canaux publics': 'Public Channels'
+'Parcourez les canaux ou trouvez des membres de cet espace pour leur écrire en privé.': 'Browse channels or find workspace members to message them privately.'
 Favoris: Favorites
 Canaux: Channels
 'Aucun canal': 'No channels'
@@ -552,6 +555,7 @@ Membre: 'Member'
 'Message Direct': 'Direct Message'
 'Aucun autre membre': 'No other members'
 "Il n'y a pas d'autres utilisateurs enregistrés pour le moment.": 'There are no other registered users at the moment.'
+"Il n'y a pas d'autres membres dans cet espace pour le moment.": 'There are no other members in this workspace at the moment.'
 Question: 'Question'
 'Posez votre question...': 'Ask your question...'
 'Autoriser plusieurs réponses': 'Allow multiple answers'

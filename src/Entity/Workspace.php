@@ -44,6 +44,9 @@ class Workspace
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?User $creator = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $avatarPath = null;
+
     /**
      * @var Collection<int, User>
      */
@@ -195,6 +198,18 @@ class Workspace
                 $channel->setWorkspace(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getAvatarPath(): ?string
+    {
+        return $this->avatarPath;
+    }
+
+    public function setAvatarPath(?string $avatarPath): static
+    {
+        $this->avatarPath = $avatarPath;
 
         return $this;
     }

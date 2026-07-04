@@ -1,38 +1,43 @@
-<div id="workspace-invite-results">
-    {% if successMessage is defined %}
-        <div style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: var(--accent-green); border-radius: 0.75rem; font-size: 0.9rem;">
-            {{ successMessage }}
-        </div>
-    {% endif %}
-
-    <div class="input-group">
-        <label for="invite-search">{{ 'Rechercher un membre à inviter...'|trans }}</label>
-        <input type="text" id="invite-search" name="q" class="input-sidebar"
-               placeholder="{{ 'Saisissez un nom pour rechercher un membre.'|trans }}"
-               hx-get="{{ path('app_workspace_invite_search', {slug: workspace.slug}) }}"
-               hx-trigger="keyup changed delay:300ms"
-               hx-target="#workspace-invite-results"
-               hx-swap="outerHTML">
+{% if successMessage|default(null) %}
+    <div class="alert-success fade-in" style="margin-bottom: 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: var(--accent-green); border-radius: 0.75rem; padding: 0.75rem 1rem; font-size: 0.9rem; font-weight: 500; width: 100%;">
+        ✓ {{ successMessage }}
     </div>
+{% endif %}
 
-    <div id="workspace-invite-users" style="margin-top: 1rem;">
-        {% if usersToInvite is defined and usersToInvite is not empty %}
-            {% for user in usersToInvite %}
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border-glass);">
-                    <span>{{ user.displayName|default(user.username) }}</span>
-                    <form action="{{ path('app_workspace_invite', {slug: workspace.slug}) }}" method="POST" style="display: inline;">
-                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
-                        <input type="hidden" name="userId" value="{{ user.id }}">
-                        <button type="submit" class="btn-publish" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">
-                            {{ 'Inviter'|trans }}
-                        </button>
-                    </form>
+{% if searched %}
+    {% if usersToInvite is not empty %}
+        {% for u in usersToInvite|sort((a, b) => (a.displayName|default(a.username))|lower <=> (b.displayName|default(b.username))|lower) %}
+            <div class="modal-invite-item" data-username="{{ u.username|lower }}" data-name="{{ (u.displayName|default(u.username))|lower }}" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 0.75rem; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); transition: background 0.2s; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="avatar-container" style="position: relative; width: 36px; height: 36px;">
+                        <div class="user-avatar-circle" style="background-color: hsl({{ u.hue }}, 90%, var(--user-hue-lightness-border)); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1rem; box-shadow: 0 0 10px hsla({{ u.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
+                            {{ u.username|slice(0,1)|upper }}
+                        </div>
+                        <span class="status-dot-overlay {{ u.status }}" style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-card); display: block;" title="{{ u.statusLabel }}"></span>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">
+                            {{ u.displayName|default(u.username) }}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">@{{ u.username }}</div>
+                    </div>
                 </div>
-            {% endfor %}
-        {% elseif searched is defined and searched %}
-            <p style="color: var(--text-muted); font-size: 0.85rem;">{{ 'Aucun utilisateur trouvé.'|trans }}</p>
-        {% else %}
-            <p style="color: var(--text-muted); font-size: 0.85rem;">{{ 'Recherchez des utilisateurs à inviter.'|trans }}</p>
-        {% endif %}
-    </div>
-</div>
+
+                <button type="button"
+                        class="btn-publish"
+                        hx-post="{{ path('app_workspace_invite', {slug: workspace.slug}) }}"
+                        hx-vals='{"userId": "{{ u.id }}"}'
+                        hx-include="#invite-search"
+                        hx-target="#workspace-invite-users"
+                        hx-swap="innerHTML transition:false"
+                        style="padding: 0.4rem 0.75rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; border-radius: 0.5rem; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); color: #0f172a; border: none; transition: var(--transition-smooth);">
+                    {{ 'Inviter'|trans }}
+                </button>
+            </div>
+        {% endfor %}
+    {% else %}
+        <span style="font-size: 0.85rem; color: var(--text-muted); text-align: center; display: block; padding: 1rem 0; width: 100%;">{{ 'Aucun membre trouvé pour cette recherche.'|trans }}</span>
+    {% endif %}
+{% else %}
+    <span style="font-size: 0.85rem; color: var(--text-muted); text-align: center; display: block; padding: 1rem 0; width: 100%;">{{ 'Saisissez un nom pour rechercher un membre.'|trans }}</span>
+{% endif %}

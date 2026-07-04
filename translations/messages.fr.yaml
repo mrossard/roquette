@@ -80,6 +80,9 @@ Rechercher...: Rechercher...
 Tout: Tout
 'Aucune réaction': 'Aucune réaction'
 'Répertoire des canaux': 'Répertoire des canaux'
+'Répertoire & Annuaire': 'Répertoire & Annuaire'
+'Canaux publics': 'Canaux publics'
+'Parcourez les canaux ou trouvez des membres de cet espace pour leur écrire en privé.': 'Parcourez les canaux ou trouvez des membres de cet espace pour leur écrire en privé.'
 Favoris: Favoris
 Canaux: Canaux
 'Aucun canal': 'Aucun canal'
@@ -552,6 +555,7 @@ Membre: Membre
 'Message Direct': 'Message Direct'
 'Aucun autre membre': 'Aucun autre membre'
 "Il n'y a pas d'autres utilisateurs enregistrés pour le moment.": "Il n'y a pas d'autres utilisateurs enregistrés pour le moment."
+"Il n'y a pas d'autres membres dans cet espace pour le moment.": "Il n'y a pas d'autres membres dans cet espace pour le moment."
 Question: Question
 'Posez votre question...': 'Posez votre question...'
 'Autoriser plusieurs réponses': 'Autoriser plusieurs réponses'

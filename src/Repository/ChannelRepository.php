@@ -127,6 +127,17 @@ class ChannelRepository extends ServiceEntityRepository
     }
 
     /** @return Channel[] */
+    public function findPublicForWorkspace(\App\Entity\Workspace $workspace): array
+    {
+        return $this->findBy([
+            'workspace' => $workspace,
+            'isPrivate' => false,
+            'isDm' => false,
+            'parentMessage' => null,
+        ], ['name' => 'ASC']);
+    }
+
+    /** @return Channel[] */
     public function findForWorkspace(\App\Entity\Workspace $workspace, User $user): array
     {
         return $this

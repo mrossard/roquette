@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Entity\Workspace;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
-use App\Repository\MessageRepository;
 use App\Repository\WorkspaceRepository;
-use App\Service\ReadTrackingService;
 use App\Service\WorkspaceManager;
+use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -144,8 +144,13 @@ final class WorkspaceController extends AbstractController
     }
 
     #[Route('/workspaces/{slug}/edit', name: 'app_workspace_edit', methods: ['POST'])]
-    public function edit(string $slug, Request $request, WorkspaceRepository $workspaceRepository): Response
-    {
+    public function edit(
+        string $slug,
+        Request $request,
+        WorkspaceRepository $workspaceRepository,
+        EntityManagerInterface $entityManager,
+        FileUploadService $fileUploadService,
+    ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
@@ -167,7 +172,34 @@ final class WorkspaceController extends AbstractController
             return $this->redirectToRoute('app_workspace_switch', ['workspaceSlug' => $slug]);
         }
 
+        // Delete avatar if requested
+        if ($request->request->has('delete_avatar')) {
+            if ($workspace->getAvatarPath()) {
+                $fileUploadService->delete($workspace->getAvatarPath());
+                $workspace->setAvatarPath(null);
+            }
+        }
+
+        // Handle file upload
+        /** @var UploadedFile|null $avatarFile */
+        $avatarFile = $request->files->get('avatar');
+        if ($avatarFile instanceof UploadedFile) {
+            try {
+                // Delete old avatar first if it exists
+                if ($workspace->getAvatarPath()) {
+                    $fileUploadService->delete($workspace->getAvatarPath());
+                }
+                $meta = $fileUploadService->upload($avatarFile);
+                $workspace->setAvatarPath($meta['filePath']);
+            } catch (\InvalidArgumentException $e) {
+                $this->addFlash('error', $e->getMessage());
+
+                return $this->redirectToRoute('app_workspace_switch', ['workspaceSlug' => $slug]);
+            }
+        }
+
         $this->workspaceManager->update($workspace, $name, $description ?: null);
+        $entityManager->flush();
 
         $this->addFlash('success', $this->translator->trans('Les paramètres du workspace ont été modifiés.'));
 
@@ -175,8 +207,11 @@ final class WorkspaceController extends AbstractController
     }
 
     #[Route('/workspaces/{slug}/delete', name: 'app_workspace_delete', methods: ['POST'])]
-    public function delete(string $slug, WorkspaceRepository $workspaceRepository): Response
-    {
+    public function delete(
+        string $slug,
+        WorkspaceRepository $workspaceRepository,
+        FileUploadService $fileUploadService,
+    ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
@@ -187,6 +222,10 @@ final class WorkspaceController extends AbstractController
 
         if ($workspace->getCreator() !== $currentUser && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException();
+        }
+
+        if ($workspace->getAvatarPath()) {
+            $fileUploadService->delete($workspace->getAvatarPath());
         }
 
         try {
@@ -202,6 +241,54 @@ final class WorkspaceController extends AbstractController
         ]));
 
         return $this->redirectToRoute('app_workspace_switch', ['workspaceSlug' => 'public']);
+    }
+
+    #[Route('/workspaces/{slug}/avatar', name: 'app_workspace_avatar', methods: ['GET'])]
+    public function serveAvatar(
+        string $slug,
+        WorkspaceRepository $workspaceRepository,
+        FileUploadService $fileUploadService,
+    ): Response {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+
+        $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
+        if (!$workspace || !$workspace->getAvatarPath()) {
+            throw $this->createNotFoundException($this->translator->trans('Avatar non trouvé.'));
+        }
+
+        if (!$workspace->isMember($currentUser) && !$workspace->isPublic()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$fileUploadService->exists($workspace->getAvatarPath())) {
+            throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
+        }
+
+        $stream = $fileUploadService->readStream($workspace->getAvatarPath());
+
+        $ext = strtolower(pathinfo($workspace->getAvatarPath(), PATHINFO_EXTENSION));
+        $mimeType = match ($ext) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+            default => 'image/png',
+        };
+
+        return new StreamedResponse(
+            static function () use ($stream) {
+                fpassthru($stream);
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            },
+            Response::HTTP_OK,
+            [
+                'Content-Type' => $mimeType,
+                'Cache-Control' => 'public, max-age=31536000, immutable',
+            ]
+        );
     }
 
     #[Route('/workspaces/{slug}/invite-modal', name: 'app_workspace_invite_modal', methods: ['GET'])]
@@ -256,9 +343,19 @@ final class WorkspaceController extends AbstractController
 
         $invitation = $this->workspaceManager->inviteUser($workspace, $currentUser, $invitedUser);
 
+        $query = $request->request->get('q', '');
+        $query = trim($query);
+
+        $usersToInvite = [];
+        if ($query !== '') {
+            $usersToInvite = $workspaceRepository->findMembersNotInWorkspace($workspace, $currentUser, $query);
+        }
+
         return $this->render('modals/_workspace_invite_results.html.twig', [
             'workspace' => $workspace,
+            'usersToInvite' => $usersToInvite,
             'successMessage' => sprintf('%s a été invité !', $invitedUser->getUsername()),
+            'searched' => $query !== '',
         ]);
     }
 
