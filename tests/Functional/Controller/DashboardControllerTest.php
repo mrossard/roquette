@@ -74,6 +74,14 @@ class DashboardControllerTest extends WebTestCase
         if (!$public) {
             $channel->setIsPrivate(true);
         }
+
+        $publicWorkspace = $this->entityManager
+            ->getRepository(\App\Entity\Workspace::class)
+            ->findOneBy(['isPublic' => true]);
+        if ($publicWorkspace) {
+            $channel->setWorkspace($publicWorkspace);
+        }
+
         $this->entityManager->persist($channel);
         $this->entityManager->flush();
 

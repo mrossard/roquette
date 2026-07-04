@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\Invitation;
 use App\Repository\ChannelRepository;
 use App\Service\MercurePublisher;
+use App\Service\WorkspaceManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,7 +19,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class InvitationController extends AbstractController
 {
     // -------------------------------------------------------------------------
-    // Send invitation
+    // Send invitation to channel
     // -------------------------------------------------------------------------
 
     #[Route('/channels/{slug}/invite', name: 'app_channel_invite', methods: ['POST'])]
@@ -149,6 +150,7 @@ final class InvitationController extends AbstractController
     public function acceptInvitation(
         int $id,
         EntityManagerInterface $entityManager,
+        WorkspaceManager $workspaceManager,
         \Psr\Log\LoggerInterface $logger,
     ): Response {
         /** @var \App\Entity\User $currentUser */
@@ -163,7 +165,36 @@ final class InvitationController extends AbstractController
             return new Response('Non autorisé.', 403);
         }
 
+        // Workspace invitation
+        $workspace = $invitation->getWorkspace();
+        if ($workspace) {
+            $workspaceManager->acceptInvitation($invitation, $currentUser);
+
+            $logger->info(sprintf(
+                'User "%s" accepted invitation to workspace "%s" (slug: "%s")',
+                $currentUser->getUsername(),
+                $workspace->getName(),
+                $workspace->getSlug(),
+            ));
+
+            $defaultChannel = $workspaceManager->getDefaultChannel($workspace);
+            if ($defaultChannel) {
+                return new Response(null, 204, [
+                    'HX-Redirect' => $this->generateUrl('app_channel', ['slug' => $defaultChannel->getSlug()]),
+                ]);
+            }
+
+            return new Response(null, 204, [
+                'HX-Redirect' => $this->generateUrl('app_workspace_switch', ['workspaceSlug' => $workspace->getSlug()]),
+            ]);
+        }
+
+        // Legacy channel invitation
         $channel = $invitation->getChannel();
+        if (!$channel) {
+            return new Response('Invitation invalide.', 404);
+        }
+
         $channel->addMember($currentUser);
         $entityManager->remove($invitation);
         $entityManager->flush();
@@ -188,6 +219,7 @@ final class InvitationController extends AbstractController
     public function rejectInvitation(
         int $id,
         EntityManagerInterface $entityManager,
+        WorkspaceManager $workspaceManager,
         \Psr\Log\LoggerInterface $logger,
     ): Response {
         /** @var \App\Entity\User $currentUser */
@@ -202,17 +234,29 @@ final class InvitationController extends AbstractController
             return new Response('Non autorisé.', 403);
         }
 
-        $channel = $invitation->getChannel();
-        $logger->info(sprintf(
-            'User "%s" rejected invitation (ID: %d) to channel "%s" (slug: "%s")',
-            $currentUser->getUsername(),
-            $id,
-            $channel->getName(),
-            $channel->getSlug(),
-        ));
+        $workspace = $invitation->getWorkspace();
+        if ($workspace) {
+            $workspaceManager->rejectInvitation($invitation);
 
-        $entityManager->remove($invitation);
-        $entityManager->flush();
+            $logger->info(sprintf(
+                'User "%s" rejected invitation to workspace "%s" (slug: "%s")',
+                $currentUser->getUsername(),
+                $workspace->getName(),
+                $workspace->getSlug(),
+            ));
+        } else {
+            $channel = $invitation->getChannel();
+            $logger->info(sprintf(
+                'User "%s" rejected invitation (ID: %d) to channel "%s" (slug: "%s")',
+                $currentUser->getUsername(),
+                $id,
+                $channel?->getName() ?? '?',
+                $channel?->getSlug() ?? '?',
+            ));
+
+            $entityManager->remove($invitation);
+            $entityManager->flush();
+        }
 
         return new Response('', 200);
     }

@@ -9,3 +9,28 @@
         🔕 {{ 'Sourdine'|trans }}
     {% endif %}
 </button>
+
+<script>
+    (function() {
+        const activeSlug = "{{ activeChannel.slug|escape('js') }}";
+        const enabled = {{ notificationsEnabled ? 'true' : 'false' }};
+        
+        // Sync the channel link in the sidebar DOM if it exists
+        const channelLink = document.querySelector(`.channel-link[data-channel-slug="${activeSlug}"]`);
+        if (channelLink) {
+            channelLink.setAttribute('data-notifications-enabled', enabled ? 'true' : 'false');
+        }
+        
+        // Sync the global channel-notifications meta tag
+        const meta = document.querySelector('meta[name="channel-notifications"]');
+        if (meta) {
+            try {
+                const map = JSON.parse(meta.getAttribute('content'));
+                map[activeSlug] = enabled;
+                meta.setAttribute('content', JSON.stringify(map));
+            } catch (e) {
+                console.error('Failed to sync channel-notifications map:', e);
+            }
+        }
+    })();
+</script>

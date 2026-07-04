@@ -58,7 +58,9 @@ class OAuthControllerTest extends WebTestCase
      */
     private function authorizeUrl(string $base, string $challenge): string
     {
-        return $base . '?' . http_build_query([
+        return $base
+        . '?'
+        . http_build_query([
             'code_challenge' => $challenge,
             'code_challenge_method' => 'S256',
         ]);
@@ -335,10 +337,14 @@ class OAuthControllerTest extends WebTestCase
         $code = $params['code'];
 
         // Exchange with code and code_verifier as query params
-        $this->client->request('POST', '/oauth/mock/token?' . http_build_query([
-            'code' => $code,
-            'code_verifier' => $pkce['verifier'],
-        ]));
+        $this->client->request(
+            'POST',
+            '/oauth/mock/token?'
+                . http_build_query([
+                    'code' => $code,
+                    'code_verifier' => $pkce['verifier'],
+                ]),
+        );
 
         $this->assertResponseIsSuccessful();
         $data = json_decode($this->client->getResponse()->getContent(), true);

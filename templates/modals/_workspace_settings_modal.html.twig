@@ -1,0 +1,33 @@
+{% embed 'partials/_modal_layout.html.twig' with {
+    id: 'workspace-settings-modal',
+    title: ('Paramètres de l\'espace "' ~ workspace.name ~ '"')|trans
+} %}
+    {% block modal_body %}
+        <form action="{{ path('app_workspace_edit', {slug: workspace.slug}) }}" method="POST" hx-boost="false">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+            <div class="input-group">
+                <label for="ws-name">{{ "Nom de l'espace"|trans }}</label>
+                <input type="text" id="ws-name" name="name" required value="{{ workspace.name }}" maxlength="255"
+                       class="input-sidebar">
+            </div>
+            <div class="input-group" style="margin-top: 0.5rem;">
+                <label for="ws-description">{{ 'Description'|trans }}</label>
+                <input type="text" id="ws-description" name="description" value="{{ workspace.description ?? '' }}"
+                       maxlength="255" class="input-sidebar">
+            </div>
+
+            <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">{{ 'Enregistrer les modifications'|trans }}</button>
+        </form>
+
+        {% if workspace.creator and workspace.creator.id == app.user.id or is_granted('ROLE_ADMIN') %}
+            {% if not workspace.isPublic %}
+                <hr style="margin: 1.5rem 0; border-color: var(--border-glass);">
+                <form action="{{ path('app_workspace_delete', {slug: workspace.slug}) }}" method="POST"
+                      onsubmit="return confirm('{{ 'Êtes-vous sûr de vouloir supprimer cet espace ? Tous les canaux et messages seront perdus.'|trans }}');">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+                    <button type="submit" class="btn-publish" style="background: var(--accent-red);">{{ 'Supprimer l\'espace'|trans }}</button>
+                </form>
+            {% endif %}
+        {% endif %}
+    {% endblock %}
+{% endembed %}

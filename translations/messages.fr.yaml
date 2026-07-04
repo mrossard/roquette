@@ -648,3 +648,36 @@ Vérifié: Vérifié
 'Cette adresse email est déjà utilisée.': 'Cette adresse email est déjà utilisée.'
 'Veuillez saisir une adresse email.': 'Veuillez saisir une adresse email.'
 'Veuillez saisir une adresse email valide.': 'Veuillez saisir une adresse email valide.'
+Espaces: Espaces
+'Mes espaces': 'Mes espaces'
+'Sélectionner un espace': 'Sélectionner un espace'
+"Nom de l'espace": "Nom de l'espace"
+"Nom de l'espace...": "Nom de l'espace..."
+'Créer un espace': 'Créer un espace'
+'Créer un nouvel espace': 'Créer un nouvel espace'
+"Paramètres de l'espace": "Paramètres de l'espace"
+"Paramètres de l'espace \"%name%\"": "Paramètres de l'espace \"%name%\""
+"Membres de l'espace": "Membres de l'espace"
+"Espace de travail": 'Espace de travail'
+"Espace de travail '%name%'": "Espace de travail '%name%'"
+'Espaces de travail': 'Espaces de travail'
+"Vous ne faites partie d'aucun espace.": "Vous ne faites partie d'aucun espace."
+'Espace non trouvé.': 'Espace non trouvé.'
+'Le nom du workspace ne peut pas être vide.': "Le nom de l'espace ne peut pas être vide."
+'Les paramètres du workspace ont été modifiés.': "Les paramètres de l'espace ont été modifiés."
+'Le workspace "%name%" a été supprimé.': "L'espace \"%name%\" a été supprimé."
+'Impossible de quitter le workspace public.': "Impossible de quitter l'espace public."
+'%sender% vous a invité à rejoindre le workspace "%workspaceName%"': "%sender% vous a invité à rejoindre l'espace \"%workspaceName%\""
+'Invitation à rejoindre le workspace "%name%"': "Invitation à rejoindre l'espace \"%name%\""
+"Inviter dans l'espace": "Inviter dans l'espace"
+'Invitation à rejoindre le canal "%name%"': 'Invitation à rejoindre le canal "%name%"'
+"Supprimer l'espace": "Supprimer l'espace"
+"Quitter l'espace": "Quitter l'espace"
+"Êtes-vous sûr de vouloir supprimer cet espace ? Tous les canaux et messages seront perdus.": "Êtes-vous sûr de vouloir supprimer cet espace ? Tous les canaux et messages seront perdus."
+"Vous n'avez pas accès à ce canal.": "Vous n'avez pas accès à ce canal."
+'Aucun espace de travail.': 'Aucun espace de travail.'
+'Créé le': 'Créé le'
+'Le workspace public ne peut pas être supprimé.': "Le workspace public ne peut pas être supprimé."
+'Workspace supprimé avec succès.': 'Workspace supprimé avec succès.'
+'Token CSRF invalide.': 'Token CSRF invalide.'
+'Supprimer cet espace définitivement ?': 'Supprimer cet espace définitivement ?'

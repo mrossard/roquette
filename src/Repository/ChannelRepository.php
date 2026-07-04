@@ -32,13 +32,30 @@ class ChannelRepository extends ServiceEntityRepository
         $qb = $this
             ->createQueryBuilder('c')
             ->leftJoin('c.userGroup', 'ug')
-            ->addSelect('ug');
+            ->addSelect('ug')
+            ->leftJoin('c.workspace', 'w')
+            ->addSelect('w');
 
         $conditions = $qb->expr()->orX(
+            // Direct channel membership (private channels, DMs)
             $qb->expr()->isMemberOf(':userId', 'c.members'),
+            // Channels in workspaces the user belongs to
+            $qb->expr()->in(
+                'w.id',
+                $this
+                    ->getEntityManager()
+                    ->createQueryBuilder()
+                    ->select('w2.id')
+                    ->from(\App\Entity\Workspace::class, 'w2')
+                    ->join('w2.members', 'wm')
+                    ->where('wm.id = :userId')
+                    ->getDQL(),
+            ),
         );
 
-        $localGroupDql = $this->getEntityManager()->createQueryBuilder()
+        $localGroupDql = $this
+            ->getEntityManager()
+            ->createQueryBuilder()
             ->select('IDENTITY(gs_local.channel)')
             ->from(GroupSubscription::class, 'gs_local')
             ->join(UserGroup::class, 'ug_local', 'WITH', 'ug_local.groupIdentifier = gs_local.groupIdentifier')
@@ -49,7 +66,9 @@ class ChannelRepository extends ServiceEntityRepository
         $conditions->add($qb->expr()->in('c.id', $localGroupDql));
 
         if (!empty($providerGroupIdentifiers)) {
-            $externalGroupDql = $this->getEntityManager()->createQueryBuilder()
+            $externalGroupDql = $this
+                ->getEntityManager()
+                ->createQueryBuilder()
                 ->select('IDENTITY(gs_ext.channel)')
                 ->from(GroupSubscription::class, 'gs_ext')
                 ->where('gs_ext.groupIdentifier IN (:providerGroupIdentifiers)')
@@ -95,7 +114,30 @@ class ChannelRepository extends ServiceEntityRepository
     /** @return Channel[] */
     public function findAllPublic(): array
     {
-        return $this->findBy(['isPrivate' => false, 'parentMessage' => null], ['name' => 'ASC'], 100);
+        $publicWorkspace = $this
+            ->getEntityManager()
+            ->getRepository(\App\Entity\Workspace::class)
+            ->findOneBy(['isPublic' => true]);
+
+        if (!$publicWorkspace) {
+            return [];
+        }
+
+        return $this->findBy(['workspace' => $publicWorkspace, 'parentMessage' => null], ['name' => 'ASC'], 100);
+    }
+
+    /** @return Channel[] */
+    public function findForWorkspace(\App\Entity\Workspace $workspace, User $user): array
+    {
+        return $this
+            ->createQueryBuilder('c')
+            ->where('c.workspace = :workspace')
+            ->andWhere('c.parentMessage IS NULL')
+            ->andWhere('c.isDm = false')
+            ->orderBy('c.createdAt', 'ASC')
+            ->setParameter('workspace', $workspace)
+            ->getQuery()
+            ->getResult();
     }
 
     public function findDmBetween(User $user1, User $user2): ?Channel
@@ -148,12 +190,11 @@ class ChannelRepository extends ServiceEntityRepository
             ->andWhere('c.parentMessage IS NULL')
             ->andWhere('LOWER(c.name) LIKE :query OR LOWER(c.description) LIKE :query');
 
-        $accessConditions = $qb->expr()->orX(
-            'c.isPrivate = false',
-            'm.id = :userId',
-        );
+        $accessConditions = $qb->expr()->orX('c.isPrivate = false', 'm.id = :userId');
 
-        $localGroupDql = $this->getEntityManager()->createQueryBuilder()
+        $localGroupDql = $this
+            ->getEntityManager()
+            ->createQueryBuilder()
             ->select('IDENTITY(gs_local.channel)')
             ->from(GroupSubscription::class, 'gs_local')
             ->join(UserGroup::class, 'ug_local', 'WITH', 'ug_local.groupIdentifier = gs_local.groupIdentifier')
@@ -164,7 +205,9 @@ class ChannelRepository extends ServiceEntityRepository
         $accessConditions->add($qb->expr()->in('c.id', $localGroupDql));
 
         if (!empty($providerGroupIdentifiers)) {
-            $externalGroupDql = $this->getEntityManager()->createQueryBuilder()
+            $externalGroupDql = $this
+                ->getEntityManager()
+                ->createQueryBuilder()
                 ->select('IDENTITY(gs_ext.channel)')
                 ->from(GroupSubscription::class, 'gs_ext')
                 ->where('gs_ext.groupIdentifier IN (:providerGroupIdentifiers)')

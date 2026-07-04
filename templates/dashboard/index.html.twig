@@ -29,7 +29,9 @@
             'channels': channels,
             'unreadCounts': unreadCounts,
             'activeChannel': activeChannel,
-            'pendingInvitations': pendingInvitations
+            'pendingInvitations': pendingInvitations,
+            'workspaces': workspaces|default([]),
+            'workspaceUnreadCounts': workspaceUnreadCounts|default({})
         } %}
 
         <!-- Main Chat Area Panel -->

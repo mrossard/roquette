@@ -10,9 +10,6 @@ use App\Entity\Message;
 use App\Entity\User;
 use App\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
-
-
-
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -149,9 +146,11 @@ readonly class ChannelExportService
 
         // Cleanup
         foreach ($tmpFiles as $tmpFile) {
-            if (!(file_exists($tmpFile))) { continue; }
+            if (!file_exists($tmpFile)) {
+                continue;
+            }
 
-unlink($tmpFile);
+            unlink($tmpFile);
         }
         if (file_exists($zipFile)) {
             unlink($zipFile);
@@ -207,9 +206,11 @@ unlink($tmpFile);
 
         // Cleanup
         foreach ($tmpFiles as $tmpFile) {
-            if (!(file_exists($tmpFile))) { continue; }
+            if (!file_exists($tmpFile)) {
+                continue;
+            }
 
-unlink($tmpFile);
+            unlink($tmpFile);
         }
         if (file_exists($tarFile)) {
             unlink($tarFile);

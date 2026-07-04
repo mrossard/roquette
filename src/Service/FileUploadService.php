@@ -151,7 +151,7 @@ class FileUploadService
             // extension is explicitly allowed, fall back to the standard MIME
             // type mapped to that extension.
             if (in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
-                $mimeFromExt = (new MimeTypes())->getMimeTypes($extension);
+                $mimeFromExt = new MimeTypes()->getMimeTypes($extension);
                 foreach ($mimeFromExt as $candidate) {
                     if (in_array($candidate, self::ALLOWED_MIME_TYPES, true)) {
                         $mimeType = $candidate;

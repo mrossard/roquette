@@ -13,9 +13,11 @@ use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
+use App\Repository\WorkspaceRepository;
 use App\Service\ChannelManager;
 use App\Service\MercurePublisher;
 use App\Service\ReadTrackingService;
+use App\Service\WorkspaceManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -48,12 +50,14 @@ final class ChannelController extends AbstractController
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
         InvitationRepository $invitationRepository,
+        WorkspaceRepository $workspaceRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $channels = $channelRepository->findAllForUser($currentUser);
+        $workspaces = $workspaceRepository->findAllForUser($currentUser);
 
         $activeChannel = null;
         foreach ($channels as $channel) {
@@ -71,13 +75,28 @@ final class ChannelController extends AbstractController
             if (!$existingChannel) {
                 throw $this->createNotFoundException($this->translator->trans('Canal non trouvé.'));
             }
-            if ($existingChannel->isPrivate()) {
+
+            // Check workspace access
+            $workspace = $existingChannel->getWorkspace();
+            if ($workspace) {
+                if (!$workspace->isMember($currentUser)) {
+                    $this->addFlash('error', $this->translator->trans('Vous n\'avez pas accès à ce canal.'));
+
+                    return $this->redirectToRoute('app_dashboard');
+                }
+            } elseif ($existingChannel->isPrivate()) {
                 $this->addFlash('error', $this->translator->trans('Vous n\'avez pas accès à ce canal privé.'));
 
                 return $this->redirectToRoute('app_dashboard');
             }
             $activeChannel = $existingChannel;
-            $isMember = false;
+            $isMember =
+                $workspace && $workspace->isMember($currentUser)
+                || $existingChannel->getMembers()->contains($currentUser);
+        }
+
+        if ($activeChannel && $activeChannel->getWorkspace()) {
+            $request->getSession()->set('current_workspace_id', $activeChannel->getWorkspace()->getId());
         }
 
         $previousChannelSlug = $request->headers->get('X-Previous-Channel');
@@ -122,6 +141,7 @@ final class ChannelController extends AbstractController
         }
 
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
+        $workspaceUnreadCounts = $this->computeWorkspaceUnreadCounts($channels, $unreadCounts);
 
         $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
 
@@ -163,6 +183,8 @@ final class ChannelController extends AbstractController
             'replyCounts' => $replyCounts,
             'subchannelByParentMessageId' => $subchannelByParentMessageId,
             'lastMessages' => $lastMessages,
+            'workspaces' => $workspaces,
+            'workspaceUnreadCounts' => $workspaceUnreadCounts,
         ]);
     }
 
@@ -191,6 +213,14 @@ final class ChannelController extends AbstractController
 
             $isMember = true;
             break;
+        }
+
+        if (!$isMember) {
+            // Check workspace membership
+            $workspace = $activeChannel->getWorkspace();
+            if ($workspace && $workspace->isMember($currentUser)) {
+                $isMember = true;
+            }
         }
 
         if (!$isMember) {
@@ -263,6 +293,7 @@ final class ChannelController extends AbstractController
         Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
+        WorkspaceRepository $workspaceRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
@@ -270,6 +301,49 @@ final class ChannelController extends AbstractController
 
         $query = trim($request->query->get('q', ''));
         $channels = $channelRepository->findAllForUser($currentUser);
+        $workspaces = $workspaceRepository->findAllForUser($currentUser);
+
+        $currentUrl = $request->headers->get('HX-Current-URL');
+        $activeChannel = null;
+        $currentWorkspace = null;
+        if ($currentUrl) {
+            $path = parse_url($currentUrl, PHP_URL_PATH);
+            if (preg_match('#^/channels/([a-z0-9-]+)$#', $path, $matches)) {
+                $activeChannel = $channelRepository->findOneBy(['slug' => $matches[1]]);
+                if ($activeChannel && $activeChannel->getWorkspace()) {
+                    $currentWorkspace = $activeChannel->getWorkspace();
+                }
+            }
+        }
+
+        $session = $request->getSession();
+        if ($currentWorkspace) {
+            $session->set('current_workspace_id', $currentWorkspace->getId());
+        } else {
+            $currentWorkspaceId = $session->get('current_workspace_id');
+            if ($currentWorkspaceId) {
+                $currentWorkspace = $workspaceRepository->find($currentWorkspaceId);
+            }
+        }
+
+        if (!$currentWorkspace) {
+            $currentWorkspace = $workspaceRepository->findPublicWorkspace();
+            if ($currentWorkspace) {
+                $session->set('current_workspace_id', $currentWorkspace->getId());
+            }
+        }
+
+        // Filter channels to current workspace
+        if ($currentWorkspace) {
+            $channels = array_filter(
+                $channels,
+                static fn(Channel $c) => (
+                    $c->isDm()
+                    || $c->getWorkspace()
+                    && $c->getWorkspace()->getId() === $currentWorkspace->getId()
+                ),
+            );
+        }
 
         if ($query !== '') {
             $channels = array_filter(
@@ -286,15 +360,6 @@ final class ChannelController extends AbstractController
         $channelIds = array_map(static fn(Channel $c) => (int) $c->getId(), $channels);
         $lastMessages = $messageRepository->findLastMessagesForChannels($channelIds);
 
-        $currentUrl = $request->headers->get('HX-Current-URL');
-        $activeChannel = null;
-        if ($currentUrl) {
-            $path = parse_url($currentUrl, PHP_URL_PATH);
-            if (preg_match('#^/channels/([a-z0-9-]+)$#', $path, $matches)) {
-                $activeChannel = $channelRepository->findOneBy(['slug' => $matches[1]]);
-            }
-        }
-
         return $this->render('dashboard/_sidebar_filter_results.html.twig', [
             'channels' => $channels,
             'subChannelsByParent' => $subChannelsByParent,
@@ -302,6 +367,7 @@ final class ChannelController extends AbstractController
             'activeChannel' => $activeChannel,
             'filterMode' => true,
             'lastMessages' => $lastMessages,
+            'workspaces' => $workspaces,
         ]);
     }
 
@@ -314,6 +380,29 @@ final class ChannelController extends AbstractController
     private function buildSubChannelsByParent(array $channels): array
     {
         return $this->channelManager->buildSubChannelsByParent($channels);
+    }
+
+    /**
+     * @param Channel[] $channels
+     * @param array<int, array{count: int, hasMention: bool}> $unreadCounts
+     * @return array<int, int>
+     */
+    private function computeWorkspaceUnreadCounts(array $channels, array $unreadCounts): array
+    {
+        $counts = [];
+        foreach ($channels as $ch) {
+            $ws = $ch->getWorkspace();
+            if (!$ws) {
+                continue;
+            }
+            $wsId = $ws->getId();
+            if (!array_key_exists($wsId, $counts)) {
+                $counts[$wsId] = 0;
+            }
+            $counts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
+        }
+
+        return $counts;
     }
 
     private function getTypingUsers(?Channel $channel, User $currentUser, bool $isMember): array

@@ -8,6 +8,7 @@
         {% if app.user %}
             <meta name="csrf-token" content="{{ csrf_token('app') }}">
             <meta name="vapid-public-key" content="{{ vapid_public_key }}">
+            <meta name="channel-notifications" content="{{ get_user_channel_notifications_map(app.user)|json_encode|escape('html_attr') }}">
         {% endif %}
         <script>
             window.AppTranslations = {

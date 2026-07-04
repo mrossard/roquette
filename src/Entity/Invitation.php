@@ -18,8 +18,12 @@ class Invitation
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Channel::class)]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     private ?Channel $channel = null;
+
+    #[ORM\ManyToOne(targetEntity: Workspace::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private ?Workspace $workspace = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
@@ -43,9 +47,20 @@ class Invitation
         return $this->channel;
     }
 
-    public function setChannel(Channel $channel): static
+    public function setChannel(?Channel $channel): static
     {
         $this->channel = $channel;
+        return $this;
+    }
+
+    public function getWorkspace(): ?Workspace
+    {
+        return $this->workspace;
+    }
+
+    public function setWorkspace(?Workspace $workspace): static
+    {
+        $this->workspace = $workspace;
         return $this;
     }
 
@@ -69,5 +84,23 @@ class Invitation
     {
         $this->createdAt = $createdAt;
         return $this;
+    }
+
+    public function getTargetName(): string
+    {
+        if ($this->workspace) {
+            return $this->workspace->getName() ?? '';
+        }
+
+        return $this->channel?->getName() ?? '';
+    }
+
+    public function getTargetSlug(): string
+    {
+        if ($this->workspace) {
+            return $this->workspace->getSlug() ?? '';
+        }
+
+        return $this->channel?->getSlug() ?? 'welcome';
     }
 }

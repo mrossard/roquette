@@ -65,6 +65,9 @@
                                         {% if e.channel %}
                                             <strong style="color: var(--accent-cyan);">#{{ e.channel.name }}</strong>
                                             <span class="text-muted-block">slug: {{ e.channel.slug }}</span>
+                                            {% if e.channel.workspace %}
+                                                <span class="status-pill status-pill--default">{{ e.channel.workspace.name }}</span>
+                                            {% endif %}
                                         {% else %}
                                             <strong style="color: var(--text-muted);">{{ e.channelName }}</strong>
                                             <span class="status-pill status-pill--deleted-channel">{{ 'Supprimé'|trans }}</span>

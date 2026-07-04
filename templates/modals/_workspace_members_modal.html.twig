@@ -1,0 +1,27 @@
+{% embed 'partials/_modal_layout.html.twig' with {
+    id: 'workspace-members-modal',
+    title: ('Membres de "' ~ workspace.name ~ '"')|trans
+} %}
+    {% block modal_body %}
+        <div style="max-height: 400px; overflow-y: auto;">
+            {% for member in workspace.members %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border-glass);">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="status-dot {{ member.status }}"
+                              data-username="{{ member.username }}"
+                              data-status-override="{{ member.statusOverride|default('auto') }}"
+                              data-last-active="{{ member.lastActiveAt ? member.lastActiveAt.timestamp : '' }}"
+                              style="display: inline-block;"
+                              title="{{ member.statusLabel }}"></span>
+                        <span>{{ member.displayName|default(member.username) }}</span>
+                        {% if workspace.creator and workspace.creator.id == member.id %}
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">({{ 'Créateur'|trans }})</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <p style="color: var(--text-muted);">{{ 'Aucun membre.'|trans }}</p>
+            {% endfor %}
+        </div>
+    {% endblock %}
+{% endembed %}

@@ -868,6 +868,171 @@
         justify-content: flex-end;
     }
 
+    .sidebar-workspace-selector {
+        margin-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-glass);
+        padding-bottom: 0.5rem;
+    }
+
+    .workspace-dropdown-details {
+        position: relative;
+    }
+
+    .workspace-dropdown-details summary {
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        user-select: none;
+    }
+
+    .workspace-dropdown-details summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .workspace-dropdown-details summary:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .workspace-current-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .workspace-dropdown-arrow {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        transition: transform 0.2s ease;
+    }
+
+    .workspace-dropdown-details[open] .workspace-dropdown-arrow {
+        transform: rotate(180deg);
+    }
+
+    .workspace-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background: var(--bg-dropdown-opaque);
+        border: 1px solid var(--border-glass);
+        border-radius: 0.5rem;
+        padding: 0.25rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        margin-top: 0.25rem;
+    }
+
+    .workspace-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.35rem;
+        cursor: pointer;
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: var(--transition-smooth);
+        font-size: 0.85rem;
+    }
+
+    .workspace-dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .workspace-dropdown-item.active {
+        background: rgba(79, 126, 191, 0.15);
+        color: var(--accent-cyan);
+    }
+
+    .workspace-dropdown-divider {
+        border-top: 1px solid var(--border-glass);
+        margin: 0.25rem 0;
+    }
+
+    .workspace-dropdown-create {
+        color: var(--accent-green);
+        font-weight: 500;
+    }
+
+    .workspace-item-icon {
+        font-size: 1rem;
+        width: 1.25rem;
+        text-align: center;
+    }
+
+    .workspace-item-name {
+        flex: 1;
+    }
+
+    .workspace-unread-badge {
+        background: linear-gradient(135deg, var(--accent-red), hsl(340, 85%, 55%));
+        color: #ffffff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.05rem 0.35rem;
+        border-radius: 9999px;
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+        min-width: 1.1rem;
+        height: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .other-workspace-unread-badge {
+        background: linear-gradient(135deg, var(--accent-red), hsl(340, 85%, 55%));
+        color: #ffffff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.05rem 0.35rem;
+        border-radius: 9999px;
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+        min-width: 1.1rem;
+        height: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .workspace-actions-row {
+        display: flex;
+        gap: 0.25rem;
+        padding: 0.35rem 0.5rem 0.25rem;
+        justify-content: center;
+        border-bottom: 1px solid var(--border-glass);
+        margin-bottom: 0.25rem;
+    }
+
+    .ws-action-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-glass);
+        border-radius: 0.25rem;
+        padding: 0.2rem 0.4rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        line-height: 1;
+    }
+
+    .ws-action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
     .reorder-done-btn {
         background: var(--accent-cyan);
         color: #0f172a;

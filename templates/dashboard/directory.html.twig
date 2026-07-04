@@ -34,7 +34,9 @@
             'channels': channels,
             'unreadCounts': unreadCounts,
             'activeChannel': null,
-            'pendingInvitations': pendingInvitations
+            'pendingInvitations': pendingInvitations,
+            'workspaces': workspaces|default([]),
+            'workspaceUnreadCounts': workspaceUnreadCounts|default({})
         } %}
 
         <!-- Directory Panel -->

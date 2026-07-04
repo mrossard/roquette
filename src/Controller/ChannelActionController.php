@@ -15,9 +15,11 @@ use App\Message\GenerateExportMessage;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
+use App\Repository\WorkspaceRepository;
 use App\Service\AuditLoggerService;
 use App\Service\ChannelManager;
 use App\Service\FileUploadService;
+use App\Service\WorkspaceManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -43,8 +45,11 @@ final class ChannelActionController extends AbstractController
     ) {}
 
     #[Route('/channels/create', name: 'app_channel_create', methods: ['POST'])]
-    public function createChannel(Request $request, ChannelManager $channelManager): Response
-    {
+    public function createChannel(
+        Request $request,
+        ChannelManager $channelManager,
+        WorkspaceRepository $workspaceRepository,
+    ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
@@ -57,6 +62,12 @@ final class ChannelActionController extends AbstractController
             return $this->redirectToRoute('app_dashboard');
         }
 
+        $workspaceId = $request->request->getInt('workspaceId', 0);
+        $workspace = null;
+        if ($workspaceId > 0) {
+            $workspace = $workspaceRepository->find($workspaceId);
+        }
+
         try {
             $channel = $channelManager->create(
                 $name,
@@ -67,6 +78,7 @@ final class ChannelActionController extends AbstractController
                     'isGroupChannel' => $request->request->getBoolean('isGroupChannel', false),
                     'isTodoList' => $request->request->getBoolean('isTodoList', false),
                     'retentionMonths' => $request->request->get('messageRetentionMonths'),
+                    'workspace' => $workspace,
                 ],
                 $currentUser,
             );
@@ -164,6 +176,8 @@ final class ChannelActionController extends AbstractController
 
         if ($request->headers->has('HX-Request')) {
             $channels = $channelRepository->findAllForUser($currentUser);
+            $workspaceRepo = $entityManager->getRepository(WorkspaceRepository::class);
+            $workspaces = $workspaceRepo->findAllForUser($currentUser);
             $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
             $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
             $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
@@ -190,6 +204,7 @@ final class ChannelActionController extends AbstractController
                 'pendingInvitations' => $pendingInvitations,
                 'subChannelsByParent' => $subChannelsByParent,
                 'lastMessages' => $lastMessages,
+                'workspaces' => $workspaces,
             ]);
 
             $sidebarHtml = preg_replace(

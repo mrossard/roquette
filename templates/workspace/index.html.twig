@@ -1,0 +1,93 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Roquette - {{ 'Espaces'|trans }}{% endblock %}
+
+{% block body %}
+<div class="app-container">
+    <main class="dashboard-grid" id="main-content">
+        <section class="card glass-panel" style="grid-column: 1 / -1; padding: 2rem;">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h1>{{ 'Mes espaces'|trans }}</h1>
+                    <button class="btn-publish"
+                            hx-get="{{ path('app_workspace_create_modal') }}"
+                            hx-target="#modal-container">
+                        + {{ 'Créer un espace'|trans }}
+                    </button>
+                </div>
+
+                {% if workspaces is empty %}
+                    <p style="color: var(--text-muted);">{{ 'Vous ne faites partie d\'aucun espace.'|trans }}</p>
+                {% else %}
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% for ws in workspaces %}
+                            <div class="card glass-panel" style="padding: 1.25rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <h3 style="margin: 0 0 0.25rem 0;">
+                                            <a href="{{ path('app_workspace_switch', {workspaceSlug: ws.slug}) }}"
+                                               style="color: var(--accent-cyan); text-decoration: none;">
+                                                {{ ws.isPublic ? '🌐' : '🔒' }} {{ ws.name }}
+                                            </a>
+                                        </h3>
+                                        {% if ws.description %}
+                                            <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">{{ ws.description }}</p>
+                                        {% endif %}
+                                        <p style="margin: 0.5rem 0 0 0; color: var(--text-muted); font-size: 0.8rem;">
+                                            {{ ws.members|length }} {{ 'membres'|trans }} ·
+                                            {% set channelCount = workspaceChannels[ws.id]|default([])|length %}
+                                            {{ channelCount }} {{ 'canaux'|trans }}
+                                        </p>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <a href="{{ path('app_workspace_switch', {workspaceSlug: ws.slug}) }}"
+                                           class="btn-publish" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                                            {{ 'Ouvrir'|trans }}
+                                        </a>
+                                        {% if ws.creator and ws.creator.id == app.user.id or is_granted('ROLE_ADMIN') %}
+                                            <button class="btn-publish" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--accent-orange);"
+                                                    hx-get="{{ path('app_workspace_settings_modal', {slug: ws.slug}) }}"
+                                                    hx-target="#modal-container">
+                                                ⚙️
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if pendingInvitations is not empty %}
+                    <h2 style="margin-top: 2rem;">{{ 'Invitations en attente'|trans }}</h2>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        {% for invite in pendingInvitations %}
+                            <div class="card glass-panel" style="padding: 1rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span>
+                                        {% if invite.workspace %}
+                                            🔒 {{ 'Invitation à rejoindre le workspace "%name%"'|trans({'%name%': invite.workspace.name}) }}
+                                        {% else %}
+                                            🔒 {{ 'Invitation à rejoindre le canal "%name%"'|trans({'%name%': invite.channel.name}) }}
+                                        {% endif %}
+                                    </span>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <form action="{{ path('app_invite_accept', {id: invite.id}) }}" method="POST" style="display: inline;">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+                                            <button class="btn-publish" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">{{ 'Accepter'|trans }}</button>
+                                        </form>
+                                        <form action="{{ path('app_invite_reject', {id: invite.id}) }}" method="POST" style="display: inline;">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+                                            <button class="btn-publish" style="padding: 0.25rem 0.75rem; font-size: 0.85rem; background: var(--accent-red);">{{ 'Refuser'|trans }}</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

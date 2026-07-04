@@ -32,7 +32,8 @@
         <!-- Channels Sidebar Panel -->
         {% include 'dashboard/_sidebar.html.twig' with {
             'channels': channels,
-            'activeChannel': null
+            'activeChannel': null,
+            'workspaces': workspaces|default([])
         } %}
 
         <!-- Main Chat Area Panel -->

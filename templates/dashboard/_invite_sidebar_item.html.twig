@@ -1,14 +1,25 @@
 <div class="invite-item" id="invite-{{ invite.id }}" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); border-radius: 0.5rem; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; transition: var(--transition-smooth);">
     <div style="display: flex; flex-direction: column;">
-        <span
-            style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
-            <span style="color: var(--accent-purple);">🔒</span>
-            {{ invite.channel.name }}
-        </span>
-        {% if invite.channel.creator %}
-            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; padding-left: 1.25rem;">
-                {{ 'Invité par'|trans }} {{ invite.channel.creator.displayName|default(invite.channel.creator.username) }}
+        {% if invite.workspace %}
+            <span
+                style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--accent-purple);">🔒</span>
+                {{ invite.workspace.name }}
             </span>
+            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; padding-left: 1.25rem;">
+                {{ 'Invitation à rejoindre le workspace'|trans }}
+            </span>
+        {% else %}
+            <span
+                style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--accent-purple);">🔒</span>
+                {{ invite.channel.name }}
+            </span>
+            {% if invite.channel.creator %}
+                <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; padding-left: 1.25rem;">
+                    {{ 'Invité par'|trans }} {{ invite.channel.creator.displayName|default(invite.channel.creator.username) }}
+                </span>
+            {% endif %}
         {% endif %}
     </div>
     <div style="display: flex; gap: 0.5rem;">

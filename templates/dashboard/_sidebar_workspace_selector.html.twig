@@ -1,0 +1,88 @@
+<div class="sidebar-workspace-selector">
+    {% set currentWorkspace = null %}
+    {% if activeChannel and activeChannel.workspace %}
+        {% set currentWorkspace = activeChannel.workspace %}
+    {% elseif app.session and app.session.get('current_workspace_id') %}
+        {% set sessionWsId = app.session.get('current_workspace_id') %}
+        {% for ws in workspaces %}
+            {% if ws.id == sessionWsId %}
+                {% set currentWorkspace = ws %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    {% if not currentWorkspace %}
+        {% for ws in workspaces %}
+            {% if ws.slug == 'public' or ws.isPublic %}
+                {% set currentWorkspace = ws %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    {% set workspaceUnreadCounts = workspaceUnreadCounts|default({}) %}
+
+    {% set totalOtherWorkspaceUnread = 0 %}
+    {% for ws in workspaces %}
+        {% if (not currentWorkspace) or (ws.id != currentWorkspace.id) %}
+            {% if workspaceUnreadCounts[ws.id] is defined %}
+                {% set totalOtherWorkspaceUnread = totalOtherWorkspaceUnread + workspaceUnreadCounts[ws.id] %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    <details class="workspace-dropdown-details">
+        <summary class="workspace-dropdown-trigger" aria-expanded="false">
+            {% if currentWorkspace %}
+                <span class="workspace-current-name">{{ currentWorkspace.name }}</span>
+            {% else %}
+                <span class="workspace-current-name">{{ 'Sélectionner un espace'|trans }}</span>
+            {% endif %}
+            {% if totalOtherWorkspaceUnread > 0 %}
+                <span class="other-workspace-unread-badge">{{ totalOtherWorkspaceUnread }}</span>
+            {% endif %}
+            <span class="workspace-dropdown-arrow">▼</span>
+        </summary>
+        <div class="workspace-dropdown-menu" role="menu">
+            {% for ws in workspaces %}
+                <a href="{{ path('app_workspace_switch', {workspaceSlug: ws.slug}) }}"
+                   class="workspace-dropdown-item {% if currentWorkspace and ws.id == currentWorkspace.id %}active{% endif %}"
+                   role="menuitem"
+                   data-workspace-id="{{ ws.id }}">
+                    <span class="workspace-item-icon">{{ ws.isPublic ? '🌐' : '🔒' }}</span>
+                    <span class="workspace-item-name">{{ ws.name }}</span>
+                    {% if workspaceUnreadCounts[ws.id] is defined and workspaceUnreadCounts[ws.id] > 0 and (not currentWorkspace or ws.id != currentWorkspace.id) %}
+                        <span class="workspace-unread-badge">{{ workspaceUnreadCounts[ws.id] }}</span>
+                    {% endif %}
+                </a>
+            {% endfor %}
+            <div class="workspace-dropdown-divider"></div>
+            <a href="{{ path('app_workspace_create_modal') }}"
+               class="workspace-dropdown-item workspace-dropdown-create"
+               role="menuitem"
+               hx-get="{{ path('app_workspace_create_modal') }}"
+               hx-target="#modal-container">
+                <span class="workspace-item-icon">+</span>
+                <span class="workspace-item-name">{{ 'Créer un espace'|trans }}</span>
+            </a>
+        </div>
+    </details>
+
+    {% if currentWorkspace %}
+        <div class="workspace-actions-row">
+            {% if (currentWorkspace.creator and currentWorkspace.creator.id == app.user.id) or is_granted('ROLE_ADMIN') %}
+                <button class="ws-action-btn"
+                        hx-get="{{ path('app_workspace_settings_modal', {slug: currentWorkspace.slug}) }}"
+                        hx-target="#modal-container"
+                        title="{{ "Paramètres de l'espace"|trans }}">⚙️</button>
+                <button class="ws-action-btn"
+                        hx-get="{{ path('app_workspace_invite_modal', {slug: currentWorkspace.slug}) }}"
+                        hx-target="#modal-container"
+                        title="{{ 'Inviter'|trans }}">✉️</button>
+            {% endif %}
+            <button class="ws-action-btn"
+                    hx-get="{{ path('app_workspace_members_modal', {slug: currentWorkspace.slug}) }}"
+                    hx-target="#modal-container"
+                    title="{{ "Membres de l'espace"|trans }}">👥</button>
+        </div>
+    {% endif %}
+</div>

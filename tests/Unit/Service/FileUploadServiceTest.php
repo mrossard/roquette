@@ -59,9 +59,7 @@ class FileUploadServiceTest extends TestCase
         $file->method('getSize')->willReturn(1024);
         $file->method('getPathname')->willReturn(__FILE__);
 
-        $this->storage
-            ->expects($this->once())
-            ->method('writeStream');
+        $this->storage->expects($this->once())->method('writeStream');
 
         $result = $this->service->upload($file);
 
@@ -79,9 +77,7 @@ class FileUploadServiceTest extends TestCase
         $file->method('getSize')->willReturn(512);
         $file->method('getPathname')->willReturn(__FILE__);
 
-        $this->storage
-            ->expects($this->once())
-            ->method('writeStream');
+        $this->storage->expects($this->once())->method('writeStream');
 
         $result = $this->service->upload($file);
 

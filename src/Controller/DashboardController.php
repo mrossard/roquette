@@ -7,11 +7,14 @@ namespace App\Controller;
 use App\Entity\Channel;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
+use App\Entity\Workspace;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
+use App\Repository\WorkspaceRepository;
 use App\Service\ReadTrackingService;
+use App\Service\WorkspaceManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,7 +43,7 @@ final class DashboardController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/', name: 'app_dashboard')]
-    public function index(ChannelRepository $channelRepository): Response
+    public function index(ChannelRepository $channelRepository, WorkspaceRepository $workspaceRepository): Response
     {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -50,6 +53,19 @@ final class DashboardController extends AbstractController
             return $this->redirectToRoute('app_channels_directory');
         }
 
+        // Redirect to the general channel in the public workspace
+        $publicWorkspace = $workspaceRepository->findPublicWorkspace();
+        if ($publicWorkspace) {
+            $general = $channelRepository->findOneBy([
+                'workspace' => $publicWorkspace,
+                'slug' => 'general',
+            ]);
+            if ($general) {
+                return $this->redirectToRoute('app_channel', ['slug' => $general->getSlug()]);
+            }
+        }
+
+        // Fallback: find any general channel
         $general = $channelRepository->findOneBy(['slug' => 'general']);
         if ($general !== null) {
             return $this->redirectToRoute('app_channel', ['slug' => 'general']);
@@ -68,6 +84,8 @@ final class DashboardController extends AbstractController
         MessageRepository $messageRepository,
         UserRepository $userRepository,
         InvitationRepository $invitationRepository,
+        WorkspaceRepository $workspaceRepository,
+        WorkspaceManager $workspaceManager,
         EntityManagerInterface $entityManager,
         ReadTrackingService $readTrackingService,
     ): Response {
@@ -81,8 +99,23 @@ final class DashboardController extends AbstractController
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
 
+        // Aggregate unread counts per workspace
+        $workspaceUnreadCounts = [];
+        foreach ($channels as $ch) {
+            $ws = $ch->getWorkspace();
+            if (!$ws) {
+                continue;
+            }
+            $wsId = $ws->getId();
+            if (!array_key_exists($wsId, $workspaceUnreadCounts)) {
+                $workspaceUnreadCounts[$wsId] = 0;
+            }
+            $workspaceUnreadCounts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
+        }
+
         $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
         $allPublicChannels = $channelRepository->findAllPublic();
+        $workspaces = $workspaceRepository->findAllForUser($currentUser);
         $allUsers = array_filter(
             $userRepository->findAllExcept($currentUser),
             static fn(User $u) => $u->getUsername() !== User::ROBOT_USERNAME,
@@ -112,6 +145,8 @@ final class DashboardController extends AbstractController
             'allUsers' => $allUsers,
             'subChannelsByParent' => $subChannelsByParent,
             'lastMessages' => $lastMessages,
+            'workspaces' => $workspaces,
+            'workspaceUnreadCounts' => $workspaceUnreadCounts,
         ]);
     }
 

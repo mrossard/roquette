@@ -57,17 +57,19 @@ class MessageFormatterTest extends TestCase
                 }
                 $users = [];
                 foreach ($usernames as $username) {
-                    if (!($username === 'alice' || $username === 'bob')) { continue; }
+                    if (!($username === 'alice' || $username === 'bob')) {
+                        continue;
+                    }
 
-$user = $this->createStub(\App\Entity\User::class);
-                        $user->method('getUsername')->willReturn($username);
-                        $user->method('getUserIdentifier')->willReturn($username);
-                        if ($username === 'alice') {
-                            $user->method('getDisplayName')->willReturn('Alice de Merveilles');
-                        } else {
-                            $user->method('getDisplayName')->willReturn(null);
-                        }
-                        $users[] = $user;
+                    $user = $this->createStub(\App\Entity\User::class);
+                    $user->method('getUsername')->willReturn($username);
+                    $user->method('getUserIdentifier')->willReturn($username);
+                    if ($username === 'alice') {
+                        $user->method('getDisplayName')->willReturn('Alice de Merveilles');
+                    } else {
+                        $user->method('getDisplayName')->willReturn(null);
+                    }
+                    $users[] = $user;
                 }
                 return $users;
             });

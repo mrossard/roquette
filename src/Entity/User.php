@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Entity\Workspace;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -129,11 +130,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Reaction::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $reactions;
 
+    /**
+     * @var Collection<int, Workspace>
+     */
+    #[ORM\ManyToMany(targetEntity: Workspace::class, mappedBy: 'members')]
+    private Collection $workspaces;
+
     public function __construct()
     {
         $this->privateChannels = new ArrayCollection();
         $this->savedMessages = new ArrayCollection();
         $this->reactions = new ArrayCollection();
+        $this->workspaces = new ArrayCollection();
     }
 
     public function getChannelOrder(): ?array
@@ -545,6 +553,33 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getReactions(): Collection
     {
         return $this->reactions;
+    }
+
+    /**
+     * @return Collection<int, Workspace>
+     */
+    public function getWorkspaces(): Collection
+    {
+        return $this->workspaces;
+    }
+
+    public function addWorkspace(Workspace $workspace): static
+    {
+        if (!$this->workspaces->contains($workspace)) {
+            $this->workspaces->add($workspace);
+            $workspace->addMember($this);
+        }
+
+        return $this;
+    }
+
+    public function removeWorkspace(Workspace $workspace): static
+    {
+        if ($this->workspaces->removeElement($workspace)) {
+            $workspace->removeMember($this);
+        }
+
+        return $this;
     }
 
     public function getSlug(): ?string

@@ -61,7 +61,8 @@ class EmojiImportStorageCommand extends Command
             return Command::SUCCESS;
         }
 
-        $existingCodes = $this->em->createQueryBuilder()
+        $existingCodes = $this->em
+            ->createQueryBuilder()
             ->select('e.code')
             ->from(CustomEmoji::class, 'e')
             ->getQuery()
@@ -93,7 +94,7 @@ class EmojiImportStorageCommand extends Command
             $io->text(sprintf('  ➕  %-30s → code: %s', $relative, $code));
 
             if (!$dryRun) {
-                $emoji = (new CustomEmoji())
+                $emoji = new CustomEmoji()
                     ->setCode($code)
                     ->setFilename($filename)
                     ->setTags([]);
