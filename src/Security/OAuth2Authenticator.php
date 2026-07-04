@@ -78,20 +78,29 @@ class OAuth2Authenticator extends AbstractAuthenticator
 
         $session->remove('oauth2state');
 
+        $codeVerifier = $session->get('oauth2code_verifier');
+        $session->remove('oauth2code_verifier');
+
         $redirectUri =
             $this->redirectUri !== null && $this->redirectUri !== ''
                 ? $this->redirectUri
                 : $this->urlGenerator->generate('app_oauth_check', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
+        $tokenBody = [
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'redirect_uri' => $redirectUri,
+            'client_id' => $this->clientId,
+            'client_secret' => $this->clientSecret,
+        ];
+
+        if ($codeVerifier !== null) {
+            $tokenBody['code_verifier'] = $codeVerifier;
+        }
+
         try {
             $response = $this->httpClient->request('POST', $this->tokenUrl, [
-                'body' => [
-                    'grant_type' => 'authorization_code',
-                    'code' => $code,
-                    'redirect_uri' => $redirectUri,
-                    'client_id' => $this->clientId,
-                    'client_secret' => $this->clientSecret,
-                ],
+                'body' => $tokenBody,
                 'headers' => [
                     'Accept' => 'application/json',
                 ],

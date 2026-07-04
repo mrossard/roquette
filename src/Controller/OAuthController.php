@@ -47,18 +47,23 @@ final class OAuthController extends AbstractController
         $state = bin2hex(random_bytes(16));
         $request->getSession()->set('oauth2state', $state);
 
+        $codeVerifier = self::generateCodeVerifier();
+        $request->getSession()->set('oauth2code_verifier', $codeVerifier);
+
         $redirectUri =
             $this->redirectUri !== null && $this->redirectUri !== ''
                 ? $this->redirectUri
                 : $this->generateUrl('app_oauth_check', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
-        // Build redirect URL
+        // Build redirect URL with PKCE
         $queryParams = http_build_query([
             'client_id' => $this->clientId,
             'redirect_uri' => $redirectUri,
             'response_type' => 'code',
             'state' => $state,
             'scope' => $this->scope,
+            'code_challenge' => self::computeCodeChallenge($codeVerifier),
+            'code_challenge_method' => 'S256',
         ]);
 
         $url = $this->authUrl;
@@ -108,12 +113,18 @@ final class OAuthController extends AbstractController
             $code = 'mock_code_' . bin2hex(random_bytes(8));
             $oauthId = 'mock_id_' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $username));
 
+            // Collect PKCE challenge if present
+            $codeChallenge = $request->query->get('code_challenge');
+            $codeChallengeMethod = $request->query->get('code_challenge_method');
+
             // Save to mock store
             $store = $this->readMockStore();
             $store['codes'][$code] = [
                 'username' => $username,
                 'oauth_id' => $oauthId,
                 'email' => $username . '@example.com',
+                'code_challenge' => $codeChallenge,
+                'code_challenge_method' => $codeChallengeMethod,
             ];
             $this->writeMockStore($store);
 
@@ -147,11 +158,13 @@ final class OAuthController extends AbstractController
         }
 
         $code = $request->request->get('code') ?? $request->query->get('code');
+        $codeVerifier = $request->request->get('code_verifier') ?? $request->query->get('code_verifier');
 
         // Sometimes the request comes as JSON body
         if (!$code) {
             $content = json_decode($request->getContent(), true);
             $code = $content['code'] ?? null;
+            $codeVerifier ??= $content['code_verifier'] ?? null;
         }
 
         $store = $this->readMockStore();
@@ -162,6 +175,25 @@ final class OAuthController extends AbstractController
                 'error' => 'invalid_grant',
                 'error_description' => 'Code d\'autorisation invalide.',
             ], 400);
+        }
+
+        // Validate PKCE code_verifier if code_challenge was stored
+        if ($codeData['code_challenge'] !== null) {
+            if ($codeVerifier === null) {
+                return new JsonResponse([
+                    'error' => 'invalid_grant',
+                    'error_description' => 'PKCE code_verifier manquant.',
+                ], 400);
+            }
+
+            $expectedChallenge = self::computeCodeChallenge($codeVerifier);
+
+            if (!hash_equals($codeData['code_challenge'], $expectedChallenge)) {
+                return new JsonResponse([
+                    'error' => 'invalid_grant',
+                    'error_description' => 'PKCE code_verifier invalide.',
+                ], 400);
+            }
         }
 
         // Get user details associated with this code
@@ -238,5 +270,25 @@ final class OAuthController extends AbstractController
             mkdir($dir, 0o777, true);
         }
         file_put_contents($this->mockStorePath, json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+    /**
+     * Generate a cryptographically random code_verifier for PKCE (RFC 7636).
+     *
+     * Returns a base64url-encoded string without padding (43-128 chars).
+     */
+    public static function generateCodeVerifier(): string
+    {
+        return self::base64urlEncode(random_bytes(32));
+    }
+
+    public static function computeCodeChallenge(string $codeVerifier): string
+    {
+        return self::base64urlEncode(hash('sha256', $codeVerifier, true));
+    }
+
+    private static function base64urlEncode(string $data): string
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 }

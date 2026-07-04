@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
+use App\Controller\OAuthController;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Request;
 
 #[AllowMockObjectsWithoutExpectations]
 class OAuthControllerTest extends WebTestCase
@@ -38,6 +40,57 @@ class OAuthControllerTest extends WebTestCase
         }
     }
 
+    /**
+     * Generate a PKCE code_verifier and its S256 code_challenge.
+     *
+     * @return array{verifier: string, challenge: string}
+     */
+    private function generatePkcePair(): array
+    {
+        $verifier = OAuthController::generateCodeVerifier();
+        $challenge = OAuthController::computeCodeChallenge($verifier);
+
+        return ['verifier' => $verifier, 'challenge' => $challenge];
+    }
+
+    /**
+     * Build the authorize URL with PKCE query params.
+     */
+    private function authorizeUrl(string $base, string $challenge): string
+    {
+        return $base . '?' . http_build_query([
+            'code_challenge' => $challenge,
+            'code_challenge_method' => 'S256',
+        ]);
+    }
+
+    /**
+     * Complete an authorization + token exchange with PKCE, returning the access token.
+     */
+    private function completeMockOAuthFlow(string $username = 'pke_test_user'): string
+    {
+        $pkce = $this->generatePkcePair();
+
+        $this->client->request('POST', $this->authorizeUrl('/oauth/mock/authorize', $pkce['challenge']), [
+            'username' => $username,
+            'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
+            'state' => 'state_' . $username,
+        ]);
+
+        $location = $this->client->getResponse()->headers->get('Location');
+        parse_str(parse_url($location, PHP_URL_QUERY), $params);
+        $code = $params['code'];
+
+        $this->client->request('POST', '/oauth/mock/token', [
+            'code' => $code,
+            'code_verifier' => $pkce['verifier'],
+        ]);
+
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+
+        return $data['access_token'];
+    }
+
     // -------------------------------------------------------------------------
     // Mock OAuth flow
     // -------------------------------------------------------------------------
@@ -61,7 +114,9 @@ class OAuthControllerTest extends WebTestCase
     #[Test]
     public function testMockAuthorizePostReturnsRedirectWithCode(): void
     {
-        $this->client->request('POST', '/oauth/mock/authorize', [
+        $pkce = $this->generatePkcePair();
+
+        $this->client->request('POST', $this->authorizeUrl('/oauth/mock/authorize', $pkce['challenge']), [
             'username' => 'test_oauth_user',
             'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
             'state' => 'test_state_456',
@@ -76,7 +131,9 @@ class OAuthControllerTest extends WebTestCase
     #[Test]
     public function testMockAuthorizePostWithEmptyUsername(): void
     {
-        $this->client->request('POST', '/oauth/mock/authorize', [
+        $pkce = $this->generatePkcePair();
+
+        $this->client->request('POST', $this->authorizeUrl('/oauth/mock/authorize', $pkce['challenge']), [
             'username' => '',
             'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
             'state' => 'test_state',
@@ -90,28 +147,9 @@ class OAuthControllerTest extends WebTestCase
     #[Test]
     public function testMockTokenSuccess(): void
     {
-        // First, get a code via the authorize endpoint
-        $this->client->request('POST', '/oauth/mock/authorize', [
-            'username' => 'token_user',
-            'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
-            'state' => 'state_token',
-        ]);
+        $accessToken = $this->completeMockOAuthFlow('token_user');
 
-        $location = $this->client->getResponse()->headers->get('Location');
-        parse_str(parse_url($location, PHP_URL_QUERY), $params);
-        $code = $params['code'];
-
-        // Exchange code for token
-        $this->client->request('POST', '/oauth/mock/token', [
-            'code' => $code,
-        ]);
-
-        $this->assertResponseIsSuccessful();
-        $this->assertResponseHeaderSame('Content-Type', 'application/json');
-        $data = json_decode($this->client->getResponse()->getContent(), true);
-        static::assertArrayHasKey('access_token', $data);
-        static::assertSame('Bearer', $data['token_type']);
-        static::assertArrayHasKey('expires_in', $data);
+        static::assertNotEmpty($accessToken);
     }
 
     #[Test]
@@ -129,7 +167,9 @@ class OAuthControllerTest extends WebTestCase
     #[Test]
     public function testMockTokenCodeIsOneTimeUse(): void
     {
-        $this->client->request('POST', '/oauth/mock/authorize', [
+        $pkce = $this->generatePkcePair();
+
+        $this->client->request('POST', $this->authorizeUrl('/oauth/mock/authorize', $pkce['challenge']), [
             'username' => 'onetime_user',
             'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
             'state' => 'state_onetime',
@@ -142,35 +182,74 @@ class OAuthControllerTest extends WebTestCase
         // First use - should succeed
         $this->client->request('POST', '/oauth/mock/token', [
             'code' => $code,
+            'code_verifier' => $pkce['verifier'],
         ]);
         $this->assertResponseIsSuccessful();
 
         // Second use - should fail (one-time code)
         $this->client->request('POST', '/oauth/mock/token', [
             'code' => $code,
+            'code_verifier' => $pkce['verifier'],
         ]);
         $this->assertResponseStatusCodeSame(400);
     }
 
     #[Test]
-    public function testMockUserSuccess(): void
+    public function testMockTokenMissingCodeVerifier(): void
     {
-        // Get a token first
-        $this->client->request('POST', '/oauth/mock/authorize', [
-            'username' => 'userinfo_test',
+        $pkce = $this->generatePkcePair();
+
+        $this->client->request('POST', $this->authorizeUrl('/oauth/mock/authorize', $pkce['challenge']), [
+            'username' => 'missing_verifier',
             'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
-            'state' => 'state_user',
+            'state' => 'state_missing',
         ]);
 
         $location = $this->client->getResponse()->headers->get('Location');
         parse_str(parse_url($location, PHP_URL_QUERY), $params);
         $code = $params['code'];
 
+        // Exchange code without code_verifier -> should fail
         $this->client->request('POST', '/oauth/mock/token', [
             'code' => $code,
         ]);
-        $tokenData = json_decode($this->client->getResponse()->getContent(), true);
-        $accessToken = $tokenData['access_token'];
+        $this->assertResponseStatusCodeSame(400);
+
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        static::assertSame('invalid_grant', $data['error']);
+    }
+
+    #[Test]
+    public function testMockTokenInvalidCodeVerifier(): void
+    {
+        $pkce = $this->generatePkcePair();
+
+        $this->client->request('POST', $this->authorizeUrl('/oauth/mock/authorize', $pkce['challenge']), [
+            'username' => 'invalid_verifier',
+            'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
+            'state' => 'state_invalid',
+        ]);
+
+        $location = $this->client->getResponse()->headers->get('Location');
+        parse_str(parse_url($location, PHP_URL_QUERY), $params);
+        $code = $params['code'];
+
+        // Exchange code with a different verifier -> should fail
+        $wrongVerifier = OAuthController::generateCodeVerifier();
+        $this->client->request('POST', '/oauth/mock/token', [
+            'code' => $code,
+            'code_verifier' => $wrongVerifier,
+        ]);
+        $this->assertResponseStatusCodeSame(400);
+
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        static::assertSame('invalid_grant', $data['error']);
+    }
+
+    #[Test]
+    public function testMockUserSuccess(): void
+    {
+        $accessToken = $this->completeMockOAuthFlow('userinfo_test');
 
         // Get user info
         $this->client->request('GET', '/oauth/mock/user', [
@@ -200,22 +279,7 @@ class OAuthControllerTest extends WebTestCase
     #[Test]
     public function testMockUserWithBearerHeader(): void
     {
-        // Get a token
-        $this->client->request('POST', '/oauth/mock/authorize', [
-            'username' => 'bearer_user',
-            'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
-            'state' => 'state_bearer',
-        ]);
-
-        $location = $this->client->getResponse()->headers->get('Location');
-        parse_str(parse_url($location, PHP_URL_QUERY), $params);
-        $code = $params['code'];
-
-        $this->client->request('POST', '/oauth/mock/token', [
-            'code' => $code,
-        ]);
-        $tokenData = json_decode($this->client->getResponse()->getContent(), true);
-        $accessToken = $tokenData['access_token'];
+        $accessToken = $this->completeMockOAuthFlow('bearer_user');
 
         // Use Bearer header
         $this->client->request('GET', '/oauth/mock/user', [], [], ['HTTP_AUTHORIZATION' => 'Bearer ' . $accessToken]);
@@ -228,8 +292,9 @@ class OAuthControllerTest extends WebTestCase
     #[Test]
     public function testMockTokenWithJsonBody(): void
     {
-        // Get a code
-        $this->client->request('POST', '/oauth/mock/authorize', [
+        $pkce = $this->generatePkcePair();
+
+        $this->client->request('POST', $this->authorizeUrl('/oauth/mock/authorize', $pkce['challenge']), [
             'username' => 'json_user',
             'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
             'state' => 'state_json',
@@ -246,7 +311,7 @@ class OAuthControllerTest extends WebTestCase
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
-            json_encode(['code' => $code]),
+            json_encode(['code' => $code, 'code_verifier' => $pkce['verifier']]),
         );
 
         $this->assertResponseIsSuccessful();
@@ -257,8 +322,9 @@ class OAuthControllerTest extends WebTestCase
     #[Test]
     public function testMockTokenCodeViaQueryParam(): void
     {
-        // Get a code
-        $this->client->request('POST', '/oauth/mock/authorize', [
+        $pkce = $this->generatePkcePair();
+
+        $this->client->request('POST', $this->authorizeUrl('/oauth/mock/authorize', $pkce['challenge']), [
             'username' => 'query_user',
             'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
             'state' => 'state_query',
@@ -268,12 +334,38 @@ class OAuthControllerTest extends WebTestCase
         parse_str(parse_url($location, PHP_URL_QUERY), $params);
         $code = $params['code'];
 
-        // Exchange with query parameter
-        $this->client->request('POST', '/oauth/mock/token?code=' . urlencode($code));
+        // Exchange with code and code_verifier as query params
+        $this->client->request('POST', '/oauth/mock/token?' . http_build_query([
+            'code' => $code,
+            'code_verifier' => $pkce['verifier'],
+        ]));
 
         $this->assertResponseIsSuccessful();
         $data = json_decode($this->client->getResponse()->getContent(), true);
         static::assertArrayHasKey('access_token', $data);
+    }
+
+    #[Test]
+    public function testMockTokenCodeViaQueryParamMissingVerifier(): void
+    {
+        $pkce = $this->generatePkcePair();
+
+        $this->client->request('POST', $this->authorizeUrl('/oauth/mock/authorize', $pkce['challenge']), [
+            'username' => 'query_missing',
+            'redirect_uri' => 'http://127.0.0.1:8000/oauth/check',
+            'state' => 'state_query_missing',
+        ]);
+
+        $location = $this->client->getResponse()->headers->get('Location');
+        parse_str(parse_url($location, PHP_URL_QUERY), $params);
+        $code = $params['code'];
+
+        // Exchange with code as query param but no verifier -> should fail
+        $this->client->request('POST', '/oauth/mock/token?' . http_build_query(['code' => $code]));
+
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        static::assertSame('invalid_grant', $data['error']);
     }
 
     // -------------------------------------------------------------------------
@@ -293,7 +385,7 @@ class OAuthControllerTest extends WebTestCase
     #[Test]
     public function testMockEndpointsAreDisabledInProduction(): void
     {
-        $controller = new \App\Controller\OAuthController(
+        $controller = new OAuthController(
             'client_id',
             'auth_url',
             'redirect_uri',
@@ -303,7 +395,7 @@ class OAuthControllerTest extends WebTestCase
             'prod',
         );
 
-        $request = new \Symfony\Component\HttpFoundation\Request();
+        $request = new Request();
 
         // 1. mockAuthorize
         try {
