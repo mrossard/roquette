@@ -32,8 +32,13 @@
         <!-- Channels Sidebar Panel -->
         {% include 'dashboard/_sidebar.html.twig' with {
             'channels': channels,
+            'unreadCounts': unreadCounts|default({}),
             'activeChannel': null,
-            'workspaces': workspaces|default([])
+            'pendingInvitations': pendingInvitations|default([]),
+            'workspaces': workspaces|default([]),
+            'workspaceUnreadCounts': workspaceUnreadCounts|default({}),
+            'subChannelsByParent': subChannelsByParent|default({}),
+            'lastMessages': lastMessages|default({})
         } %}
 
         <!-- Main Chat Area Panel -->
