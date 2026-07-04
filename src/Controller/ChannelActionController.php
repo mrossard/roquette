@@ -156,6 +156,7 @@ final class ChannelActionController extends AbstractController
         ChannelRepository $channelRepository,
         InvitationRepository $invitationRepository,
         MessageRepository $messageRepository,
+        WorkspaceRepository $workspaceRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
@@ -176,8 +177,7 @@ final class ChannelActionController extends AbstractController
 
         if ($request->headers->has('HX-Request')) {
             $channels = $channelRepository->findAllForUser($currentUser);
-            $workspaceRepo = $entityManager->getRepository(WorkspaceRepository::class);
-            $workspaces = $workspaceRepo->findAllForUser($currentUser);
+            $workspaces = $workspaceRepository->findAllForUser($currentUser);
             $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
             $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
             $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
