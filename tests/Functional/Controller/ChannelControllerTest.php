@@ -132,6 +132,37 @@ class ChannelControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function testToggleFavoriteChannelHtmx(): void
+    {
+        // 1. Initially it should not be favorite
+        static::assertFalse($this->testUser->isChannelFavorite($this->channel));
+
+        // 2. Send request to favorite with HTMX headers
+        $this->client->request(
+            'POST',
+            sprintf('/channels/%s/favorite', $this->channel->getSlug()),
+            [],
+            [],
+            [
+                'HTTP_HX-Request' => 'true',
+                'HTTP_HX-Current-URL' => sprintf('http://localhost/channels/%s', $this->channel->getSlug()),
+            ]
+        );
+
+        $this->assertResponseIsSuccessful();
+        $responseContent = $this->client->getResponse()->getContent();
+        static::assertStringContainsString('id="sidebar-panel"', $responseContent);
+        static::assertStringContainsString('hx-swap-oob="true"', $responseContent);
+        static::assertStringContainsString('id="btn-favorite-toggle"', $responseContent);
+
+        // Reload user from database
+        $this->entityManager->clear();
+        $user = $this->entityManager->getRepository(User::class)->find($this->testUser->getId());
+        $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
+        static::assertTrue($user->isChannelFavorite($channel));
+    }
+
+    #[Test]
     public function testUpdateRetention(): void
     {
         // Creator updates retention to 3 months
