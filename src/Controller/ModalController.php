@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Repository\ChannelRepository;
 use App\Repository\WebhookRepository;
+use App\Repository\WorkspaceRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -69,7 +70,16 @@ final class ModalController extends AbstractController
             return new Response('Canal non trouvé', 404);
         }
 
-        if ($channel->isDm() || !$channel->isPrivate() || $channel->getCreator() !== $currentUser) {
+        if ($channel->isDm() || $channel->isSubChannel()) {
+            return new Response('Accès refusé', 403);
+        }
+
+        $workspace = $channel->getWorkspace();
+        if ($workspace !== null) {
+            if ($workspace->getCreator() !== $currentUser) {
+                return new Response('Accès refusé', 403);
+            }
+        } elseif (!$channel->isPrivate() || $channel->getCreator() !== $currentUser) {
             return new Response('Accès refusé', 403);
         }
 
@@ -185,13 +195,20 @@ final class ModalController extends AbstractController
     }
 
     #[Route('/channels/create-modal', name: 'app_channel_create_modal', methods: ['GET'])]
-    public function createModal(\Symfony\Component\HttpFoundation\Request $request): Response
-    {
+    public function createModal(
+        \Symfony\Component\HttpFoundation\Request $request,
+        WorkspaceRepository $workspaceRepository,
+    ): Response {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
         $groups = $this->groupProvider->getGroups();
+        $workspaces = $workspaceRepository->findAllForUser($currentUser);
 
         return $this->render('modals/_create_channel_modal.html.twig', [
             'defaultTodo' => $request->query->getBoolean('defaultTodo', false),
             'groups' => $groups,
+            'workspaces' => $workspaces,
+            'activeWorkspace' => null,
         ]);
     }
 }

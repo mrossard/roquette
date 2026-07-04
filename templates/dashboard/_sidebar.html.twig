@@ -1,12 +1,41 @@
+{% set channels = channels|default([]) %}
 {% set unreadCounts = unreadCounts|default({}) %}
 {% set activeChannel = activeChannel|default(null) %}
 {% set pendingInvitations = pendingInvitations|default([]) %}
 {% set showReorder = showReorder|default(true) %}
 {% set subChannelsByParent = subChannelsByParent|default({}) %}
 {% set lastMessages = lastMessages|default({}) %}
+{% set workspaces = workspaces|default([]) %}
+{% set workspaceUnreadCounts = workspaceUnreadCounts|default({}) %}
+
+{% set currentWorkspace = null %}
+{% if activeChannel and activeChannel.workspace %}
+    {% set currentWorkspace = activeChannel.workspace %}
+{% elseif app.session and app.session.get('current_workspace_id') %}
+    {% set sessionWsId = app.session.get('current_workspace_id') %}
+    {% for ws in workspaces %}
+        {% if ws.id == sessionWsId %}
+            {% set currentWorkspace = ws %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{% if not currentWorkspace %}
+    {% for ws in workspaces %}
+        {% if ws.slug == 'public' or ws.isPublic %}
+            {% set currentWorkspace = ws %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{% if currentWorkspace %}
+    {% set channels = channels|filter(c => c.isDm or (c.workspace and c.workspace.id == currentWorkspace.id)) %}
+{% endif %}
 
 <section class="card glass-panel sidebar-panel" id="sidebar-panel">
     {% include 'dashboard/_sidebar_sse_events.html.twig' %}
+
+    {% include 'dashboard/_sidebar_workspace_selector.html.twig' %}
 
     {% include 'dashboard/_sidebar_header.html.twig' %}
 
@@ -59,4 +88,3 @@
     </div>
 </section>
 <div id="mobile-sidebar-backdrop" class="mobile-sidebar-backdrop"></div>
-

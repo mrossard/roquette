@@ -1,0 +1,22 @@
+{% embed 'partials/_modal_layout.html.twig' with {
+    id: 'create-workspace-modal',
+    title: 'Créer un nouvel espace'|trans
+} %}
+    {% block modal_body %}
+        <form action="{{ path('app_workspace_create') }}" method="POST" class="add-channel-form" hx-boost="false">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+            <div class="input-group">
+                <label for="workspace-name">{{ "Nom de l'espace"|trans }}</label>
+                <input type="text" id="workspace-name" name="name" required placeholder="{{ "Nom de l'espace..."|trans }}" maxlength="255"
+                       class="input-sidebar">
+            </div>
+            <div class="input-group" style="margin-top: 0.5rem;">
+                <label for="workspace-description">{{ 'Description'|trans }}</label>
+                <input type="text" id="workspace-description" name="description" placeholder="{{ 'Description (optionnelle)...'|trans }}"
+                       maxlength="255" class="input-sidebar">
+            </div>
+
+            <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">{{ 'Créer'|trans }}</button>
+        </form>
+    {% endblock %}
+{% endembed %}

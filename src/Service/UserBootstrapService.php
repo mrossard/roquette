@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\Channel;
 use App\Entity\User;
+use App\Entity\Workspace;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -63,13 +64,48 @@ class UserBootstrapService
         $assistantName = $this->translator->trans('channel.assistant.name', [], 'messages');
         $assistantDesc = $this->translator->trans('channel.assistant.description', [], 'messages');
 
-        // 1. Ensure general channel
-        $general = $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => 'general']);
+        // 0. Ensure public workspace exists (already created by migration, but safety check)
+        $publicWorkspace = $this->entityManager->getRepository(Workspace::class)->findOneBy(['isPublic' => true]);
+        if (!$publicWorkspace) {
+            $publicWorkspace = new Workspace();
+            $publicWorkspace->setName($this->translator->trans('workspace.public.name', [], 'messages'));
+            $publicWorkspace->setSlug('public');
+            $publicWorkspace->setDescription($this->translator->trans('workspace.public.description', [], 'messages'));
+            $publicWorkspace->setIsPublic(true);
+            $this->entityManager->persist($publicWorkspace);
+            $needsFlush = true;
+        }
+
+        // Ensure user is a member of the public workspace
+        if (!$publicWorkspace->isMember($user)) {
+            $publicWorkspace->addMember($user);
+            $needsFlush = true;
+        }
+
+        // 1. Ensure general channel exists in the public workspace
+        $general = $this->entityManager
+            ->getRepository(Channel::class)
+            ->findOneBy([
+                'workspace' => $publicWorkspace,
+                'slug' => 'general',
+            ]);
         if (!$general) {
+            $generalSlug = 'general';
+            $baseSlug = $generalSlug;
+            $count = 1;
+            while ($this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => $generalSlug])) {
+                $generalSlug = $baseSlug . '-' . rand(100, 999);
+                if ($count++ > 20) {
+                    $generalSlug = $baseSlug . '-' . uniqid();
+                    break;
+                }
+            }
+
             $general = new Channel();
             $general->setName($generalName);
-            $general->setSlug('general');
+            $general->setSlug($generalSlug);
             $general->setDescription($generalDesc);
+            $general->setWorkspace($publicWorkspace);
             $this->entityManager->persist($general);
             $needsFlush = true;
         } else {
@@ -81,11 +117,7 @@ class UserBootstrapService
             }
         }
 
-        // 2. Ensure general membership
-        if (!$general->getMembers()->contains($user)) {
-            $general->addMember($user);
-            $needsFlush = true;
-        }
+        // No need to add user as member of workspace channels — workspace membership grants access
 
         // 3. Ensure robot user
         $robotUser = $this->entityManager->getRepository(User::class)->findOneBy(['username' => 'robot-roquette']);

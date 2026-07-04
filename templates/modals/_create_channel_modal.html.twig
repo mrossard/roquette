@@ -59,66 +59,18 @@
             {# Hidden checkboxes mapped from the radio buttons #}
             <input type="hidden" name="isTodoList" id="modal-isTodoList-hidden" value="{{ defaultTodo ? '1' : '' }}">
 
-            <div class="input-group-checkbox"
-                 style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                <input type="checkbox" name="isPrivate" id="modal-isPrivate" class="input-checkbox"
-                       style="width: auto; cursor: pointer;">
-                <label for="modal-isPrivate"
-                       style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">{{ 'Canal privé'|trans }}</label>
-            </div>
-
-            <div id="group-subscription-container" style="display: none; margin-top: 0.75rem; border-top: 1px solid var(--border-glass); padding-top: 0.75rem;">
-                <div class="input-group">
-                    <label for="modal-group">{{ "Abonner un groupe d'utilisateurs"|trans }}</label>
-                    <select id="modal-group" name="groupIdentifier" class="input-sidebar" style="width: 100%; cursor: pointer;">
-                        <option value="">{{ '-- Aucun groupe --'|trans }}</option>
-                        {% for group in groups %}
-                            <option value="{{ group.identifier }}">{{ group.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="input-group-checkbox" style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="isGroupChannel" id="modal-isGroupChannel" class="input-checkbox" style="width: auto; cursor: pointer;">
-                    <label for="modal-isGroupChannel" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">
-                        {{ 'Faire de ce canal le canal officiel du groupe'|trans }}
-                    </label>
-                </div>
+            <div class="input-group" style="margin-top: 1rem;">
+                <label for="modal-workspace">{{ 'Espace de travail'|trans }}</label>
+                <select id="modal-workspace" name="workspaceId" class="input-sidebar" style="width: 100%; cursor: pointer;">
+                    {% for ws in workspaces %}
+                        <option value="{{ ws.id }}" {% if activeWorkspace and ws.id == activeWorkspace.id %}selected{% endif %}>
+                            {{ ws.name }}
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
 
             <button type="submit" class="btn-publish" style="margin-top: 1.25rem;">{{ 'Créer le canal'|trans }}</button>
         </form>
-
-        <script>
-            (function () {
-                const radios = document.querySelectorAll('.channel-type-radio');
-                const hiddenInput = document.getElementById('modal-isTodoList-hidden');
-                const labels = document.querySelectorAll('.channel-type-option');
-                const privateCheckbox = document.getElementById('modal-isPrivate');
-                const groupContainer = document.getElementById('group-subscription-container');
-
-                function updateSelection() {
-                    radios.forEach(function (radio) {
-                        const label = radio.closest('.channel-type-option');
-                        if (radio.checked) {
-                            label.classList.add('channel-type-option-selected');
-                            hiddenInput.value = radio.value === 'todo' ? '1' : '';
-                        } else {
-                            label.classList.remove('channel-type-option-selected');
-                        }
-                    });
-                }
-
-                radios.forEach(function (radio) {
-                    radio.addEventListener('change', updateSelection);
-                });
-
-                function toggleGroupContainer() {
-                    groupContainer.style.display = privateCheckbox.checked ? 'block' : 'none';
-                }
-
-                privateCheckbox.addEventListener('change', toggleGroupContainer);
-                toggleGroupContainer();
-            })();
-        </script>
     {% endblock %}
 {% endembed %}

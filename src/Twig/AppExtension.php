@@ -6,6 +6,7 @@ namespace App\Twig;
 
 use App\Entity\Channel;
 use App\Repository\ChannelRepository;
+use App\Repository\UserChannelReadRepository;
 use App\Service\MessageFormatter;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Extension\AbstractExtension;
@@ -23,6 +24,7 @@ class AppExtension extends AbstractExtension
         private readonly MessageFormatter $formatter,
         private readonly TranslatorInterface $translator,
         private readonly ChannelRepository $channelRepository,
+        private readonly UserChannelReadRepository $ucrRepository,
         private readonly string $mercureTopicPrefix,
     ) {}
 
@@ -35,6 +37,7 @@ class AppExtension extends AbstractExtension
             ]),
             new \Twig\TwigFunction('get_subchannel', [$this, 'getSubchannel']),
             new \Twig\TwigFunction('get_user_mercure_topics', [$this, 'getUserMercureTopics']),
+            new \Twig\TwigFunction('get_user_channel_notifications_map', [$this, 'getUserChannelNotificationsMap']),
         ];
     }
 
@@ -194,5 +197,21 @@ class AppExtension extends AbstractExtension
         }
 
         return $topics;
+    }
+
+    public function getUserChannelNotificationsMap(\App\Entity\User $user): array
+    {
+        $channels = $this->channelRepository->findAllForUser($user);
+        $unreadCounts = $this->ucrRepository->getUnreadCounts($user);
+
+        $map = [];
+        foreach ($channels as $channel) {
+            $slug = $channel->getSlug();
+            $unread = $unreadCounts[$channel->getId()] ?? null;
+            $enabled = $unread ? $unread['notificationsEnabled'] : $channel->isDm();
+            $map[$slug] = $enabled;
+        }
+
+        return $map;
     }
 }

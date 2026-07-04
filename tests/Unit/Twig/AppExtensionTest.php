@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Twig;
 
 use App\Repository\ChannelRepository;
+use App\Repository\UserChannelReadRepository;
 use App\Service\MessageFormatter;
 use App\Twig\AppExtension;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -21,6 +22,7 @@ class AppExtensionTest extends TestCase
         $formatter = $this->createMock(MessageFormatter::class);
         $translator = $this->createMock(TranslatorInterface::class);
         $channelRepository = $this->createMock(ChannelRepository::class);
+        $ucrRepository = $this->createMock(UserChannelReadRepository::class);
         $translator
             ->method('trans')
             ->willReturnCallback(static function (string $id, array $parameters = []) {
@@ -31,7 +33,7 @@ class AppExtensionTest extends TestCase
                 return strtr($id, $parameters);
             });
 
-        $this->extension = new AppExtension($formatter, $translator, $channelRepository, 'roquette', '');
+        $this->extension = new AppExtension($formatter, $translator, $channelRepository, $ucrRepository, 'roquette');
     }
 
     public function testFormatReactionTooltipWithSingleUser(): void

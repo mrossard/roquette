@@ -53,9 +53,13 @@ class MercurePublisher
     public function publishToChannel(Channel $channel, array|string $payload, ?string $type = null): void
     {
         $data = is_array($payload) ? json_encode($payload) : $payload;
-        $this->bus->dispatch(
-            new Update($this->getChannelTopic($channel), $data, $channel->isPrivate() || $channel->isDm(), null, $type),
-        );
+
+        $isPrivate = $channel->isDm() || $channel->isPrivate();
+        if (!$isPrivate && $channel->isWorkspaceChannel() && !$channel->getWorkspace()->isPublic()) {
+            $isPrivate = true;
+        }
+
+        $this->bus->dispatch(new Update($this->getChannelTopic($channel), $data, $isPrivate, null, $type));
     }
 
     public function publishToUser(User $user, array|string $payload, ?string $type = null): void
@@ -116,6 +120,8 @@ class MercurePublisher
                 'isSubChannel' => $channel->isSubChannel(),
                 'parentChannelId' => $channel->getParentMessage()?->getChannel()->getId(),
                 'parentChannelSlug' => $channel->getParentMessage()?->getChannel()->getSlug(),
+                'workspaceId' => $channel->getWorkspace()?->getId(),
+                'workspaceSlug' => $channel->getWorkspace()?->getSlug(),
             ],
             'channel_notification',
         );

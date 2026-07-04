@@ -6,13 +6,16 @@ namespace App\Controller;
 
 use App\Entity\ChannelExport;
 use App\Entity\User;
+use App\Entity\Workspace;
 use App\Enum\AuditAction;
 use App\Repository\AuditLogRepository;
 use App\Repository\ChannelExportRepository;
 use App\Repository\UserRepository;
+use App\Repository\WorkspaceRepository;
 use App\Service\AuditLoggerService;
 use App\Service\CustomEmojiService;
 use App\Service\FileUploadService;
+use App\Service\WorkspaceManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -369,5 +372,38 @@ final class AdminController extends AbstractController
         }
 
         return $this->redirectToRoute('app_admin_emojis', $request->query->all());
+    }
+
+    #[Route('/admin/workspaces', name: 'app_admin_workspaces')]
+    public function workspaces(WorkspaceRepository $workspaceRepo): Response
+    {
+        return $this->render('admin/workspaces.html.twig', [
+            'workspaces' => $workspaceRepo->findBy([], ['name' => 'ASC']),
+            'currentRoute' => 'app_admin_workspaces',
+        ]);
+    }
+
+    #[Route('/admin/workspaces/delete/{id}', name: 'app_admin_workspace_delete', methods: ['POST'])]
+    public function deleteWorkspace(
+        Request $request,
+        Workspace $workspace,
+        WorkspaceManager $workspaceManager,
+    ): Response {
+        if (!$this->isCsrfTokenValid('delete-workspace-' . $workspace->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', $this->translator->trans('Token CSRF invalide.'));
+
+            return $this->redirectToRoute('app_admin_workspaces');
+        }
+
+        if ($workspace->isPublic()) {
+            $this->addFlash('error', $this->translator->trans('Le workspace public ne peut pas être supprimé.'));
+
+            return $this->redirectToRoute('app_admin_workspaces');
+        }
+
+        $workspaceManager->delete($workspace, $this->getUser());
+        $this->addFlash('success', $this->translator->trans('Workspace supprimé avec succès.'));
+
+        return $this->redirectToRoute('app_admin_workspaces');
     }
 }

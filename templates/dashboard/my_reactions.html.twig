@@ -31,7 +31,13 @@
         <main class="dashboard-grid">
             {% include 'dashboard/_sidebar.html.twig' with {
                 'channels': channels,
-                'activeChannel': null
+                'unreadCounts': unreadCounts|default({}),
+                'activeChannel': null,
+                'pendingInvitations': pendingInvitations|default([]),
+                'workspaces': workspaces|default([]),
+                'workspaceUnreadCounts': workspaceUnreadCounts|default({}),
+                'subChannelsByParent': subChannelsByParent|default({}),
+                'lastMessages': lastMessages|default({})
             } %}
 
             <section class="card glass-panel chat-panel" id="reactions-panel">

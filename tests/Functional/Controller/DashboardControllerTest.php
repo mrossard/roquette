@@ -35,6 +35,14 @@ class DashboardControllerTest extends WebTestCase
         $passwordHasher = $container->get('security.user_password_hasher');
         $user->setPassword($passwordHasher->hashPassword($user, 'password123'));
         $this->entityManager->persist($user);
+
+        $publicWorkspace = $this->entityManager
+            ->getRepository(\App\Entity\Workspace::class)
+            ->findOneBy(['isPublic' => true]);
+        if ($publicWorkspace) {
+            $publicWorkspace->addMember($user);
+        }
+
         $this->entityManager->flush();
 
         $this->testUser = $user;
@@ -74,6 +82,14 @@ class DashboardControllerTest extends WebTestCase
         if (!$public) {
             $channel->setIsPrivate(true);
         }
+
+        $publicWorkspace = $this->entityManager
+            ->getRepository(\App\Entity\Workspace::class)
+            ->findOneBy(['isPublic' => true]);
+        if ($publicWorkspace) {
+            $channel->setWorkspace($publicWorkspace);
+        }
+
         $this->entityManager->persist($channel);
         $this->entityManager->flush();
 
@@ -142,6 +158,14 @@ class DashboardControllerTest extends WebTestCase
         $passwordHasher = $container->get('security.user_password_hasher');
         $otherUser->setPassword($passwordHasher->hashPassword($otherUser, 'password123'));
         $this->entityManager->persist($otherUser);
+
+        $publicWorkspace = $this->entityManager
+            ->getRepository(\App\Entity\Workspace::class)
+            ->findOneBy(['isPublic' => true]);
+        if ($publicWorkspace) {
+            $publicWorkspace->addMember($otherUser);
+        }
+
         $this->entityManager->flush();
 
         $this->client->request('GET', '/channels/directory/panel/members');

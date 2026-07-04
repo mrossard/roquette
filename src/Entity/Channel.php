@@ -89,6 +89,10 @@ class Channel
     #[ORM\OneToOne(mappedBy: 'channel', targetEntity: UserGroup::class)]
     private ?UserGroup $userGroup = null;
 
+    #[ORM\ManyToOne(targetEntity: Workspace::class, inversedBy: 'channels')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Workspace $workspace = null;
+
     public function __construct()
     {
         $this->messages = new ArrayCollection();
@@ -372,5 +376,22 @@ class Channel
     {
         $this->userGroup = $userGroup;
         return $this;
+    }
+
+    public function getWorkspace(): ?Workspace
+    {
+        return $this->workspace;
+    }
+
+    public function setWorkspace(?Workspace $workspace): static
+    {
+        $this->workspace = $workspace;
+
+        return $this;
+    }
+
+    public function isWorkspaceChannel(): bool
+    {
+        return $this->workspace !== null;
     }
 }

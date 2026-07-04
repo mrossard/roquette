@@ -144,16 +144,31 @@
                             </button>
 
                             {# 2. Inviter #}
-                            {% if not activeChannel.isDm and activeChannel.isPrivate and activeChannel.creator == app.user and not activeChannel.isSubChannel %}
-                                <button type="button" class="user-status-option"
-                                        hx-get="{{ path('app_channel_invite_modal', {slug: activeChannel.slug}) }}"
-                                        hx-target="#modal-container"
-                                        hx-trigger="click"
-                                        role="menuitem"
-                                        style="cursor: pointer;">
-                                    <span class="option-icon">✉️</span>
-                                    <span class="option-label">{{ 'Inviter'|trans }}</span>
-                                </button>
+                            {% if not activeChannel.isDm and not activeChannel.isSubChannel %}
+                                {% set ws = activeChannel.workspace %}
+                                {% if (activeChannel.isPrivate and activeChannel.creator == app.user) or (ws and ws.creator == app.user) %}
+                                    {% if ws %}
+                                        <button type="button" class="user-status-option"
+                                                hx-get="{{ path('app_workspace_invite_modal', {slug: ws.slug}) }}"
+                                                hx-target="#modal-container"
+                                                hx-trigger="click"
+                                                role="menuitem"
+                                                style="cursor: pointer;">
+                                            <span class="option-icon">✉️</span>
+                                            <span class="option-label">{{ "Inviter dans l'espace"|trans }}</span>
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="user-status-option"
+                                                hx-get="{{ path('app_channel_invite_modal', {slug: activeChannel.slug}) }}"
+                                                hx-target="#modal-container"
+                                                hx-trigger="click"
+                                                role="menuitem"
+                                                style="cursor: pointer;">
+                                            <span class="option-icon">✉️</span>
+                                            <span class="option-label">{{ 'Inviter'|trans }}</span>
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
                             {% endif %}
 
                             {# 3. Paramètres #}

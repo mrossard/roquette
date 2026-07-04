@@ -8,6 +8,7 @@ use App\Entity\Channel;
 use App\Entity\GroupSubscription;
 use App\Entity\Message;
 use App\Entity\User;
+use App\Entity\Workspace;
 use App\Enum\AuditAction;
 use App\Repository\ChannelRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -55,6 +56,13 @@ class ChannelManager
         $channel->setDescription($description);
         $channel->setCreator($currentUser);
         $channel->addMember($currentUser);
+
+        // Workspace assignment
+        $workspace = $extra['workspace'] ?? null;
+        if ($workspace instanceof Workspace) {
+            $channel->setWorkspace($workspace);
+            $channel->setIsPrivate(false);
+        }
 
         $isPrivate = $extra['isPrivate'] ?? false;
         if ($isPrivate) {

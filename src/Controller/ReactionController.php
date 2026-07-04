@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\MessageRendererTrait;
+use App\Controller\Trait\SidebarParametersTrait;
 use App\Entity\Reaction;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Repository\ReactionRepository;
+use App\Repository\WorkspaceRepository;
+use App\Repository\InvitationRepository;
 use App\Service\MercurePublisher;
+use App\Service\ChannelManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +26,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class ReactionController extends AbstractController
 {
     use MessageRendererTrait;
+    use SidebarParametersTrait;
 
     public function __construct(
         private TranslatorInterface $translator,
@@ -90,6 +95,11 @@ final class ReactionController extends AbstractController
         Request $request,
         ReactionRepository $reactionRepository,
         ChannelRepository $channelRepository,
+        WorkspaceRepository $workspaceRepository,
+        InvitationRepository $invitationRepository,
+        MessageRepository $messageRepository,
+        ChannelManager $channelManager,
+        EntityManagerInterface $entityManager,
         ?string $emoji = null,
     ): Response {
         /** @var \App\Entity\User $currentUser */
@@ -113,7 +123,16 @@ final class ReactionController extends AbstractController
             ]);
         }
 
-        $channels = $channelRepository->findAllForUser($currentUser);
+        $sidebarParams = $this->getSidebarParameters(
+            $currentUser,
+            $channelRepository,
+            $workspaceRepository,
+            $invitationRepository,
+            $messageRepository,
+            $channelManager,
+            $entityManager
+        );
+
         $messages = $emoji
             ? $reactionRepository->findDistinctMessagesByUserAndEmoji($currentUser, $emoji, 50)
             : $reactionRepository->findDistinctMessagesByUser($currentUser, 50);
@@ -121,14 +140,13 @@ final class ReactionController extends AbstractController
         $hasMore = count($messages) === 50;
         $nextBeforeId = $hasMore ? $messages[array_key_last($messages)]->getId() : null;
 
-        return $this->render('dashboard/my_reactions.html.twig', [
-            'channels' => $channels,
+        return $this->render('dashboard/my_reactions.html.twig', array_merge([
             'reactedMessages' => $messages,
             'userEmojis' => $userEmojis,
             'activeEmoji' => $emoji,
             'activeChannel' => null,
             'hasMore' => $hasMore,
             'nextBeforeId' => $nextBeforeId,
-        ]);
+        ], $sidebarParams));
     }
 }

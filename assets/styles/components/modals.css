@@ -23,6 +23,7 @@
         flex-direction: column;
         gap: 1.25rem;
         backdrop-filter: blur(20px);
+        color: var(--text-primary);
     }
 
     .modal-header {

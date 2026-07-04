@@ -1,0 +1,21 @@
+{% embed 'partials/_modal_layout.html.twig' with {
+    id: 'workspace-invite-modal',
+    content_style: 'max-width: 480px !important;',
+    title: ('Inviter dans "' ~ workspace.name ~ '"')|trans
+} %}
+    {% block modal_body %}
+        <div class="input-group" style="margin-bottom: 0.5rem;">
+            <label for="invite-search" style="font-weight: 600; font-size: 0.95rem; display: block; margin-bottom: 0.5rem; color: var(--text-primary);">{{ 'Rechercher un membre à inviter...'|trans }}</label>
+            <input type="text" id="invite-search" name="q" class="input-sidebar"
+                   placeholder="{{ 'Saisissez un nom pour rechercher un membre.'|trans }}"
+                   hx-get="{{ path('app_workspace_invite_search', {slug: workspace.slug}) }}"
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#workspace-invite-users"
+                   hx-swap="innerHTML">
+        </div>
+
+        <div id="workspace-invite-users" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.25rem; margin-top: 0.75rem;">
+            {% include 'modals/_workspace_invite_results.html.twig' with {'workspace': workspace, 'usersToInvite': [], 'searched': false} %}
+        </div>
+    {% endblock %}
+{% endembed %}

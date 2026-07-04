@@ -11,9 +11,12 @@ use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
+use App\Repository\WorkspaceRepository;
 use App\Service\ReadTrackingService;
+use App\Service\WorkspaceManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -40,7 +43,7 @@ final class DashboardController extends AbstractController
     // -------------------------------------------------------------------------
 
     #[Route('/', name: 'app_dashboard')]
-    public function index(ChannelRepository $channelRepository): Response
+    public function index(ChannelRepository $channelRepository, WorkspaceRepository $workspaceRepository): Response
     {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -50,6 +53,19 @@ final class DashboardController extends AbstractController
             return $this->redirectToRoute('app_channels_directory');
         }
 
+        // Redirect to the general channel in the public workspace
+        $publicWorkspace = $workspaceRepository->findPublicWorkspace();
+        if ($publicWorkspace) {
+            $general = $channelRepository->findOneBy([
+                'workspace' => $publicWorkspace,
+                'slug' => 'general',
+            ]);
+            if ($general) {
+                return $this->redirectToRoute('app_channel', ['slug' => $general->getSlug()]);
+            }
+        }
+
+        // Fallback: find any general channel
         $general = $channelRepository->findOneBy(['slug' => 'general']);
         if ($general !== null) {
             return $this->redirectToRoute('app_channel', ['slug' => 'general']);
@@ -64,10 +80,13 @@ final class DashboardController extends AbstractController
 
     #[Route('/channels/directory', name: 'app_channels_directory')]
     public function directory(
+        Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
         UserRepository $userRepository,
         InvitationRepository $invitationRepository,
+        WorkspaceRepository $workspaceRepository,
+        WorkspaceManager $workspaceManager,
         EntityManagerInterface $entityManager,
         ReadTrackingService $readTrackingService,
     ): Response {
@@ -81,12 +100,42 @@ final class DashboardController extends AbstractController
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
 
+        // Aggregate unread counts per workspace
+        $workspaceUnreadCounts = [];
+        foreach ($channels as $ch) {
+            $ws = $ch->getWorkspace();
+            if (!$ws) {
+                continue;
+            }
+            $wsId = $ws->getId();
+            if (!array_key_exists($wsId, $workspaceUnreadCounts)) {
+                $workspaceUnreadCounts[$wsId] = 0;
+            }
+            $workspaceUnreadCounts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
+        }
+
+        // Get active workspace
+        $session = $request->getSession();
+        $currentWorkspaceId = $session->get('current_workspace_id');
+        $currentWorkspace = null;
+        if ($currentWorkspaceId) {
+            $currentWorkspace = $workspaceRepository->find($currentWorkspaceId);
+        }
+        if (!$currentWorkspace) {
+            $currentWorkspace = $workspaceRepository->findPublicWorkspace();
+            if ($currentWorkspace) {
+                $session->set('current_workspace_id', $currentWorkspace->getId());
+            }
+        }
+
         $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
-        $allPublicChannels = $channelRepository->findAllPublic();
-        $allUsers = array_filter(
-            $userRepository->findAllExcept($currentUser),
-            static fn(User $u) => $u->getUsername() !== User::ROBOT_USERNAME,
-        );
+        $allPublicChannels = $currentWorkspace
+            ? $channelRepository->findPublicForWorkspace($currentWorkspace)
+            : [];
+        $workspaces = $workspaceRepository->findAllForUser($currentUser);
+        $allUsers = $currentWorkspace
+            ? $userRepository->findMembersForWorkspace($currentWorkspace, $currentUser)
+            : [];
 
         $subChannelsByParent = [];
         foreach ($channels as $ch) {
@@ -112,22 +161,37 @@ final class DashboardController extends AbstractController
             'allUsers' => $allUsers,
             'subChannelsByParent' => $subChannelsByParent,
             'lastMessages' => $lastMessages,
+            'workspaces' => $workspaces,
+            'workspaceUnreadCounts' => $workspaceUnreadCounts,
+            'currentWorkspace' => $currentWorkspace,
         ]);
     }
 
     #[Route('/channels/directory/panel/{type}', name: 'app_directory_panel')]
     public function directoryPanel(
         string $type,
+        Request $request,
         ChannelRepository $channelRepository,
         UserRepository $userRepository,
+        WorkspaceRepository $workspaceRepository,
     ): Response {
         $currentUser = $this->getUser();
 
+        // Get active workspace
+        $session = $request->getSession();
+        $currentWorkspaceId = $session->get('current_workspace_id');
+        $currentWorkspace = null;
+        if ($currentWorkspaceId) {
+            $currentWorkspace = $workspaceRepository->find($currentWorkspaceId);
+        }
+        if (!$currentWorkspace) {
+            $currentWorkspace = $workspaceRepository->findPublicWorkspace();
+        }
+
         if ($type === 'members') {
-            $allUsers = array_filter(
-                $userRepository->findAllExcept($currentUser),
-                static fn(User $u) => $u->getUsername() !== User::ROBOT_USERNAME,
-            );
+            $allUsers = $currentWorkspace
+                ? $userRepository->findMembersForWorkspace($currentWorkspace, $currentUser)
+                : [];
 
             return $this->render('dashboard/_directory_panel.html.twig', [
                 'type' => 'members',
@@ -135,9 +199,13 @@ final class DashboardController extends AbstractController
             ]);
         }
 
+        $allPublicChannels = $currentWorkspace
+            ? $channelRepository->findPublicForWorkspace($currentWorkspace)
+            : [];
+
         return $this->render('dashboard/_directory_panel.html.twig', [
             'type' => 'channels',
-            'allPublicChannels' => $channelRepository->findAllPublic(),
+            'allPublicChannels' => $allPublicChannels,
         ]);
     }
 }

@@ -1,0 +1,60 @@
+{% embed 'partials/_modal_layout.html.twig' with {
+    id: 'workspace-members-modal',
+    content_style: 'max-width: 480px !important;',
+    title: ('Membres de "' ~ workspace.name ~ '"')|trans
+} %}
+    {% block modal_body %}
+        <div class="input-group" style="margin-bottom: 0.5rem;">
+            <input type="text" id="member-search-input" placeholder="{{ 'Rechercher un membre...'|trans }}" class="input-sidebar">
+        </div>
+
+        <div id="modal-members-list"
+             style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.25rem;">
+            {% for member in workspace.members|sort((a, b) => (a.displayName|default(a.username))|lower <=> (b.displayName|default(b.username))|lower) %}
+                <div class="modal-member-item" data-username="{{ member.username|lower }}"
+                     data-name="{{ (member.displayName|default(member.username))|lower }}"
+                     style="display: flex; align-items: center; justify-content: justify; gap: 1rem; padding: 0.5rem 0.75rem; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); transition: background 0.2s;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; width: 100%;">
+                        <div class="avatar-container"
+                             style="position: relative; width: 36px; height: 36px; flex-shrink: 0;">
+                            <div class="user-avatar-circle"
+                                 style="background-color: hsl({{ member.hue }}, 90%, var(--user-hue-lightness-border)); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1rem; box-shadow: 0 0 10px hsla({{ member.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
+                                {{ member.username|slice(0,1)|upper }}
+                            </div>
+                            <span class="status-dot-overlay {{ member.status }}"
+                                  style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-card); display: block;"
+                                  data-username="{{ member.username }}"
+                                  data-status-override="{{ member.statusOverride|default('auto') }}"
+                                  data-last-active="{{ member.lastActiveAt ? member.lastActiveAt.timestamp : '' }}"
+                                  title="{{ member.statusLabel }}"></span>
+                        </div>
+                        <div style="flex-grow: 1; min-width: 0;">
+                            <div
+                                style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <span>{{ member.displayName|default(member.username) }}</span>
+                                {% if member == app.user %}
+                                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">{{ '(vous)'|trans }}</span>
+                                {% endif %}
+                                {% if workspace.creator and workspace.creator.id == member.id %}
+                                    <span style="font-size: 0.75rem; color: var(--accent-purple); background: rgba(168, 85, 247, 0.1); padding: 0.05rem 0.3rem; border-radius: 0.25rem; font-weight: normal;">{{ 'Créateur'|trans }}</span>
+                                {% endif %}
+                            </div>
+                            <div
+                                style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                @{{ member.username }}</div>
+                        </div>
+                        {% if member != app.user %}
+                            <a href="{{ path('app_dm_open', {username: member.username}) }}" class="btn-account"
+                               style="padding: 0.4rem 0.75rem; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); border-radius: 0.5rem; color: var(--text-primary); flex-shrink: 0;"
+                               hx-boost="false" title="{{ 'Lui envoyer un message direct'|trans }}">
+                                💬
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <p style="color: var(--text-muted); text-align: center; padding: 1rem;">{{ 'Aucun membre.'|trans }}</p>
+            {% endfor %}
+        </div>
+    {% endblock %}
+{% endembed %}

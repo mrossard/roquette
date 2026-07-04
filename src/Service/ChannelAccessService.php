@@ -8,6 +8,7 @@ use App\Entity\Channel;
 use App\Entity\GroupSubscription;
 use App\Entity\User;
 use App\Entity\UserGroup;
+use App\Entity\Workspace;
 use App\Service\Group\GroupProviderInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -20,10 +21,18 @@ class ChannelAccessService
 
     public function canUserAccess(Channel $channel, User $user): bool
     {
+        // Workspace channels: access is granted if user is a workspace member
+        $workspace = $channel->getWorkspace();
+        if ($workspace !== null) {
+            return $workspace->isMember($user);
+        }
+
+        // Legacy non-private channels (no workspace) — public access
         if (!$channel->isPrivate()) {
             return true;
         }
 
+        // Legacy private channels: direct member or creator
         if ($channel->getMembers()->contains($user)) {
             return true;
         }
@@ -32,13 +41,15 @@ class ChannelAccessService
             return true;
         }
 
+        // Legacy group subscriptions
         $subscriptions = $channel->getGroupSubscriptions();
         if ($subscriptions->isEmpty()) {
             return false;
         }
 
         // Check local groups via a single query
-        $localGroupMatch = $this->entityManager->createQueryBuilder()
+        $localGroupMatch = $this->entityManager
+            ->createQueryBuilder()
             ->select('COUNT(gs.id)')
             ->from(GroupSubscription::class, 'gs')
             ->join(UserGroup::class, 'ug', 'WITH', 'ug.groupIdentifier = gs.groupIdentifier')

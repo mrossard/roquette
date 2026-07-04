@@ -461,11 +461,28 @@ export function handleGlobalNotification(data) {
         isMention = mentionPattern.test(data.content || '');
     }
 
-    // Notifications enabled for this channel: read from data or DOM
+    // Notifications enabled for this channel: read from data or DOM or global meta settings
     let notificationsEnabled = data.notificationsEnabled;
     const channelLink = document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`);
     if (notificationsEnabled === undefined) {
-        notificationsEnabled = channelLink ? (channelLink.getAttribute('data-notifications-enabled') !== 'false') : true;
+        if (channelLink) {
+            notificationsEnabled = channelLink.getAttribute('data-notifications-enabled') !== 'false';
+        } else {
+            const meta = document.querySelector('meta[name="channel-notifications"]');
+            if (meta) {
+                try {
+                    const map = JSON.parse(meta.getAttribute('content'));
+                    if (map[data.channelSlug] !== undefined) {
+                        notificationsEnabled = map[data.channelSlug];
+                    }
+                } catch (e) {
+                    console.error('Failed to parse channel-notifications map:', e);
+                }
+            }
+            if (notificationsEnabled === undefined) {
+                notificationsEnabled = !!data.isDm;
+            }
+        }
     }
 
     // If it's a mention, we notify unless the page is visible and active on the channel or mention notifications are disabled
@@ -544,6 +561,59 @@ export function handleGlobalNotification(data) {
                 });
             }
         }
+
+        // Update workspace-level unread badge
+        if (data.workspaceId) {
+            const activeWsItem = document.querySelector('.workspace-dropdown-item.active');
+            const activeWsId = activeWsItem ? activeWsItem.getAttribute('data-workspace-id') : null;
+            if (data.workspaceId !== activeWsId) {
+                const wsItem = document.querySelector(`.workspace-dropdown-item[data-workspace-id="${data.workspaceId}"]`);
+                if (wsItem) {
+                    let badge = wsItem.querySelector('.workspace-unread-badge');
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'workspace-unread-badge';
+                        wsItem.appendChild(badge);
+                    }
+                    const currentCount = parseInt(badge.textContent, 10) || 0;
+                    badge.textContent = (currentCount + 1).toString();
+                    badge.style.display = 'inline-flex';
+                }
+            }
+        }
+
+        updateOtherWorkspaceUnreadTotal();
+    }
+}
+
+function updateOtherWorkspaceUnreadTotal() {
+    const activeWsItem = document.querySelector('.workspace-dropdown-item.active');
+    const activeWsId = activeWsItem ? activeWsItem.getAttribute('data-workspace-id') : null;
+
+    let total = 0;
+    document.querySelectorAll('.workspace-dropdown-item .workspace-unread-badge').forEach(badge => {
+        const item = badge.closest('.workspace-dropdown-item');
+        const wsId = item ? item.getAttribute('data-workspace-id') : null;
+        if (wsId && wsId !== activeWsId) {
+            total += parseInt(badge.textContent, 10) || 0;
+        }
+    });
+
+    const summary = document.querySelector('.workspace-dropdown-trigger');
+    if (!summary) return;
+
+    let summaryBadge = summary.querySelector('.other-workspace-unread-badge');
+
+    if (total > 0) {
+        if (!summaryBadge) {
+            summaryBadge = document.createElement('span');
+            summaryBadge.className = 'other-workspace-unread-badge';
+            summary.insertBefore(summaryBadge, summary.querySelector('.workspace-dropdown-arrow'));
+        }
+        summaryBadge.textContent = total.toString();
+        summaryBadge.style.display = 'inline-flex';
+    } else if (summaryBadge) {
+        summaryBadge.remove();
     }
 }
 
