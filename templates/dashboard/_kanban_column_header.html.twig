@@ -1,0 +1,32 @@
+<div class="kanban-column-header" id="kanban-column-header-{{ column.id }}" {% if column.color %}style="border-top: 3px solid {{ column.color }};"{% endif %}>
+    <div class="kanban-column-title">
+        <span class="kanban-column-name" id="kanban-column-name-{{ column.id }}">{{ column.name }}</span>
+        <span class="kanban-column-count" id="kanban-column-count-{{ column.id }}">
+            {{ column.messages|filter(m => not m.isCompleted)|length }}
+        </span>
+    </div>
+    {% if channel.isAdministrator(app.user) or channel.creator == app.user or is_granted('ROLE_ADMIN') %}
+        <div class="kanban-column-actions">
+            <button type="button" class="btn-column-rename"
+                    onclick="enableKanbanColumnRename({{ column.id }})"
+                    title="{{ 'Renommer'|trans }}">✏️</button>
+            <button type="button" class="btn-column-delete"
+                    hx-post="{{ path('app_kanban_column_delete', {id: column.id}) }}"
+                    hx-confirm="{{ 'Supprimer cette colonne ? Les tâches seront déplacées vers Non trié.'|trans }}"
+                    hx-target="#kanban-board"
+                    hx-swap="outerHTML transition:false"
+                    title="{{ 'Supprimer'|trans }}">🗑️</button>
+        </div>
+    {% endif %}
+</div>
+
+<form id="kanban-column-rename-form-{{ column.id }}"
+      class="kanban-column-rename-form"
+      style="display:none;"
+      hx-post="{{ path('app_kanban_column_rename', {id: column.id}) }}"
+      hx-target="#kanban-column-header-{{ column.id }}"
+      hx-swap="outerHTML transition:false">
+    <input type="text" name="name" value="{{ column.name }}" class="input-field" required style="width:140px; font-size:0.85rem;">
+    <button type="submit" class="btn-primary btn-sm">OK</button>
+    <button type="button" class="btn-secondary btn-sm" onclick="cancelKanbanColumnRename({{ column.id }})">✕</button>
+</form>

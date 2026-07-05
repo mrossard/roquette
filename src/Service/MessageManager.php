@@ -88,6 +88,9 @@ class MessageManager
         $this->entityManager->flush();
 
         $oobHtml .= '<div id="feed-item-' . $id . '" hx-swap-oob="delete"></div>';
+        if ($channel->isTodoList()) {
+            $oobHtml .= '<div id="kanban-card-' . $id . '" hx-swap-oob="delete"></div>';
+        }
         $this->mercurePublisher->publishToChannel($channel, $oobHtml, 'message_' . $channel->getSlug());
 
         return ['success' => true];

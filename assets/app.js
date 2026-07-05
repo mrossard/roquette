@@ -61,6 +61,7 @@ import './modules/autocomplete.js';
 import {getOrBuildSharedEmojiPickerDOM} from './modules/emoji.js';
 import './modules/offline.js';
 import './modules/search-builder.js';
+import './modules/kanban.js';
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
@@ -398,6 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initGlobalSearch) window.initGlobalSearch();
     if (window.initMobileSidebar) window.initMobileSidebar();
     if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
+    if (window.initKanbanBoard) window.initKanbanBoard();
 
 
     // Focus message input on load (unless on mobile)
@@ -494,6 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
         if (window.renderChannelOfflineMessages) window.renderChannelOfflineMessages();
         if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
+        if (window.initKanbanBoard) window.initKanbanBoard();
 
 
         // Refocus appropriate input and restore draft after channel switches

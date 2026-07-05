@@ -18,6 +18,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Index(name: 'idx_message_channel_id', columns: ['channel_id', 'id'])]
 #[ORM\Index(name: 'idx_message_channel_created_at', columns: ['channel_id', 'created_at'])]
 #[ORM\Index(name: 'idx_message_content_fts', columns: ['content_tsvector'])]
+#[ORM\Index(name: 'idx_message_kanban_column', columns: ['kanban_column_id'])]
+#[ORM\Index(name: 'idx_message_assigned_to', columns: ['assigned_to_id'])]
 class Message
 {
     #[ORM\Id]
@@ -85,6 +87,27 @@ class Message
 
     #[ORM\Column(name: 'content_tsvector', type: 'text', nullable: true, insertable: false, updatable: false)]
     private ?string $contentTsvector = null;
+
+    #[ORM\ManyToOne(targetEntity: KanbanColumn::class, inversedBy: 'messages')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?KanbanColumn $kanbanColumn = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?User $assignedTo = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $dueAt = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    #[Assert\Choice(choices: ['low', 'medium', 'high', 'urgent'])]
+    private ?string $priority = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $labels = null;
+
+    #[ORM\Column(options: ['default' => false])]
+    private bool $isCompleted = false;
 
     public function __construct()
     {
@@ -323,6 +346,79 @@ class Message
     public function setVirusScanStatus(?string $virusScanStatus): static
     {
         $this->virusScanStatus = $virusScanStatus;
+
+        return $this;
+    }
+
+    public function getKanbanColumn(): ?KanbanColumn
+    {
+        return $this->kanbanColumn;
+    }
+
+    public function setKanbanColumn(?KanbanColumn $kanbanColumn): static
+    {
+        $this->kanbanColumn = $kanbanColumn;
+
+        return $this;
+    }
+
+    public function getAssignedTo(): ?User
+    {
+        return $this->assignedTo;
+    }
+
+    public function setAssignedTo(?User $assignedTo): static
+    {
+        $this->assignedTo = $assignedTo;
+
+        return $this;
+    }
+
+    public function getDueAt(): ?\DateTimeImmutable
+    {
+        return $this->dueAt;
+    }
+
+    public function setDueAt(?\DateTimeImmutable $dueAt): static
+    {
+        $this->dueAt = $dueAt;
+
+        return $this;
+    }
+
+    public function getPriority(): ?string
+    {
+        return $this->priority;
+    }
+
+    public function setPriority(?string $priority): static
+    {
+        $this->priority = $priority;
+
+        return $this;
+    }
+
+    public function getLabels(): ?array
+    {
+        return $this->labels;
+    }
+
+    public function setLabels(?array $labels): static
+    {
+        $this->labels = $labels;
+
+        return $this;
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->isCompleted;
+    }
+
+    // @mago-expect no-boolean-flag-parameter
+    public function setIsCompleted(bool $isCompleted): static
+    {
+        $this->isCompleted = $isCompleted;
 
         return $this;
     }

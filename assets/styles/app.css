@@ -28,5 +28,6 @@
 @import './components/skeletons.css';
 @import './components/settings.css';
 @import './components/admin-emoji.css';
+@import './components/kanban.css';
 
 @import './utilities.css';

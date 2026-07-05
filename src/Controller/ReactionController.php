@@ -14,6 +14,7 @@ use App\Repository\WorkspaceRepository;
 use App\Repository\InvitationRepository;
 use App\Service\MercurePublisher;
 use App\Service\ChannelManager;
+use App\Service\KanbanManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,6 +31,7 @@ final class ReactionController extends AbstractController
 
     public function __construct(
         private TranslatorInterface $translator,
+        private KanbanManager $kanbanManager,
     ) {}
 
     #[Route('/messages/{id}/react/{emoji}', name: 'app_message_react', methods: ['POST'])]
@@ -76,6 +78,20 @@ final class ReactionController extends AbstractController
         }
 
         $entityManager->flush();
+
+        // Sync completion state for todo channels
+        if ($channel->isTodoList() && $emoji === '✅') {
+            $hasCheck = false;
+            foreach ($message->getReactions() as $r) {
+                if ($r->getEmoji() === '✅') {
+                    $hasCheck = true;
+                    break;
+                }
+            }
+            $message->setIsCompleted($hasCheck);
+            $entityManager->flush();
+            $this->kanbanManager->toggleCompletion($message, $hasCheck, $currentUser);
+        }
 
         $renderedHtml = $this->renderFeedItem($message, ['no_fade' => true]);
 

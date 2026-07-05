@@ -31,6 +31,7 @@ class ChannelManager
         private readonly TranslatorInterface $translator,
         private readonly AuthorizationCheckerInterface $authorizationChecker,
         private readonly SluggerInterface $slugger,
+        private readonly KanbanManager $kanbanManager,
     ) {}
 
     public function create(string $name, string $description, array $extra, User $currentUser): Channel
@@ -108,6 +109,10 @@ class ChannelManager
 
         $this->entityManager->persist($channel);
         $this->entityManager->flush();
+
+        if ($channel->isTodoList()) {
+            $this->kanbanManager->initializeDefaultColumns($channel);
+        }
 
         $this->auditLogger->log(AuditAction::CHANNEL_CREATE, $currentUser, [
             'channel_id' => $channel->getId(),

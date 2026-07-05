@@ -87,13 +87,27 @@
                             <span id="search-indicator" class="htmx-indicator spinner-subtle"
                                   style="display: none;"></span>
                         </div>
+                    </form>
 
-                        {% if activeChannel.isTodoList() %}
+                    {% if activeChannel.isTodoList() %}
+                        {% set isKanbanView = app.request.attributes.get('_route') == 'app_channel_kanban' %}
+                        {% if not isKanbanView %}
+                            <a href="{{ path('app_channel_kanban', {slug: activeChannel.slug}) }}"
+                               class="btn-kanban-toggle"
+                               title="{{ 'Basculer en vue Kanban'|trans }}">
+                                📋 {{ 'Kanban'|trans }}
+                            </a>
                             <button type="button" class="btn-hide-completed" data-channel-slug="{{ activeChannel.slug }}">
                                 {{ 'Masquer les tâches terminées'|trans }}
                             </button>
+                        {% else %}
+                            <a href="{{ path('app_channel', {slug: activeChannel.slug}) }}"
+                               class="btn-list-toggle"
+                               title="{{ 'Basculer en vue liste'|trans }}">
+                                📝 {{ 'Liste'|trans }}
+                            </a>
                         {% endif %}
-                    </form>
+                    {% endif %}
                 {% endif %}
 
                 {% include 'dashboard/_notification_toggle.html.twig' with {

@@ -383,6 +383,20 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                 window.updateChannelLastMessageDate(data.channelSlug);
             }
 
+            // Auto-refresh Kanban board if a new message (task) is added to the active channel
+            if (type === 'channel_notification') {
+                const board = document.getElementById('kanban-board');
+                const statusBadge = document.getElementById('mercure-status');
+                const activeChannelSlug = statusBadge ? statusBadge.getAttribute('data-active-channel-slug') : null;
+                if (board && activeChannelSlug === data.channelSlug) {
+                    htmx.ajax('GET', `/channels/${activeChannelSlug}/kanban`, {
+                        target: '#live-feed',
+                        swap: 'innerHTML transition:false',
+                    });
+                }
+            }
+        } else if (type === 'personal_notification' || type === 'channel_notification') {
+            // Already handled above, keep signature
         } else if (type === 'invitation_received') {
             if (window.handleInvitationNotification) {
                 window.handleInvitationNotification(data);
@@ -407,6 +421,63 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                 const activeChannelSlug = statusBadge.getAttribute('data-active-channel-slug');
                 if (data.channelSlug === activeChannelSlug) {
                     window.location.href = data.redirectUrl || '/';
+                }
+            }
+        } else if (type === 'kanban_columns_changed') {
+            const board = document.getElementById('kanban-board');
+            if (board) {
+                htmx.ajax('GET', `/channels/${data.channelSlug}/kanban`, {
+                    target: '#live-feed',
+                    swap: 'innerHTML transition:false',
+                });
+            }
+        } else if (type === 'kanban_card_moved' || type === 'kanban_card_updated') {
+            if (data.htmlOob) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.htmlOob, 'text/html');
+                const oobElem = doc.querySelector('[hx-swap-oob]');
+                if (oobElem) {
+                    const id = oobElem.id;
+                    const existing = document.getElementById(id);
+                    if (existing && window.Idiomorph) {
+                        window.Idiomorph.morph(existing, oobElem);
+                    }
+                }
+            }
+
+            if (data.kanbanCardHtml) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.kanbanCardHtml, 'text/html');
+                const cardElem = doc.querySelector('.kanban-card');
+                if (cardElem) {
+                    const id = cardElem.id;
+                    const existing = document.getElementById(id);
+                    if (existing && window.Idiomorph) {
+                        window.Idiomorph.morph(existing, cardElem);
+                    }
+                }
+            }
+
+            if (type === 'kanban_card_moved') {
+                const board = document.getElementById('kanban-board');
+                if (board) {
+                    const card = document.getElementById(`kanban-card-${data.messageId}`);
+                    if (card) {
+                        const colId = data.columnId !== null && data.columnId !== undefined ? data.columnId : 'null';
+                        const targetCol = board.querySelector(`.kanban-column-body[data-column-id="${colId}"]`);
+                        if (targetCol && card.parentElement !== targetCol) {
+                            targetCol.appendChild(card);
+
+                            // Recount card numbers for all columns
+                            board.querySelectorAll('.kanban-column').forEach(col => {
+                                const countEl = col.querySelector('.kanban-column-count');
+                                const body = col.querySelector('.kanban-column-body');
+                                if (countEl && body) {
+                                    countEl.textContent = body.querySelectorAll('.kanban-card:not(.sortable-ghost)').length;
+                                }
+                            });
+                        }
+                    }
                 }
             }
         }

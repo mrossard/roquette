@@ -1,0 +1,51 @@
+<div class="kanban-board" id="kanban-board">
+    {% for column in kanbanColumns %}
+        <div class="kanban-column" data-column-id="{{ column.id }}">
+            {% include 'dashboard/_kanban_column_header.html.twig' with {'column': column, 'channel': channel} %}
+            <div class="kanban-column-body"
+                 data-drop-zone
+                 data-column-id="{{ column.id }}">
+                {% for message in column.messages %}
+                    {% include 'dashboard/_kanban_card.html.twig' with {'message': message, 'channel': channel, 'members': members} %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- Untriaged zone -->
+    <div class="kanban-column kanban-column-untriaged" data-column-id="null">
+        <div class="kanban-column-header">
+            <span class="kanban-column-name">{{ 'Non trié'|trans }}</span>
+            <span class="kanban-column-count">{{ untriagedMessages|length }}</span>
+        </div>
+        <div class="kanban-column-body" data-drop-zone data-column-id="null">
+            {% for message in untriagedMessages %}
+                {% include 'dashboard/_kanban_card.html.twig' with {'message': message, 'channel': channel, 'members': members} %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Add column button (admin only) -->
+    {% if channel.isAdministrator(app.user) or channel.creator == app.user or is_granted('ROLE_ADMIN') %}
+        <div class="kanban-column kanban-column-add">
+            <button type="button" class="btn-kanban-add-column"
+                    hx-get="{{ path('app_channel_edit_modal', {slug: channel.slug}) }}"
+                    hx-target="#modal-container"
+                    title="{{ 'Ajouter une colonne'|trans }}"
+                    onclick="event.preventDefault(); showKanbanAddColumnModal();">
+                + {{ 'Colonne'|trans }}
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Simple inline form to add a column (hidden by default, toggled by JS) -->
+<div id="kanban-add-column-form" style="display:none; margin-bottom:1rem;">
+    <form hx-post="{{ path('app_kanban_column_create') }}" hx-target="#kanban-board" hx-swap="outerHTML transition:false">
+        <input type="hidden" name="channelId" value="{{ channel.id }}">
+        <input type="text" name="name" placeholder="{{ 'Nom de la colonne'|trans }}" required class="input-field" style="width:200px;">
+        <input type="color" name="color" value="#6366f1" title="{{ 'Couleur'|trans }}" style="width:40px; height:32px; border:none; border-radius:4px; cursor:pointer;">
+        <button type="submit" class="btn-primary">{{ 'Ajouter'|trans }}</button>
+        <button type="button" class="btn-secondary" onclick="hideKanbanAddColumnModal()">{{ 'Annuler'|trans }}</button>
+    </form>
+</div>

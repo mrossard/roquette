@@ -1,0 +1,149 @@
+{% set members = members|default(channel.members) %}
+{% set isCompleted = message.isCompleted %}
+{% set assignedTo = message.assignedTo %}
+{% set dueAt = message.dueAt %}
+{% set priority = message.priority %}
+{% set labels = message.labels|default([]) %}
+{% set author = message.author %}
+{% set msgContent = message.content|default('') %}
+{% set cardTitle = msgContent|striptags|u.truncate(140, '…') %}
+{% if cardTitle == '' and message.fileName %}
+    {% set cardTitle = message.fileName %}
+{% endif %}
+
+<div class="kanban-card {{ isCompleted ? 'kanban-card-completed' : '' }}"
+     id="kanban-card-{{ message.id }}"
+     data-message-id="{{ message.id }}"
+     draggable="true">
+
+    <div class="kanban-card-header">
+        {% if priority %}
+            <span class="kanban-priority kanban-priority-{{ priority }}"
+                  title="{{ ('priority.' ~ priority)|trans|default(priority) }}"></span>
+        {% endif %}
+        <div class="kanban-card-meta">
+            {% if dueAt %}
+                {% set isOverdue = dueAt < date() %}
+                {% set isSoon = not isOverdue and dueAt < date('+24 hours') %}
+                <span class="kanban-due-date {{ isOverdue ? 'overdue' : (isSoon ? 'soon' : '') }}"
+                      title="{{ 'Échéance'|trans }}: {{ dueAt|date('d/m/Y') }}">
+                    📅 {{ dueAt|date('d/m') }}
+                </span>
+            {% endif %}
+            {% if labels %}
+                <div class="kanban-labels">
+                    {% for label in labels %}
+                        <span class="kanban-label">{{ label }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="kanban-card-body">
+        <a href="{{ path('app_channel', {slug: channel.slug}) }}?jumpTo={{ message.id }}"
+           hx-boost="false"
+           class="kanban-card-title"
+           title="{{ msgContent|striptags }}">
+            {{ cardTitle }}
+        </a>
+
+        {% if message.fileName %}
+            <div class="kanban-card-attachment">
+                📎 {{ message.fileName }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="kanban-card-footer">
+        <div class="kanban-card-users">
+            <div class="kanban-card-author" title="{{ 'Créé par'|trans }} {{ author.displayName|default(author.username) }}">
+                <span class="feed-item-avatar" style="--user-hue: {{ author.hue }};">{{ author.displayName|default(author.username)|slice(0,1)|upper }}</span>
+            </div>
+
+            {% if assignedTo %}
+                <div class="kanban-card-assignee" title="{{ 'Assigné à'|trans }} {{ assignedTo.displayName|default(assignedTo.username) }}">
+                    <span class="feed-item-avatar" style="--user-hue: {{ assignedTo.hue }};">{{ assignedTo.displayName|default(assignedTo.username)|slice(0,1)|upper }}</span>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="kanban-card-actions">
+            {% if isCompleted %}
+                <span class="kanban-card-completed-badge" title="{{ 'Terminé'|trans }}">✅</span>
+            {% endif %}
+
+            {% set replyCount = message.replies|length %}
+            {% if replyCount > 0 %}
+                <span class="kanban-card-replies" title="{{ replyCount }} {{ replyCount > 1 ? 'réponses'|trans : 'réponse'|trans }}">💬 {{ replyCount }}</span>
+            {% endif %}
+
+            <button type="button" class="btn-kanban-card-menu"
+                    onclick="toggleKanbanCardMenu({{ message.id }})"
+                    title="{{ 'Actions'|trans }}">•••</button>
+        </div>
+    </div>
+
+    <!-- Inline actions panel -->
+    <div class="kanban-card-menu" id="kanban-card-menu-{{ message.id }}" style="display:none;">
+        <div class="kanban-card-menu-inner">
+            <form hx-post="{{ path('app_kanban_assign', {id: message.id}) }}"
+                  hx-target="#kanban-card-{{ message.id }}"
+                  hx-swap="outerHTML transition:false"
+                  class="kanban-menu-form">
+                <label>{{ 'Assigner'|trans }}</label>
+                <select name="userId" onchange="this.form.requestSubmit()">
+                    <option value="">—</option>
+                    {% for member in members %}
+                        <option value="{{ member.id }}" {% if assignedTo and assignedTo.id == member.id %}selected{% endif %}>
+                            {{ member.displayName|default(member.username) }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <form hx-post="{{ path('app_kanban_due_date', {id: message.id}) }}"
+                  hx-target="#kanban-card-{{ message.id }}"
+                  hx-swap="outerHTML transition:false"
+                  class="kanban-menu-form">
+                <label>{{ 'Échéance'|trans }}</label>
+                <input type="date" name="dueAt" value="{{ dueAt ? dueAt|date('Y-m-d') : '' }}"
+                       onchange="this.form.requestSubmit()">
+            </form>
+
+            <form hx-post="{{ path('app_kanban_priority', {id: message.id}) }}"
+                  hx-target="#kanban-card-{{ message.id }}"
+                  hx-swap="outerHTML transition:false"
+                  class="kanban-menu-form">
+                <label>{{ 'Priorité'|trans }}</label>
+                <select name="priority" onchange="this.form.requestSubmit()">
+                    <option value="">—</option>
+                    <option value="low" {% if priority == 'low' %}selected{% endif %}>{{ 'Basse'|trans }}</option>
+                    <option value="medium" {% if priority == 'medium' %}selected{% endif %}>{{ 'Moyenne'|trans }}</option>
+                    <option value="high" {% if priority == 'high' %}selected{% endif %}>{{ 'Haute'|trans }}</option>
+                    <option value="urgent" {% if priority == 'urgent' %}selected{% endif %}>{{ 'Urgente'|trans }}</option>
+                </select>
+            </form>
+
+            <form hx-post="{{ path('app_kanban_labels', {id: message.id}) }}"
+                  hx-target="#kanban-card-{{ message.id }}"
+                  hx-swap="outerHTML transition:false"
+                  class="kanban-menu-form">
+                <label>{{ 'Étiquettes'|trans }}</label>
+                <input type="text" name="labels" value="{{ labels|join(', ') }}"
+                       placeholder="{{ 'Ex: bug, ui (séparés par des virgules)'|trans }}"
+                       onchange="this.form.requestSubmit()"
+                       style="font-size: 0.8rem; padding: 0.25rem 0.4rem; border-radius: 0.35rem; border: 1px solid var(--border-color, rgba(0,0,0,0.1)); background: var(--input-bg); color: var(--text-primary);">
+            </form>
+
+            <form hx-post="{{ path('app_kanban_toggle_complete', {id: message.id}) }}"
+                  hx-target="#kanban-card-{{ message.id }}"
+                  hx-swap="outerHTML transition:false"
+                  class="kanban-menu-form">
+                <button type="submit" class="btn-kanban-complete {{ isCompleted ? 'completed' : '' }}">
+                    {% if isCompleted %}{{ 'Marquer non terminé'|trans }}{% else %}{{ 'Marquer terminé'|trans }}{% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

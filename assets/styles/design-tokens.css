@@ -59,6 +59,15 @@
         --shadow-glass: 0 10px 30px rgba(0, 0, 0, 0.3);
         --accent-cyan-hover: #66e0ff;
         --text-normal: var(--text-primary);
+
+        --panel-bg: hsla(223, 47%, 14%, 0.6);
+        --panel-bg-secondary: hsla(223, 40%, 18%, 0.5);
+        --border-color: rgba(255, 255, 255, 0.06);
+        --badge-bg: rgba(255, 255, 255, 0.1);
+        --hover-bg: rgba(255, 255, 255, 0.08);
+        --drop-zone-bg: rgba(168, 85, 247, 0.15);
+        --card-bg: hsla(223, 47%, 14%, 0.8);
+        --input-bg: rgba(0, 0, 0, 0.2);
     }
 
     [data-theme="light"] {
@@ -113,5 +122,14 @@
         --shadow-glass: 0 10px 30px rgba(0, 0, 0, 0.15);
         --accent-cyan-hover: #0099cc;
         --text-normal: var(--text-primary);
+
+        --panel-bg: hsla(40, 8%, 97%, 0.85);
+        --panel-bg-secondary: hsla(40, 14%, 92%, 0.6);
+        --border-color: rgba(0, 0, 0, 0.07);
+        --badge-bg: rgba(0, 0, 0, 0.06);
+        --hover-bg: rgba(0, 0, 0, 0.05);
+        --drop-zone-bg: rgba(110, 30, 180, 0.08);
+        --card-bg: hsl(40, 14%, 97%);
+        --input-bg: hsla(40, 8%, 96%, 0.9);
     }
 }

@@ -79,14 +79,23 @@
                         } %}
                     {% endif %}
                     <div id="live-feed" class="feed-container" role="log" aria-live="polite"
-                         sse-swap="message_{{ activeChannel.slug }}" hx-swap="beforeend transition:false"
+                         {% if not kanbanView|default(false) %}sse-swap="message_{{ activeChannel.slug }}" hx-swap="beforeend transition:false"{% endif %}
                          {% if activeChannel.creator == app.user or is_granted('ROLE_ADMIN') %}data-is-channel-creator="true"{% endif %}>
-                        {% include 'dashboard/_messages_feed.html.twig' with {
-                            'messages': messages,
-                            'activeChannel': activeChannel,
-                            'firstUnreadMessageId': firstUnreadMessageId,
-                            'replyCounts': replyCounts|default({})
-                        } %}
+                        {% if kanbanView|default(false) %}
+                            {% include 'dashboard/_kanban_board.html.twig' with {
+                                'channel': activeChannel,
+                                'kanbanColumns': kanbanColumns,
+                                'untriagedMessages': untriagedMessages,
+                                'members': kanbanMembers
+                            } %}
+                        {% else %}
+                            {% include 'dashboard/_messages_feed.html.twig' with {
+                                'messages': messages,
+                                'activeChannel': activeChannel,
+                                'firstUnreadMessageId': firstUnreadMessageId,
+                                'replyCounts': replyCounts|default({})
+                            } %}
+                        {% endif %}
                     </div>
 
                     {% include 'dashboard/_typing_indicator.html.twig' with {'typingUsers': typingUsers|default([]), 'activeChannel': activeChannel} %}

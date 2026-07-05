@@ -93,12 +93,20 @@ class Channel
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Workspace $workspace = null;
 
+    /**
+     * @var Collection<int, KanbanColumn>
+     */
+    #[ORM\OneToMany(targetEntity: KanbanColumn::class, mappedBy: 'channel', orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC'])]
+    private Collection $kanbanColumns;
+
     public function __construct()
     {
         $this->messages = new ArrayCollection();
         $this->members = new ArrayCollection();
         $this->administrators = new ArrayCollection();
         $this->groupSubscriptions = new ArrayCollection();
+        $this->kanbanColumns = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -393,5 +401,34 @@ class Channel
     public function isWorkspaceChannel(): bool
     {
         return $this->workspace !== null;
+    }
+
+    /**
+     * @return Collection<int, KanbanColumn>
+     */
+    public function getKanbanColumns(): Collection
+    {
+        return $this->kanbanColumns;
+    }
+
+    public function addKanbanColumn(KanbanColumn $kanbanColumn): static
+    {
+        if (!$this->kanbanColumns->contains($kanbanColumn)) {
+            $this->kanbanColumns->add($kanbanColumn);
+            $kanbanColumn->setChannel($this);
+        }
+
+        return $this;
+    }
+
+    public function removeKanbanColumn(KanbanColumn $kanbanColumn): static
+    {
+        if ($this->kanbanColumns->removeElement($kanbanColumn)) {
+            if ($kanbanColumn->getChannel() === $this) {
+                $kanbanColumn->setChannel(null);
+            }
+        }
+
+        return $this;
     }
 }
