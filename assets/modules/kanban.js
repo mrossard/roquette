@@ -100,15 +100,37 @@ function updateColumnCounter(columnBody) {
     countEl.textContent = cards.length;
 }
 
-// ── Global helpers exposed on window ─────────────────────────────────────────
-
 window.showKanbanAddColumnModal = function () {
+    const col = document.querySelector('.kanban-column-add');
+    const btn = document.getElementById('btn-kanban-add-column');
     const form = document.getElementById('kanban-add-column-form');
+    if (col) {
+        col.style.minWidth = '280px';
+        col.style.maxWidth = '280px';
+        col.style.background = 'var(--panel-bg, rgba(255,255,255,0.6))';
+        col.style.border = '1px solid var(--border-color, rgba(0,0,0,0.05))';
+        col.style.borderRadius = '0.75rem';
+        col.style.alignItems = 'stretch';
+        col.style.justifyContent = 'flex-start';
+    }
+    if (btn) btn.style.display = 'none';
     if (form) form.style.display = 'block';
 };
 
 window.hideKanbanAddColumnModal = function () {
+    const col = document.querySelector('.kanban-column-add');
+    const btn = document.getElementById('btn-kanban-add-column');
     const form = document.getElementById('kanban-add-column-form');
+    if (col) {
+        col.style.minWidth = '';
+        col.style.maxWidth = '';
+        col.style.background = '';
+        col.style.border = '';
+        col.style.borderRadius = '';
+        col.style.alignItems = '';
+        col.style.justifyContent = '';
+    }
+    if (btn) btn.style.display = 'block';
     if (form) form.style.display = 'none';
 };
 

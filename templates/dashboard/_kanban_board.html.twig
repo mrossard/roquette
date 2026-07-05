@@ -28,24 +28,27 @@
     <!-- Add column button (admin only) -->
     {% if channel.isAdministrator(app.user) or channel.creator == app.user or is_granted('ROLE_ADMIN') %}
         <div class="kanban-column kanban-column-add">
-            <button type="button" class="btn-kanban-add-column"
-                    hx-get="{{ path('app_channel_edit_modal', {slug: channel.slug}) }}"
-                    hx-target="#modal-container"
+            <button type="button" class="btn-kanban-add-column" id="btn-kanban-add-column"
                     title="{{ 'Ajouter une colonne'|trans }}"
                     onclick="event.preventDefault(); showKanbanAddColumnModal();">
                 + {{ 'Colonne'|trans }}
             </button>
+            <div id="kanban-add-column-form" style="display:none; padding: 1rem; width: 100%;">
+                <form hx-post="{{ path('app_kanban_column_create') }}" hx-target="#live-feed" hx-swap="innerHTML transition:false">
+                    <input type="hidden" name="channelId" value="{{ channel.id }}">
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <input type="text" name="name" placeholder="{{ 'Nom de la colonne'|trans }}" required class="input-field" style="width: 100%; border: 1px solid var(--border-color); border-radius: 4px; padding: 0.4rem; background: var(--bg-input);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="color" name="color" value="#6366f1" title="{{ 'Couleur'|trans }}" style="width:40px; height:32px; border:none; border-radius:4px; cursor:pointer;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">{{ 'Couleur'|trans }}</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                            <button type="submit" class="btn-primary" style="flex: 1; padding: 0.25rem 0.5rem; font-size: 0.85rem;">{{ 'Ajouter'|trans }}</button>
+                            <button type="button" class="btn-secondary" style="flex: 1; padding: 0.25rem 0.5rem; font-size: 0.85rem;" onclick="hideKanbanAddColumnModal()">{{ 'Annuler'|trans }}</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     {% endif %}
-</div>
-
-<!-- Simple inline form to add a column (hidden by default, toggled by JS) -->
-<div id="kanban-add-column-form" style="display:none; margin-bottom:1rem;">
-    <form hx-post="{{ path('app_kanban_column_create') }}" hx-target="#kanban-board" hx-swap="outerHTML transition:false">
-        <input type="hidden" name="channelId" value="{{ channel.id }}">
-        <input type="text" name="name" placeholder="{{ 'Nom de la colonne'|trans }}" required class="input-field" style="width:200px;">
-        <input type="color" name="color" value="#6366f1" title="{{ 'Couleur'|trans }}" style="width:40px; height:32px; border:none; border-radius:4px; cursor:pointer;">
-        <button type="submit" class="btn-primary">{{ 'Ajouter'|trans }}</button>
-        <button type="button" class="btn-secondary" onclick="hideKanbanAddColumnModal()">{{ 'Annuler'|trans }}</button>
-    </form>
 </div>
