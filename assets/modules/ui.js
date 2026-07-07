@@ -716,13 +716,13 @@ setInterval(() => {
         }
         const lastActive = parseInt(el.getAttribute('data-last-active'), 10);
         if (!lastActive) {
-            updateElementStatus(el, 'offline', window.trans('Hors ligne'));
+            updateElementStatus(el, 'offline', window.trans('status.offline'));
             return;
         }
         if (now - lastActive > 300) {
-            updateElementStatus(el, 'offline', window.trans('Hors ligne'));
+            updateElementStatus(el, 'offline', window.trans('status.offline'));
         } else {
-            updateElementStatus(el, 'online', window.trans('En ligne'));
+            updateElementStatus(el, 'online', window.trans('status.online'));
         }
     });
 }, 15000);

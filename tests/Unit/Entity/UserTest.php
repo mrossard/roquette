@@ -182,9 +182,9 @@ class UserTest extends TestCase
     public static function statusLabelProvider(): array
     {
         return [
-            'busy' => ['busy', 'Occupé'],
-            'away' => ['away', 'Absent'],
-            'offline' => ['offline', 'Hors ligne'],
+            'busy' => ['busy', 'status.busy'],
+            'away' => ['away', 'status.away'],
+            'offline' => ['offline', 'status.offline'],
         ];
     }
 

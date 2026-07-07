@@ -26,7 +26,7 @@
                                   data-username="{{ member.username }}"
                                   data-status-override="{{ member.statusOverride|default('auto') }}"
                                   data-last-active="{{ member.lastActiveAt ? member.lastActiveAt.timestamp : '' }}"
-                                  title="{{ member.statusLabel }}"></span>
+                                   title="{{ member.statusLabel|trans }}"></span>
                         </div>
                         <div style="flex-grow: 1; min-width: 0;">
                             <div

@@ -13,7 +13,7 @@
                         <div class="user-avatar-circle" style="background-color: hsl({{ u.hue }}, 90%, var(--user-hue-lightness-border)); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1rem; box-shadow: 0 0 10px hsla({{ u.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
                             {{ u.username|slice(0,1)|upper }}
                         </div>
-                        <span class="status-dot-overlay {{ u.status }}" style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-card); display: block;" title="{{ u.statusLabel }}"></span>
+                        <span class="status-dot-overlay {{ u.status }}" style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-card); display: block;" title="{{ u.statusLabel|trans }}"></span>
                     </div>
                     <div>
                         <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">

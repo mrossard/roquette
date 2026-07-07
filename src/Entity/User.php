@@ -479,11 +479,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getStatusLabel(): string
     {
         return match ($this->getStatus()) {
-            'online' => 'En ligne',
-            'away' => 'Absent',
-            'busy' => 'Occupé',
-            'offline' => 'Hors ligne',
-            default => 'Hors ligne',
+            'online' => 'status.online',
+            'away' => 'status.away',
+            'busy' => 'status.busy',
+            'offline' => 'status.offline',
+            default => 'status.offline',
         };
     }
 

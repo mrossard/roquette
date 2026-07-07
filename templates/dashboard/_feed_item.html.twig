@@ -51,7 +51,7 @@
                 <div class="feed-item-user-container">
                     {% if author and author.username != 'robot-roquette' %}
                         <a href="{{ path('app_dm_open', {username: author.username}) }}" class="feed-item-user-link" hx-boost="false"
-                           title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel}) }}">
+                           title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel|trans}) }}">
                             <div class="avatar-container">
                                 {% if messageObject and messageObject.customAuthorAvatar %}
                                     {% if messageObject.customAuthorAvatar starts with 'http' or messageObject.customAuthorAvatar starts with '/' %}
@@ -66,9 +66,9 @@
                                        data-username="{{ author.username }}"
                                        data-status-override="{{ author.statusOverride|default('auto') }}"
                                        data-last-active="{{ author.lastActiveAt ? author.lastActiveAt.timestamp : '' }}"
-                                       title="{{ author.statusLabel }}"></span>
-                             </div>
-                             <span class="feed-item-user">{{ username|wrap_emojis }}</span>
+                                        title="{{ author.statusLabel|trans }}"></span>
+                              </div>
+                              <span class="feed-item-user">{{ username|wrap_emojis }}</span>
                          </a>
                      {% else %}
                          <div class="avatar-container">
@@ -86,7 +86,7 @@
                                       data-username="{{ author.username }}"
                                       data-status-override="{{ author.statusOverride|default('auto') }}"
                                       data-last-active="{{ author.lastActiveAt ? author.lastActiveAt.timestamp : '' }}"
-                                      title="{{ author.statusLabel }}"></span>
+                                       title="{{ author.statusLabel|trans }}"></span>
                             {% endif %}
                         </div>
                         <span class="feed-item-user">{{ username|wrap_emojis }}</span>

@@ -79,7 +79,7 @@
                                  style="background-color: hsl({{ user.hue }}, 90%, var(--user-hue-lightness-border)); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1.2rem; box-shadow: 0 0 10px hsla({{ user.hue }}, 90%, var(--user-hue-lightness-border), 0.3);">
                                 {{ user.username|slice(0,1)|upper }}
                             </div>
-                            <span class="status-dot-overlay {{ user.status }}" title="{{ user.statusLabel }}"></span>
+                            <span class="status-dot-overlay {{ user.status }}" title="{{ user.statusLabel|trans }}"></span>
                         </div>
                         <div>
                             <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin: 0;">
@@ -89,7 +89,7 @@
                                 <span class="member-username"
                                       style="font-size: 0.8rem; color: var(--text-muted);">@{{ user.username }}</span>
                                 <span
-                                    style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.05); padding: 0.15rem 0.4rem; border-radius: 0.5rem; color: var(--text-muted); font-weight: 500;">{{ user.statusLabel }}</span>
+                                    style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.05); padding: 0.15rem 0.4rem; border-radius: 0.5rem; color: var(--text-muted); font-weight: 500;">{{ user.statusLabel|trans }}</span>
                             </div>
                         </div>
                     </div>

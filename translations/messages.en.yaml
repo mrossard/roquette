@@ -29,6 +29,10 @@ Ou: Or
 'Couleur du profil': 'Profile color'
 'Statut de présence': 'Presence status'
 "Automatique (Basé sur l'activité)": 'Automatic (Based on activity)'
+status.online: Online
+status.away: Away
+status.busy: Busy
+status.offline: Offline
 'En ligne': Online
 Absent: Away
 Occupé: Busy

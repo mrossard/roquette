@@ -65,7 +65,7 @@ function isCurrentUserBusy() {
 export function handleUserStatusChanged(data) {
     const username = data.username;
     const newStatus = data.status;
-    const label = data.statusLabel;
+    const label = window.trans(data.statusLabel);
 
     const statusBadge = document.getElementById('mercure-status');
     const currentUsername = statusBadge ? statusBadge.getAttribute('data-current-username') : null;

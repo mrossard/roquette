@@ -9,10 +9,10 @@
                         {% if partner %}
                             <span class="status-dot {{ partner.status }}"
                                   style="width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 0.5rem;"
-                                  title="{{ partner.statusLabel }}"></span>
+                                  title="{{ partner.statusLabel|trans }}"></span>
                             <span
                                 style="color: hsl({{ partner.hue }}, 90%, var(--user-hue-lightness-hover));">{{ partner.displayName|default(partner.username) }} <span
-                                    style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); opacity: 0.8;">({{ partner.statusLabel }})</span></span>
+                                    style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); opacity: 0.8;">({{ partner.statusLabel|trans }})</span></span>
                         {% else %}
                             <span
                                 style="color: var(--accent-purple); margin-right: 0.25rem;">👤</span> Conversation privée
