@@ -197,6 +197,8 @@ final class ChannelActionController extends AbstractController
                 $channels,
             ));
 
+            $workspaceUnreadCounts = $this->computeWorkspaceUnreadCounts($channels, $unreadCounts);
+
             $sidebarHtml = $this->renderView('dashboard/_sidebar.html.twig', [
                 'channels' => $channels,
                 'unreadCounts' => $unreadCounts,
@@ -205,6 +207,7 @@ final class ChannelActionController extends AbstractController
                 'subChannelsByParent' => $subChannelsByParent,
                 'lastMessages' => $lastMessages,
                 'workspaces' => $workspaces,
+                'workspaceUnreadCounts' => $workspaceUnreadCounts,
             ]);
 
             $sidebarHtml = preg_replace(
@@ -385,5 +388,28 @@ final class ChannelActionController extends AbstractController
     private function buildSubChannelsByParent(array $channels): array
     {
         return $this->channelManager->buildSubChannelsByParent($channels);
+    }
+
+    /**
+     * @param Channel[] $channels
+     * @param array<int, array{count: int, hasMention: bool}> $unreadCounts
+     * @return array<int, int>
+     */
+    private function computeWorkspaceUnreadCounts(array $channels, array $unreadCounts): array
+    {
+        $counts = [];
+        foreach ($channels as $ch) {
+            $ws = $ch->getWorkspace();
+            if (!$ws) {
+                continue;
+            }
+            $wsId = $ws->getId();
+            if (!array_key_exists($wsId, $counts)) {
+                $counts[$wsId] = 0;
+            }
+            $counts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
+        }
+
+        return $counts;
     }
 }

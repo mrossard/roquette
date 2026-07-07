@@ -433,4 +433,46 @@ final class WorkspaceController extends AbstractController
             'workspace' => $workspace,
         ]);
     }
+
+    #[Route('/sidebar/workspace-selector', name: 'app_sidebar_workspace_selector', methods: ['GET'])]
+    public function workspaceSelector(
+        Request $request,
+        ChannelRepository $channelRepository,
+        WorkspaceRepository $workspaceRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+
+        $workspaces = $workspaceRepository->findAllForUser($currentUser);
+        $channels = $channelRepository->findAllForUser($currentUser);
+
+        $ucrRepo = $entityManager->getRepository(\App\Entity\UserChannelRead::class);
+        $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
+
+        $workspaceUnreadCounts = [];
+        foreach ($channels as $ch) {
+            $ws = $ch->getWorkspace();
+            if (!$ws) {
+                continue;
+            }
+            $wsId = $ws->getId();
+            if (!array_key_exists($wsId, $workspaceUnreadCounts)) {
+                $workspaceUnreadCounts[$wsId] = 0;
+            }
+            $workspaceUnreadCounts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
+        }
+
+        $activeChannel = null;
+        $channelSlug = $request->query->get('channel');
+        if ($channelSlug) {
+            $activeChannel = $channelRepository->findOneBy(['slug' => $channelSlug]);
+        }
+
+        return $this->render('dashboard/_sidebar_workspace_selector.html.twig', [
+            'workspaces' => $workspaces,
+            'workspaceUnreadCounts' => $workspaceUnreadCounts,
+            'activeChannel' => $activeChannel,
+        ]);
+    }
 }

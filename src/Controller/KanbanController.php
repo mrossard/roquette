@@ -109,7 +109,7 @@ final class KanbanController extends AbstractController
             'subchannelByParentMessageId' => [],
             'lastMessages' => [],
             'workspaces' => $workspaces,
-            'workspaceUnreadCounts' => [],
+            'workspaceUnreadCounts' => $this->computeWorkspaceUnreadCounts($channels, $unreadCounts),
             'kanbanView' => true,
             'kanbanColumns' => $columns,
             'untriagedMessages' => $untriagedMessages,
@@ -399,5 +399,28 @@ final class KanbanController extends AbstractController
             'message' => $message,
             'channel' => $message->getChannel(),
         ]);
+    }
+
+    /**
+     * @param Channel[] $channels
+     * @param array<int, array{count: int, hasMention: bool}> $unreadCounts
+     * @return array<int, int>
+     */
+    private function computeWorkspaceUnreadCounts(array $channels, array $unreadCounts): array
+    {
+        $counts = [];
+        foreach ($channels as $ch) {
+            $ws = $ch->getWorkspace();
+            if (!$ws) {
+                continue;
+            }
+            $wsId = $ws->getId();
+            if (!array_key_exists($wsId, $counts)) {
+                $counts[$wsId] = 0;
+            }
+            $counts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
+        }
+
+        return $counts;
     }
 }

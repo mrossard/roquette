@@ -1159,6 +1159,22 @@
         flex-shrink: 0;
     }
 
+    .sidebar-workspace-selector.has-unread-elsewhere .workspace-avatar-wrapper::after,
+    .sidebar-workspace-selector.has-unread-elsewhere .workspace-avatar::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        border: 2px solid var(--accent-red);
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .sidebar-workspace-selector.has-unread-elsewhere .workspace-active-dot {
+        background: var(--accent-red);
+        box-shadow: 0 0 6px var(--accent-red);
+    }
+
     .workspace-description-row {
         border-top: 1px solid var(--border-glass);
         padding: 0.5rem 0.6rem 0.35rem;

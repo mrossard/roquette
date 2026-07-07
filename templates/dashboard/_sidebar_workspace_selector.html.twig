@@ -1,35 +1,35 @@
-<div class="sidebar-workspace-selector banner-style">
-    {% set currentWorkspace = null %}
-    {% if activeChannel and activeChannel.workspace %}
-        {% set currentWorkspace = activeChannel.workspace %}
-    {% elseif app.session and app.session.get('current_workspace_id') %}
-        {% set sessionWsId = app.session.get('current_workspace_id') %}
-        {% for ws in workspaces %}
-            {% if ws.id == sessionWsId %}
-                {% set currentWorkspace = ws %}
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-
-    {% if not currentWorkspace %}
-        {% for ws in workspaces %}
-            {% if ws.slug == 'public' or ws.isPublic %}
-                {% set currentWorkspace = ws %}
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-
-    {% set workspaceUnreadCounts = workspaceUnreadCounts|default({}) %}
-
-    {% set totalOtherWorkspaceUnread = 0 %}
+{% set currentWorkspace = null %}
+{% if activeChannel and activeChannel.workspace %}
+    {% set currentWorkspace = activeChannel.workspace %}
+{% elseif app.session and app.session.get('current_workspace_id') %}
+    {% set sessionWsId = app.session.get('current_workspace_id') %}
     {% for ws in workspaces %}
-        {% if (not currentWorkspace) or (ws.id != currentWorkspace.id) %}
-            {% if workspaceUnreadCounts[ws.id] is defined %}
-                {% set totalOtherWorkspaceUnread = totalOtherWorkspaceUnread + workspaceUnreadCounts[ws.id] %}
-            {% endif %}
+        {% if ws.id == sessionWsId %}
+            {% set currentWorkspace = ws %}
         {% endif %}
     {% endfor %}
+{% endif %}
 
+{% if not currentWorkspace %}
+    {% for ws in workspaces %}
+        {% if ws.slug == 'public' or ws.isPublic %}
+            {% set currentWorkspace = ws %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{% set workspaceUnreadCounts = workspaceUnreadCounts|default({}) %}
+
+{% set totalOtherWorkspaceUnread = 0 %}
+{% for ws in workspaces %}
+    {% if (not currentWorkspace) or (ws.id != currentWorkspace.id) %}
+        {% if workspaceUnreadCounts[ws.id] is defined %}
+            {% set totalOtherWorkspaceUnread = totalOtherWorkspaceUnread + workspaceUnreadCounts[ws.id] %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+<div class="sidebar-workspace-selector banner-style{% if totalOtherWorkspaceUnread > 0 %} has-unread-elsewhere{% endif %}">
     <details class="workspace-dropdown-details">
         <summary class="workspace-dropdown-trigger banner-trigger" aria-expanded="false">
             {% if currentWorkspace %}

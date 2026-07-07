@@ -1,82 +1,75 @@
 # Roquette
 
-Roquette est une application de messagerie et de collaboration en temps réel (alternative à Slack ou Discord) développée avec Symfony 8.0, Twig, AssetMapper et Mercure Hub.
+Application de messagerie et de collaboration en temps réel.
+
+**Stack** : Symfony 8.0, PHP 8.4+, HTMX + Idiomorph, Mercure SSE, PostgreSQL 16, AssetMapper, Redis.
 
 ## Fonctionnalités
 
-- **Messagerie en temps réel** : Envoi de messages, fils de discussion (threads), et notifications instantanées grâce à Symfony Mercure.
-- **Assistant virtuel & Synthèse (IA)** : Intégration de l'**Assistant Roquette** propulsé par un modèle LLM (via
-  Ollama). Vous pouvez lui poser des questions privées avec la commande `/help` ou dialoguer directement dans un canal
-  privé dédié (DM) pour lui demander de résumer n'importe quel canal auquel vous avez accès.
-- **Messages enregistrés** : Marquez des messages importants avec une étoile pour les retrouver instantanément dans la
-  section "Messages enregistrés" en haut de la barre latérale.
-- **Canaux de discussion** : Création, gestion et favoris pour les canaux.
-- **Réactions** : Ajout et gestion de réactions (emojis) sur les messages avec affichage au survol des utilisateurs
-  ayant réagi.
-- **Gestion de fichiers** : Importation de fichiers avec analyse antivirus intégrée via ClamAV.
-- **Aperçus de liens** : Génération automatique de prévisualisations riches pour les URLs partagées.
-- **Authentification** : Authentification classique et support OAuth2.
-- **Personnalisation** : Thèmes et couleurs personnalisés par utilisateur.
+- **Messagerie temps réel** via Mercure SSE (pas de WebSocket)
+- **Espaces de travail (Workspaces)** cloisonnés, publics ou privés
+- **Canaux** publics, privés, messages directs (DM), todo lists
+- **Sous-canaux / Discussions** rattachés à un message parent
+- **Kanban** — les canaux todo peuvent être visualisés en mode tableau Kanban
+- **Fils de discussion (Threads)** — réponses chaînées aux messages
+- **Sondages** — choix unique ou multiple, mise à jour en temps réel
+- **Réactions** émojis sur les messages + sélecteur d'émojis personnalisés
+- **Messages enregistrés** (étoile) et **Mes réactions**
+- **Épinglage** de messages (un par canal)
+- **Markdown** (GFM) avec coloration syntaxique, aperçu en direct
+- **Mentions** `@user`, **références** `#canal`, autocomplétion avancée
+- **Commandes slash** : `/me`, `/color`, `/shrug`, `/help`
+- **Fichiers** — glisser-déposer, scan ClamAV, prévisualisations (image, audio, vidéo, PDF, texte)
+- **Médiathèque** par canal (images, documents, médias)
+- **Aperçus de liens** (Open Graph) asynchrones
+- **Webhooks entrants** — publication automatisée par des services externes
+- **Assistant IA** — LLM via Ollama (`/help`, résumé de canaux, canal privé dédié)
+- **Recherche globale** (`Ctrl+K`) avec filtres avancés + recherche par canal
+- **Notifications** de bureau, mise en sourdine des canaux, mode "Occupé"
+- **Statut de présence** : en ligne, absent, occupé, hors ligne (détection d'inactivité)
+- **Thème clair/sombre** persistant
+- **Personnalisation** : couleur de profil (teinte HSL), nom d'affichage, langue (FR/EN)
+- **Administration** : utilisateurs, groupes (LDAP), exports, journaux d'audit, émojis custom, espaces de travail
+- **Export** de l'historique d'un canal en HTML standalone
+- **OAuth2** (connexion externe) avec PKCE, mock OAuth2 en dev
+- **i18n** français et anglais
 
 ## Prérequis
 
-- **PHP 8.4** ou supérieur
-- **Docker** & **Docker Compose**
-- **Composer**
+- PHP 8.4+
+- Docker & Docker Compose
+- Composer
 
 ## Installation
 
-1. **Cloner le projet** (une fois le dépôt configuré) et se placer dans le répertoire :
-   ```bash
-   git clone <repository_url>
-   cd roquette
-   ```
+```bash
+# 1. Cloner et installer les dépendances
+git clone <repository_url>
+cd roquette
+composer install
 
-2. **Installer les dépendances PHP** :
-   ```bash
-   composer install
-   ```
+# 2. Configuration
+cp .env .env.local && cp .env.test .env.test.local
+composer generate-vapid-keys  # clés pour notifications push
 
-3. **Configurer les variables d'environnement** :
-   Copier le fichier `.env` en `.env.local` et ajuster les variables nécessaires (identifiants de base de données, clés
-   d'API, configurations LLM, etc.) :
-   ```bash
-   cp .env .env.local
-   ```
+# 3. Démarrer les services (PostgreSQL, Mercure, ClamAV, MinIO, Ollama)
+docker compose up -d
 
-   Pour générer les clés VAPID requises pour les notifications push :
-   ```bash
-   composer generate-vapid-keys
-   ```
-   La commande vous proposera de les écrire automatiquement dans `.env.local`.
+# 4. Base de données
+bin/console doctrine:migrations:migrate
 
-4. **Démarrer les services Docker** (PostgreSQL, Mercure Hub, ClamAV, MinIO, Ollama) :
-   ```bash
-   docker compose up -d
-   ```
-   *Note : Au premier démarrage, le conteneur `ollama-pull-model` télécharge automatiquement le modèle de langage
-   configuré (par défaut `qwen2.5:3b`) dans le conteneur Ollama.*
+# 5. Assets JS
+bin/console importmap:install
 
-5. **Exécuter les migrations** de base de données :
-   ```bash
-   bin/console doctrine:migrations:migrate
-   ```
+# 6. Serveur de dev
+symfony server:start -d
+```
 
-6. **Installer les assets JavaScript (AssetMapper)** :
-   ```bash
-   bin/console importmap:install
-   ```
+Accès direct via le port 80 (voir `compose.override.yaml`).
 
-7. **Lancer le serveur de développement** Symfony (si vous utilisez la CLI Symfony) :
-   ```bash
-   symfony server:start -d
-   ```
-   Ou accédez-y directement sur le port exposé par Docker (configuré par défaut sur le port 80 dans `compose.override.yaml`).
+## Assistant IA (Ollama)
 
-## Configuration de l'Assistant LLM (Ollama)
-
-L'assistant virtuel utilise le bundle Symfony AI. Vous pouvez personnaliser la configuration dans votre fichier
-`.env.local` :
+Configuration dans `.env.local` :
 
 ```env
 LLM_MODEL=qwen2.5:3b
@@ -86,12 +79,49 @@ LLM_SYSTEM_PROMPT="Tu es l'Assistant Roquette, un assistant virtuel d'aide pour 
 
 ## Tests
 
-L'application contient une suite de tests unitaires et fonctionnels. Pour les exécuter :
-
 ```bash
-bin/phpunit
+# Nécessite PostgreSQL : docker compose up -d database
+bin/console doctrine:database:create --env=test --if-not-exists
+bin/console doctrine:migrations:migrate --env=test --no-interaction
+vendor/bin/phpunit
 ```
 
-## Outils d'aide au développement (AI)
+Tests de charge dans `tests/Load/` (k6).
 
-Ce projet intègre **AI Mate** pour faciliter l'assistance au code et l'automatisation de tâches à l'aide d'agents IA. La configuration et les instructions des agents se trouvent dans le répertoire `mate/`.
+## Commandes utiles
+
+| Action | Commande |
+|---|---|
+| Migrations | `bin/console doctrine:migrations:migrate` |
+| Créer une migration | `bin/console make:migration` |
+| Routes | `bin/console debug:router` |
+| Cache | `bin/console cache:clear` |
+| Assets (prod) | `bin/console asset-map:compile` |
+| Émojis | `composer generate-emoji-mapping` |
+| Lint | `vendor/bin/mago` |
+
+## Architecture
+
+| Dossier | Rôle |
+|---|---|
+| `src/Controller/` | Routes HTMX (fragments HTML) |
+| `src/Entity/` | Doctrine ORM |
+| `src/Repository/` | Repositories |
+| `src/Service/` | Logique métier (Mercure, fichiers, LLM, etc.) |
+| `src/MessageHandler/` | Messenger async (LLM, Mercure) |
+| `src/EventSubscriber/` | Event subscribers |
+| `src/Command/` | CLI commands |
+| `templates/` | Twig (pas de frontend framework) |
+| `assets/` | JS modules (AssetMapper) |
+| `translations/` | YAML i18n (FR/EN) |
+
+## Documentation utilisateur
+
+Voir [`DOC_UTILISATEUR.md`](DOC_UTILISATEUR.md) pour le guide complet.
+
+## Déploiement
+
+- Image Docker : `dunglas/frankenphp:1.12.4-php8.5`
+- Build prod : `Dockerfile` ; Dev : `Dockerfile-dev` (Xdebug)
+- Migrations automatiques au démarrage
+- Supervisor pour FrankenPHP worker

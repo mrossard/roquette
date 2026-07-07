@@ -562,27 +562,8 @@ export function handleGlobalNotification(data) {
             }
         }
 
-        // Update workspace-level unread badge
-        if (data.workspaceId) {
-            const activeWsItem = document.querySelector('.workspace-dropdown-item.active');
-            const activeWsId = activeWsItem ? activeWsItem.getAttribute('data-workspace-id') : null;
-            if (data.workspaceId !== activeWsId) {
-                const wsItem = document.querySelector(`.workspace-dropdown-item[data-workspace-id="${data.workspaceId}"]`);
-                if (wsItem) {
-                    let badge = wsItem.querySelector('.workspace-unread-badge');
-                    if (!badge) {
-                        badge = document.createElement('span');
-                        badge.className = 'workspace-unread-badge';
-                        wsItem.appendChild(badge);
-                    }
-                    const currentCount = parseInt(badge.textContent, 10) || 0;
-                    badge.textContent = (currentCount + 1).toString();
-                    badge.style.display = 'inline-flex';
-                }
-            }
-        }
-
-        updateOtherWorkspaceUnreadTotal();
+        // Workspace-level unread badges are updated server-side
+        // via the SSE-triggered HTMX refresh of .sidebar-workspace-selector
     }
 }
 
@@ -599,6 +580,7 @@ function updateOtherWorkspaceUnreadTotal() {
         }
     });
 
+    const selector = document.querySelector('.sidebar-workspace-selector');
     const summary = document.querySelector('.workspace-dropdown-trigger');
     if (!summary) return;
 
@@ -612,8 +594,16 @@ function updateOtherWorkspaceUnreadTotal() {
         }
         summaryBadge.textContent = total.toString();
         summaryBadge.style.display = 'inline-flex';
-    } else if (summaryBadge) {
-        summaryBadge.remove();
+        if (selector) {
+            selector.classList.add('has-unread-elsewhere');
+        }
+    } else {
+        if (summaryBadge) {
+            summaryBadge.remove();
+        }
+        if (selector) {
+            selector.classList.remove('has-unread-elsewhere');
+        }
     }
 }
 
