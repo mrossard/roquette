@@ -169,6 +169,7 @@ final class KanbanController extends AbstractController
 
         return $this->render('dashboard/_kanban_column_header.html.twig', [
             'column' => $column,
+            'channel' => $column->getChannel(),
         ]);
     }
 
