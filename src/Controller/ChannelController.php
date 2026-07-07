@@ -52,6 +52,7 @@ final class ChannelController extends AbstractController
         InvitationRepository $invitationRepository,
         WorkspaceRepository $workspaceRepository,
         EntityManagerInterface $entityManager,
+        WorkspaceManager $workspaceManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -79,7 +80,7 @@ final class ChannelController extends AbstractController
             // Check workspace access
             $workspace = $existingChannel->getWorkspace();
             if ($workspace) {
-                if (!$workspace->isMember($currentUser)) {
+                if (!$workspaceManager->isUserMember($workspace, $currentUser)) {
                     $this->addFlash('error', $this->translator->trans('Vous n\'avez pas accès à ce canal.'));
 
                     return $this->redirectToRoute('app_dashboard');
@@ -91,7 +92,7 @@ final class ChannelController extends AbstractController
             }
             $activeChannel = $existingChannel;
             $isMember =
-                $workspace && $workspace->isMember($currentUser)
+                $workspace && $workspaceManager->isUserMember($workspace, $currentUser)
                 || $existingChannel->getMembers()->contains($currentUser);
         }
 
@@ -195,6 +196,7 @@ final class ChannelController extends AbstractController
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
+        WorkspaceManager $workspaceManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -218,7 +220,7 @@ final class ChannelController extends AbstractController
         if (!$isMember) {
             // Check workspace membership
             $workspace = $activeChannel->getWorkspace();
-            if ($workspace && $workspace->isMember($currentUser)) {
+            if ($workspace && $workspaceManager->isUserMember($workspace, $currentUser)) {
                 $isMember = true;
             }
         }

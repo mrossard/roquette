@@ -28,7 +28,38 @@ class WorkspaceManager
         private readonly LoggerInterface $logger,
         private readonly TranslatorInterface $translator,
         private readonly SluggerInterface $slugger,
+        private readonly \App\Service\Group\GroupProviderInterface $groupProvider,
     ) {}
+
+    public function isUserMember(Workspace $workspace, User $user): bool
+    {
+        if ($workspace->isPublic()) {
+            return true;
+        }
+
+        // Direct member
+        if ($workspace->getMembers()->contains($user)) {
+            return true;
+        }
+
+        // Check userGroup membership
+        $userGroup = $workspace->getUserGroup();
+        if ($userGroup !== null) {
+            // Local group check
+            if ($userGroup->getMembers()->contains($user)) {
+                return true;
+            }
+
+            // LDAP/external group check
+            $providerGroups = $this->groupProvider->getGroupsForUser($user);
+            $providerIdentifiers = array_map(static fn($g) => (string) $g->identifier, $providerGroups);
+            if (in_array($userGroup->getGroupIdentifier(), $providerIdentifiers, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     public function create(string $name, ?string $description, User $creator): Workspace
     {
@@ -76,7 +107,7 @@ class WorkspaceManager
         $generalChannel->setSlug($generalSlug);
         $generalChannel->setDescription($generalDesc);
         $generalChannel->setCreator($creator);
-        $generalChannel->setWorkspace($workspace);
+        $workspace->addChannel($generalChannel);
         $generalChannel->addMember($creator);
 
         $this->entityManager->persist($generalChannel);

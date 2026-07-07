@@ -86,8 +86,7 @@ class Channel
     #[ORM\OneToMany(targetEntity: GroupSubscription::class, mappedBy: 'channel', cascade: ['all'], orphanRemoval: true)]
     private Collection $groupSubscriptions;
 
-    #[ORM\OneToOne(mappedBy: 'channel', targetEntity: UserGroup::class)]
-    private ?UserGroup $userGroup = null;
+
 
     #[ORM\ManyToOne(targetEntity: Workspace::class, inversedBy: 'channels')]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
@@ -340,8 +339,11 @@ class Channel
             return true;
         }
 
-        if ($this->userGroup && $this->userGroup->isAdministrator($user)) {
-            return true;
+        $workspace = $this->workspace;
+        if ($workspace !== null && $workspace->getUserGroup() !== null) {
+            if ($workspace->getUserGroup()->isAdministrator($user)) {
+                return true;
+            }
         }
 
         return false;
@@ -375,16 +377,7 @@ class Channel
         return $this;
     }
 
-    public function getUserGroup(): ?UserGroup
-    {
-        return $this->userGroup;
-    }
 
-    public function setUserGroup(?UserGroup $userGroup): static
-    {
-        $this->userGroup = $userGroup;
-        return $this;
-    }
 
     public function getWorkspace(): ?Workspace
     {

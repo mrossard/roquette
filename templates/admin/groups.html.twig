@@ -120,7 +120,7 @@
                                     <tr>
                                         <th>{{ 'Nom du groupe'|trans }}</th>
                                         <th>{{ 'Identifiant / DN'|trans }}</th>
-                                        <th>{{ 'Canal officiel'|trans }}</th>
+                                        <th>{{ 'Espace de travail'|trans }}</th>
                                         <th>{{ 'Administrateurs'|trans }}</th>
                                         <th class="th--center">{{ 'Membres locaux'|trans }}</th>
                                         <th class="th--right">{{ 'Actions'|trans }}</th>
@@ -136,9 +136,13 @@
                                                 {{ group.groupIdentifier }}
                                             </td>
                                             <td>
-                                                <a href="{{ path('app_channel', {slug: group.channel.slug}) }}" class="table-link" hx-boost="false">
-                                                    #{{ group.channel.name }}
-                                                </a>
+                                                {% if group.workspace %}
+                                                    <a href="{{ path('app_workspace_switch', {workspaceSlug: group.workspace.slug}) }}" class="table-link" hx-boost="false">
+                                                        📁 {{ group.workspace.name }}
+                                                    </a>
+                                                {% else %}
+                                                    <span style="font-style: italic; color: var(--text-muted); font-size: 0.8rem;">—</span>
+                                                {% endif %}
                                             </td>
                                             <td style="font-size: 0.85rem;">
                                                 {% for admin in group.administrators %}

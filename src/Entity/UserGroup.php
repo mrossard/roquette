@@ -30,9 +30,9 @@ class UserGroup
     #[Assert\Length(min: 2, max: 255)]
     private ?string $groupIdentifier = null;
 
-    #[ORM\OneToOne(inversedBy: 'userGroup', targetEntity: Channel::class, cascade: ['persist', 'remove'])]
-    #[ORM\JoinColumn(name: 'channel_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
-    private ?Channel $channel = null;
+    #[ORM\OneToOne(inversedBy: 'userGroup', targetEntity: Workspace::class, cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(name: 'workspace_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    private ?Workspace $workspace = null;
 
     /**
      * @var Collection<int, User>
@@ -81,14 +81,14 @@ class UserGroup
         return $this;
     }
 
-    public function getChannel(): ?Channel
+    public function getWorkspace(): ?Workspace
     {
-        return $this->channel;
+        return $this->workspace;
     }
 
-    public function setChannel(Channel $channel): static
+    public function setWorkspace(Workspace $workspace): static
     {
-        $this->channel = $channel;
+        $this->workspace = $workspace;
         return $this;
     }
 

@@ -57,8 +57,11 @@ class Workspace
     /**
      * @var Collection<int, Channel>
      */
-    #[ORM\OneToMany(targetEntity: Channel::class, mappedBy: 'workspace')]
+    #[ORM\OneToMany(targetEntity: Channel::class, mappedBy: 'workspace', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $channels;
+
+    #[ORM\OneToOne(mappedBy: 'workspace', targetEntity: UserGroup::class)]
+    private ?UserGroup $userGroup = null;
 
     public function __construct()
     {
@@ -213,4 +216,16 @@ class Workspace
 
         return $this;
     }
+
+    public function getUserGroup(): ?UserGroup
+    {
+        return $this->userGroup;
+    }
+
+    public function setUserGroup(?UserGroup $userGroup): static
+    {
+        $this->userGroup = $userGroup;
+        return $this;
+    }
 }
+

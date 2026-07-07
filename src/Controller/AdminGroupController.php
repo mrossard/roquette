@@ -17,6 +17,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
+use App\Entity\Workspace;
+use App\Service\WorkspaceManager;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -28,6 +30,7 @@ final class AdminGroupController extends AbstractController
         private readonly TranslatorInterface $translator,
         private readonly GroupProviderInterface $groupProvider,
         private readonly UserGroupRepository $userGroupRepository,
+        private readonly WorkspaceManager $workspaceManager,
     ) {}
 
     #[Route('/admin/groups', name: 'app_admin_groups', methods: ['GET', 'POST'])]
@@ -101,10 +104,10 @@ final class AdminGroupController extends AbstractController
         $userGroup->setName($name);
         $userGroup->setGroupIdentifier($groupIdentifier);
 
-        // Auto-create official channel
-        $channel = $this->createOfficialChannelForGroup($name, $groupIdentifier, $entityManager);
-        $userGroup->setChannel($channel);
-        $channel->setUserGroup($userGroup);
+        // Auto-create official workspace
+        $workspace = $this->createOfficialWorkspaceForGroup($name, $groupIdentifier, $entityManager);
+        $userGroup->setWorkspace($workspace);
+        $workspace->setUserGroup($userGroup);
 
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -119,7 +122,7 @@ final class AdminGroupController extends AbstractController
             'group_identifier' => $groupIdentifier,
         ]);
 
-        $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été créé avec son canal officiel.', [
+        $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été créé avec son espace de travail.', [
             '%name%' => $name,
         ]));
 
@@ -152,10 +155,10 @@ final class AdminGroupController extends AbstractController
         $userGroup->setName($name);
         $userGroup->setGroupIdentifier($identifier);
 
-        // Auto-create official channel
-        $channel = $this->createOfficialChannelForGroup($name, $identifier, $entityManager);
-        $userGroup->setChannel($channel);
-        $channel->setUserGroup($userGroup);
+        // Auto-create official workspace
+        $workspace = $this->createOfficialWorkspaceForGroup($name, $identifier, $entityManager);
+        $userGroup->setWorkspace($workspace);
+        $workspace->setUserGroup($userGroup);
 
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -171,7 +174,7 @@ final class AdminGroupController extends AbstractController
             'imported' => true,
         ]);
 
-        $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été importé avec son canal officiel.', [
+        $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été importé avec son espace de travail.', [
             '%name%' => $name,
         ]));
 
@@ -190,8 +193,12 @@ final class AdminGroupController extends AbstractController
         $groupId = $userGroup->getId();
         $groupIdentifier = $userGroup->getGroupIdentifier();
 
-        // Cascade delete on Channel is configured at DB level,
-        // but we explicitly clean up subscriptions as well
+        // Remove the associated Workspace if it exists
+        $workspace = $userGroup->getWorkspace();
+        if ($workspace) {
+            $entityManager->remove($workspace);
+        }
+
         $entityManager->remove($userGroup);
         $entityManager->flush();
 
@@ -204,7 +211,7 @@ final class AdminGroupController extends AbstractController
             'group_identifier' => $groupIdentifier,
         ]);
 
-        $this->addFlash('success', $this->translator->trans('Le groupe "%name%" et son canal officiel ont été supprimés.', [
+        $this->addFlash('success', $this->translator->trans('Le groupe "%name%" et son espace de travail ont été supprimés.', [
             '%name%' => $name,
         ]));
 
@@ -417,45 +424,20 @@ final class AdminGroupController extends AbstractController
         }
     }
 
-    private function createOfficialChannelForGroup(
+    private function createOfficialWorkspaceForGroup(
         string $groupName,
         string $groupIdentifier,
         EntityManagerInterface $entityManager,
-    ): Channel {
+    ): Workspace {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channel = new Channel();
-        $channel->setName($groupName);
+        $workspace = $this->workspaceManager->create(
+            $groupName,
+            'Espace de travail officiel du groupe ' . $groupName,
+            $currentUser
+        );
 
-        $slug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($groupName));
-        $slug = trim($slug, '-');
-        if ($slug === '') {
-            $slug = 'group-channel-' . uniqid();
-        }
-
-        $existing = $entityManager->getRepository(Channel::class)->findOneBy(['slug' => $slug]);
-        if ($existing) {
-            $slug = $slug . '-' . rand(100, 999);
-        }
-
-        $channel->setSlug($slug);
-        $channel->setDescription('Canal officiel du groupe ' . $groupName);
-        $channel->setIsPrivate(true);
-        $channel->setCreator($currentUser);
-        $channel->addMember($currentUser);
-        $channel->addAdministrator($currentUser);
-
-        $entityManager->persist($channel);
-
-        // Also add GroupSubscription so it is automatically listed and authorized
-        $sub = new GroupSubscription();
-        $sub->setGroupIdentifier($groupIdentifier);
-        $sub->setIsGroupChannel(true);
-        $channel->addGroupSubscription($sub);
-
-        $entityManager->persist($sub);
-
-        return $channel;
+        return $workspace;
     }
 }

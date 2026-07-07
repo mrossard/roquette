@@ -14,23 +14,53 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class WorkspaceRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(
+        ManagerRegistry $registry,
+        private readonly \App\Service\Group\GroupProviderInterface $groupProvider,
+    ) {
         parent::__construct($registry, Workspace::class);
     }
 
     /** @return Workspace[] */
     public function findAllForUser(User $user): array
     {
-        return $this
-            ->createQueryBuilder('w')
-            ->join('w.members', 'm')
-            ->where('m.id = :userId')
-            ->orderBy('w.name', 'ASC')
+        $providerGroups = $this->groupProvider->getGroupsForUser($user);
+        $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
+
+        $qb = $this->createQueryBuilder('w')
+            ->leftJoin('w.userGroup', 'ug')
+            ->addSelect('ug');
+
+        $conditions = $qb->expr()->orX(
+            $qb->expr()->isMemberOf(':userId', 'w.members'),
+            $qb->expr()->eq('w.isPublic', 'true')
+        );
+
+        // Local group membership DQL
+        $localGroupDql = $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('w2.id')
+            ->from(Workspace::class, 'w2')
+            ->join('w2.userGroup', 'ug2')
+            ->join('ug2.members', 'ugm')
+            ->where('ugm.id = :userId')
+            ->getDQL();
+
+        $conditions->add($qb->expr()->in('w.id', $localGroupDql));
+
+        if (!empty($providerGroupIdentifiers)) {
+            $conditions->add($qb->expr()->in('ug.groupIdentifier', ':providerGroupIdentifiers'));
+            $qb->setParameter('providerGroupIdentifiers', $providerGroupIdentifiers);
+        }
+
+        return $qb
+            ->where($conditions)
             ->setParameter('userId', $user->getId())
+            ->orderBy('w.name', 'ASC')
             ->getQuery()
             ->getResult();
     }
+
 
     public function findPublicWorkspace(): ?Workspace
     {

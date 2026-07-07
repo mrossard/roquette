@@ -17,6 +17,7 @@ class ChannelAccessService
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly GroupProviderInterface $groupProvider,
+        private readonly \App\Service\WorkspaceManager $workspaceManager,
     ) {}
 
     public function canUserAccess(Channel $channel, User $user): bool
@@ -24,7 +25,7 @@ class ChannelAccessService
         // Workspace channels: access is granted if user is a workspace member
         $workspace = $channel->getWorkspace();
         if ($workspace !== null) {
-            return $workspace->isMember($user);
+            return $this->workspaceManager->isUserMember($workspace, $user);
         }
 
         // Legacy non-private channels (no workspace) — public access

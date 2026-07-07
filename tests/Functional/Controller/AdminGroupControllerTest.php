@@ -122,12 +122,12 @@ class AdminGroupControllerTest extends WebTestCase
         $this->assertResponseRedirects('/admin/groups');
         $this->client->followRedirect();
 
-        // Verify group and channel were created in DB
+        // Verify group and workspace were created in DB
         $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
         $group = $this->entityManager->getRepository(UserGroup::class)->findOneBy(['name' => 'Marketing Team']);
         static::assertNotNull($group);
-        static::assertNotNull($group->getChannel());
-        static::assertSame('Marketing Team', $group->getChannel()->getName());
+        static::assertNotNull($group->getWorkspace());
+        static::assertSame('Marketing Team', $group->getWorkspace()->getName());
 
         // Verify AuditLog was created for group creation
         $logRepo = $this->entityManager->getRepository(AuditLog::class);
@@ -135,16 +135,6 @@ class AdminGroupControllerTest extends WebTestCase
         static::assertCount(1, $logs);
         static::assertSame('Marketing Team', $logs[0]->getDetails()['group_name']);
         static::assertSame($group->getId(), $logs[0]->getDetails()['group_id']);
-
-        // Verify group subscription was created
-        $sub = $this->entityManager
-            ->getRepository(GroupSubscription::class)
-            ->findOneBy([
-                'groupIdentifier' => $group->getGroupIdentifier(),
-                'isGroupChannel' => true,
-            ]);
-        static::assertNotNull($sub);
-        static::assertSame($group->getChannel()->getId(), $sub->getChannel()->getId());
 
         // 3. Manage members
         $this->client->request('GET', sprintf('/admin/groups/%d/members', $group->getId()));
@@ -163,9 +153,10 @@ class AdminGroupControllerTest extends WebTestCase
         static::assertCount(1, $group->getMembers());
         static::assertSame('normal_user', $group->getMembers()->first()->getUsername());
 
-        // Check that 'normal_user' can now access the channel (they are member of group)
+        // Check that 'normal_user' can now access the channel (they are member of group workspace)
         $this->client->loginUser($this->normalUser);
-        $this->client->request('GET', '/channels/' . $group->getChannel()->getSlug());
+        $defaultChannel = $group->getWorkspace()->getChannels()->first();
+        $this->client->request('GET', '/channels/' . $defaultChannel->getSlug());
         $this->assertResponseIsSuccessful();
 
         // 4. Remove member
@@ -207,7 +198,7 @@ class AdminGroupControllerTest extends WebTestCase
         $group = $this->entityManager->getRepository(UserGroup::class)->findOneBy(['groupIdentifier' => 'group-dev']);
         static::assertNotNull($group);
         static::assertSame('Développeurs', $group->getName());
-        static::assertNotNull($group->getChannel());
+        static::assertNotNull($group->getWorkspace());
 
         // Verify AuditLog was created for group import
         $logRepo = $this->entityManager->getRepository(AuditLog::class);
@@ -245,7 +236,8 @@ class AdminGroupControllerTest extends WebTestCase
         $this->entityManager->flush();
 
         // Check if group administrator is also channel administrator
-        static::assertTrue($group->getChannel()->isAdministrator($user));
+        $defaultChannel = $group->getWorkspace()->getChannels()->first();
+        static::assertTrue($defaultChannel->isAdministrator($user));
 
         // 3. Create a third user to add to the group
         $container = $this->client->getContainer();

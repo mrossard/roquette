@@ -68,12 +68,12 @@ final class WorkspaceController extends AbstractController
             throw $this->createNotFoundException($this->translator->trans('Espace non trouvé.'));
         }
 
-        if (!$workspace->isMember($currentUser) && !$workspace->isPublic()) {
+        if (!$this->workspaceManager->isUserMember($workspace, $currentUser) && !$workspace->isPublic()) {
             throw $this->createAccessDeniedException();
         }
 
         // If public workspace, ensure user is member
-        if ($workspace->isPublic() && !$workspace->isMember($currentUser)) {
+        if ($workspace->isPublic() && !$this->workspaceManager->isUserMember($workspace, $currentUser)) {
             $workspace->addMember($currentUser);
             $entityManager->flush();
         }
@@ -257,7 +257,7 @@ final class WorkspaceController extends AbstractController
             throw $this->createNotFoundException($this->translator->trans('Avatar non trouvé.'));
         }
 
-        if (!$workspace->isMember($currentUser) && !$workspace->isPublic()) {
+        if (!$this->workspaceManager->isUserMember($workspace, $currentUser) && !$workspace->isPublic()) {
             throw $this->createAccessDeniedException();
         }
 
@@ -425,7 +425,7 @@ final class WorkspaceController extends AbstractController
             return new Response($this->translator->trans('Espace non trouvé.'), 404);
         }
 
-        if (!$workspace->isMember($currentUser)) {
+        if (!$this->workspaceManager->isUserMember($workspace, $currentUser)) {
             return new Response($this->translator->trans('Accès refusé.'), 403);
         }
 

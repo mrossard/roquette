@@ -31,26 +31,50 @@ class ChannelRepository extends ServiceEntityRepository
 
         $qb = $this
             ->createQueryBuilder('c')
-            ->leftJoin('c.userGroup', 'ug')
-            ->addSelect('ug')
             ->leftJoin('c.workspace', 'w')
-            ->addSelect('w');
+            ->addSelect('w')
+            ->leftJoin('w.userGroup', 'ug')
+            ->addSelect('ug');
+
+        $directWorkspaceDql = $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('w2.id')
+            ->from(\App\Entity\Workspace::class, 'w2')
+            ->join('w2.members', 'wm')
+            ->where('wm.id = :userId')
+            ->getDQL();
+
+        $localGroupWorkspaceDql = $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('w3.id')
+            ->from(\App\Entity\Workspace::class, 'w3')
+            ->join('w3.userGroup', 'ug3')
+            ->join('ug3.members', 'ugm3')
+            ->where('ugm3.id = :userId')
+            ->getDQL();
+
+        $workspaceConditions = $qb->expr()->orX(
+            $qb->expr()->in('w.id', $directWorkspaceDql),
+            $qb->expr()->in('w.id', $localGroupWorkspaceDql)
+        );
+
+        if (!empty($providerGroupIdentifiers)) {
+            $externalGroupWorkspaceDql = $this->getEntityManager()
+                ->createQueryBuilder()
+                ->select('w4.id')
+                ->from(\App\Entity\Workspace::class, 'w4')
+                ->join('w4.userGroup', 'ug4')
+                ->where('ug4.groupIdentifier IN (:providerGroupIdentifiers)')
+                ->getDQL();
+
+            $workspaceConditions->add($qb->expr()->in('w.id', $externalGroupWorkspaceDql));
+        }
 
         $conditions = $qb->expr()->orX(
             // Direct channel membership (private channels, DMs)
             $qb->expr()->isMemberOf(':userId', 'c.members'),
             // Channels in workspaces the user belongs to
-            $qb->expr()->in(
-                'w.id',
-                $this
-                    ->getEntityManager()
-                    ->createQueryBuilder()
-                    ->select('w2.id')
-                    ->from(\App\Entity\Workspace::class, 'w2')
-                    ->join('w2.members', 'wm')
-                    ->where('wm.id = :userId')
-                    ->getDQL(),
-            ),
+            $workspaceConditions
         );
 
         $localGroupDql = $this
