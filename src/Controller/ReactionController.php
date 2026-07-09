@@ -83,10 +83,10 @@ final class ReactionController extends AbstractController
         if ($channel->isTodoList() && $emoji === '✅') {
             $hasCheck = false;
             foreach ($message->getReactions() as $r) {
-                if ($r->getEmoji() === '✅') {
-                    $hasCheck = true;
+                if ($r->getEmoji() !== '✅') { continue; }
+
+$hasCheck = true;
                     break;
-                }
             }
             $message->setIsCompleted($hasCheck);
             $entityManager->flush();

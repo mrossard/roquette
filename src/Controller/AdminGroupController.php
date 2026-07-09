@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\Channel;
-use App\Entity\GroupSubscription;
+
+
 use App\Entity\User;
 use App\Entity\UserGroup;
 use App\Enum\AuditAction;
@@ -432,12 +432,10 @@ final class AdminGroupController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $workspace = $this->workspaceManager->create(
+        return $this->workspaceManager->create(
             $groupName,
             'Espace de travail officiel du groupe ' . $groupName,
             $currentUser
         );
-
-        return $workspace;
     }
 }

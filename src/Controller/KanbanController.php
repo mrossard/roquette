@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Channel;
-use App\Entity\Message;
+
 use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Repository\KanbanColumnRepository;

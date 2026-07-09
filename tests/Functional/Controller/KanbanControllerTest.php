@@ -172,7 +172,7 @@ class KanbanControllerTest extends WebTestCase
         $columns = $this->entityManager->getRepository(KanbanColumn::class)->findBy(['channel' => $this->todoChannel]);
         static::assertCount(2, $columns);
         
-        $names = array_map(fn($col) => $col->getName(), $columns);
+        $names = array_map(static fn($col) => $col->getName(), $columns);
         static::assertContains('In Progress', $names);
     }
 

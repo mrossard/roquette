@@ -192,7 +192,7 @@ class SeedLoadTestDataCommand extends Command
     /**
      * @return array<int, User> indexed by userId (int)
      */
-    private function createUsers(int $numUsers, string $password, int $batchSize, SymfonyStyle $io): array
+    private function createUsers(int $numUsers, #[\SensitiveParameter] string $password, int $batchSize, SymfonyStyle $io): array
     {
         $dummy = new User();
         $dummy->setUsername('_hash_dummy_');

@@ -19,7 +19,7 @@ use App\Repository\WorkspaceRepository;
 use App\Service\AuditLoggerService;
 use App\Service\ChannelManager;
 use App\Service\FileUploadService;
-use App\Service\WorkspaceManager;
+
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
