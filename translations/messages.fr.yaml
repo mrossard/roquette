@@ -722,3 +722,6 @@ Espaces: Espaces
 'priority.urgent': 'Urgente'
 'Étiquettes': 'Étiquettes'
 'Ex: bug, ui (séparés par des virgules)': 'Ex: bug, ui (séparés par des virgules)'
+"Chargement de l'aperçu...": "Chargement de l'aperçu..."
+'Prévisualiser le code PHP': 'Prévisualiser le code PHP'
+'Prévisualiser le code': 'Prévisualiser le code'

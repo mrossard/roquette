@@ -131,6 +131,11 @@
         backdrop-filter: blur(5px);
     }
 
+    .text-preview-content.raw-preview-content {
+        max-height: none;
+        overflow-y: visible;
+    }
+
     .text-preview-code {
         font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
         font-size: 0.8rem;

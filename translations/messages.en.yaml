@@ -722,3 +722,6 @@ Espaces: Workspaces
 'priority.urgent': 'Urgent'
 'Étiquettes': 'Labels'
 'Ex: bug, ui (séparés par des virgules)': 'Ex: bug, ui (comma separated)'
+"Chargement de l'aperçu...": "Loading preview..."
+'Prévisualiser le code PHP': 'Preview PHP code'
+'Prévisualiser le code': 'Preview code'

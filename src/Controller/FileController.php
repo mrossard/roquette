@@ -128,6 +128,7 @@ final class FileController extends AbstractController
         int $id,
         MessageRepository $messageRepository,
         FileUploadService $fileUploadService,
+        Request $request,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -169,11 +170,13 @@ final class FileController extends AbstractController
         }
 
         $fileExt = pathinfo($message->getFileName(), PATHINFO_EXTENSION);
+        $raw = $request->query->getBoolean('raw');
 
         return $this->render('dashboard/_text_preview.html.twig', [
             'message_id' => $message->getId(),
             'text' => $text,
             'fileExt' => $fileExt,
+            'raw' => $raw,
         ]);
     }
 
@@ -185,8 +188,11 @@ final class FileController extends AbstractController
             throw $this->createNotFoundException($this->translator->trans('Message non trouvé.'));
         }
 
+        $fileExt = pathinfo($message->getFileName(), PATHINFO_EXTENSION);
+
         return $this->render('dashboard/_text_preview_button.html.twig', [
             'message_id' => $message->getId(),
+            'fileExt' => $fileExt,
         ]);
     }
 

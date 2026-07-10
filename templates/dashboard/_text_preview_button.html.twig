@@ -1,8 +1,14 @@
+{% set isCode = (fileExt|default(null) in ['php', 'js', 'ts', 'tsx', 'py', 'go', 'rs', 'sh', 'sql', 'c', 'cpp', 'cs', 'java', 'css', 'yaml', 'yml', 'xml', 'json']) %}
 <div class="attachment-preview text-preview-container" id="text-preview-wrapper-{{ message_id }}">
     <button type="button" class="btn-preview-link text-preview-toggle"
-            hx-get="{{ path('app_file_text_preview', {id: message_id}) }}"
+            hx-get="{{ path('app_file_text_preview', {id: message_id} | merge(isCode ? {raw: 1} : {})) }}"
             hx-target="#text-preview-wrapper-{{ message_id }}"
             hx-swap="outerHTML">
-        <span class="btn-preview-icon">👁️</span> {{ 'Prévisualiser le texte'|trans }}
+        <span class="btn-preview-icon">👁️</span>
+        {% if isCode %}
+            {{ 'Prévisualiser le code'|trans }}
+        {% else %}
+            {{ 'Prévisualiser le texte'|trans }}
+        {% endif %}
     </button>
 </div>

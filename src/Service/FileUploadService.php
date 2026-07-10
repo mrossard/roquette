@@ -44,6 +44,23 @@ class FileUploadService
         'tar',
         'gz',
         'rar',
+        'php',
+        'js',
+        'ts',
+        'tsx',
+        'py',
+        'go',
+        'rs',
+        'sh',
+        'sql',
+        'c',
+        'cpp',
+        'cs',
+        'java',
+        'css',
+        'yaml',
+        'yml',
+        'xml',
     ];
 
     private const ALLOWED_MIME_TYPES = [
@@ -59,6 +76,36 @@ class FileUploadService
         'text/markdown',
         'application/json',
         'text/html',
+        'text/x-php',
+        'application/x-php',
+        'application/x-httpd-php',
+        'application/javascript',
+        'text/javascript',
+        'text/css',
+        'text/yaml',
+        'application/x-yaml',
+        'application/xml',
+        'text/xml',
+        'text/x-python',
+        'application/x-python',
+        'text/x-go',
+        'text/rust',
+        'text/x-rust',
+        'application/x-sh',
+        'text/x-shellscript',
+        'text/x-sh',
+        'application/sql',
+        'text/x-sql',
+        'text/x-c',
+        'text/x-csrc',
+        'text/x-c++',
+        'text/x-c++src',
+        'text/x-c++hdr',
+        'text/x-csharp',
+        'text/x-java-source',
+        'text/x-java',
+        'text/x-yaml',
+        'video/mp2t',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'application/vnd.ms-excel',
@@ -145,13 +192,14 @@ class FileUploadService
             ]));
         }
 
-        if (!in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
-            // Content-based MIME detection can misidentify text files (e.g.,
-            // markdown with code blocks detected as JavaScript). When the
-            // extension is explicitly allowed, fall back to the standard MIME
-            // type mapped to that extension.
-            if (in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
-                $mimeFromExt = new MimeTypes()->getMimeTypes($extension);
+        // Content-based MIME detection can misidentify text files (e.g.,
+        // markdown with code blocks detected as JavaScript). When the
+        // extension is explicitly allowed, we verify if the detected MIME type
+        // is compatible with the extension. If not, we fall back to the standard
+        // MIME type mapped to that extension.
+        if (in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
+            $mimeFromExt = new MimeTypes()->getMimeTypes($extension);
+            if (!in_array($mimeType, $mimeFromExt, true)) {
                 foreach ($mimeFromExt as $candidate) {
                     if (in_array($candidate, self::ALLOWED_MIME_TYPES, true)) {
                         $mimeType = $candidate;
@@ -159,17 +207,17 @@ class FileUploadService
                     }
                 }
             }
+        }
 
-            if (!in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
-                $this->logger->warning(sprintf(
-                    'File upload failed validation: MIME type "%s" for file "%s" is not allowed.',
-                    $mimeType,
-                    $file->getClientOriginalName(),
-                ));
-                throw new \InvalidArgumentException($this->translator->trans('Le type MIME "%mimeType%" n\'est pas autorisé.', [
-                    '%mimeType%' => $mimeType,
-                ]));
-            }
+        if (!in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
+            $this->logger->warning(sprintf(
+                'File upload failed validation: MIME type "%s" for file "%s" is not allowed.',
+                $mimeType,
+                $file->getClientOriginalName(),
+            ));
+            throw new \InvalidArgumentException($this->translator->trans('Le type MIME "%mimeType%" n\'est pas autorisé.', [
+                '%mimeType%' => $mimeType,
+            ]));
         }
 
         $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);

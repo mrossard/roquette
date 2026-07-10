@@ -5,7 +5,7 @@
             hx-swap="outerHTML">
         <span class="btn-preview-icon">❌</span> {{ 'Masquer l\'aperçu'|trans }}
     </button>
-    <div class="text-preview-content" id="text-preview-{{ message_id }}">
+    <div class="text-preview-content {% if raw|default(false) or fileExt in ['php', 'js', 'ts', 'tsx', 'py', 'go', 'rs', 'sh', 'sql', 'c', 'cpp', 'cs', 'java', 'css', 'yaml', 'yml', 'xml', 'json'] %}raw-preview-content{% endif %}" id="text-preview-{{ message_id }}">
         <pre><code style="font-family: monospace;"
                    class="text-preview-code language-{{ fileExt }}">{{ text }}</code></pre>
     </div>
