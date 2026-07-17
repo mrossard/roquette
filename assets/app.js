@@ -380,6 +380,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.highlightAllCodeBlocks) {
         window.highlightAllCodeBlocks();
     }
+    if (window.initCodeBlockCopyButtons) {
+        window.initCodeBlockCopyButtons();
+    }
     if (window.initEmojiPickers) window.initEmojiPickers();
     if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
     initAutoResizeTextarea();
@@ -434,6 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target && target.id === 'live-feed') {
             if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
             if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
+            if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons();
             if (window.initEmojiPickers) window.initEmojiPickers();
             return;
         }
@@ -457,6 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target && target.classList.contains('feed-item')) {
             if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
             if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
+            if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons();
             if (window.initEmojiPickers) window.initEmojiPickers();
             return;
         }
@@ -465,6 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isChannelSwitch && target && (target.classList.contains('text-preview-container') || target.querySelector('.text-preview-code'))) {
             const activeTarget = target.id ? (document.getElementById(target.id) || target) : target;
             if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks(activeTarget);
+            if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons(activeTarget);
             setTimeout(() => {
                 activeTarget.scrollIntoView({behavior: 'smooth', block: 'nearest'});
             }, 80);
@@ -480,6 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
         if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
+        if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons();
         if (window.initEmojiPickers) window.initEmojiPickers();
         if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
         initAutoResizeTextarea();

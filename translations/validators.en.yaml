@@ -169,9 +169,17 @@ Error: Error
 'Please select a valid option.': 'Please select a valid option.'
 'Please select a valid range.': 'Please select a valid range.'
 'Please enter a valid week.': 'Please enter a valid week.'
-"Veuillez saisir un nom d'utilisateur.": "Veuillez saisir un nom d'utilisateur."
-"Le nom d'utilisateur doit faire au moins {{ limit }} caractères.": "Le nom d'utilisateur doit faire au moins {{ limit }} caractères."
-'Veuillez saisir un mot de passe.': 'Veuillez saisir un mot de passe.'
-'Le mot de passe doit faire au moins {{ limit }} caractères.': 'Le mot de passe doit faire au moins {{ limit }} caractères.'
-'Ce mot de passe a été divulgué dans des fuites de données. Veuillez en choisir un autre.': 'Ce mot de passe a été divulgué dans des fuites de données. Veuillez en choisir un autre.'
-"Ce nom d'utilisateur est déjà pris.": "Ce nom d'utilisateur est déjà pris."
+"Veuillez saisir un nom d'utilisateur.": "Please enter a username."
+"Le nom d'utilisateur doit faire au moins {{ limit }} caractères.": "The username must be at least {{ limit }} characters long."
+'Veuillez saisir un mot de passe.': 'Please enter a password.'
+'Le mot de passe doit faire au moins {{ limit }} caractères.': 'The password must be at least {{ limit }} characters long.'
+'Ce mot de passe a été divulgué dans des fuites de données. Veuillez en choisir un autre.': 'This password has been leaked in data breaches. Please choose a different one.'
+"Ce nom d'utilisateur est déjà pris.": "This username is already taken."
+'Veuillez saisir une adresse email.': 'Please enter an email address.'
+'Veuillez saisir une adresse email valide.': 'Please enter a valid email address.'
+"L'adresse email ne doit pas dépasser {{ limit }} caractères.": "The email address must not exceed {{ limit }} characters."
+
+'Cette adresse email est déjà utilisée.': 'This email address is already in use.'
+'Le code émoji doit commencer et se terminer par ":" (ex: :mon_emoji:)': 'The emoji code must start and end with ":" (e.g. :my_emoji:)'
+'username.regex': 'The username can only contain letters, numbers, underscores, hyphens and dots.'
+

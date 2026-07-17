@@ -343,6 +343,9 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                     if (window.highlightAllCodeBlocks) {
                         window.highlightAllCodeBlocks(existing);
                     }
+                    if (window.initCodeBlockCopyButtons) {
+                        window.initCodeBlockCopyButtons(existing);
+                    }
                 } else {
                     const liveFeed = document.getElementById('live-feed');
                     if (liveFeed) {
@@ -354,6 +357,9 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                         liveFeed.appendChild(oobElem);
                         if (window.highlightAllCodeBlocks) {
                             window.highlightAllCodeBlocks(oobElem);
+                        }
+                        if (window.initCodeBlockCopyButtons) {
+                            window.initCodeBlockCopyButtons(oobElem);
                         }
                     }
                 }

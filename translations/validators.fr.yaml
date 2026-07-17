@@ -175,3 +175,11 @@ Error: Erreur
 'Le mot de passe doit faire au moins {{ limit }} caractères.': 'Le mot de passe doit faire au moins {{ limit }} caractères.'
 'Ce mot de passe a été divulgué dans des fuites de données. Veuillez en choisir un autre.': 'Ce mot de passe a été divulgué dans des fuites de données. Veuillez en choisir un autre.'
 "Ce nom d'utilisateur est déjà pris.": "Ce nom d'utilisateur est déjà pris."
+'Veuillez saisir une adresse email.': 'Veuillez saisir une adresse email.'
+'Veuillez saisir une adresse email valide.': 'Veuillez saisir une adresse email valide.'
+"L'adresse email ne doit pas dépasser {{ limit }} caractères.": "L'adresse email ne doit pas dépasser {{ limit }} caractères."
+'Cette adresse email est déjà utilisée.': 'Cette adresse email est déjà utilisée.'
+'Le code émoji doit commencer et se terminer par ":" (ex: :mon_emoji:)': 'Le code émoji doit commencer et se terminer par ":" (ex: :mon_emoji:)'
+'username.regex': "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, tirets, underscores et points."
+
+
