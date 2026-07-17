@@ -48,6 +48,8 @@ class OAuth2Authenticator extends AbstractAuthenticator
         private string $usernameField,
         #[Autowire(env: 'OAUTH_REDIRECT_URI')]
         private string $redirectUri,
+        #[Autowire(env: 'OAUTH_DISPLAY_NAME_FIELD')]
+        private string $displayNameField,
         #[Autowire(env: 'bool:AUTH_OAUTH_ENABLED')]
         private bool $authOauthEnabled,
     ) {}
@@ -144,6 +146,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
         $username = (string) (
             $userData[$this->usernameField] ?? $userData['username'] ?? $userData['email'] ?? $userData['login'] ?? null
         );
+        $displayName = is_string($userData[$this->displayNameField] ?? null) ? $userData[$this->displayNameField] : $username;
         $email = is_string($userData['mail'] ?? null) ? $userData['mail'] : null;
 
         if (!$oauthId || !$username) {
@@ -192,7 +195,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
                 // 3. Create a brand new user
                 $user = new User();
                 $user->setUsername($username);
-                $user->setDisplayName($username);
+                $user->setDisplayName($displayName ?? $username);
                 $user->setOauthId($oauthId);
                 $user->setOauthProvider('generic');
 

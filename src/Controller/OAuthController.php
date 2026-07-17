@@ -243,6 +243,7 @@ final class OAuthController extends AbstractController
         return new JsonResponse([
             'id' => $userData['oauth_id'],
             'username' => $userData['username'],
+            'displayname' => $userData['username'],
             'email' => $userData['email'],
         ]);
     }
