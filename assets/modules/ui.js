@@ -1064,7 +1064,7 @@ window.toggleMobileChannelDetails = toggleMobileChannelDetails;
 
 export function initSubChannelsSidebar() {
     const panel = document.getElementById('subchannels-sidebar-panel');
-    const grid = document.getElementById('dashboard-grid');
+    const grid = document.getElementById('main-content');
     if (panel && grid) {
         const isOpen = localStorage.getItem('subchannels_sidebar_open') === 'true';
         if (isOpen) {
@@ -1083,7 +1083,7 @@ window.initSubChannelsSidebar = initSubChannelsSidebar;
 
 export function toggleSubChannelsSidebar() {
     const panel = document.getElementById('subchannels-sidebar-panel');
-    const grid = document.getElementById('dashboard-grid');
+    const grid = document.getElementById('main-content');
     if (panel && grid) {
         if (panel.style.display === 'none' || panel.style.display === '') {
             panel.style.display = 'flex';
@@ -1112,7 +1112,7 @@ window.toggleSubChannelsSidebar = toggleSubChannelsSidebar;
 
 export function initFilesSidebar() {
     const panel = document.getElementById('files-sidebar-panel');
-    const grid = document.getElementById('dashboard-grid');
+    const grid = document.getElementById('main-content');
     if (panel && grid) {
         const isOpen = localStorage.getItem('files_sidebar_open') === 'true';
         if (isOpen) {
@@ -1136,7 +1136,7 @@ window.initFilesSidebar = initFilesSidebar;
 export function toggleFilesSidebar() {
     const filesPanel = document.getElementById('files-sidebar-panel');
     const subchannelsPanel = document.getElementById('subchannels-sidebar-panel');
-    const grid = document.getElementById('dashboard-grid');
+    const grid = document.getElementById('main-content');
     if (filesPanel && grid) {
         const isOpening = filesPanel.style.display === 'none' || filesPanel.style.display === '';
         
