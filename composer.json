@@ -10,13 +10,13 @@
         "ext-ldap": "*",
         "ext-mbstring": "*",
         "ext-zip": "*",
-        "doctrine/doctrine-bundle": "^3.2.4",
+        "doctrine/doctrine-bundle": "^3.3.1",
         "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.6.7",
         "enshrined/svg-sanitize": "^0.22",
         "ezyang/htmlpurifier": "^4.19",
-        "league/commonmark": "^2.8.2",
-        "league/flysystem-aws-s3-v3": "^3.34",
+        "league/commonmark": "^2.8.3",
+        "league/flysystem-aws-s3-v3": "^3.35.2",
         "league/flysystem-bundle": ">=3.7",
         "minishlink/web-push": "^10.1",
         "minishlink/web-push-bundle": "^6.3.2",
@@ -46,13 +46,13 @@
         "symfony/security-bundle": "8.0.*",
         "symfony/translation": "8.0.*",
         "symfony/twig-bundle": "8.0.*",
-        "symfony/ux-icons": "^3.2",
+        "symfony/ux-icons": "^3.4",
         "symfony/validator": "8.0.*",
         "symfony/yaml": "8.0.*",
-        "twig/cache-extra": "^3.24",
+        "twig/cache-extra": "^3.28",
         "twig/extra-bundle": "^2.12|^3.24",
         "twig/string-extra": "^3.24",
-        "twig/twig": "^2.12|^3.27.1"
+        "twig/twig": "^2.12|^3.28.0"
     },
     "config": {
         "allow-plugins": {
@@ -121,8 +121,8 @@
         }
     },
     "require-dev": {
-        "carthage-software/mago": "^1.30",
-        "phpunit/phpunit": "^13.2.1",
+        "carthage-software/mago": "^1.45",
+        "phpunit/phpunit": "^13.2.6",
         "symfony/ai-mate": "^0.9.0",
         "symfony/ai-monolog-mate-extension": "^0.9.0",
         "symfony/ai-symfony-mate-extension": "^0.9.0",
