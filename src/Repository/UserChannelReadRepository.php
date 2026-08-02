@@ -38,6 +38,7 @@ class UserChannelReadRepository extends ServiceEntityRepository
                 'c.id as channelId, c.isDm as isDm, COUNT(m.id) as unreadCount, SUM(CASE WHEN LOWER(m.content) LIKE :mentionPattern THEN 1 ELSE 0 END) as mentionCount, ucr.notificationsEnabled as notificationsEnabled',
             )
             ->from(Channel::class, 'c')
+            ->innerJoin('c.members', 'mem', 'WITH', 'mem.id = :user')
             ->leftJoin(UserChannelRead::class, 'ucr', 'WITH', 'ucr.channel = c AND ucr.user = :user')
             ->leftJoin(
                 'c.messages',
