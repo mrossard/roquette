@@ -18,6 +18,19 @@ class LinkPreviewService
 
     private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'bmp', 'tiff', 'tif'];
 
+    private const MAX_REDIRECTS = 3;
+
+    /**
+     * IPv4 ranges not covered by FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+     * but that must never be fetched (SSRF protection).
+     */
+    private const EXTRA_BLOCKED_RANGES = [
+        ['100.64.0.0', '100.127.255.255'], // CGNAT
+        ['198.18.0.0', '198.19.255.255'],  // Benchmarking
+        ['192.0.0.0', '192.0.0.255'],      // IETF protocol assignments
+        ['0.0.0.0', '0.255.255.255'],      // "This network"
+    ];
+
     /**
      * Vérifie si l'URL pointe directement vers une image (extension ou Content-Type).
      */
@@ -30,12 +43,12 @@ class LinkPreviewService
         }
 
         // Pas d'extension image : on fait un HEAD pour vérifier le Content-Type
+        $response = $this->fetch($url, 'HEAD');
+        if ($response === null) {
+            return false;
+        }
+
         try {
-            $response = $this->httpClient->request('HEAD', $url, [
-                'timeout' => 1.5,
-                'max_redirects' => 3,
-                'headers' => ['User-Agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)'],
-            ]);
             $contentType = $response->getHeaders(false)['content-type'][0] ?? '';
             return str_starts_with($contentType, 'image/');
         } catch (\Exception) {
@@ -75,13 +88,11 @@ class LinkPreviewService
             }
 
             try {
-                $response = $this->httpClient->request('GET', $url, [
-                    'timeout' => 1.5,
-                    'headers' => [
-                        'User-Agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)',
-                    ],
-                    'max_redirects' => 3,
-                ]);
+                $response = $this->fetch($url, 'GET');
+                if ($response === null) {
+                    $item->expiresAfter(300); // Cache negative for 5 minutes
+                    return null;
+                }
 
                 // Verify content type before downloading the stream
                 $headers = $response->getHeaders(false);
@@ -134,6 +145,88 @@ class LinkPreviewService
         }
 
         return $value;
+    }
+
+    /**
+     * Envoie une requête HTTP en suivant manuellement les redirects, en
+     * re-validant chaque hôte (protection SSRF). Retourne la réponse finale
+     * (non 3xx) ou null si une URL est invalide / non sûre / trop de redirects.
+     */
+    private function fetch(string $url, string $method = 'GET'): ?\Symfony\Contracts\HttpClient\ResponseInterface
+    {
+        $current = $url;
+        for ($hop = 0; $hop <= self::MAX_REDIRECTS; $hop++) {
+            if (!$this->isSafeUrl($current)) {
+                return null;
+            }
+
+            try {
+                $response = $this->httpClient->request($method, $current, [
+                    'timeout' => 1.5,
+                    'follow_redirects' => false,
+                    'headers' => ['User-Agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)'],
+                ]);
+
+                $status = $response->getStatusCode();
+
+                if ($status >= 300 && $status < 400) {
+                    $location = $response->getHeaders(false)['location'][0] ?? null;
+                    if ($location === null) {
+                        return null;
+                    }
+
+                    $next = $this->resolveUrl($current, $location);
+                    if ($next === null) {
+                        return null;
+                    }
+
+                    $current = $next;
+                    continue;
+                }
+
+                return $response;
+            } catch (\Exception) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Résout une URL de redirection, éventuellement relative, par rapport à l'URL courante.
+     */
+    private function resolveUrl(string $base, string $location): ?string
+    {
+        $location = trim($location);
+        if (preg_match('#^https?://#i', $location)) {
+            return $location;
+        }
+
+        $parsed = parse_url($base);
+        $scheme = $parsed['scheme'] ?? 'https';
+        $host = $parsed['host'] ?? null;
+        if ($host === null) {
+            return null;
+        }
+
+        $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+
+        if (str_starts_with($location, '//')) {
+            return $scheme . ':' . $location;
+        }
+
+        if (str_starts_with($location, '/')) {
+            return $scheme . '://' . $host . $port . $location;
+        }
+
+        $path = $parsed['path'] ?? '/';
+        $dir = str_replace('\\', '/', dirname($path));
+        if ($dir === '.' || $dir === '/') {
+            $dir = '';
+        }
+
+        return $scheme . '://' . $host . $port . $dir . '/' . $location;
     }
 
     /**
@@ -202,12 +295,60 @@ class LinkPreviewService
         }
 
         foreach ($ips as $ip) {
-            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            if (!$this->isPublicIp($ip)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * Retourne true si l'IP est publique (ni privée, ni réservée, ni dans les
+     * plages bloquées supplémentaires).
+     */
+    private function isPublicIp(string $ip): bool
+    {
+        // IPv4-mapped IPv6 (ex. ::ffff:127.0.0.1) — vérifie la partie IPv4.
+        $lower = strtolower($ip);
+        if (str_starts_with($lower, '::ffff:')) {
+            $v4 = substr($lower, 7);
+            if (filter_var($v4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                return filter_var(
+                    $v4,
+                    FILTER_VALIDATE_IP,
+                    FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
+                ) !== false && !$this->isInExtraBlockedRange($v4);
+            }
+
+            return false;
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return false;
+        }
+
+        return !$this->isInExtraBlockedRange($ip);
+    }
+
+    private function isInExtraBlockedRange(string $ip): bool
+    {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+            return false;
+        }
+
+        $long = ip2long($ip);
+        if ($long === false) {
+            return false;
+        }
+
+        foreach (self::EXTRA_BLOCKED_RANGES as [$start, $end]) {
+            if ($long >= ip2long($start) && $long <= ip2long($end)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

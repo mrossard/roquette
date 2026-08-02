@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\PollOption;
 use App\Service\MercurePublisher;
 use App\Service\MessageRenderer;
@@ -18,6 +19,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 final class PollController extends AbstractController
 {
+    use ChannelAccessTrait;
+
     #[Route('/poll/option-field', name: 'app_poll_option_field', methods: ['POST'])]
     public function getOptionField(Request $request): Response
     {
@@ -53,12 +56,10 @@ final class PollController extends AbstractController
         $message = $poll->getMessage();
         $channel = $message->getChannel();
 
+        $this->authorizeMessageAccess($message);
+
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
-
-        if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            return new Response('Non autorisé.', 403);
-        }
 
         $pollManager->toggleVote($option, $currentUser);
 

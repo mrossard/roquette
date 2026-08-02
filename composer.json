@@ -13,6 +13,7 @@
         "doctrine/doctrine-bundle": "^3.2.4",
         "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.6.7",
+        "enshrined/svg-sanitize": "^0.22",
         "ezyang/htmlpurifier": "^4.19",
         "league/commonmark": "^2.8.2",
         "league/flysystem-aws-s3-v3": "^3.34",

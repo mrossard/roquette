@@ -9,9 +9,11 @@ use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class EmojiController extends AbstractController
@@ -19,13 +21,19 @@ final class EmojiController extends AbstractController
     public function __construct(
         private readonly MessageBusInterface $messageBus,
         private readonly FilesystemOperator $defaultStorage,
+        private readonly RateLimiterFactoryInterface $emojiApiLimiter,
         #[Autowire('%env(EMOJI_BASE_URL)%')]
         private readonly string $emojiBaseUrl,
     ) {}
 
     #[Route('/emojis/{path}', name: 'app_emoji_serve', requirements: ['path' => '.+\.gif'], methods: ['GET'])]
-    public function serve(string $path): Response
+    public function serve(string $path, Request $request): Response
     {
+        $limiter = $this->emojiApiLimiter->create($request->getClientIp());
+        if (false === $limiter->consume(1)->isAccepted()) {
+            return new Response('Too many requests.', Response::HTTP_TOO_MANY_REQUESTS);
+        }
+
         if (empty($this->emojiBaseUrl)) {
             return new Response('Emoji base URL is not configured.', Response::HTTP_NOT_FOUND);
         }

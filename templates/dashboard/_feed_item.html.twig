@@ -54,7 +54,7 @@
                            title="{{ 'Discuter en privé avec %username% (%status%)'|trans({'%username%': username, '%status%': author.statusLabel|trans}) }}">
                             <div class="avatar-container">
                                 {% if messageObject and messageObject.customAuthorAvatar %}
-                                    {% if messageObject.customAuthorAvatar starts with 'http' or messageObject.customAuthorAvatar starts with '/' %}
+                                    {% if messageObject.customAuthorAvatar starts with 'https://' or messageObject.customAuthorAvatar starts with 'http://' or messageObject.customAuthorAvatar starts with '/' %}
                                         <img src="{{ messageObject.customAuthorAvatar }}" class="feed-item-avatar-img">
                                      {% else %}
                                          <span class="feed-item-avatar">{{ messageObject.customAuthorAvatar }}</span>
@@ -73,7 +73,7 @@
                      {% else %}
                          <div class="avatar-container">
                              {% if messageObject and messageObject.customAuthorAvatar %}
-                                 {% if messageObject.customAuthorAvatar starts with 'http' or messageObject.customAuthorAvatar starts with '/' %}
+                                 {% if messageObject.customAuthorAvatar starts with 'https://' or messageObject.customAuthorAvatar starts with 'http://' or messageObject.customAuthorAvatar starts with '/' %}
                                      <img src="{{ messageObject.customAuthorAvatar }}" class="feed-item-avatar-img">
                                 {% else %}
                                     <span class="feed-item-avatar">{{ messageObject.customAuthorAvatar }}</span>

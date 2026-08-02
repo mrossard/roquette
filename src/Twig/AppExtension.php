@@ -8,6 +8,7 @@ use App\Entity\Channel;
 use App\Repository\ChannelRepository;
 use App\Repository\UserChannelReadRepository;
 use App\Service\MessageFormatter;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
@@ -25,6 +26,7 @@ class AppExtension extends AbstractExtension
         private readonly TranslatorInterface $translator,
         private readonly ChannelRepository $channelRepository,
         private readonly UserChannelReadRepository $ucrRepository,
+        private readonly EntityManagerInterface $entityManager,
         private readonly string $mercureTopicPrefix,
     ) {}
 
@@ -143,7 +145,7 @@ class AppExtension extends AbstractExtension
 
         if ($this->subchannelCache === null) {
             $this->subchannelCache = [];
-            $em = $this->channelRepository->getEntityManager();
+            $em = $this->entityManager;
             $messages = $em->getUnitOfWork()->getIdentityMap()[\App\Entity\Message::class] ?? [];
             $messageIds = [];
             foreach ($messages as $msg) {

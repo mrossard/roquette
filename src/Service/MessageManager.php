@@ -23,6 +23,7 @@ class MessageManager
         private readonly FileUploadService $fileUploadService,
         private readonly TranslatorInterface $translator,
         private readonly MessageRenderer $messageRenderer,
+        private readonly ChannelAccessService $channelAccessService,
     ) {}
 
     public function editMessageForm(int $id, User $currentUser): array
@@ -99,6 +100,11 @@ class MessageManager
     public function toggleSaveMessage(int $id, User $currentUser): Message
     {
         $message = $this->findMessage($id);
+
+        $channel = $message->getChannel();
+        if ($channel === null || !$this->channelAccessService->canUserAccess($channel, $currentUser)) {
+            throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
+        }
 
         if ($currentUser->getSavedMessages()->contains($message)) {
             $currentUser->removeSavedMessage($message);

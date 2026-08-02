@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\Channel;
 
 use App\Entity\User;
@@ -26,6 +27,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_USER')]
 final class KanbanController extends AbstractController
 {
+    use ChannelAccessTrait;
+
     public function __construct(
         private readonly TranslatorInterface $translator,
         private readonly KanbanManager $kanbanManager,
@@ -51,6 +54,8 @@ final class KanbanController extends AbstractController
         if (!$channel || !$channel->isTodoList()) {
             throw $this->createNotFoundException($this->translator->trans('Canal non trouvé ou non configuré en todo.'));
         }
+
+        $this->authorizeChannelAccess($channel);
 
         $columns = $this->kanbanColumnRepository->findByChannelWithMessages($channel);
 

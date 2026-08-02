@@ -9,7 +9,6 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Mime\MimeTypes;
 use Symfony\Contracts\Translation\TranslatorInterface;
-
 /**
  * Handles file upload and deletion via Flysystem.
  *
@@ -227,10 +226,34 @@ class FileUploadService
         $fileSize = $file->getSize();
         $fileName = $file->getClientOriginalName();
 
-        $stream = fopen($file->getPathname(), 'r');
-        $this->defaultStorage->writeStream($newFilename, $stream);
-        if (is_resource($stream)) {
-            fclose($stream);
+        $stream = \fopen($file->getPathname(), 'r');
+
+        // SVG files are sanitized to strip scripts, event handlers and
+        // javascript: URLs before being stored.
+        if ($extension === 'svg') {
+            $dirtySvg = \stream_get_contents($stream);
+            if (is_resource($stream)) {
+                \fclose($stream);
+            }
+
+            $cleanSvg = (new \enshrined\svgSanitize\Sanitizer())->sanitize($dirtySvg);
+
+            if ($cleanSvg === false || $cleanSvg === null || $cleanSvg === '') {
+                $this->logger->warning(sprintf(
+                    'File upload rejected: SVG file "%s" could not be sanitized.',
+                    $fileName,
+                ));
+                throw new \InvalidArgumentException($this->translator->trans(
+                    'Le fichier SVG est invalide ou a été rejeté après analyse.',
+                ));
+            }
+
+            $this->defaultStorage->write($newFilename, $cleanSvg);
+        } else {
+            $this->defaultStorage->writeStream($newFilename, $stream);
+            if (is_resource($stream)) {
+                \fclose($stream);
+            }
         }
 
         $this->logger->info(sprintf(

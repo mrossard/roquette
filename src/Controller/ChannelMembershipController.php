@@ -177,6 +177,14 @@ final class ChannelMembershipController extends AbstractController
             return new Response('', 404);
         }
 
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
+            return new Response('', 403);
+        }
+
+        $this->authorizeChannelAccess($channel);
+
         if (!$channel->getMembers()->contains($user)) {
             return new Response(
                 '<div class="error-message">'
@@ -202,6 +210,14 @@ final class ChannelMembershipController extends AbstractController
         if (!$channel) {
             return new Response('', 404);
         }
+
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
+            return new Response('', 403);
+        }
+
+        $this->authorizeChannelAccess($channel);
 
         $query = trim($request->query->get('search', ''));
         if ($query === '') {

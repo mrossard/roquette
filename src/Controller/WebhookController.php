@@ -13,11 +13,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class WebhookController extends AbstractController
 {
+    private const MAX_PAYLOAD_SIZE = 100_000;
+
     #[Route('/api/webhooks/incoming/{token}', name: 'app_webhook_incoming', methods: ['POST'])]
     public function incoming(
         #[\SensitiveParameter]
@@ -25,7 +28,24 @@ final class WebhookController extends AbstractController
         Request $request,
         WebhookRepository $webhookRepository,
         WebhookManager $webhookManager,
+        RateLimiterFactoryInterface $webhookApiLimiter,
     ): Response {
+        // The token can be provided via the URL (legacy) or the X-Webhook-Token header.
+        $headerToken = $request->headers->get('X-Webhook-Token');
+        if ($headerToken !== null && $headerToken !== '') {
+            $token = $headerToken;
+        }
+
+        $limiter = $webhookApiLimiter->create($token);
+        if (false === $limiter->consume(1)->isAccepted()) {
+            return new JsonResponse(['error' => 'Too many requests'], Response::HTTP_TOO_MANY_REQUESTS);
+        }
+
+        $contentLength = (int) $request->headers->get('Content-Length', '0');
+        if ($contentLength > self::MAX_PAYLOAD_SIZE) {
+            return new JsonResponse(['error' => 'Payload too large'], Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
+        }
+
         $webhook = $webhookRepository->findOneBy(['token' => $token]);
 
         if (!$webhook) {
@@ -36,7 +56,12 @@ final class WebhookController extends AbstractController
             return new JsonResponse(['error' => 'Webhook is inactive'], Response::HTTP_FORBIDDEN);
         }
 
-        $data = json_decode($request->getContent(), true) ?? [];
+        $rawBody = $request->getContent();
+        if (strlen($rawBody) > self::MAX_PAYLOAD_SIZE) {
+            return new JsonResponse(['error' => 'Payload too large'], Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
+        }
+
+        $data = json_decode($rawBody, true) ?? [];
 
         $content = $data['text'] ?? $data['content'] ?? null;
         if (null === $content || trim((string) $content) === '') {

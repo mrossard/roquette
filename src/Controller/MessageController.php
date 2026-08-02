@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\ChannelAccessTrait;
 use App\Controller\Trait\MessageRendererTrait;
 use App\Repository\MessageRepository;
 use App\Service\MessageFormatter;
@@ -20,6 +21,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_USER')]
 final class MessageController extends AbstractController
 {
+    use ChannelAccessTrait;
     use MessageRendererTrait;
 
     public function __construct(
@@ -122,13 +124,7 @@ final class MessageController extends AbstractController
             return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
-        $channel = $message->getChannel();
-        if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            return new Response($this->translator->trans('Non autorisé.'), 403);
-        }
+        $this->authorizeMessageAccess($message);
 
         return $this->render('dashboard/_feed_item.html.twig', $this->feedItemParams($message));
     }

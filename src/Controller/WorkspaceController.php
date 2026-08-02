@@ -287,6 +287,7 @@ final class WorkspaceController extends AbstractController
             [
                 'Content-Type' => $mimeType,
                 'Cache-Control' => 'public, max-age=31536000, immutable',
+                'Content-Security-Policy' => 'sandbox',
             ]
         );
     }

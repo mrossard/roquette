@@ -184,6 +184,7 @@ Voir: Voir
 'L''utilisateur "%username%" n''est pas banni.': 'L''utilisateur "%username%" n''est pas banni.'
 'L''utilisateur "%username%" a été réhabilité.': 'L''utilisateur "%username%" a été réhabilité.'
 'Le nom du canal ne peut pas être vide.': 'Le nom du canal ne peut pas être vide.'
+'Vous ne pouvez pas créer un canal dans cet espace de travail.': 'Vous ne pouvez pas créer un canal dans cet espace de travail.'
 'Canal non trouvé.': 'Canal non trouvé.'
 "Vous n'avez pas accès à ce canal privé.": "Vous n'avez pas accès à ce canal privé."
 'Accès interdit': 'Accès interdit'
@@ -338,6 +339,7 @@ Général: Général
 'a envoyé un fichier : %filename%': 'a envoyé un fichier : %filename%'
 'Nouveau message': 'Nouveau message'
 'Le fichier est invalide ou dépasse la taille autorisée par le serveur.': 'Le fichier est invalide ou dépasse la taille autorisée par le serveur.'
+'Le fichier SVG est invalide ou a été rejeté après analyse.': 'Le fichier SVG est invalide ou a été rejeté après analyse.'
 'Le fichier dépasse la taille maximale autorisée de %maxSize% Mo.': 'Le fichier dépasse la taille maximale autorisée de %maxSize% Mo.'
 'L''extension de fichier ".%extension%" n''est pas autorisée.': 'L''extension de fichier ".%extension%" n''est pas autorisée.'
 'Le type MIME "%mimeType%" n''est pas autorisé.': 'Le type MIME "%mimeType%" n''est pas autorisé.'

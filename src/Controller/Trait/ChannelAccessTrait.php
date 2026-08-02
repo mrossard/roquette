@@ -44,4 +44,34 @@ trait ChannelAccessTrait
 
         return $channel;
     }
+
+    /**
+     * Verifies that the current user can access the given channel.
+     *
+     * @throws AccessDeniedHttpException if the user cannot access the channel
+     */
+    private function authorizeChannelAccess(Channel $channel): void
+    {
+        /** @var User|null $currentUser */
+        $currentUser = $this->getUser();
+
+        if (!$currentUser || !$this->channelAccessService->canUserAccess($channel, $currentUser)) {
+            throw new AccessDeniedHttpException('Non autorisé.');
+        }
+    }
+
+    /**
+     * Verifies that the current user can access the channel of the given message.
+     *
+     * @throws AccessDeniedHttpException if the user cannot access the message's channel
+     */
+    private function authorizeMessageAccess(\App\Entity\Message $message): void
+    {
+        $channel = $message->getChannel();
+        if ($channel === null) {
+            throw new AccessDeniedHttpException('Non autorisé.');
+        }
+
+        $this->authorizeChannelAccess($channel);
+    }
 }

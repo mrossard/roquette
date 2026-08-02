@@ -19,6 +19,7 @@ use App\Repository\WorkspaceRepository;
 use App\Service\AuditLoggerService;
 use App\Service\ChannelManager;
 use App\Service\FileUploadService;
+use App\Service\WorkspaceManager;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -42,6 +43,7 @@ final class ChannelActionController extends AbstractController
     public function __construct(
         private readonly TranslatorInterface $translator,
         private readonly ChannelManager $channelManager,
+        private readonly WorkspaceManager $workspaceManager,
     ) {}
 
     #[Route('/channels/create', name: 'app_channel_create', methods: ['POST'])]
@@ -66,6 +68,11 @@ final class ChannelActionController extends AbstractController
         $workspace = null;
         if ($workspaceId > 0) {
             $workspace = $workspaceRepository->find($workspaceId);
+            if (!$workspace || !$this->workspaceManager->isUserMember($workspace, $currentUser)) {
+                $this->addFlash('error', $this->translator->trans('Vous ne pouvez pas créer un canal dans cet espace de travail.'));
+
+                return $this->redirectToRoute('app_dashboard');
+            }
         }
 
         try {

@@ -12,10 +12,26 @@ framework:
             limit: 20
             rate: { interval: '1 minute', amount: 10 }
 
+        # Rate limiter for the public emoji serving endpoint (triggers server-side downloads)
+        emoji_api:
+            policy: 'token_bucket'
+            limit: 60
+            rate: { interval: '1 minute', amount: 20 }
+
+        # Rate limiter for incoming webhook posts (per token)
+        webhook_api:
+            policy: 'token_bucket'
+            limit: 30
+            rate: { interval: '1 minute', amount: 10 }
+
 when@test:
     framework:
         rate_limiter:
             login_api:
                 limit: 1000
             message_api:
+                limit: 1000
+            emoji_api:
+                limit: 1000
+            webhook_api:
                 limit: 1000

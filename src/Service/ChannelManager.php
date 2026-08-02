@@ -32,6 +32,7 @@ class ChannelManager
         private readonly AuthorizationCheckerInterface $authorizationChecker,
         private readonly SluggerInterface $slugger,
         private readonly KanbanManager $kanbanManager,
+        private readonly WorkspaceManager $workspaceManager,
     ) {}
 
     public function create(string $name, string $description, array $extra, User $currentUser): Channel
@@ -61,6 +62,12 @@ class ChannelManager
         // Workspace assignment
         $workspace = $extra['workspace'] ?? null;
         if ($workspace instanceof Workspace) {
+            if (!$this->workspaceManager->isUserMember($workspace, $currentUser)) {
+                throw new \InvalidArgumentException($this->translator->trans(
+                    'Vous ne pouvez pas créer un canal dans cet espace de travail.',
+                ));
+            }
+
             $channel->setWorkspace($workspace);
             $channel->setIsPrivate(false);
         }

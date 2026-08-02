@@ -33,12 +33,10 @@ class ChannelAccessService
             return true;
         }
 
-        // Legacy private channels: direct member or creator
+        // Legacy private channels: direct member only.
+        // The creator is always added as a member at channel creation time,
+        // so a removed creator must not regain access.
         if ($channel->getMembers()->contains($user)) {
-            return true;
-        }
-
-        if ($channel->getCreator() !== null && $channel->getCreator()->getId() === $user->getId()) {
             return true;
         }
 

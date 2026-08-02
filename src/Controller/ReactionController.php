@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\ChannelAccessTrait;
 use App\Controller\Trait\MessageRendererTrait;
 use App\Controller\Trait\SidebarParametersTrait;
 use App\Entity\Reaction;
@@ -26,6 +27,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_USER')]
 final class ReactionController extends AbstractController
 {
+    use ChannelAccessTrait;
     use MessageRendererTrait;
     use SidebarParametersTrait;
 
@@ -47,18 +49,17 @@ final class ReactionController extends AbstractController
             return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
+        $this->authorizeMessageAccess($message);
 
         $channel = $message->getChannel();
-        if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            return new Response($this->translator->trans('Non autorisé.'), 403);
-        }
 
         // Allow any emoji/character sequence as long as it is short enough to fit in the DB and prevent abuse
         if (mb_strlen($emoji) < 1 || mb_strlen($emoji) > 16) {
             return new Response($this->translator->trans('Emoji non supporté.'), 400);
         }
+
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
 
         $reactionRepo = $entityManager->getRepository(Reaction::class);
         $existingReaction = $reactionRepo->findOneBy([

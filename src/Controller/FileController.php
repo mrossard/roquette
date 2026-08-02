@@ -34,9 +34,6 @@ final class FileController extends AbstractController
         MessageRepository $messageRepository,
         FileUploadService $fileUploadService,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
         $message = $messageRepository->find($id);
         if (!$message || !$message->getFilePath()) {
             throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
@@ -44,10 +41,7 @@ final class FileController extends AbstractController
 
         $this->checkVirusScanStatus($message);
 
-        $channel = $message->getChannel();
-        if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
-        }
+        $this->authorizeMessageAccess($message);
 
         if (!$fileUploadService->exists($message->getFilePath())) {
             throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
@@ -83,9 +77,6 @@ final class FileController extends AbstractController
         MessageRepository $messageRepository,
         FileUploadService $fileUploadService,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
         $message = $messageRepository->find($id);
         if (!$message || !$message->getFilePath()) {
             throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
@@ -93,10 +84,7 @@ final class FileController extends AbstractController
 
         $this->checkVirusScanStatus($message);
 
-        $channel = $message->getChannel();
-        if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
-        }
+        $this->authorizeMessageAccess($message);
 
         if (!$fileUploadService->exists($message->getFilePath())) {
             throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
@@ -130,9 +118,6 @@ final class FileController extends AbstractController
         FileUploadService $fileUploadService,
         Request $request,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
         $message = $messageRepository->find($id);
         if (!$message || !$message->getFilePath()) {
             throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
@@ -140,10 +125,7 @@ final class FileController extends AbstractController
 
         $this->checkVirusScanStatus($message);
 
-        $channel = $message->getChannel();
-        if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
-        }
+        $this->authorizeMessageAccess($message);
 
         if (!$fileUploadService->exists($message->getFilePath())) {
             throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
@@ -188,6 +170,8 @@ final class FileController extends AbstractController
             throw $this->createNotFoundException($this->translator->trans('Message non trouvé.'));
         }
 
+        $this->authorizeMessageAccess($message);
+
         $fileExt = pathinfo($message->getFileName(), PATHINFO_EXTENSION);
 
         return $this->render('dashboard/_text_preview_button.html.twig', [
@@ -199,9 +183,6 @@ final class FileController extends AbstractController
     #[Route('/messages/{id}/lightbox', name: 'app_lightbox', methods: ['GET'])]
     public function lightbox(int $id, MessageRepository $messageRepository): Response
     {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
         $message = $messageRepository->find($id);
         if (!$message || !$message->getFilePath()) {
             throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
@@ -209,10 +190,7 @@ final class FileController extends AbstractController
 
         $this->checkVirusScanStatus($message);
 
-        $channel = $message->getChannel();
-        if (($channel->isPrivate() || $channel->isDm()) && !$channel->getMembers()->contains($currentUser)) {
-            throw $this->createAccessDeniedException($this->translator->trans('Non autorisé à accéder à ce fichier.'));
-        }
+        $this->authorizeMessageAccess($message);
 
         return $this->render('modals/_lightbox_content.html.twig', [
             'message_id' => $message->getId(),
@@ -303,7 +281,8 @@ final class FileController extends AbstractController
 
     /**
      * Returns the Content-Type to use for inline preview.
-     * HTML files are served as text/plain to prevent browser rendering.
+     * HTML files are served as text/plain and SVG as octet-stream to prevent
+     * browser rendering (defense in depth against stored XSS).
      */
     private static function previewContentType(Message $message): string
     {
@@ -313,6 +292,16 @@ final class FileController extends AbstractController
             return 'application/octet-stream';
         }
 
-        return strtolower($mimeType) === 'text/html' ? 'text/plain' : $mimeType;
+        $lower = strtolower($mimeType);
+
+        if ($lower === 'text/html') {
+            return 'text/plain';
+        }
+
+        if ($lower === 'image/svg+xml') {
+            return 'application/octet-stream';
+        }
+
+        return $mimeType;
     }
 }

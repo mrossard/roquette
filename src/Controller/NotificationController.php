@@ -149,9 +149,6 @@ final class NotificationController extends AbstractController
         MessageRepository $messageRepository,
         ChannelRepository $channelRepository,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-
         $message = $messageRepository->find($id);
         if (!$message) {
             throw $this->createNotFoundException('Message not found');
@@ -162,15 +159,7 @@ final class NotificationController extends AbstractController
             throw $this->createNotFoundException('Channel not found');
         }
 
-        // Verify access to the channel
-        $members = $channel->getMembers();
-        $hasAccess = $channel->isDm()
-            ? $members->contains($currentUser)
-            : !$channel->isPrivate() || $members->contains($currentUser);
-
-        if (!$hasAccess) {
-            throw $this->createAccessDeniedException();
-        }
+        $this->authorizeMessageAccess($message);
 
         $replies = $messageRepository->findReplyTree($message);
 
