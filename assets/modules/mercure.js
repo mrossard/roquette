@@ -14,6 +14,7 @@ const console = {
 };
 
 let isRedirecting = false;
+let offlineBannerTimer = null;
 
 function safeRedirectToLogin(reason = '') {
     if (isRedirecting) return;
@@ -253,6 +254,10 @@ export function manualReconnect(button) {
 
 // HTMX SSE connection event listeners
 document.body.addEventListener('htmx:sseOpen', () => {
+    if (offlineBannerTimer) {
+        window.clearTimeout(offlineBannerTimer);
+        offlineBannerTimer = null;
+    }
     updateMercureStatus(true, window.AppTranslations?.['Connecté au Hub'] || 'Connecté au Hub');
     showOfflineBanner(false);
 });
@@ -262,9 +267,20 @@ document.body.addEventListener('htmx:sseError', () => {
     el.style.display = 'none';
     document.body.appendChild(el);
 
-    const showOffline = () => {
+    const offlineText = window.AppTranslations?.['Connexion au serveur perdue. Tentative de reconnexion...'] || 'Connexion au serveur perdue. Tentative de reconnexion...';
+    const showOfflineNow = () => {
         updateMercureStatus(false, window.AppTranslations?.['Connexion interrompue'] || 'Connexion interrompue', 'disconnected');
-        showOfflineBanner(true, window.AppTranslations?.['Connexion au serveur perdue. Tentative de reconnexion...'] || 'Connexion au serveur perdue. Tentative de reconnexion...');
+        showOfflineBanner(true, offlineText);
+    };
+    // A transient SSE drop (e.g. during navigation) must not flash the banner:
+    // when the ping proves the server is still reachable, only show it after a
+    // short grace period, cancelled as soon as the connection comes back.
+    const scheduleOfflineBanner = () => {
+        if (offlineBannerTimer) return;
+        offlineBannerTimer = window.setTimeout(() => {
+            offlineBannerTimer = null;
+            showOfflineNow();
+        }, 2500);
     };
 
     el.addEventListener('htmx:beforeSwap', function onSwap(e) {
@@ -282,14 +298,14 @@ document.body.addEventListener('htmx:sseError', () => {
             safeRedirectToLogin(`Status ${xhr.status}`);
             return;
         }
-        showOffline();
+        scheduleOfflineBanner();
     });
 
     el.addEventListener('htmx:responseError', function onError(e) {
         if (e.detail.elt !== el) return;
         el.removeEventListener('htmx:responseError', onError);
         el.remove();
-        showOffline();
+        showOfflineNow();
     });
 
     htmx.ajax('GET', '/user/ping', {target: el, swap: 'innerHTML'});
