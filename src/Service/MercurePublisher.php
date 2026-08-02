@@ -106,25 +106,30 @@ class MercurePublisher
 
         $content = $this->buildContentSummary($message);
 
-        $this->publishToChannel(
-            $channel,
-            [
-                'channelSlug' => $channel->getSlug(),
-                'channelId' => $channel->getId(),
-                'messageId' => $message->getId(),
-                'author' => $author->getUsername(),
-                'authorDisplayName' => $author->getDisplayName() ?: $author->getUsername(),
-                'channelName' => $channelName,
-                'content' => $content,
-                'isDm' => $channel->isDm(),
-                'isSubChannel' => $channel->isSubChannel(),
-                'parentChannelId' => $channel->getParentMessage()?->getChannel()->getId(),
-                'parentChannelSlug' => $channel->getParentMessage()?->getChannel()->getSlug(),
-                'workspaceId' => $channel->getWorkspace()?->getId(),
-                'workspaceSlug' => $channel->getWorkspace()?->getSlug(),
-            ],
-            'channel_notification',
-        );
+        $notificationData = [
+            'channelSlug' => $channel->getSlug(),
+            'channelId' => $channel->getId(),
+            'messageId' => $message->getId(),
+            'author' => $author->getUsername(),
+            'authorDisplayName' => $author->getDisplayName() ?: $author->getUsername(),
+            'channelName' => $channelName,
+            'content' => $content,
+            'isDm' => $channel->isDm(),
+            'isSubChannel' => $channel->isSubChannel(),
+            'parentChannelId' => $channel->getParentMessage()?->getChannel()->getId(),
+            'parentChannelSlug' => $channel->getParentMessage()?->getChannel()->getSlug(),
+            'workspaceId' => $channel->getWorkspace()?->getId(),
+            'workspaceSlug' => $channel->getWorkspace()?->getSlug(),
+        ];
+
+        $this->publishToChannel($channel, $notificationData, 'channel_notification');
+
+        foreach ($channel->getMembers() as $member) {
+            if ($member->getId() === $author->getId()) {
+                continue;
+            }
+            $this->publishToUser($member, $notificationData, 'channel_notification');
+        }
 
         $title = $channelName;
         $body = ($author->getDisplayName() ?: $author->getUsername()) . ': ' . $content;

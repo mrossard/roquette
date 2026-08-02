@@ -129,9 +129,9 @@ class MercurePublisherTest extends TestCase
         $message->method('getId')->willReturn(99);
         $message->method('getContent')->willReturn('Hello @member-user code check');
 
-        // dispatch: channel HTML, channel notification, push for each non-author member (1 member)
+        // dispatch: channel HTML, channel notification, user notification, channel notification message
         $this->bus
-            ->expects($this->exactly(3))
+            ->expects($this->exactly(4))
             ->method('dispatch')
             ->willReturn(new Envelope(new \stdClass()));
 
