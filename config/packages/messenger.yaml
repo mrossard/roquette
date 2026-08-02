@@ -28,6 +28,7 @@ framework:
             'Symfony\Component\Mercure\Update': async_high
             'App\Message\AuditLogMessage': async_high
             'App\Message\PushNotificationMessage': async_high
+            'App\Message\ChannelNotificationMessage': async_high
             'App\Message\LlmQueryMessage': async_low
             'App\Message\ScanFileMessage': async_low
             'App\Message\DownloadEmojiMessage': async_low
@@ -41,6 +42,7 @@ when@test:
                 'Symfony\Component\Mercure\Update': sync
                 'App\Message\AuditLogMessage': sync
                 'App\Message\PushNotificationMessage': sync
+                'App\Message\ChannelNotificationMessage': sync
                 'App\Message\LlmQueryMessage': sync
                 'App\Message\ScanFileMessage': sync
                 'App\Message\DownloadEmojiMessage': sync

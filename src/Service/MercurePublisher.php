@@ -130,18 +130,14 @@ class MercurePublisher
         $body = ($author->getDisplayName() ?: $author->getUsername()) . ': ' . $content;
         $url = '/channels/' . $channel->getSlug();
 
-        foreach ($channel->getMembers() as $member) {
-            if ($member === $author) {
-                continue;
-            }
-
-            $this->bus->dispatch(new PushNotificationMessage(
-                userId: (int) $member->getId(),
-                title: $title,
-                body: $body,
-                url: $url,
-            ));
-        }
+        $this->bus->dispatch(new \App\Message\ChannelNotificationMessage(
+            channelId: (int) $channel->getId(),
+            messageId: (int) $message->getId(),
+            authorId: (int) $author->getId(),
+            title: $title,
+            body: $body,
+            url: $url,
+        ));
     }
 
     // -------------------------------------------------------------------------
