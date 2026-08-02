@@ -101,8 +101,9 @@ export function initTypingIndicator() {
     const messageInput = document.getElementById('message');
     if (!messageInput || messageInput.dataset.typingInitialized === 'true') return;
 
+    const chatHeader = document.querySelector('.chat-header');
     const statusBadge = document.getElementById('mercure-status');
-    const channelSlug = statusBadge ? statusBadge.getAttribute('data-active-channel-slug') : null;
+    const channelSlug = chatHeader?.getAttribute('data-active-channel-slug') || statusBadge?.getAttribute('data-active-channel-slug');
     if (!channelSlug) return;
 
     if (currentInitializedChannelSlug !== channelSlug) {
@@ -313,6 +314,7 @@ document.body.addEventListener('htmx:sseError', () => {
 
 document.body.addEventListener('htmx:sseMessage', (event) => {
     const type = event.detail.type;
+    console.log(`[Mercure SSE] Event received: type="${type}"`, event.detail.data);
 
     if (type === 'help_stream_update') {
         try {
@@ -390,6 +392,12 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
         } catch (err) {
             console.error('Error handling help stream update:', err);
         }
+        return;
+    }
+
+    // Ignore non-JSON payload SSE events (raw HTML for messages or "ping" for typing indicators)
+    if (type.startsWith('message_') || type.startsWith('typing_')) {
+        console.log(`[Mercure SSE] Passing raw event "${type}" directly to HTMX handlers`);
         return;
     }
 

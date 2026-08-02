@@ -146,4 +146,24 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         return $qb->getQuery()->getResult();
     }
+
+    /**
+     * Returns all Users who have access to the given channel.
+     *
+     * @return User[]
+     */
+    public function getMembersForChannel(Channel $channel): array
+    {
+        $workspace = $channel->getWorkspace();
+        if ($workspace !== null && !$channel->isPrivate()) {
+            return $this->createQueryBuilder('u')
+                ->join('u.workspaces', 'w')
+                ->where('w.id = :workspaceId')
+                ->setParameter('workspaceId', $workspace->getId())
+                ->getQuery()
+                ->getResult();
+        }
+
+        return $channel->getMembers()->toArray();
+    }
 }

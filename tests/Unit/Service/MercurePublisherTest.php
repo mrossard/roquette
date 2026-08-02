@@ -24,6 +24,7 @@ class MercurePublisherTest extends TestCase
     private MessageBusInterface&MockObject $bus;
     private UserChannelReadRepository&MockObject $ucrRepo;
     private \Symfony\Contracts\Translation\TranslatorInterface&MockObject $translator;
+    private \App\Repository\UserRepository&MockObject $userRepo;
     private MercurePublisher $publisher;
 
     protected function setUp(): void
@@ -31,7 +32,8 @@ class MercurePublisherTest extends TestCase
         $this->bus = $this->createMock(MessageBusInterface::class);
         $this->ucrRepo = $this->createMock(UserChannelReadRepository::class);
         $this->translator = $this->createMock(\Symfony\Contracts\Translation\TranslatorInterface::class);
-        $this->publisher = new MercurePublisher($this->bus, 'http://test-mercure', $this->ucrRepo, $this->translator);
+        $this->userRepo = $this->createMock(\App\Repository\UserRepository::class);
+        $this->publisher = new MercurePublisher($this->bus, 'http://test-mercure', $this->ucrRepo, $this->translator, $this->userRepo);
     }
 
     #[Test]
@@ -129,9 +131,9 @@ class MercurePublisherTest extends TestCase
         $message->method('getId')->willReturn(99);
         $message->method('getContent')->willReturn('Hello @member-user code check');
 
-        // dispatch: channel HTML, channel notification, user notification, channel notification message
+        // dispatch: channel HTML, channel notification, async ChannelNotificationMessage
         $this->bus
-            ->expects($this->exactly(4))
+            ->expects($this->exactly(3))
             ->method('dispatch')
             ->willReturn(new Envelope(new \stdClass()));
 

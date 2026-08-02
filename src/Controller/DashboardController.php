@@ -188,6 +188,15 @@ final class DashboardController extends AbstractController
             $currentWorkspace = $workspaceRepository->findPublicWorkspace();
         }
 
+        $etag = md5(sprintf('directory-%s-%s-%s', $type, $currentWorkspace?->getId() ?? 'none', $currentUser?->getUserIdentifier() ?? 'guest'));
+        $response = new Response();
+        $response->setEtag($etag);
+        $response->setPublic();
+
+        if ($response->isNotModified($request)) {
+            return $response;
+        }
+
         if ($type === 'members') {
             $allUsers = $currentWorkspace
                 ? $userRepository->findMembersForWorkspace($currentWorkspace, $currentUser)
@@ -196,7 +205,7 @@ final class DashboardController extends AbstractController
             return $this->render('dashboard/_directory_panel.html.twig', [
                 'type' => 'members',
                 'allUsers' => $allUsers,
-            ]);
+            ], $response);
         }
 
         $allPublicChannels = $currentWorkspace
@@ -206,6 +215,6 @@ final class DashboardController extends AbstractController
         return $this->render('dashboard/_directory_panel.html.twig', [
             'type' => 'channels',
             'allPublicChannels' => $allPublicChannels,
-        ]);
+        ], $response);
     }
 }

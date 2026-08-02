@@ -437,13 +437,17 @@ export function updateSettingsPageUI() {
 }
 
 export function handleGlobalNotification(data) {
+    console.log('[Notification] Handling global notification payload:', data);
     if (isCurrentUserBusy()) return;
     const statusBadge = document.getElementById('mercure-status');
     if (!statusBadge) return;
 
-    const activeChannelSlug = statusBadge.getAttribute('data-active-channel-slug');
+    const chatHeader = document.querySelector('.chat-header');
+    const activeChannelSlug = chatHeader?.getAttribute('data-active-channel-slug') || statusBadge.getAttribute('data-active-channel-slug');
     const currentUsername = statusBadge.getAttribute('data-current-username');
     const isMentionNotificationAllowed = statusBadge.getAttribute('data-mention-notifications-enabled') !== 'false';
+
+    console.log(`[Notification] Active channel: "${activeChannelSlug}", Message channel: "${data.channelSlug}", Author: "${data.author}", CurrentUser: "${currentUsername}"`);
 
     if (data.author === currentUsername) {
         // Ignore messages authored by the current user

@@ -25,6 +25,7 @@ class MercurePublisher
         private string $mercureTopicPrefix,
         private UserChannelReadRepository $ucrRepo,
         private TranslatorInterface $translator,
+        private \App\Repository\UserRepository $userRepository,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -96,8 +97,6 @@ class MercurePublisher
         string $messageText,
         string $renderedHtml,
     ): void {
-        $this->publishToChannel($channel, $renderedHtml, 'message_' . $channel->getSlug());
-
         $channelName = $channel->isDm() ? 'Message direct' : '#' . $channel->getName();
         if ($channel->isSubChannel() && $channel->getParentMessage() !== null) {
             $parentChannelName = '#' . $channel->getParentMessage()->getChannel()->getName();
@@ -122,14 +121,8 @@ class MercurePublisher
             'workspaceSlug' => $channel->getWorkspace()?->getSlug(),
         ];
 
+        $this->publishToChannel($channel, $renderedHtml, 'message_' . $channel->getSlug());
         $this->publishToChannel($channel, $notificationData, 'channel_notification');
-
-        foreach ($channel->getMembers() as $member) {
-            if ($member->getId() === $author->getId()) {
-                continue;
-            }
-            $this->publishToUser($member, $notificationData, 'channel_notification');
-        }
 
         $title = $channelName;
         $body = ($author->getDisplayName() ?: $author->getUsername()) . ': ' . $content;

@@ -188,10 +188,17 @@ class AppExtension extends AbstractExtension
 
     public function getUserMercureTopics(\App\Entity\User $user): array
     {
-        return [
+        $topics = [
             $this->mercureTopicPrefix . '/users/' . $user->getUsername(),
             $this->mercureTopicPrefix . '/users/status',
         ];
+
+        $channels = $this->channelRepository->findAllForUser($user);
+        foreach ($channels as $ch) {
+            $topics[] = $this->mercureTopicPrefix . '/channels/' . $ch->getSlug();
+        }
+
+        return $topics;
     }
 
     public function getUserChannelNotificationsMap(\App\Entity\User $user): array

@@ -1,4 +1,5 @@
-<div class="card-header chat-header">
+<div class="card-header chat-header" data-active-channel-slug="{{ activeChannel.slug }}"
+     hx-on:htmx:load="const b=document.getElementById('mercure-status'); if(b) b.setAttribute('data-active-channel-slug', '{{ activeChannel.slug }}')">
     <div class="chat-header-layout">
         <!-- Title area and Toggle button -->
         <div class="chat-header-main">
