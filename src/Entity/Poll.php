@@ -29,8 +29,7 @@ class Poll
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\OneToOne(targetEntity: Message::class, inversedBy: 'poll', cascade: ['persist'])]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[ORM\OneToOne(mappedBy: 'poll', targetEntity: Message::class)]
     private ?Message $message = null;
 
     /**

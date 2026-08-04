@@ -147,14 +147,7 @@ class AppExtension extends AbstractExtension
             $this->subchannelCache = [];
             $em = $this->entityManager;
             $messages = $em->getUnitOfWork()->getIdentityMap()[\App\Entity\Message::class] ?? [];
-            $messageIds = [];
-            foreach ($messages as $msg) {
-                if (!($msg instanceof \App\Entity\Message && $msg->getId() !== null)) {
-                    continue;
-                }
-
-                $messageIds[] = $msg->getId();
-            }
+            $messageIds = array_keys($messages);
 
             if (!empty($messageIds)) {
                 $channels = $this->channelRepository
@@ -169,21 +162,14 @@ class AppExtension extends AbstractExtension
                 }
 
                 foreach ($channels as $channel) {
-                    if ($channel->getParentMessage() === null) {
-                        continue;
+                    if ($channel->getParentMessage() !== null) {
+                        $this->subchannelCache[$channel->getParentMessage()->getId()] = $channel;
                     }
-
-                    $this->subchannelCache[$channel->getParentMessage()->getId()] = $channel;
                 }
             }
         }
 
-        if (!array_key_exists($messageId, $this->subchannelCache)) {
-            $channel = $this->channelRepository->findOneBy(['parentMessage' => $message]);
-            $this->subchannelCache[$messageId] = $channel;
-        }
-
-        return $this->subchannelCache[$messageId];
+        return $this->subchannelCache[$messageId] ?? null;
     }
 
     public function getUserMercureTopics(\App\Entity\User $user): array

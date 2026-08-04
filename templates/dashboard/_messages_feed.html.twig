@@ -21,7 +21,8 @@
         {% include 'dashboard/_feed_item.html.twig' with {
             'messageObject': message,
             'replyCounts': replyCounts|default({}),
-            'subchannelByParentMessageId': subchannelByParentMessageId|default({})
+            'subchannelByParentMessageId': subchannelByParentMessageId|default({}),
+            'savedMessageIds': savedMessageIds|default([])
         } %}
     {% else %}
         <div id="feed-empty-state" class="empty-state">
@@ -93,7 +94,8 @@
         {% include 'dashboard/_feed_item.html.twig' with {
             'messageObject': message,
             'replyCounts': replyCounts|default({}),
-            'subchannelByParentMessageId': subchannelByParentMessageId|default({})
+            'subchannelByParentMessageId': subchannelByParentMessageId|default({}),
+            'savedMessageIds': savedMessageIds|default([])
         } %}
     {% else %}
         <div id="feed-empty-state" class="empty-state">
@@ -133,7 +135,8 @@
             'messageObject': message,
             'isLast': loop.last,
             'replyCounts': replyCounts|default({}),
-            'subchannelByParentMessageId': subchannelByParentMessageId|default({})
+            'subchannelByParentMessageId': subchannelByParentMessageId|default({}),
+            'savedMessageIds': savedMessageIds|default([])
         } %}
     {% else %}
         <div id="feed-empty-state" class="empty-state">

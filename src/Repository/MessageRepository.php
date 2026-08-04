@@ -119,10 +119,12 @@ class MessageRepository extends ServiceEntityRepository
                 'poll_vote_user',
                 'parent_message',
                 'parent_author',
+                'parent_poll',
             )
             ->leftJoin('m.author', 'author')
             ->leftJoin('m.parentMessage', 'parent_message')
             ->leftJoin('parent_message.author', 'parent_author')
+            ->leftJoin('parent_message.poll', 'parent_poll')
             ->leftJoin('m.reactions', 'reactions')
             ->leftJoin('reactions.user', 'reaction_user')
             ->leftJoin('m.poll', 'poll')
@@ -133,7 +135,29 @@ class MessageRepository extends ServiceEntityRepository
             ->orderBy('m.id', 'DESC')
             ->setParameter('ids', $ids);
 
-        return $qb->getQuery()->getResult();
+        $messages = $qb->getQuery()->getResult();
+
+        // Batch pre-fetch any parent messages that were lazy-proxy loaded (outside the current 50 batch)
+        $missingParentIds = [];
+        foreach ($messages as $m) {
+            $parent = $m->getParentMessage();
+            if ($parent !== null && !$this->getEntityManager()->getUnitOfWork()->isEntityInitialized($parent)) {
+                $missingParentIds[] = $parent->getId();
+            }
+        }
+
+        if (!empty($missingParentIds)) {
+            $this->createQueryBuilder('m')
+                ->select('m', 'author', 'poll')
+                ->leftJoin('m.author', 'author')
+                ->leftJoin('m.poll', 'poll')
+                ->where('m.id IN (:parentIds)')
+                ->setParameter('parentIds', array_unique($missingParentIds))
+                ->getQuery()
+                ->getResult();
+        }
+
+        return $messages;
     }
 
     /**
@@ -400,8 +424,9 @@ class MessageRepository extends ServiceEntityRepository
 
         $messages = $this
             ->createQueryBuilder('m')
-            ->select('m', 'author', 'poll')
+            ->select('m', 'author', 'channel', 'poll')
             ->join('m.author', 'author')
+            ->join('m.channel', 'channel')
             ->leftJoin('m.poll', 'poll')
             ->where('m.id IN (:ids)')
             ->setParameter('ids', $ids)
@@ -468,5 +493,17 @@ class MessageRepository extends ServiceEntityRepository
             ->setParameter('ids', $ids)
             ->getQuery()
             ->getResult();
+    }
+
+    /** @return int[] */
+    public function findSavedMessageIdsForUser(User $user): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $ids = $conn->fetchFirstColumn(
+            'SELECT message_id FROM user_saved_messages WHERE user_id = :userId',
+            ['userId' => $user->getId()]
+        );
+
+        return array_map('intval', $ids);
     }
 }

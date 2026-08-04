@@ -16,6 +16,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Index(name: 'idx_message_created_at', columns: ['created_at'])]
 #[ORM\Index(name: 'idx_message_author', columns: ['author_id'])]
 #[ORM\Index(name: 'idx_message_channel_id', columns: ['channel_id', 'id'])]
+#[ORM\Index(name: 'idx_message_channel_id_desc', columns: ['channel_id', 'id'], flags: ['DESC'])]
 #[ORM\Index(name: 'idx_message_channel_created_at', columns: ['channel_id', 'created_at'])]
 #[ORM\Index(name: 'idx_message_content_fts', columns: ['content_tsvector'])]
 #[ORM\Index(name: 'idx_message_kanban_column', columns: ['kanban_column_id'])]
@@ -82,7 +83,8 @@ class Message
     #[ORM\OneToMany(targetEntity: Reaction::class, mappedBy: 'message', orphanRemoval: true)]
     private Collection $reactions;
 
-    #[ORM\OneToOne(mappedBy: 'message', targetEntity: Poll::class, cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(inversedBy: 'message', targetEntity: Poll::class, cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(name: 'poll_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Poll $poll = null;
 
     #[ORM\Column(name: 'content_tsvector', type: 'text', nullable: true, insertable: false, updatable: false)]

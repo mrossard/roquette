@@ -34,7 +34,13 @@ class ChannelRepository extends ServiceEntityRepository
             ->leftJoin('c.workspace', 'w')
             ->addSelect('w')
             ->leftJoin('w.userGroup', 'ug')
-            ->addSelect('ug');
+            ->addSelect('ug')
+            ->leftJoin('c.members', 'm')
+            ->addSelect('m')
+            ->leftJoin('c.parentMessage', 'pm')
+            ->addSelect('pm')
+            ->leftJoin('pm.channel', 'pmc')
+            ->addSelect('pmc');
 
         $directWorkspaceDql = $this->getEntityManager()
             ->createQueryBuilder()

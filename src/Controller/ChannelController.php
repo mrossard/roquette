@@ -148,9 +148,8 @@ final class ChannelController extends AbstractController
 
         $notificationsEnabled = null;
         if ($isMember) {
-            /** @var UserChannelRead|null $activeRead */
-            $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $activeChannel]);
-            $notificationsEnabled = $activeRead ? $activeRead->isNotificationsEnabled() : null;
+            $activeUnread = $unreadCounts[$activeChannel->getId()] ?? null;
+            $notificationsEnabled = $activeUnread['notificationsEnabled'] ?? null;
         }
         if ($notificationsEnabled === null) {
             $notificationsEnabled = $activeChannel->isDm();
@@ -167,11 +166,13 @@ final class ChannelController extends AbstractController
             static fn(Channel $c) => $c->getId(),
             $channels,
         ));
+        $savedMessageIds = $messageRepository->findSavedMessageIdsForUser($currentUser);
 
         return $this->render('dashboard/index.html.twig', [
             'channels' => $channels,
             'activeChannel' => $activeChannel,
             'messages' => $messages,
+            'savedMessageIds' => $savedMessageIds,
             'topic_url' => $this->getChannelTopicUrl($activeChannel),
             'unreadCounts' => $unreadCounts,
             'firstUnreadMessageId' => $firstUnreadMessageId,

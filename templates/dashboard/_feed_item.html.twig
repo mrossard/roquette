@@ -22,7 +22,7 @@
 {% set user_hue = author ? author.hue : 200 %}
 {% set username = (messageObject and messageObject.customAuthorName) ? messageObject.customAuthorName : (author ? (author.displayName|default(author.username)) : (user|default('Utilisateur'|trans))) %}
 {% set messageChannel = messageObject ? messageObject.getChannel() : null %}
-{% set isThisMessagePinned = messageChannel and messageChannel.pinnedMessage == messageObject %}
+{% set isThisMessagePinned = messageChannel and messageChannel.pinnedMessage and messageChannel.pinnedMessage.id == message_id %}
 {% set isMeMessage = message is not null and (message starts with '/me ' or message == '/me') %}
 {% set subchannelByParentMessageId = subchannelByParentMessageId|default({}) %}
 {% set pollHasVotes = messageObject and messageObject.poll and messageObject.poll.totalVotes > 0 %}
@@ -157,7 +157,7 @@
             {% endcache %}
 
             {% if messageObject is defined and messageObject and not messageObject.poll and message is defined and message is not empty and message != '' %}
-                {% set msgReplyCount = replyCounts[message_id]|default(messageObject ? messageObject.replies|length : 0) %}
+                {% set msgReplyCount = replyCounts[message_id]|default(0) %}
                 {% set hasReplies = msgReplyCount > 0 %}
                 {% if hasReplies %}
                     <div class="feed-item-actions-wrapper">
