@@ -3,7 +3,7 @@
     <div class="message-reactions-container" {% if isMeMessage|default(false) %}style="margin-top: 0.25rem;"{% endif %}>
         {% for emoji, info in message_reactions %}
             <button class="reaction-badge {% if info.hasReacted %}active{% endif %}"
-                    hx-post="{{ path('app_message_react', {id: message_id, emoji: emoji}) }}"
+                    hx-post="{{ path('app_message_react', {id: message_id|default(messageObject ? messageObject.id : 0), emoji: emoji}) }}"
                     hx-target="closest .feed-item"
                     hx-swap="morph transition:false"
                     data-reactors="{{ info.reactorUsernames|join(' ') }}"
