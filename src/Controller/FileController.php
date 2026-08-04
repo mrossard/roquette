@@ -31,6 +31,7 @@ final class FileController extends AbstractController
     #[Route('/messages/{id}/download', name: 'app_file_download', methods: ['GET'])]
     public function downloadFile(
         int $id,
+        Request $request,
         MessageRepository $messageRepository,
         FileUploadService $fileUploadService,
     ): Response {
@@ -43,37 +44,53 @@ final class FileController extends AbstractController
 
         $this->authorizeMessageAccess($message);
 
+        $etag = md5($message->getFilePath() . ($message->getUpdatedAt() ? $message->getUpdatedAt()->getTimestamp() : $message->getCreatedAt()->getTimestamp()));
+        $response = new StreamedResponse();
+        $response->setEtag($etag);
+        $response->setPrivate();
+        $response->setMaxAge(31536000);
+        $response->headers->addCacheControlDirective('immutable');
+
+        if ($response->isNotModified($request)) {
+            return $response;
+        }
+
         if (!$fileUploadService->exists($message->getFilePath())) {
             throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
         }
 
         $stream = $fileUploadService->readStream($message->getFilePath());
 
-        return new StreamedResponse(
-            static function () use ($stream) {
-                fpassthru($stream);
-                if (is_resource($stream)) {
-                    fclose($stream);
-                }
-            },
-            200,
-            [
-                'Content-Type' =>
-                    $message->getMimeType() !== null && $message->getMimeType() !== ''
-                        ? $message->getMimeType()
-                        : 'application/octet-stream',
-                'Content-Disposition' => HeaderUtils::makeDisposition(
-                    HeaderUtils::DISPOSITION_ATTACHMENT,
-                    $message->getFileName(),
-                    $this->getFallbackFileName($message->getFileName()),
-                ),
-            ],
+        $response->setCallback(static function () use ($stream) {
+            fpassthru($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        });
+
+        $response->setStatusCode(200);
+        $response->headers->set(
+            'Content-Type',
+            $message->getMimeType() !== null && $message->getMimeType() !== ''
+                ? $message->getMimeType()
+                : 'application/octet-stream',
         );
+        $response->headers->set(
+            'Content-Disposition',
+            HeaderUtils::makeDisposition(
+                HeaderUtils::DISPOSITION_ATTACHMENT,
+                $message->getFileName(),
+                $this->getFallbackFileName($message->getFileName()),
+            ),
+        );
+
+        return $response;
     }
 
     #[Route('/messages/{id}/preview', name: 'app_file_preview', methods: ['GET'])]
     public function previewFile(
         int $id,
+        Request $request,
         MessageRepository $messageRepository,
         FileUploadService $fileUploadService,
     ): Response {
@@ -86,29 +103,42 @@ final class FileController extends AbstractController
 
         $this->authorizeMessageAccess($message);
 
+        $etag = md5($message->getFilePath() . ($message->getUpdatedAt() ? $message->getUpdatedAt()->getTimestamp() : $message->getCreatedAt()->getTimestamp()));
+        $response = new StreamedResponse();
+        $response->setEtag($etag);
+        $response->setPrivate();
+        $response->setMaxAge(31536000);
+        $response->headers->addCacheControlDirective('immutable');
+
+        if ($response->isNotModified($request)) {
+            return $response;
+        }
+
         if (!$fileUploadService->exists($message->getFilePath())) {
             throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
         }
 
         $stream = $fileUploadService->readStream($message->getFilePath());
 
-        return new StreamedResponse(
-            static function () use ($stream) {
-                fpassthru($stream);
-                if (is_resource($stream)) {
-                    fclose($stream);
-                }
-            },
-            200,
-            [
-                'Content-Type' => self::previewContentType($message),
-                'Content-Disposition' => HeaderUtils::makeDisposition(
-                    HeaderUtils::DISPOSITION_INLINE,
-                    $message->getFileName(),
-                    $this->getFallbackFileName($message->getFileName()),
-                ),
-            ],
+        $response->setCallback(static function () use ($stream) {
+            fpassthru($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        });
+
+        $response->setStatusCode(200);
+        $response->headers->set('Content-Type', self::previewContentType($message));
+        $response->headers->set(
+            'Content-Disposition',
+            HeaderUtils::makeDisposition(
+                HeaderUtils::DISPOSITION_INLINE,
+                $message->getFileName(),
+                $this->getFallbackFileName($message->getFileName()),
+            ),
         );
+
+        return $response;
     }
 
     #[Route('/messages/{id}/text-preview', name: 'app_file_text_preview', methods: ['GET'])]

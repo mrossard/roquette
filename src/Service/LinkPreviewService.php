@@ -163,7 +163,7 @@ class LinkPreviewService
             try {
                 $response = $this->httpClient->request($method, $current, [
                     'timeout' => 1.5,
-                    'follow_redirects' => false,
+                    'max_redirects' => 0,
                     'headers' => ['User-Agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)'],
                 ]);
 
