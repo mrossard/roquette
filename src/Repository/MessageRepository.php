@@ -141,7 +141,7 @@ class MessageRepository extends ServiceEntityRepository
         $missingParentIds = [];
         foreach ($messages as $m) {
             $parent = $m->getParentMessage();
-            if ($parent !== null && !$this->getEntityManager()->getUnitOfWork()->isEntityInitialized($parent)) {
+            if ($parent !== null && $parent instanceof \Doctrine\Persistence\Proxy && !$parent->__isInitialized()) {
                 $missingParentIds[] = $parent->getId();
             }
         }
