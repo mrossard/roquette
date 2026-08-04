@@ -117,8 +117,12 @@ class MessageRepository extends ServiceEntityRepository
                 'poll_options',
                 'poll_votes',
                 'poll_vote_user',
+                'parent_message',
+                'parent_author',
             )
             ->leftJoin('m.author', 'author')
+            ->leftJoin('m.parentMessage', 'parent_message')
+            ->leftJoin('parent_message.author', 'parent_author')
             ->leftJoin('m.reactions', 'reactions')
             ->leftJoin('reactions.user', 'reaction_user')
             ->leftJoin('m.poll', 'poll')

@@ -134,7 +134,8 @@
             </div>
         {% endif %}
         <div class="feed-item-body">
-            {% cache 'feed_item_body_' ~ message_id %}
+            {% set cacheKey = 'feed_item_body_' ~ message_id ~ '_' ~ (updated_at ? updated_at.timestamp : (timestamp ? timestamp.timestamp : 0)) %}
+            {% cache cacheKey %}
                 {% if messageObject is defined and messageObject and messageObject.poll %}
                     {% include 'dashboard/_poll.html.twig' with { poll: messageObject.poll } %}
                 {% elseif message is defined and message is not empty and message != '' %}
