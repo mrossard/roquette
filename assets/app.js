@@ -471,9 +471,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeTarget = target.id ? (document.getElementById(target.id) || target) : target;
             if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks(activeTarget);
             if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons(activeTarget);
-            setTimeout(() => {
-                activeTarget.scrollIntoView({behavior: 'smooth', block: 'nearest'});
-            }, 80);
             return;
         }
 
