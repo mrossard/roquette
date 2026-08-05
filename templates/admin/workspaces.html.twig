@@ -1,61 +1,90 @@
-{% extends 'admin/base.html.twig' %}
+{% extends 'base.html.twig' %}
 
 {% block title %}Administration — Espaces{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
 {% block body %}
-    <div class="admin-layout">
-        {% include 'admin/_nav.html.twig' %}
-
-        <section class="card glass-panel">
-            <div class="card-header">
-                <h2>{{ 'Espaces de travail'|trans }}</h2>
+    <div class="app-container admin-layout" hx-boost="true">
+        <header class="app-header">
+            <div class="logo-area">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="{{ 'Afficher le menu'|trans }}">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+                <span class="logo-rocket">🚀</span>
+                <div class="logo-text">
+                    <h1>Roquette</h1>
+                    <p class="subtitle">Administration</p>
+                </div>
             </div>
 
-            <div class="card-body">
-                {% if workspaces is empty %}
-                    <div class="empty-state-block">{{ 'Aucun espace de travail.'|trans }}</div>
-                {% else %}
-                    <div class="admin-table-wrapper">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>{{ 'Nom'|trans }}</th>
-                                    <th>{{ 'Type'|trans }}</th>
-                                    <th class="th--center">{{ 'Membres'|trans }}</th>
-                                    <th>{{ 'Créé le'|trans }}</th>
-                                    <th class="th--right">{{ 'Actions'|trans }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for ws in workspaces %}
-                                    <tr>
-                                        <td><strong>{{ ws.name }}</strong></td>
-                                        <td>
-                                            {% if ws.public %}
-                                                <span class="status-pill status-pill--active">{{ 'Public'|trans }}</span>
-                                            {% else %}
-                                                <span class="status-pill status-pill--admin">{{ 'Privé'|trans }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="td--center">{{ ws.members|length }}</td>
-                                        <td>{{ ws.createdAt|date('d/m/Y H:i') }}</td>
-                                        <td class="td--right">
-                                            {% if not ws.public %}
-                                                <form method="post" action="{{ path('app_admin_workspace_delete', {id: ws.id}) }}" onsubmit="return confirm('{{ 'Supprimer cet espace définitivement ?'|trans }}');" class="action-inline">
-                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete-workspace-' ~ ws.id) }}">
-                                                    <button type="submit" class="status-pill status-pill--delete" style="border:none;cursor:pointer;">{{ 'Supprimer'|trans }}</button>
-                                                </form>
-                                            {% else %}
-                                                <span class="action-placeholder">—</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+            {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
+        </header>
+
+        <main class="dashboard-grid" id="main-content">
+            <section class="card glass-panel settings-panel">
+                <div class="card-header">
+                    <div>
+                        <h2>{{ 'Espaces de travail'|trans }}</h2>
                     </div>
-                {% endif %}
-            </div>
-        </section>
+                    {% include 'admin/_nav.html.twig' %}
+                </div>
+
+                <div class="card-body">
+                    {% if workspaces is empty %}
+                        <div class="empty-state-block">{{ 'Aucun espace de travail.'|trans }}</div>
+                    {% else %}
+                        <div class="admin-table-wrapper">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>{{ 'Nom'|trans }}</th>
+                                        <th>{{ 'Type'|trans }}</th>
+                                        <th class="th--center">{{ 'Membres'|trans }}</th>
+                                        <th>{{ 'Créé le'|trans }}</th>
+                                        <th class="th--right">{{ 'Actions'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ws in workspaces %}
+                                        <tr>
+                                            <td><strong>{{ ws.name }}</strong></td>
+                                            <td>
+                                                {% if ws.public %}
+                                                    <span class="status-pill status-pill--active">{{ 'Public'|trans }}</span>
+                                                {% else %}
+                                                    <span class="status-pill status-pill--admin">{{ 'Privé'|trans }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="td--center">{{ ws.members|length }}</td>
+                                            <td>{{ ws.createdAt|date('d/m/Y H:i') }}</td>
+                                            <td class="td--right">
+                                                {% if not ws.public %}
+                                                    <form method="post" action="{{ path('app_admin_workspace_delete', {id: ws.id}) }}" onsubmit="return confirm('{{ 'Supprimer cet espace définitivement ?'|trans }}');" class="action-inline">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('delete-workspace-' ~ ws.id) }}">
+                                                        <button type="submit" class="status-pill status-pill--delete" style="border:none;cursor:pointer;">{{ 'Supprimer'|trans }}</button>
+                                                    </form>
+                                                {% else %}
+                                                    <span class="action-placeholder">—</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+
+        {% include 'partials/_footer.html.twig' %}
     </div>
 {% endblock %}
