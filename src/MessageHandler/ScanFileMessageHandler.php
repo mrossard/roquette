@@ -9,10 +9,10 @@ use App\Repository\MessageRepository;
 use App\Service\ClamavService;
 use App\Service\FileUploadService;
 use App\Service\MercurePublisher;
+use App\Service\MessageRenderer;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Twig\Environment;
 
 #[AsMessageHandler]
 class ScanFileMessageHandler
@@ -23,7 +23,7 @@ class ScanFileMessageHandler
         private readonly ClamavService $clamavService,
         private readonly EntityManagerInterface $em,
         private readonly MercurePublisher $mercurePublisher,
-        private readonly Environment $twig,
+        private readonly MessageRenderer $messageRenderer,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -83,19 +83,7 @@ class ScanFileMessageHandler
     {
         try {
             $channel = $message->getChannel();
-            $html = $this->twig->render('dashboard/_feed_item.html.twig', [
-                'author' => $message->getAuthor(),
-                'message' => $message->getContent(),
-                'timestamp' => $message->getCreatedAt(),
-                'message_id' => $message->getId(),
-                'updated_at' => $message->getUpdatedAt(),
-                'fileName' => $message->getFileName(),
-                'fileSize' => $message->getFileSize(),
-                'filePath' => $message->getFilePath(),
-                'mimeType' => $message->getMimeType(),
-                'messageObject' => $message,
-                'oob' => true, // Out of band swap!
-            ]);
+            $html = $this->messageRenderer->renderFeedItem($message, ['oob' => true]);
 
             $this->mercurePublisher->publishToChannel($channel, $html, 'message_' . $channel->getSlug());
         } catch (\Exception $e) {

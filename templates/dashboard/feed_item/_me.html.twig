@@ -25,7 +25,7 @@
     </div>
     {% include 'dashboard/_feed_item_actions.html.twig' %}
 </div>
-{% set message_reactions = messageObject is defined and messageObject ? messageObject.getGroupedReactions(app.user) : {} %}
+{% set message_reactions = messageObject is defined and messageObject ? messageObject.getGroupedReactions(app.user|default(null)) : {} %}
 {% set links = message|extract_external_links %}
 {% set hasAttachment = fileName is defined and fileName %}
 

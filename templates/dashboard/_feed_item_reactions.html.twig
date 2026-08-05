@@ -1,4 +1,4 @@
-{% set message_reactions = messageObject is defined and messageObject ? messageObject.getGroupedReactions(app.user) : {} %}
+{% set message_reactions = messageObject is defined and messageObject ? messageObject.getGroupedReactions(app.user|default(null)) : {} %}
 {% if message_reactions is not empty %}
     <div class="message-reactions-container" {% if isMeMessage|default(false) %}style="margin-top: 0.25rem;"{% endif %}>
         {% for emoji, info in message_reactions %}
