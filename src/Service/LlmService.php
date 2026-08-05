@@ -11,6 +11,10 @@ use Symfony\AI\Platform\Message\UserMessage;
 use Symfony\AI\Platform\PlatformInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
+use App\Ai\Tool\CreatePollTool;
+use Symfony\AI\Platform\Tool\ExecutionReference;
+use Symfony\AI\Platform\Tool\Tool;
+
 /**
  * Service dedicated to querying an LLM using the Symfony AI components.
  */
@@ -18,6 +22,7 @@ readonly class LlmService
 {
     public function __construct(
         private PlatformInterface $platform,
+        private CreatePollTool $createPollTool,
         #[Autowire(env: 'LLM_MODEL')]
         private string $model,
         #[Autowire(env: 'LLM_SYSTEM_PROMPT')]
@@ -64,9 +69,49 @@ readonly class LlmService
         $messageBag = new MessageBag(...$messages);
 
         $options['stream'] = true;
+        if (!isset($options['tools'])) {
+            $options['tools'] = [
+                new Tool(
+                    new ExecutionReference(CreatePollTool::class, '__invoke'),
+                    'create_poll',
+                    'Crée un sondage interactif avec des options dans un canal de l\'application Roquette.',
+                    [
+                        'type' => 'object',
+                        'properties' => [
+                            'channelSlug' => ['type' => 'string', 'description' => 'Le slug du canal (ex: general)'],
+                            'question' => ['type' => 'string', 'description' => 'La question du sondage'],
+                            'options' => [
+                                'type' => 'array',
+                                'items' => ['type' => 'string'],
+                                'description' => 'La liste des options du sondage',
+                            ],
+                            'allowMultiple' => ['type' => 'boolean', 'description' => 'Si plusieurs choix sont autorisés'],
+                        ],
+                        'required' => ['channelSlug', 'question', 'options'],
+                    ]
+                )
+            ];
+        }
 
         $resultStream = $this->platform->invoke($this->model, $messageBag, $options)->asStream();
         foreach ($resultStream as $delta) {
+            if ($delta instanceof \Symfony\AI\Platform\Result\Stream\Delta\ToolCallComplete) {
+                foreach ($delta->getToolCalls() as $toolCall) {
+                    if ($toolCall->getName() === 'create_poll') {
+                        $args = $toolCall->getArguments();
+                        $result = ($this->createPollTool)(
+                            channelSlug: $args['channelSlug'] ?? 'general',
+                            question: $args['question'] ?? 'Sondage',
+                            options: $args['options'] ?? [],
+                            allowMultiple: (bool) ($args['allowMultiple'] ?? false),
+                            authorUserId: isset($options['authorUserId']) ? (int) $options['authorUserId'] : null,
+                        );
+                        yield $result;
+                    }
+                }
+                continue;
+            }
+
             if (!$delta instanceof \Symfony\AI\Platform\Result\Stream\Delta\TextDelta) {
                 continue;
             }

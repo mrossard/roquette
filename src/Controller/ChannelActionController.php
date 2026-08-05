@@ -27,6 +27,7 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Message\LlmQueryMessage;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -45,6 +46,37 @@ final class ChannelActionController extends AbstractController
         private readonly ChannelManager $channelManager,
         private readonly WorkspaceManager $workspaceManager,
     ) {}
+
+    #[Route('/channels/{slug}/summarize', name: 'app_channel_summarize_modal', methods: ['POST'])]
+    public function summarizeChannel(
+        string $slug,
+        ChannelRepository $channelRepository,
+        MessageBusInterface $messageBus,
+        string $mercureTopicPrefix,
+    ): Response {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        $channel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+
+        $helpMessageId = 'summary-modal-stream-' . uniqid();
+        $promptText = 'résume le canal ' . $channel->getName();
+
+        $messageBus->dispatch(new LlmQueryMessage(
+            question: $promptText,
+            userId: $currentUser->getId(),
+            channelSlug: $channel->getSlug(),
+            helpMessageId: $helpMessageId,
+            intent: 'resumer',
+        ));
+
+        $topic = $mercureTopicPrefix . '/users/' . $currentUser->getUsername();
+
+        return $this->render('dashboard/_channel_summary_modal.html.twig', [
+            'channel' => $channel,
+            'topic' => $topic,
+            'helpMessageId' => $helpMessageId,
+        ]);
+    }
 
     #[Route('/channels/create', name: 'app_channel_create', methods: ['POST'])]
     public function createChannel(

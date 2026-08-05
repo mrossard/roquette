@@ -55,64 +55,59 @@ final readonly class LlmQueryHandler
         $initialHtml = $this->messageFormatter->format('Analyse de la demande... 🔍');
         $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $initialHtml, $channelSlug);
 
-        [$prompt, $systemPrompt] = $this->getDefaultHelpPrompts($message->getQuestion());
+        $channels = $this->channelRepository->findAllForUser($user);
 
-        $intent = 'help';
+        [$prompt, $systemPrompt] = $this->getDefaultHelpPrompts($message->getQuestion(), $channels);
+
+        $intent = $message->getIntent() ?? 'help';
         $channelName = null;
         $batches = null;
 
-        if (str_starts_with($channelSlug, 'dm-robot-roquette-')) {
-            $channels = $this->channelRepository->findAllForUser($user);
+        if ($message->getIntent() === null && str_starts_with($channelSlug, 'dm-robot-roquette-')) {
             $classification = $this->classifyIntent($message->getQuestion(), $channels, $channelSlug);
-
             $this->logger->info('Classification result:', ['classification' => $classification]);
-
             $intent = $classification['intent'] ?? 'help';
             $targetChannelSlug = $classification['channelSlug'] ?? null;
+        } else {
+            $targetChannelSlug = $channelSlug;
+        }
 
-            if ($intent === 'resumer' && $targetChannelSlug) {
-                // Find the target channel
-                $targetChannel = null;
-                foreach ($channels as $c) {
-                    if (
-                        !(
-                            strtolower($c->getSlug()) === strtolower($targetChannelSlug)
-                            || strtolower($c->getName()) === strtolower($targetChannelSlug)
-                        )
-                    ) {
-                        continue;
-                    }
-
+        if ($intent === 'resumer' && $targetChannelSlug) {
+            $targetChannel = null;
+            foreach ($channels as $c) {
+                if (
+                    strtolower($c->getSlug()) === strtolower($targetChannelSlug)
+                    || strtolower($c->getName()) === strtolower($targetChannelSlug)
+                ) {
                     $targetChannel = $c;
                     break;
                 }
-                if (!$targetChannel) {
-                    foreach ($channels as $c) {
-                        if (
-                            !(
-                                str_contains(strtolower($c->getName()), strtolower($targetChannelSlug))
-                                || str_contains(strtolower($c->getSlug()), strtolower($targetChannelSlug))
-                            )
-                        ) {
-                            continue;
-                        }
-
+            }
+            if (!$targetChannel) {
+                foreach ($channels as $c) {
+                    if (
+                        str_contains(strtolower($c->getName()), strtolower($targetChannelSlug))
+                        || str_contains(strtolower($c->getSlug()), strtolower($targetChannelSlug))
+                    ) {
                         $targetChannel = $c;
                         break;
                     }
                 }
-                $channelName = $targetChannel ? $targetChannel->getName() : $targetChannelSlug;
-                [$prompt, $systemPrompt, $batches] = $this->getSummaryPrompts($user, $channels, $targetChannelSlug);
             }
+            $channelName = $targetChannel ? $targetChannel->getName() : $targetChannelSlug;
+            [$prompt, $systemPrompt, $batches] = $this->getSummaryPrompts($user, $channels, $targetChannelSlug);
         }
 
         // 2. Once classification is done: reformulate the request based on intent
         if ($intent === 'resumer') {
             $reformulation = 'Résumé du canal **#' . ($channelName ?? 'inconnu') . '**... ⏳';
             $prefix = '**Résumé du canal #' . ($channelName ?? 'inconnu') . "** :\n\n";
+        } elseif ($intent === 'sondage') {
+            $reformulation = 'Création du sondage... ⏳';
+            $prefix = '';
         } else {
-            $reformulation = 'Recherche dans la documentation... ⏳';
-            $prefix = "**Recherche dans la documentation** :\n\n";
+            $reformulation = 'Traitement de la demande... ⏳';
+            $prefix = '';
         }
 
         $this->publishUpdate(
@@ -174,7 +169,7 @@ final readonly class LlmQueryHandler
             }
 
             $accumulatedText = '';
-            $generator = $this->llmService->generateTextStream($prompt, $systemPrompt);
+            $generator = $this->llmService->generateTextStream($prompt, $systemPrompt, ['authorUserId' => $user->getId()]);
 
             $chunkCount = 0;
             foreach ($generator as $chunk) {
@@ -212,9 +207,10 @@ final readonly class LlmQueryHandler
     }
 
     /**
+     * @param \App\Entity\Channel[] $channels
      * @return array{0: string, 1: string}
      */
-    private function getDefaultHelpPrompts(string $question): array
+    private function getDefaultHelpPrompts(string $question, array $channels): array
     {
         $chunks = [];
         try {
@@ -241,11 +237,22 @@ final readonly class LlmQueryHandler
             $context = implode("\n\n---\n\n", $chunks);
         }
 
+        $channelList = array_map(
+            fn($c) => sprintf('- Nom: "%s", Slug: "%s"', $c->getName(), $c->getSlug()),
+            $channels
+        );
+
         $systemPrompt =
-            "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette. "
-            . "Réponds dans la langue de la question aux questions des utilisateurs en t'appuyant uniquement sur la documentation utilisateur fournie ci-dessous. "
-            . 'Sois concis et précis dans ta réponse. '
-            . "Si la réponse n'est pas dans la documentation, réponds poliment que tu ne sais pas car cela ne figure pas dans le guide utilisateur.\n\n"
+            "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette.\n"
+            . "Tu peux créer des sondages interactifs dans un canal en appelant l'outil 'create_poll'.\n"
+            . "Liste des canaux existants (utilise TOUJOURS le Slug exact pour le paramètre channelSlug) :\n"
+            . implode("\n", $channelList) . "\n\n"
+            . "RÈGLES IMPÉRATIVES POUR 'create_poll' :\n"
+            . "- Le paramètre 'channelSlug' doit correspondre au Slug ou au Nom d'un canal existant dans la liste ci-dessus.\n"
+            . "- Ne mets JAMAIS les choix de réponse dans le champ 'question'. La 'question' doit être uniquement l'intitulé (ex: 'Quel est votre choix ?').\n"
+            . "- Extraie TOUJOURS chaque alternative ou choix de réponse sous forme d'éléments séparés dans le tableau 'options' (ex: pour 'A, B ou C? Voire D?', extrais options: ['A', 'B', 'C', 'D']).\n"
+            . "- Si l'utilisateur mentionne 'plusieurs choix', 'choix multiples', 'plusieurs réponses' ou équivalent, passe impérativement 'allowMultiple' à true (sinon false).\n"
+            . "- Ne laisse JAMAIS le tableau 'options' vide ou avec une seule option.\n\n"
             . "Documentation utilisateur :\n"
             . $context;
 
@@ -283,12 +290,13 @@ final readonly class LlmQueryHandler
             . "- \"channels\" : La liste des canaux auxquels l'utilisateur a accès, chaque canal ayant un \"name\", \"slug\", et \"description\".\n\n"
             . "Ton rôle unique est de classifier le message pour déterminer l'intention de l'utilisateur et d'extraire le slug du canal cible si nécessaire.\n\n"
             . "Les intentions possibles sont :\n"
-            . "1. \"resumer\" : L'utilisateur demande explicitement un résumé des messages récents d'un canal (ex. : 'résume le canal général', 'fais-moi une synthèse de htmx', 'qu'est-ce qui s'est dit sur mercure', etc.). Si l'utilisateur mentionne le nom ou le slug d'un des canaux fournis pour en obtenir un résumé ou avoir des nouvelles, c'est l'intention \"resumer\".\n"
-            . "2. \"help\" : L'utilisateur pose une question générale, demande de l'aide, ou veut savoir comment faire quelque chose dans l'application (ex. : 'comment créer un canal', 'aide-moi', etc.).\n\n"
+            . "1. \"resumer\" : L'utilisateur demande explicitement un résumé des messages récents d'un canal (ex. : 'résume le canal général', 'fais-moi une synthèse de htmx').\n"
+            . "2. \"sondage\" : L'utilisateur demande de créer ou lancer un sondage dans un canal (ex. : 'crée un sondage', 'lance un vote').\n"
+            . "3. \"help\" : L'utilisateur pose une question générale, demande de l'aide ou une action interactive.\n\n"
             . "Tu dois répondre STRICTEMENT sous format JSON avec la structure suivante, sans aucun autre texte (pas de markdown, pas de blocs de code) :\n"
             . "{\n"
-            . "  \"intent\": \"resumer\" ou \"help\",\n"
-            . "  \"channelSlug\": \"le slug du canal à résumer\" (ou null si l'intention est \"help\" ou si le canal n'a pas pu être identifié)\n"
+            . "  \"intent\": \"resumer\", \"sondage\", ou \"help\",\n"
+            . "  \"channelSlug\": \"le slug du canal cible\" (ou null)\n"
             . '}';
 
         try {

@@ -1,0 +1,30 @@
+{% embed 'partials/_modal_layout.html.twig' with {
+    id: 'channel-summary-modal',
+    content_style: 'max-width: 680px !important;'
+} %}
+    {% block modal_title %}
+        <span style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; margin: 0;">
+            ✨ {{ 'Résumé IA - #'|trans }}{{ channel.name }}
+        </span>
+    {% endblock %}
+
+    {% block modal_body %}
+        <div class="modal-body" style="color: var(--text-primary); font-size: 0.95rem; line-height: 1.6; margin: 1rem 0 1.5rem 0;">
+            <div id="{{ helpMessageId }}"
+                 class="channel-summary-stream"
+                 style="min-height: 120px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-glass); border-radius: 0.75rem; padding: 1.25rem; max-height: 60vh; overflow-y: auto;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-muted);">
+                    <span class="htmx-indicator spinner-subtle" style="display: inline-block;"></span>
+                    <span>Analyse des messages en cours... 🔍</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <button type="button" class="btn-cancel" data-dialog-close
+                    style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); padding: 0.5rem 1.25rem; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s;">
+                {{ 'Fermer'|trans }}
+            </button>
+        </div>
+    {% endblock %}
+{% endembed %}

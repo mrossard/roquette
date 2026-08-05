@@ -65,7 +65,7 @@ class MessagePublisher
         }
 
         // Handle slash commands that return a direct Response
-        if ($pollQuestion === null && !$uploadedFile && str_starts_with(trim($messageText), '/')) {
+        if (($pollQuestion === null || $pollQuestion === '') && !$uploadedFile && str_starts_with(trim($messageText), '/')) {
             $slashResponse = $this->slashCommandHandler->process($messageText, $channel, $currentUser);
             if ($slashResponse !== null) {
                 return $slashResponse;

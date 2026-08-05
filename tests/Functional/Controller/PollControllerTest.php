@@ -109,13 +109,13 @@ class PollControllerTest extends WebTestCase
             'test_poll_user',
         ]);
         $conn->executeStatement(
-            'DELETE FROM poll_option WHERE poll_id IN (SELECT p.id FROM poll p JOIN message m ON p.message_id = m.id JOIN "user" u ON m.author_id = u.id WHERE u.username = ?)',
+            'DELETE FROM poll_option WHERE poll_id IN (SELECT p.id FROM poll p JOIN message m ON m.poll_id = p.id JOIN "user" u ON m.author_id = u.id WHERE u.username = ?)',
             [
                 'test_poll_user',
             ],
         );
         $conn->executeStatement(
-            'DELETE FROM poll WHERE message_id IN (SELECT id FROM message WHERE author_id IN (SELECT id FROM "user" WHERE username = ?))',
+            'DELETE FROM poll WHERE id IN (SELECT m.poll_id FROM message m JOIN "user" u ON m.author_id = u.id WHERE u.username = ? AND m.poll_id IS NOT NULL)',
             [
                 'test_poll_user',
             ],

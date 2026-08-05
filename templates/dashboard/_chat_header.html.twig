@@ -109,6 +109,18 @@
                             </a>
                         {% endif %}
                     {% endif %}
+
+                    {% if not activeChannel.isDm %}
+                        <button type="button"
+                                class="btn-ai-summary"
+                                hx-post="{{ path('app_channel_summarize_modal', {slug: activeChannel.slug}) }}"
+                                hx-target="#modal-container"
+                                hx-trigger="click"
+                                title="{{ 'Générer un résumé IA de ce canal'|trans }}"
+                                style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(99, 102, 241, 0.2)); border: 1px solid rgba(168, 85, 247, 0.4); color: #c084fc; padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; transition: all 0.2s ease;">
+                            ✨ {{ 'Résumer'|trans }}
+                        </button>
+                    {% endif %}
                 {% endif %}
 
                 {% include 'dashboard/_notification_toggle.html.twig' with {

@@ -72,6 +72,10 @@ class SlashCommandHandler
             return $this->handleHelp($args, $user, $channel);
         }
 
+        if ($command === 'poll') {
+            return $this->handlePoll($args, $user, $channel);
+        }
+
         if ($command === 'shrug') {
             $messageText = ($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯';
 
@@ -118,12 +122,52 @@ class SlashCommandHandler
             ]);
         } else {
             $this->messageBus->dispatch(
-                new LlmQueryMessage($args, $user->getId(), $channel->getSlug(), $helpMessageId),
+                new LlmQueryMessage($args, $user->getId(), $channel->getSlug(), $helpMessageId, 'help'),
             );
 
             $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
                 'answer' => null,
                 'question' => $args,
+                'helpMessageId' => $helpMessageId,
+                'activeChannel' => $channel,
+                'timestamp' => new \DateTime(),
+            ]);
+        }
+
+        $formHtml = $this->twig->render('dashboard/_input_form.html.twig', [
+            'activeChannel' => $channel,
+        ]);
+
+        return new Response($formHtml . "\n" . $oobHtml);
+    }
+
+    private function handlePoll(string $args, User $user, Channel $channel): Response
+    {
+        $helpMessageId = 'poll-' . uniqid();
+
+        if ($args === '') {
+            $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
+                'answer' => $this->translator->trans(
+                    'Veuillez indiquer le sondage à créer. Exemple : `/poll Quelle option préférez-vous entre A et B ?`',
+                ),
+                'question' => '',
+                'helpMessageId' => $helpMessageId,
+                'activeChannel' => $channel,
+                'timestamp' => new \DateTime(),
+            ]);
+        } else {
+            $prompt = sprintf(
+                'Appelle IMPÉRATIVEMENT l\'outil create_poll avec channelSlug="%s". Extrais la question et les options depuis la demande suivante : "%s"',
+                $channel->getSlug(),
+                $args
+            );
+            $this->messageBus->dispatch(
+                new LlmQueryMessage($prompt, $user->getId(), $channel->getSlug(), $helpMessageId, 'sondage'),
+            );
+
+            $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
+                'answer' => null,
+                'question' => '/poll ' . $args,
                 'helpMessageId' => $helpMessageId,
                 'activeChannel' => $channel,
                 'timestamp' => new \DateTime(),

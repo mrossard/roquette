@@ -7,7 +7,7 @@ const autocompleteInitialized = new WeakSet();
 
 const SLASH_COMMANDS = [
     {name: 'help', icon: '🤖', description: window.trans('Poser une question à l\'Assistant Roquette'), usage: '/help <question>'},
-
+    {name: 'poll', icon: '📊', description: window.trans('Créer un sondage interactif via l\'IA'), usage: '/poll <question et options>'},
     {name: 'shrug', icon: '🤷', description: window.trans('Envoyer le shrug ¯\\_(ツ)_/¯'), usage: '/shrug [texte]'},
     {name: 'me', icon: '💬', description: window.trans('Action'), usage: '/me <message>'},
     {name: 'color', icon: '🎨', description: window.trans('Changer la couleur de votre pseudo'), usage: '/color [0-360]'},
