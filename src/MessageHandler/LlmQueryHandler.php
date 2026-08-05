@@ -191,14 +191,17 @@ final readonly class LlmQueryHandler
                 $trimmedText = trim($trimmedText);
             }
             $toolData = json_decode($trimmedText, true);
-            if (is_array($toolData) && (isset($toolData['reminderText']) || isset($toolData['delayMinutes']))) {
-                $toolResult = ($this->llmService->getScheduleReminderTool())(
-                    channelSlug: $toolData['channelSlug'] ?? 'assistant',
-                    reminderText: $toolData['reminderText'] ?? 'Rappel',
-                    delayMinutes: (int) ($toolData['delayMinutes'] ?? 5),
-                    authorUserId: $user->getId(),
-                );
-                $formattedHtml = $this->messageFormatter->format($toolResult);
+            if (is_array($toolData)) {
+                $args = $toolData['arguments'] ?? $toolData;
+                if (isset($args['reminderText']) || isset($args['delayMinutes'])) {
+                    $toolResult = ($this->llmService->getScheduleReminderTool())(
+                        channelSlug: $args['channelSlug'] ?? 'assistant',
+                        reminderText: $args['reminderText'] ?? 'Rappel',
+                        delayMinutes: (int) ($args['delayMinutes'] ?? 5),
+                        authorUserId: $user->getId(),
+                    );
+                    $formattedHtml = $this->messageFormatter->format($toolResult);
+                }
             }
 
             $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $formattedHtml, $channelSlug);
