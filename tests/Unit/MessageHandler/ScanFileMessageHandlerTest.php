@@ -27,7 +27,7 @@ class ScanFileMessageHandlerTest extends TestCase
         $clamavService = $this->createMock(ClamavService::class);
         $em = $this->createMock(EntityManagerInterface::class);
         $mercurePublisher = $this->createMock(MercurePublisher::class);
-        $twig = $this->createMock(Environment::class);
+        $messageRenderer = $this->createMock(\App\Service\MessageRenderer::class);
         $logger = $this->createMock(LoggerInterface::class);
 
         $channel = $this->createMock(\App\Entity\Channel::class);
@@ -50,7 +50,7 @@ class ScanFileMessageHandlerTest extends TestCase
         $dbMessage->expects($this->once())->method('setVirusScanStatus')->with('clean');
         $em->expects($this->once())->method('flush');
 
-        $twig->method('render')->willReturn('html');
+        $messageRenderer->method('renderFeedItem')->willReturn('html');
         $mercurePublisher->expects($this->once())->method('publishToChannel');
 
         $handler = new ScanFileMessageHandler(
@@ -59,7 +59,7 @@ class ScanFileMessageHandlerTest extends TestCase
             $clamavService,
             $em,
             $mercurePublisher,
-            $twig,
+            $messageRenderer,
             $logger,
         );
 
@@ -73,7 +73,7 @@ class ScanFileMessageHandlerTest extends TestCase
         $clamavService = $this->createMock(ClamavService::class);
         $em = $this->createMock(EntityManagerInterface::class);
         $mercurePublisher = $this->createMock(MercurePublisher::class);
-        $twig = $this->createMock(Environment::class);
+        $messageRenderer = $this->createMock(\App\Service\MessageRenderer::class);
         $logger = $this->createMock(LoggerInterface::class);
 
         $channel = $this->createMock(\App\Entity\Channel::class);
@@ -97,7 +97,7 @@ class ScanFileMessageHandlerTest extends TestCase
         $fileUploadService->expects($this->once())->method('delete')->with('virus.jpg');
         $em->expects($this->once())->method('flush');
 
-        $twig->method('render')->willReturn('html');
+        $messageRenderer->method('renderFeedItem')->willReturn('html');
         $mercurePublisher->expects($this->once())->method('publishToChannel');
 
         $handler = new ScanFileMessageHandler(
@@ -106,7 +106,7 @@ class ScanFileMessageHandlerTest extends TestCase
             $clamavService,
             $em,
             $mercurePublisher,
-            $twig,
+            $messageRenderer,
             $logger,
         );
 

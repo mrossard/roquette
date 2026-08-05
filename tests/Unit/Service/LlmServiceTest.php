@@ -42,7 +42,9 @@ class LlmServiceTest extends TestCase
             )
             ->willReturn($deferredResult);
 
-        $llmService = new LlmService($platform, 'test-model', 'System prompt');
+        $createPollTool = (new \ReflectionClass(\App\Ai\Tool\CreatePollTool::class))->newInstanceWithoutConstructor();
+        $scheduleReminderTool = (new \ReflectionClass(\App\Ai\Tool\ScheduleReminderTool::class))->newInstanceWithoutConstructor();
+        $llmService = new LlmService($platform, $createPollTool, $scheduleReminderTool, 'test-model', 'System prompt');
         $generatorResult = $llmService->generateTextStream('test prompt');
 
         $chunks = iterator_to_array($generatorResult);
@@ -75,7 +77,9 @@ class LlmServiceTest extends TestCase
             )
             ->willReturn($deferredResult);
 
-        $llmService = new LlmService($platform, 'test-model', 'System prompt');
+        $createPollTool = (new \ReflectionClass(\App\Ai\Tool\CreatePollTool::class))->newInstanceWithoutConstructor();
+        $scheduleReminderTool = (new \ReflectionClass(\App\Ai\Tool\ScheduleReminderTool::class))->newInstanceWithoutConstructor();
+        $llmService = new LlmService($platform, $createPollTool, $scheduleReminderTool, 'test-model', 'System prompt');
         $text = $llmService->generateText('test prompt');
 
         $this->assertSame('Hello world!', $text);
@@ -105,7 +109,9 @@ class LlmServiceTest extends TestCase
             ->with('test-model', $messageBag, $this->callback(static fn($opts) => ($opts['stream'] ?? false) === true))
             ->willReturn($deferredResult);
 
-        $llmService = new LlmService($platform, 'test-model', 'System prompt');
+        $createPollTool = (new \ReflectionClass(\App\Ai\Tool\CreatePollTool::class))->newInstanceWithoutConstructor();
+        $scheduleReminderTool = (new \ReflectionClass(\App\Ai\Tool\ScheduleReminderTool::class))->newInstanceWithoutConstructor();
+        $llmService = new LlmService($platform, $createPollTool, $scheduleReminderTool, 'test-model', 'System prompt');
         $text = $llmService->chat($messageBag);
 
         $this->assertSame('Chat response', $text);

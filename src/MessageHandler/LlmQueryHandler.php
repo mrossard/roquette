@@ -63,14 +63,15 @@ final readonly class LlmQueryHandler
         $channelName = null;
         $batches = null;
 
-        if ($message->getIntent() === null && str_starts_with($channelSlug, 'dm-robot-roquette-')) {
-            $classification = $this->classifyIntent($message->getQuestion(), $channels, $channelSlug);
-            $this->logger->info('Classification result:', ['classification' => $classification]);
-            $intent = $classification['intent'] ?? 'help';
-            $targetChannelSlug = $classification['channelSlug'] ?? null;
-        } else {
-            $targetChannelSlug = $channelSlug;
-        }
+        try {
+            if ($message->getIntent() === null && str_starts_with($channelSlug, 'dm-robot-roquette-')) {
+                $classification = $this->classifyIntent($message->getQuestion(), $channels, $channelSlug);
+                $this->logger->info('Classification result:', ['classification' => $classification]);
+                $intent = $classification['intent'] ?? 'help';
+                $targetChannelSlug = $classification['channelSlug'] ?? null;
+            } else {
+                $targetChannelSlug = $channelSlug;
+            }
 
         if ($intent === 'resumer' && $targetChannelSlug) {
             $targetChannel = null;
@@ -117,7 +118,6 @@ final readonly class LlmQueryHandler
             $channelSlug,
         );
 
-        try {
             if ($batches !== null && count($batches) > 1) {
                 $intermediateSummaries = [];
                 $totalBatches = count($batches);
@@ -169,7 +169,7 @@ final readonly class LlmQueryHandler
             }
 
             $accumulatedText = '';
-            $generator = $this->llmService->generateTextStream($prompt, $systemPrompt, ['authorUserId' => $user->getId()]);
+            $generator = $this->llmService->generateTextStream($prompt, $systemPrompt);
 
             $chunkCount = 0;
             foreach ($generator as $chunk) {
@@ -183,6 +183,24 @@ final readonly class LlmQueryHandler
             }
 
             $formattedHtml = $this->messageFormatter->format($prefix . $accumulatedText);
+
+            // If the model returned a JSON tool call instead of plain text, parse and execute the tool
+            $trimmedText = trim($accumulatedText);
+            if (str_starts_with($trimmedText, '```')) {
+                $trimmedText = preg_replace('/^```(?:json)?|```$/', '', $trimmedText);
+                $trimmedText = trim($trimmedText);
+            }
+            $toolData = json_decode($trimmedText, true);
+            if (is_array($toolData) && (isset($toolData['reminderText']) || isset($toolData['delayMinutes']))) {
+                $toolResult = ($this->llmService->getScheduleReminderTool())(
+                    channelSlug: $toolData['channelSlug'] ?? 'assistant',
+                    reminderText: $toolData['reminderText'] ?? 'Rappel',
+                    delayMinutes: (int) ($toolData['delayMinutes'] ?? 5),
+                    authorUserId: $user->getId(),
+                );
+                $formattedHtml = $this->messageFormatter->format($toolResult);
+            }
+
             $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $formattedHtml, $channelSlug);
 
             // Persist the message in the database so it is saved only if it is a DM with the robot
@@ -198,6 +216,7 @@ final readonly class LlmQueryHandler
                 $this->entityManager->flush();
             }
         } catch (\Exception $e) {
+            $this->logger->error('LlmQueryHandler failed:', ['exception' => $e]);
             $errorHtml =
                 '<p style="color: var(--accent-red, #ff5b5b);">Désolé, une erreur est survenue lors de la communication avec le robot d\'aide : '
                 . htmlspecialchars($e->getMessage())
@@ -232,7 +251,7 @@ final readonly class LlmQueryHandler
                 $docPath = $this->parameterBag->get('kernel.project_dir') . '/DOC_UTILISATEUR.md';
                 $documentation = file_exists($docPath) ? file_get_contents($docPath) : '';
             }
-            $context = $documentation;
+            $context = mb_substr($documentation, 0, 1500);
         } else {
             $context = implode("\n\n---\n\n", $chunks);
         }
@@ -253,6 +272,10 @@ final readonly class LlmQueryHandler
             . "- Extraie TOUJOURS chaque alternative ou choix de réponse sous forme d'éléments séparés dans le tableau 'options' (ex: pour 'A, B ou C? Voire D?', extrais options: ['A', 'B', 'C', 'D']).\n"
             . "- Si l'utilisateur mentionne 'plusieurs choix', 'choix multiples', 'plusieurs réponses' ou équivalent, passe impérativement 'allowMultiple' à true (sinon false).\n"
             . "- Ne laisse JAMAIS le tableau 'options' vide ou avec une seule option.\n\n"
+            . "RÈGLES IMPÉRATIVES POUR 'schedule_reminder' :\n"
+            . "- Dans 'reminderText', extrais EXCLUSIVEMENT l'action ou le sujet brut de la tâche (ex: pour 'Rappelle-moi de finir mon verre dans 2 minutes', extrais 'Finir mon verre').\n"
+            . "- Ne mets JAMAIS les mots 'Rappel', 'Rappelle-moi', ni le délai/durée (ex: 'dans 2 minutes') dans le champ 'reminderText'.\n"
+            . "- Calcule le délai uniquement dans 'delayMinutes'. Pour un rappel personnel, utilise 'channelSlug': 'assistant'.\n\n"
             . "Documentation utilisateur :\n"
             . $context;
 
@@ -309,6 +332,7 @@ final readonly class LlmQueryHandler
 
             return json_decode($jsonText, true);
         } catch (\Exception $e) {
+            $this->logger->error('Classification failed:', ['error' => $e->getMessage()]);
             return null;
         }
     }

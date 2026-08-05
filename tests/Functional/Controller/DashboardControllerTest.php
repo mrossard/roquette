@@ -58,6 +58,11 @@ class DashboardControllerTest extends WebTestCase
     private function cleanup(): void
     {
         $conn = $this->entityManager->getConnection();
+        $conn->executeStatement('DELETE FROM reminder WHERE user_id IN (SELECT id FROM "user" WHERE username LIKE ?) OR channel_id IN (SELECT id FROM channel WHERE slug LIKE ? OR slug = ?)', [
+            'test_dash_%',
+            'test-dash-%',
+            'general',
+        ]);
         $conn->executeStatement('DELETE FROM invitation WHERE invitee_id IN (SELECT id FROM "user" WHERE username LIKE ?)', [
             'test_dash_%',
         ]);

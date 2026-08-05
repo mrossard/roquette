@@ -1,8 +1,11 @@
 ai:
     platform:
+        generic:
+            cloud:
+                base_url: '%env(resolve:LLM_ENDPOINT)%'
+                api_key: '%env(resolve:LLM_API_KEY)%'
         ollama:
-            endpoint: '%env(resolve:LLM_ENDPOINT)%'
-            http_client: 'llm.client'
+            endpoint: 'http://ollama:11434'
 
     store:
         postgres:
