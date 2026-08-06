@@ -11,7 +11,8 @@ readonly class ContentModerationService
 {
     /** @var array<string, string> Regex pattern => Description */
     private const SECRET_PATTERNS = [
-        '/sk-[a-zA-Z0-9_-]{20,}/' => "Clé d'API OpenAI",
+        '/sk-[a-zA-Z0-9_.\-]{20,}/' => "Clé d'API OpenAI / Service AI",
+
         '/AKIA[0-9A-Z]{16}/' => "Clé AWS Access Key",
         '/ghp_[a-zA-Z0-9]{36}/' => "Token GitHub Personal Access",
         '/xox[baprs]-[a-zA-Z0-9-]+/' => "Token Slack",

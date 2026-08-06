@@ -33,9 +33,10 @@ class ModerateMessageMessageHandler
         $messageId = $message->getMessageId();
         $dbMessage = $this->messageRepository->find($messageId);
 
-        if (!$dbMessage || !$dbMessage->getContent()) {
+        if (!$dbMessage || !$dbMessage->getContent() || $dbMessage->getChannel()?->isDm()) {
             return;
         }
+
 
         $this->logger->info(sprintf('Starting content moderation scan for message %d.', $messageId));
 

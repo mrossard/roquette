@@ -33,6 +33,18 @@ final class ContentModerationServiceTest extends TestCase
         static::assertSame($secretMessage, $result->getOriginalContent());
     }
 
+    public function testDetectApiKeyWithDots(): void
+    {
+        $service = new ContentModerationService();
+        $secretMessage = 'Clé avec points : sk-proj-12345678901234567890.T3BlbkFJ.xyz987654321';
+        $result = $service->moderate($secretMessage);
+
+        static::assertTrue($result->isFlagged());
+        static::assertTrue($result->isMasked());
+        static::assertSame('Clé avec points : [SECRET MASQUÉ]', $result->getMaskedContent());
+    }
+
+
     public function testDetectAwsKey(): void
     {
         $service = new ContentModerationService();

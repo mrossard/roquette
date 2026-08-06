@@ -108,9 +108,10 @@ class MessagePublishService
             $this->messageBus->dispatch(new ScanFileMessage($message->getId()));
         }
 
-        if ($message->getContent() !== null && !$isPoll) {
+        if ($message->getContent() !== null && !$isPoll && !$channel->isDm()) {
             $this->messageBus->dispatch(new ModerateMessageMessage($message->getId()));
         }
+
 
 
         $renderedHtml = $this->messageRenderer->renderFeedItem($message);

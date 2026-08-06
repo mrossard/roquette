@@ -14,10 +14,13 @@ use App\Service\MercurePublisher;
 use App\Service\MessageRenderer;
 use App\Service\ModerationResult;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
+#[AllowMockObjectsWithoutExpectations]
 final class ModerateMessageMessageHandlerTest extends TestCase
+
 {
     public function testInvokeMasksSecretAndPublishesMercure(): void
     {
@@ -76,6 +79,44 @@ final class ModerateMessageMessageHandlerTest extends TestCase
         static::assertSame('Clé [SECRET MASQUÉ]', $messageEntity->getContent());
         static::assertSame('Clé sk-proj-12345678901234567890123', $messageEntity->getOriginalContent());
     }
+
+    public function testInvokeSkipsDmMessages(): void
+    {
+        $messageRepository = $this->createMock(MessageRepository::class);
+        $moderationService = $this->createMock(ContentModerationService::class);
+        $em = $this->createMock(EntityManagerInterface::class);
+        $mercurePublisher = $this->createMock(MercurePublisher::class);
+        $messageRenderer = $this->createMock(MessageRenderer::class);
+
+        $channel = new Channel();
+        $channel->setSlug('dm-user1-user2');
+        $channel->setIsDm(true);
+
+        $messageEntity = new Message();
+        $messageEntity->setContent('Secret personnel en DM: sk-proj-12345678901234567890');
+        $messageEntity->setChannel($channel);
+
+        $messageRepository->expects($this->once())
+            ->method('find')
+            ->with(99)
+            ->willReturn($messageEntity);
+
+        $moderationService->expects($this->never())->method('moderate');
+
+        $handler = new ModerateMessageMessageHandler(
+            $messageRepository,
+            $moderationService,
+            $em,
+            $mercurePublisher,
+            $messageRenderer,
+            new NullLogger()
+        );
+
+        $handler(new ModerateMessageMessage(99));
+
+        static::assertNull($messageEntity->getModerationStatus());
+    }
 }
+
 
 
