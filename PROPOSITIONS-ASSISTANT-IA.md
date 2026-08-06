@@ -26,37 +26,34 @@ Points d'extension clés (déjà en place) :
 
 ## Vue d'ensemble
 
-| # | Proposition | Priorité | Valeur | Effort |
-|---|---|---|---|---|
-| 1 | Recherche de messages par l'IA | P1 | Forte | Faible |
-| 2 | Tâches / Kanban intelligent | P1 | Forte | Moyen |
-| 3 | Mémoire longue (rolling memory) | P1 | Forte | Moyen |
-| 4 | Digest multi-canaux | P2 | Moyenne | Faible–Moyen |
-| 5 | Messages assistés (brouillon / réécriture / traduction) | P2 | Moyenne | Faible |
-| 6 | Veille intelligente (alertes mots-clés) | P2 | Moyenne | Faible–Moyen |
-| 7 | Analyse des pièces jointes | P3 | Moyenne | Moyen |
-| 8 | RAG enrichi (docs par workspace) | P3 | Moyenne | Moyen |
-| 9 | Robustesse & ops (rate limit, routage modèles, garde-fous) | P4 | Transversale | Faible |
-| 10 | Bridge Webhook → IA | P4 | Niche | Faible |
+| # | Proposition | Priorité | Statut | Valeur | Effort |
+|---|---|---|---|---|---|
+| 1 | Recherche de messages par l'IA | P1 | **Réalisé** ✅ | Forte | Faible |
+| 2 | Tâches / Kanban intelligent | P1 | En attente | Forte | Moyen |
+| 3 | Mémoire longue (rolling memory) | P1 | En attente | Forte | Moyen |
+| 4 | Digest multi-canaux | P2 | En attente | Moyenne | Faible–Moyen |
+| 5 | Messages assistés (brouillon / réécriture / traduction) | P2 | En attente | Moyenne | Faible |
+| 6 | Veille intelligente (alertes mots-clés) | P2 | En attente | Moyenne | Faible–Moyen |
+| 7 | Analyse des pièces jointes | P3 | En attente | Moyenne | Moyen |
+| 8 | RAG enrichi (docs par workspace) | P3 | En attente | Moyenne | Moyen |
+| 9 | Robustesse & ops (rate limit, routage modèles, garde-fous) | P4 | En attente | Transversale | Faible |
+| 10 | Bridge Webhook → IA | P4 | En attente | Niche | Faible |
 
 ---
 
 ## Priorité 1 — Le cœur fonctionnel
 
-### 1. Recherche de messages par l'IA
+### 1. Recherche de messages par l'IA (Réalisé ✅)
 
-**Contexte** : `Message::contentTsvector` (FTS) et `MessageRepository::searchGlobal` / `searchInChannel` existent mais ne sont pas câblés au LLM. Aujourd'hui l'assistant ne peut répondre à « qu'est-ce qu'on a dit sur X ? ».
+**Contexte** : Implémenté via `SearchMessagesTool` (`src/Ai/Tool/SearchMessagesTool.php`). L'outil utilise PostgreSQL FTS (`contentTsvector`) pour chercher dans l'historique des canaux du workspace et fournir des résultats contextualisés au LLM.
 
-**Apport** : l'utilisateur pose une question factuelle et reçoit une synthèse sourcée depuis l'historique réel des canaux.
+**Apport** : l'utilisateur pose une question factuelle (« Qu'est-ce qu'on a dit sur X ? ») et reçoit une synthèse sourcée depuis l'historique réel des canaux.
 
-**Étapes** :
-1. Créer l'outil `search_messages(query, channelSlug?, workspaceId?, limit=10)` dans `src/Ai/Tool/`.
-2. Réutiliser `MessageRepository` (FTS `contentTsvector` de préférence, sinon `LOWER(content) LIKE`).
-3. Retourner les résultats formatés (auteur, date, extrait) à la boucle d'outils pour synthèse par le modèle.
-4. Ajouter les règles impératives dans `LlmQueryHandler::getDefaultHelpPrompts`.
-5. Tests unitaires (`SearchMessagesToolTest`) + cas « aucune correspondance » → message clair.
-
-**Effort** : faible (1–2 jours).
+**Étapes d'implémentation réalisées** :
+1. Outil `search_messages(query, channelSlug?, limit=10)` dans `src/Ai/Tool/SearchMessagesTool.php` avec interface `AiToolInterface`.
+2. Utilisation de `MessageRepository` avec FTS (`contentTsvector`).
+3. Intégration dans `ToolRunner` et `ToolRegistry`.
+4. Tests unitaires dans `tests/Unit/Ai/Tool/SearchMessagesToolTest.php`.
 
 ### 2. Tâches / Kanban intelligent
 

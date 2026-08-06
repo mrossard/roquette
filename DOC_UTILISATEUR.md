@@ -1025,66 +1025,74 @@ Cette fonctionnalité vous permet de retrouver facilement les discussions auxque
 
 ---
 
-## 24. Assistant virtuel et synthèse IA
+## 24. Assistant virtuel et outils IA
 
 ### 24.1 Présentation
 
-L'Assistant virtuel Roquette est propulsé par un modèle de langage (LLM) via Ollama. Il peut vous aider à :
+L'Assistant virtuel Roquette est propulsé par un modèle de langage (LLM) via Ollama et `symfony/ai-bundle`. Grâce à une boucle d'outils autonomes (`ToolRunner`), il peut exécuter des actions concrètes dans l'application et répondre à vos besoins contextuels :
 
-- Comprendre comment utiliser Roquette.
-- Résumer des canaux de discussion.
-- Répondre à des questions générales.
+- **Répondre à vos questions** sur le fonctionnement de l'application (RAG basé sur la documentation).
+- **Créer des sondages** interactifs dans vos canaux.
+- **Programmer des rappels** différés et vous notifier au moment voulu.
+- **Rechercher intelligemment des messages** dans l'historique de vos canaux.
+- **Résumer des canaux** de discussion (messages non lus ou récents).
 
-### 24.2 Commande `/help`
+### 24.2 Outils autonomes disponibles
+
+L'Assistant dispose d'outils (`AiToolInterface`) qu'il invoque de manière autonome en fonction de vos instructions :
+
+| Outil | Description | Exemples d'instructions |
+|---|---|---|
+| **Création de sondage** (`create_poll`) | Génère un sondage interactif (choix unique ou multiple) dans le canal spécifié. | *"Crée un sondage sur la date du sprint dans #general avec les options Lundi et Mardi"* |
+| **Programmation de rappel** (`schedule_reminder`) | Enregistre un rappel différé (relatif ou date exacte) et envoie une notification asynchrone dans le canal Assistant. | *"Rappelle-moi de vérifier la prod dans 2 heures"*, *"Rappelle-moi demain à 14h d'envoyer le rapport"* |
+| **Recherche de messages** (`search_messages`) | Effectue une recherche plein texte dans l'historique des messages d'un canal ou du workspace pour apporter une réponse synthétique et sourcée. | *"Qu'est-ce qui a été dit au sujet du problème d'export ?"*, *"Cherche ce qu'on a dit sur la migration dans #dev"* |
+| **Résumé de canal** (`summarize_channel`) | Analyse les messages non lus ou les 100 derniers messages d'un canal pour en produire une synthèse claire. | *"Fais-moi un résumé du canal #projet-x"*, *"Résume les derniers messages du canal général"* |
+
+### 24.3 Commande `/help`
 
 Depuis **n'importe quel canal**, saisissez :
 
 ```
 /help Comment configurer un webhook ?
 ```
+ou
+```
+/help Rappelle-moi de relancer la CI dans 30 minutes
+```
 
 Fonctionnement :
-1. L'Assistant analyse la question.
-2. Il recherche dans la documentation de l'application.
+1. L'Assistant analyse votre requête et détermine s'il faut consulter la documentation ou exécuter un outil.
+2. Si un outil est nécessaire (ex: rappel, recherche, sondage), il l'exécute automatiquement.
 3. La réponse s'affiche de manière privée (visible uniquement par vous) directement dans le flux du canal actif.
 
-### 24.3 Canal privé Assistant (🤖)
+### 24.4 Canal privé Assistant (🤖)
 
 Accédez au canal privé de l'Assistant depuis la barre latérale (section **Raccourcis**).
 
-Ce canal permet de :
-- **Poser des questions** sur l'utilisation de l'application.
-- **Demander un résumé de canal** : l'Assistant analyse les messages récents d'un canal et génère une synthèse.
+Ce canal vous permet d'échanger en continu avec l'IA pour :
+- Poser des questions ouvertes.
+- Programmer des rappels.
+- Lancer des recherches dans l'historique.
+- Obtenir des résumés de canaux.
 
-**Utilisation pour un résumé** :
-```
-Résume le canal général
-Fais-moi un résumé du canal #projet-x
-```
+### 24.5 Retour en temps réel (streaming)
 
-Fonctionnement du résumé :
-1. L'Assistant priorise les **messages non lus** du canal désigné.
-2. S'il n'y a aucun message non lu, il génère une synthèse thématique des **100 derniers messages**.
-3. Le résumé apparaît dans votre canal privé Assistant.
-
-### 24.4 Retour en temps réel (streaming)
-
-Lors d'une requête complexe, l'Assistant affiche des étapes de progression :
+Lors d'une requête complexe ou comportant des appels d'outils, l'Assistant affiche des étapes de progression :
 
 1. `Analyse de la demande... 🔍`
-2. `Recherche dans la documentation... ⏳` (pour `/help`)
-3. `Résumé du canal... ⏳` (pour les résumés)
-4. La réponse définitive s'affiche.
+2. `Recherche dans l'historique / Exécution de l'action... ⏳`
+3. `Génération de la réponse... ⏳`
+4. La réponse définitive ou le résultat de l'action s'affiche.
 
-### 24.5 Navigation pendant la génération
+### 24.6 Navigation pendant la génération
 
 Si vous changez de canal pendant que l'Assistant génère une réponse :
 
 - La réponse ne perturbe pas votre lecture actuelle.
 - Un badge de message non lu apparaît sur le lien `🤖 Assistant` dans la barre latérale.
-- La réponse est disponible quand vous revenez.
+- La réponse est disponible dès votre retour dans le canal Assistant.
 
-### 24.6 Configuration (administrateur)
+### 24.7 Configuration (administrateur)
 
 Le modèle LLM est configurable dans `.env.local` :
 

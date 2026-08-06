@@ -23,7 +23,7 @@ Application de messagerie et de collaboration en temps réel.
 - **Médiathèque** par canal (images, documents, médias)
 - **Aperçus de liens** (Open Graph) asynchrones
 - **Webhooks entrants** — publication automatisée par des services externes
-- **Assistant IA** — LLM via Ollama (`/help`, résumé de canaux, canal privé dédié)
+- **Assistant IA** — LLM via Ollama (`/help`, résumés de canaux, canal dédié 🤖, outils autonomes : création de sondages, programmation de rappels, recherche intelligente de messages)
 - **Recherche globale** (`Ctrl+K`) avec filtres avancés + recherche par canal
 - **Notifications** de bureau, mise en sourdine des canaux, mode "Occupé"
 - **Statut de présence** : en ligne, absent, occupé, hors ligne (détection d'inactivité)
@@ -108,6 +108,7 @@ Tests de charge dans `tests/Load/` (k6).
 | `src/Entity/` | Doctrine ORM |
 | `src/Repository/` | Repositories |
 | `src/Service/` | Logique métier (Mercure, fichiers, LLM, etc.) |
+| `src/Ai/` | Outils & infrastructure IA (`AiToolInterface`, `ToolRunner`, `ToolRegistry`, etc.) |
 | `src/MessageHandler/` | Messenger async (LLM, Mercure) |
 | `src/EventSubscriber/` | Event subscribers |
 | `src/Command/` | CLI commands |

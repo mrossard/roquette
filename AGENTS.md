@@ -65,6 +65,7 @@ symfony server:start -d   # or port 80 via compose.override.yaml
 | `src/Entity/`          | Doctrine ORM entities                                              |
 | `src/Repository/`      | Doctrine repositories                                              |
 | `src/Service/`         | Business logic (Mercure publisher, file upload, ClamAV, LLM, etc.) |
+| `src/Ai/`              | AI tools & infrastructure (`AiToolInterface`, `ToolRunner`, etc.)  |
 | `src/MessageHandler/`  | Messenger async handlers (LlmQuery)                                |
 | `src/EventSubscriber/` | Event subscribers                                                  |
 | `src/Twig/`            | Twig extensions                                                    |
