@@ -57,7 +57,7 @@ class SlashCommandHandler
      * @return Response|null a Response when the command was handled and should abort normal message sending,
      *                       null when the message should be sent normally (with $messageText possibly mutated)
      */
-    public function process(string &$messageText, Channel $channel, User $user): ?Response
+    public function process(string &$messageText, Channel $channel, User $user, ?int $workspaceId = null): ?Response
     {
         $trimmedMsg = trim($messageText);
         $parts = explode(' ', $trimmedMsg, 2);
@@ -69,11 +69,11 @@ class SlashCommandHandler
         }
 
         if ($command === 'help') {
-            return $this->handleHelp($args, $user, $channel);
+            return $this->handleHelp($args, $user, $channel, $workspaceId);
         }
 
         if ($command === 'poll') {
-            return $this->handlePoll($args, $user, $channel);
+            return $this->handlePoll($args, $user, $channel, $workspaceId);
         }
 
         if ($command === 'shrug') {
@@ -106,7 +106,7 @@ class SlashCommandHandler
         ]);
     }
 
-    private function handleHelp(string $args, User $user, Channel $channel): Response
+    private function handleHelp(string $args, User $user, Channel $channel, ?int $workspaceId = null): Response
     {
         $helpMessageId = 'help-' . uniqid();
 
@@ -122,7 +122,7 @@ class SlashCommandHandler
             ]);
         } else {
             $this->messageBus->dispatch(
-                new LlmQueryMessage($args, $user->getId(), $channel->getSlug(), $helpMessageId, 'help'),
+                new LlmQueryMessage($args, $user->getId(), $channel->getSlug(), $helpMessageId, 'help', workspaceId: $workspaceId),
             );
 
             $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
@@ -141,7 +141,7 @@ class SlashCommandHandler
         return new Response($formHtml . "\n" . $oobHtml);
     }
 
-    private function handlePoll(string $args, User $user, Channel $channel): Response
+    private function handlePoll(string $args, User $user, Channel $channel, ?int $workspaceId = null): Response
     {
         $helpMessageId = 'poll-' . uniqid();
 
@@ -162,7 +162,7 @@ class SlashCommandHandler
                 $args
             );
             $this->messageBus->dispatch(
-                new LlmQueryMessage($prompt, $user->getId(), $channel->getSlug(), $helpMessageId, 'sondage'),
+                new LlmQueryMessage($prompt, $user->getId(), $channel->getSlug(), $helpMessageId, 'sondage', workspaceId: $workspaceId),
             );
 
             $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [

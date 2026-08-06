@@ -39,6 +39,14 @@ services:
     App\:
         resource: '../src/'
 
+    _instanceof:
+        App\Ai\Tool\AiToolInterface:
+            tags: ['ai.tool']
+
+    App\Ai\ToolRegistry:
+        arguments:
+            $tools: !tagged_iterator ai.tool
+
     App\Service\Group\LdapGroupProvider:
         arguments:
             $config:

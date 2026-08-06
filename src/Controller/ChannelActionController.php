@@ -50,6 +50,7 @@ final class ChannelActionController extends AbstractController
     #[Route('/channels/{slug}/summarize', name: 'app_channel_summarize_modal', methods: ['POST'])]
     public function summarizeChannel(
         string $slug,
+        Request $request,
         ChannelRepository $channelRepository,
         MessageBusInterface $messageBus,
         string $mercureTopicPrefix,
@@ -61,12 +62,19 @@ final class ChannelActionController extends AbstractController
         $helpMessageId = 'summary-modal-stream-' . uniqid();
         $promptText = 'résume le canal ' . $channel->getName();
 
+        $session = $request->getSession();
+        $workspaceId = $session?->get('current_workspace_id');
+        if (!is_int($workspaceId)) {
+            $workspaceId = null;
+        }
+
         $messageBus->dispatch(new LlmQueryMessage(
             question: $promptText,
             userId: $currentUser->getId(),
             channelSlug: $channel->getSlug(),
             helpMessageId: $helpMessageId,
             intent: 'resumer',
+            workspaceId: $workspaceId,
         ));
 
         $topic = $mercureTopicPrefix . '/users/' . $currentUser->getUsername();

@@ -66,7 +66,12 @@ class MessagePublisher
 
         // Handle slash commands that return a direct Response
         if (($pollQuestion === null || $pollQuestion === '') && !$uploadedFile && str_starts_with(trim($messageText), '/')) {
-            $slashResponse = $this->slashCommandHandler->process($messageText, $channel, $currentUser);
+            $slashResponse = $this->slashCommandHandler->process(
+                $messageText,
+                $channel,
+                $currentUser,
+                $this->getCurrentWorkspaceId($request),
+            );
             if ($slashResponse !== null) {
                 return $slashResponse;
             }
@@ -83,6 +88,7 @@ class MessagePublisher
             pollOptions: $this->getPollOptions($request),
             pollAllowMultiple: (bool) $request->request->get('allow_multiple'),
             replyToId: ($replyTo = $request->request->get('replyTo')) ? (int) $replyTo : null,
+            workspaceId: $this->getCurrentWorkspaceId($request),
         );
 
         if (!$result->success) {
@@ -100,8 +106,19 @@ class MessagePublisher
         return $this->renderForm($channel);
     }
 
-    private function findChannel(string $slug, User $currentUser): Channel
+    private function getCurrentWorkspaceId(Request $request): ?int
     {
+        $session = $request->getSession();
+        if ($session === null || !$session->isStarted()) {
+            return null;
+        }
+
+        $workspaceId = $session->get('current_workspace_id');
+
+        return is_int($workspaceId) ? $workspaceId : null;
+    }
+
+    private function findChannel(string $slug, User $currentUser): Channel    {
         $channel = $this->channelRepository->findOneBy(['slug' => $slug]);
         if (!$channel) {
             throw new NotFoundHttpException($this->translator->trans('Canal non trouvé.'));

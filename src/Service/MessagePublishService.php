@@ -42,6 +42,7 @@ class MessagePublishService
         ?array $pollOptions = null,
         bool $pollAllowMultiple = false,
         ?int $replyToId = null,
+        ?int $workspaceId = null,
     ): PublishResult {
         $isPoll = $pollQuestion !== null && $pollQuestion !== '';
 
@@ -84,6 +85,20 @@ class MessagePublishService
             }
         }
 
+        $isDmWithRobot = $channel->getSlug() === 'dm-robot-roquette-' . $currentUser->getSlug();
+        $isRobotMentioned = str_contains(strtolower($messageText), '@robot');
+
+        if ($isRobotMentioned && !$isDmWithRobot) {
+            // When querying the robot in a channel, do NOT persist the message in DB nor broadcast it to everyone.
+            // Dispatch async LLM processing with the user's question, which will stream privately back to the user.
+            $helpMessageId = 'help-' . uniqid();
+            $this->messageBus->dispatch(
+                new LlmQueryMessage($messageText, $currentUser->getId(), $channel->getSlug(), $helpMessageId, workspaceId: $workspaceId),
+            );
+
+            return new PublishResult(success: true, channel: $channel, message: $message, renderedHtml: '');
+        }
+
         $this->entityManager->persist($message);
         $this->entityManager->flush();
 
@@ -106,9 +121,9 @@ class MessagePublishService
             $renderedHtml,
         );
 
-        if ($channel->getSlug() === 'dm-robot-roquette-' . $currentUser->getSlug() && !$isPoll && $file === null) {
+        if ($isDmWithRobot && !$isPoll && $file === null) {
             $this->messageBus->dispatch(
-                new LlmQueryMessage($messageText, $currentUser->getId(), $channel->getSlug(), 'help-' . uniqid()),
+                new LlmQueryMessage($messageText, $currentUser->getId(), $channel->getSlug(), 'help-' . uniqid(), workspaceId: $workspaceId),
             );
         }
 

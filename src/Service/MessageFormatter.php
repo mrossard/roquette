@@ -233,11 +233,13 @@ class MessageFormatter
             $html,
         );
 
-        // Gérer les références aux canaux #slug
+        // Gérer les références aux canaux #slug et #slug?jumpTo=123
         $html = preg_replace_callback(
-            '/#([a-zA-Z0-9_-]+)/',
+            '/#([a-zA-Z0-9_-]+)(?:\?jumpTo=(\d+))?/',
             function ($matches) {
                 $slug = $matches[1];
+                $jumpToId = $matches[2] ?? null;
+
                 if (!array_key_exists($slug, $this->channelSlugCache)) {
                     $this->channelSlugCache[$slug] = $this->channelRepository->findOneBy([
                         'slug' => $slug,
@@ -252,13 +254,14 @@ class MessageFormatter
                             return '#' . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8');
                         }
                     }
-                    $url = '/channels/' . $slug;
+                    $url = '/channels/' . $slug . ($jumpToId ? '?jumpTo=' . $jumpToId : '');
 
                     return (
                         '<a href="'
                         . $url
                         . '" class="channel-ref" hx-boost="false">#'
                         . htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8')
+                        . ($jumpToId ? ' (voir le message)' : '')
                         . '</a>'
                     );
                 }

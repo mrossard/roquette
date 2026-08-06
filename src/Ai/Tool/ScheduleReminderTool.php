@@ -4,39 +4,64 @@ declare(strict_types=1);
 
 namespace App\Ai\Tool;
 
+use App\Ai\ChannelResolver;
 use App\Entity\Reminder;
 use App\Message\SendReminderMessage;
 use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\AI\Platform\Tool\Attribute\AsTool;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
 
-#[AsTool(
-    name: 'schedule_reminder',
-    description: 'Programme un rappel contextuel pour un utilisateur dans un canal spécifique à une heure future (délai en minutes).'
-)]
-final readonly class ScheduleReminderTool
+final readonly class ScheduleReminderTool implements AiToolInterface
 {
     public function __construct(
         private EntityManagerInterface $em,
         private ChannelRepository $channelRepository,
         private UserRepository $userRepository,
         private MessageBusInterface $bus,
+        private ChannelResolver $channelResolver,
     ) {}
+
+    public function getName(): string
+    {
+        return 'schedule_reminder';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Programme un rappel contextuel pour un utilisateur dans un canal spécifique à une heure future (délai en minutes).';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getParametersSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'channelSlug' => ['type' => 'string', 'description' => "Le slug du canal où publier le rappel (ex: 'assistant' pour un rappel personnel)."],
+                'reminderText' => ['type' => 'string', 'description' => "Le texte exact du rappel : l'action ou le sujet brut, sans les mots 'rappel' ni le délai."],
+                'delayMinutes' => ['type' => 'integer', 'description' => 'Le délai en minutes avant de poster le rappel (minimum 1).'],
+            ],
+            'required' => ['channelSlug', 'reminderText', 'delayMinutes'],
+        ];
+    }
 
     /**
      * @param string $channelSlug Le slug du canal où publier le rappel (ex: "general").
      * @param string $reminderText Le texte exact du rappel à envoyer.
      * @param int $delayMinutes Le délai en minutes avant de poster le rappel (minimum 1 min).
      * @param int|null $authorUserId ID de l'utilisateur qui demande le rappel.
+     * @param int|null $workspaceId ID du workspace courant (optionnel).
      */
     public function __invoke(
         string $channelSlug,
         string $reminderText,
         int $delayMinutes,
         ?int $authorUserId = null,
+        ?int $workspaceId = null,
     ): string {
         $user = null;
         if ($authorUserId !== null) {
@@ -53,27 +78,13 @@ final readonly class ScheduleReminderTool
         }
 
         if (!$channel) {
-            $channel = $this->channelRepository->findOneBy(['slug' => strtolower($channelSlug)]);
+            $channel = $this->channelResolver->resolve($channelSlug, $workspaceId);
         }
 
         if (!$channel && $user) {
             // Fallback 1: Canal DM avec le robot roquette
             $dmSlug = 'dm-robot-roquette-' . $user->getSlug();
             $channel = $this->channelRepository->findOneBy(['slug' => $dmSlug]);
-        }
-
-        if (!$channel) {
-            $channels = $this->channelRepository->findAll();
-            foreach ($channels as $c) {
-                if (
-                    strtolower($c->getSlug()) === strtolower($channelSlug)
-                    || strtolower($c->getName()) === strtolower($channelSlug)
-                    || str_contains(strtolower($c->getName()), strtolower($channelSlug))
-                ) {
-                    $channel = $c;
-                    break;
-                }
-            }
         }
 
         if (!$channel) {

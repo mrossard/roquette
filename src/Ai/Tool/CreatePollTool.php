@@ -4,33 +4,55 @@ declare(strict_types=1);
 
 namespace App\Ai\Tool;
 
+use App\Ai\ChannelResolver;
 use App\Entity\Message;
 use App\Entity\Poll;
 use App\Entity\PollOption;
-use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
 use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
 use App\Service\MessageRenderer;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\AI\Platform\Tool\Attribute\AsTool;
 use Twig\Environment;
 
-#[AsTool(
-    name: 'create_poll',
-    description: 'Crée un sondage interactif dans un canal spécifié de l\'application Roquette.'
-)]
-final readonly class CreatePollTool
+final readonly class CreatePollTool implements AiToolInterface
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private ChannelRepository $channelRepository,
         private UserRepository $userRepository,
         private MercurePublisher $mercurePublisher,
         private MessageFormatter $messageFormatter,
         private Environment $twig,
         private MessageRenderer $messageRenderer,
+        private ChannelResolver $channelResolver,
     ) {}
+
+    public function getName(): string
+    {
+        return 'create_poll';
+    }
+
+    public function getDescription(): string
+    {
+        return "Crée un sondage interactif dans un canal spécifié de l'application Roquette.";
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getParametersSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'channelSlug' => ['type' => 'string', 'description' => "Le slug du canal où publier le sondage (ex: 'general')."],
+                'question' => ['type' => 'string', 'description' => 'La question du sondage, sans les choix de réponse.'],
+                'options' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'La liste des choix possibles (au moins 2).'],
+                'allowMultiple' => ['type' => 'boolean', 'description' => "Indique si l'utilisateur peut sélectionner plusieurs choix."],
+            ],
+            'required' => ['channelSlug', 'question', 'options'],
+        ];
+    }
 
     /**
      * @param string $channelSlug Le slug du canal où publier le sondage (ex: "general").
@@ -38,6 +60,7 @@ final readonly class CreatePollTool
      * @param array<string> $options La liste des choix possibles (ex: ["Choix A", "Choix B"]).
      * @param bool $allowMultiple Indique si l'utilisateur peut sélectionner plusieurs choix.
      * @param int|null $authorUserId ID de l'auteur du sondage (optionnel).
+     * @param int|null $workspaceId ID du workspace courant (optionnel).
      */
     public function __invoke(
         string $channelSlug,
@@ -45,21 +68,9 @@ final readonly class CreatePollTool
         array $options,
         bool $allowMultiple = false,
         ?int $authorUserId = null,
+        ?int $workspaceId = null,
     ): string {
-        $channel = $this->channelRepository->findOneBy(['slug' => strtolower($channelSlug)]);
-        if (!$channel) {
-            $channels = $this->channelRepository->findAll();
-            foreach ($channels as $c) {
-                if (
-                    strtolower($c->getSlug()) === strtolower($channelSlug)
-                    || strtolower($c->getName()) === strtolower($channelSlug)
-                    || str_contains(strtolower($c->getName()), strtolower($channelSlug))
-                ) {
-                    $channel = $c;
-                    break;
-                }
-            }
-        }
+        $channel = $this->channelResolver->resolve($channelSlug, $workspaceId);
 
         if (!$channel) {
             return sprintf("Impossible de créer le sondage : le canal '%s' n'existe pas.", $channelSlug);

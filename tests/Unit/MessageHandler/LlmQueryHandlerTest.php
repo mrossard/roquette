@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\MessageHandler;
 
+use App\Ai\ChannelResolver;
 use App\Ai\Tool\ScheduleReminderTool;
+use App\Ai\ToolRegistry;
+use App\Ai\ToolRunner;
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
 use App\MessageHandler\LlmQueryHandler;
@@ -13,6 +16,9 @@ use App\Service\LlmService;
 use App\Service\MessageFormatter;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
+use Symfony\AI\Platform\Result\Stream\Delta\TextDelta;
+use Symfony\AI\Platform\Result\Stream\Delta\ToolCallComplete;
+use Symfony\AI\Platform\Result\ToolCall;
 use Symfony\AI\Store\RetrieverInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Messenger\Envelope;
@@ -60,19 +66,24 @@ class LlmQueryHandlerTest extends TestCase
         $retriever = $this->createStub(RetrieverInterface::class);
 
         $handler = new LlmQueryHandler(
-            $userRepository,
-            $channelRepository,
-            $messageRepository,
-            $userChannelReadRepository,
-            $llmService,
-            $messageFormatter,
-            $hub,
-            $parameterBag,
-            $entityManager,
-            'roquette',
-            $logger,
-            $twig,
-            $retriever,
+            userRepository: $userRepository,
+            channelRepository: $channelRepository,
+            messageRepository: $messageRepository,
+            userChannelReadRepository: $userChannelReadRepository,
+            llmService: $llmService,
+            messageFormatter: $messageFormatter,
+            hub: $hub,
+            parameterBag: $parameterBag,
+            entityManager: $entityManager,
+            mercureTopicPrefix: 'roquette',
+            logger: $logger,
+            twig: $twig,
+            retriever: $retriever,
+            toolRegistry: new ToolRegistry([]),
+            toolRunner: new ToolRunner($llmService, new ToolRegistry([])),
+            workspaceRepository: $this->createStub(\App\Repository\WorkspaceRepository::class),
+            toolsEnabled: false,
+            memoryMessages: 10,
         );
 
         $message = new LlmQueryMessage('How does it work?', 42, 'general', 'help-123');
@@ -145,20 +156,25 @@ class LlmQueryHandlerTest extends TestCase
         $retriever = $this->createStub(RetrieverInterface::class);
 
         $handler = new LlmQueryHandler(
-            $userRepository,
-            $channelRepository,
-            $messageRepository,
-            $userChannelReadRepository,
-            $llmService,
-            $messageFormatter,
-            $hub,
-            $parameterBag,
-            $entityManager,
-            'roquette',
-            $logger,
-            $twig,
-            $retriever,
-            3, // Limit to 3 messages
+            userRepository: $userRepository,
+            channelRepository: $channelRepository,
+            messageRepository: $messageRepository,
+            userChannelReadRepository: $userChannelReadRepository,
+            llmService: $llmService,
+            messageFormatter: $messageFormatter,
+            hub: $hub,
+            parameterBag: $parameterBag,
+            entityManager: $entityManager,
+            mercureTopicPrefix: 'roquette',
+            logger: $logger,
+            twig: $twig,
+            retriever: $retriever,
+            toolRegistry: new ToolRegistry([]),
+            toolRunner: new ToolRunner($llmService, new ToolRegistry([])),
+            workspaceRepository: $this->createStub(\App\Repository\WorkspaceRepository::class),
+            maxSummaryMessages: 3,
+            toolsEnabled: false,
+            memoryMessages: 10,
         );
 
         $message = new LlmQueryMessage('résume le canal général', 42, 'dm-robot-roquette-1', 'help-123');
@@ -254,27 +270,32 @@ class LlmQueryHandlerTest extends TestCase
         $retriever = $this->createStub(RetrieverInterface::class);
 
         $handler = new LlmQueryHandler(
-            $userRepository,
-            $channelRepository,
-            $messageRepository,
-            $userChannelReadRepository,
-            $llmService,
-            $messageFormatter,
-            $hub,
-            $parameterBag,
-            $entityManager,
-            'roquette',
-            $logger,
-            $twig,
-            $retriever,
-            10, // Large limit to avoid batching in this test
+            userRepository: $userRepository,
+            channelRepository: $channelRepository,
+            messageRepository: $messageRepository,
+            userChannelReadRepository: $userChannelReadRepository,
+            llmService: $llmService,
+            messageFormatter: $messageFormatter,
+            hub: $hub,
+            parameterBag: $parameterBag,
+            entityManager: $entityManager,
+            mercureTopicPrefix: 'roquette',
+            logger: $logger,
+            twig: $twig,
+            retriever: $retriever,
+            toolRegistry: new ToolRegistry([]),
+            toolRunner: new ToolRunner($llmService, new ToolRegistry([])),
+            workspaceRepository: $this->createStub(\App\Repository\WorkspaceRepository::class),
+            maxSummaryMessages: 10,
+            toolsEnabled: false,
+            memoryMessages: 10,
         );
 
         $message = new LlmQueryMessage('résume le canal général', 42, 'dm-robot-roquette-1', 'help-123');
         $handler($message);
     }
 
-    public function testReminderToolCallWithParametersFormat(): void
+    public function testReminderToolCallIsExecutedThroughNativeToolLoop(): void
     {
         $userRepository = $this->createMock(UserRepository::class);
         $llmService = $this->createMock(LlmService::class);
@@ -287,27 +308,8 @@ class LlmQueryHandlerTest extends TestCase
         $user->setSlug('test-user');
 
         $userRepository->method('find')->willReturn($user);
-        $userRepository->method('findOneBy')->willReturn(null);
 
         $parameterBag->method('get')->willReturn('/tmp');
-
-        // The model answers with the "tool/action/parameters" JSON format
-        $toolJson = '{"tool":"schedule_reminder","action":"schedule_reminder","parameters":{"channelSlug":"assistant","reminderText":"Aller manger","delayMinutes":51}}';
-        $llmService
-            ->expects($this->once())
-            ->method('generateTextStream')
-            ->willReturn((static function () use ($toolJson) {
-                yield $toolJson;
-            })());
-
-        $formattedTexts = [];
-        $messageFormatter->method('format')->willReturnCallback(static function ($text) use (&$formattedTexts) {
-            $formattedTexts[] = $text;
-
-            return '<p>' . $text . '</p>';
-        });
-
-        $hub->expects($this->atLeastOnce())->method('publish')->with(static::isInstanceOf(Update::class));
 
         $channel = new \App\Entity\Channel();
         $channel->setName('Assistant');
@@ -320,22 +322,64 @@ class LlmQueryHandlerTest extends TestCase
         });
 
         $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
-        $persisted = null;
-        $entityManager->method('persist')->willReturnCallback(static function ($entity) use (&$persisted) {
-            $persisted = $entity;
+        $persistedReminders = [];
+        $entityManager->method('persist')->willReturnCallback(static function ($entity) use (&$persistedReminders) {
+            if ($entity instanceof \App\Entity\Reminder) {
+                $persistedReminders[] = $entity;
+            }
         });
-        $entityManager->method('flush')->willReturnCallback(static function () use (&$persisted) {
-            if ($persisted instanceof \App\Entity\Reminder) {
+        $entityManager->method('flush')->willReturnCallback(static function () use (&$persistedReminders) {
+            if ([] !== $persistedReminders) {
                 $ref = new \ReflectionProperty(\App\Entity\Reminder::class, 'id');
-                $ref->setValue($persisted, 1);
+                $ref->setValue($persistedReminders[0], 1);
             }
         });
 
         $bus = $this->createMock(MessageBusInterface::class);
-        $bus->method('dispatch')->willReturnCallback(static fn(object $message, array $stamps = []) => new Envelope($message));
+        $dispatched = [];
+        $bus->method('dispatch')->willReturnCallback(static function (object $message, array $stamps = []) use (&$dispatched) {
+            $dispatched[] = $message;
 
-        $tool = new ScheduleReminderTool($entityManager, $channelRepository, $userRepository, $bus);
-        $llmService->method('getScheduleReminderTool')->willReturn($tool);
+            return new Envelope($message);
+        });
+
+        $tool = new ScheduleReminderTool(
+            $entityManager,
+            $channelRepository,
+            $userRepository,
+            $bus,
+            new ChannelResolver($channelRepository, $this->createStub(\App\Repository\WorkspaceRepository::class)),
+        );
+        $toolRegistry = new ToolRegistry([$tool]);
+        $toolRunner = new ToolRunner($llmService, $toolRegistry);
+
+        // First stream: the model requests the schedule_reminder tool.
+        $firstStream = (static function () {
+            yield new ToolCallComplete([new ToolCall('1', 'schedule_reminder', [
+                'channelSlug' => 'assistant',
+                'reminderText' => 'Aller manger',
+                'delayMinutes' => 51,
+            ])]);
+        })();
+
+        // Second stream: the model confirms the reminder once the tool has run.
+        $secondStream = (static function () {
+            yield new TextDelta("C'est noté ! Votre rappel est programmé.");
+        })();
+
+        $llmService
+            ->expects($this->exactly(2))
+            ->method('generateStreamWithTools')
+            ->willReturnOnConsecutiveCalls($firstStream, $secondStream);
+
+        $formattedTexts = [];
+        $messageFormatter->method('format')->willReturnCallback(static function ($text) use (&$formattedTexts) {
+            $formattedTexts[] = $text;
+
+            return '<p>' . $text . '</p>';
+        });
+
+        $hub->expects($this->atLeastOnce())->method('publish')->with(static::isInstanceOf(Update::class));
 
         $messageRepository = $this->createMock(\App\Repository\MessageRepository::class);
         $userChannelReadRepository = $this->createMock(\App\Repository\UserChannelReadRepository::class);
@@ -345,26 +389,33 @@ class LlmQueryHandlerTest extends TestCase
         $retriever = $this->createStub(RetrieverInterface::class);
 
         $handler = new LlmQueryHandler(
-            $userRepository,
-            $channelRepository,
-            $messageRepository,
-            $userChannelReadRepository,
-            $llmService,
-            $messageFormatter,
-            $hub,
-            $parameterBag,
-            $entityManager,
-            'roquette',
-            $logger,
-            $twig,
-            $retriever,
+            userRepository: $userRepository,
+            channelRepository: $channelRepository,
+            messageRepository: $messageRepository,
+            userChannelReadRepository: $userChannelReadRepository,
+            llmService: $llmService,
+            messageFormatter: $messageFormatter,
+            hub: $hub,
+            parameterBag: $parameterBag,
+            entityManager: $entityManager,
+            mercureTopicPrefix: 'roquette',
+            logger: $logger,
+            twig: $twig,
+            retriever: $retriever,
+            toolRegistry: $toolRegistry,
+            toolRunner: $toolRunner,
+            workspaceRepository: $this->createStub(\App\Repository\WorkspaceRepository::class),
+            toolsEnabled: true,
+            memoryMessages: 10,
         );
 
         $message = new LlmQueryMessage('rappelle moi d\'aller manger à 15h22', 42, 'general', 'help-123');
         $handler($message);
 
-        $this->assertNotEmpty($formattedTexts);
-        $this->assertStringContainsString('C\'est noté ! J\'ai programmé votre rappel', implode(' ', $formattedTexts));
-        $this->assertStringContainsString('Aller manger', implode(' ', $formattedTexts));
+        $this->assertCount(1, $persistedReminders);
+        $this->assertSame('Aller manger', $persistedReminders[0]->getMessage());
+        $this->assertCount(1, $dispatched);
+        $this->assertInstanceOf(\App\Message\SendReminderMessage::class, $dispatched[0]);
+        $this->assertStringContainsString('Votre rappel est programmé', implode(' ', $formattedTexts));
     }
 }

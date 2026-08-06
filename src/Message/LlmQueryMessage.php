@@ -12,6 +12,7 @@ final class LlmQueryMessage
         private readonly string $channelSlug,
         private readonly string $helpMessageId,
         private readonly ?string $intent = null,
+        private readonly ?int $workspaceId = null,
     ) {}
 
     public function getQuestion(): string
@@ -37,5 +38,10 @@ final class LlmQueryMessage
     public function getIntent(): ?string
     {
         return $this->intent;
+    }
+
+    public function getWorkspaceId(): ?int
+    {
+        return $this->workspaceId;
     }
 }

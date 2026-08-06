@@ -9,12 +9,9 @@ use Symfony\AI\Platform\Message\MessageBag;
 use Symfony\AI\Platform\Message\SystemMessage;
 use Symfony\AI\Platform\Message\UserMessage;
 use Symfony\AI\Platform\PlatformInterface;
+use Symfony\AI\Platform\Result\Stream\Delta\TextDelta;
+use Symfony\AI\Platform\Result\Stream\Delta\ToolCallComplete;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-
-use App\Ai\Tool\CreatePollTool;
-use App\Ai\Tool\ScheduleReminderTool;
-use Symfony\AI\Platform\Tool\ExecutionReference;
-use Symfony\AI\Platform\Tool\Tool;
 
 /**
  * Service dedicated to querying an LLM using the Symfony AI components.
@@ -24,19 +21,12 @@ readonly class LlmService
     public function __construct(
         #[Autowire(service: 'ai.platform.generic.cloud')]
         private PlatformInterface $platform,
-        private CreatePollTool $createPollTool,
-        private ScheduleReminderTool $scheduleReminderTool,
         #[Autowire(env: 'LLM_MODEL')]
         private string $model,
         #[Autowire(env: 'LLM_SYSTEM_PROMPT')]
         private ?string $defaultSystemPrompt = null,
         private ?\Psr\Log\LoggerInterface $logger = null,
     ) {}
-
-    public function getScheduleReminderTool(): ScheduleReminderTool
-    {
-        return $this->scheduleReminderTool;
-    }
 
     /**
      * Generates a text response from a user prompt.
@@ -57,7 +47,7 @@ readonly class LlmService
     }
 
     /**
-     * Generates a text stream response from a user prompt.
+     * Streams the text response from a user prompt.
      *
      * @param string $prompt The user prompt to send to the model.
      * @param string|null $systemPrompt Optional override for the system prompt.
@@ -65,6 +55,35 @@ readonly class LlmService
      * @return \Generator<string> Yields each text chunk.
      */
     public function generateTextStream(string $prompt, ?string $systemPrompt = null, array $options = []): \Generator
+    {
+        foreach ($this->generateStream($prompt, $systemPrompt, $options) as $delta) {
+            if ($delta instanceof TextDelta) {
+                yield $delta->getText();
+            }
+        }
+    }
+
+    /**
+     * Streams an LLM invocation that may request tool calls.
+     *
+     * @param string $prompt The user prompt to send to the model.
+     * @param string|null $systemPrompt Optional override for the system prompt.
+     * @param list<array{type: string, function: array<string, mixed>}> $tools Normalized OpenAI tool definitions.
+     * @param array<string, mixed> $options Platform-specific options.
+     * @return \Generator<TextDelta|ToolCallComplete> Yields text deltas and, once complete, the requested tool calls.
+     */
+    public function generateStreamWithTools(string $prompt, ?string $systemPrompt, array $tools, array $options = []): \Generator
+    {
+        $options['tools'] = $tools;
+
+        yield from $this->generateStream($prompt, $systemPrompt, $options);
+    }
+
+    /**
+     * @param array<string, mixed> $options Platform-specific options.
+     * @return \Generator<TextDelta|ToolCallComplete>
+     */
+    private function generateStream(string $prompt, ?string $systemPrompt = null, array $options = []): \Generator
     {
         $messages = [];
 
@@ -77,10 +96,16 @@ readonly class LlmService
 
         $messageBag = new MessageBag(...$messages);
 
-        unset($options['stream']);
+        $options['stream'] = true;
+
         $result = $this->platform->invoke($this->model, $messageBag, $options);
-        $this->logger?->info('LlmService invoke called (non-stream)', ['model' => $this->model, 'resultClass' => get_class($result)]);
-        yield $result->asText();
+        $this->logger?->info('LlmService invoke called (stream)', ['model' => $this->model]);
+
+        foreach ($result->asStream() as $delta) {
+            if ($delta instanceof TextDelta || $delta instanceof ToolCallComplete) {
+                yield $delta;
+            }
+        }
     }
 
     /**
@@ -98,7 +123,7 @@ readonly class LlmService
         $resultStream = $this->platform->invoke($this->model, $messageBag, $options)->asStream();
         $text = '';
         foreach ($resultStream as $delta) {
-            if (!$delta instanceof \Symfony\AI\Platform\Result\Stream\Delta\TextDelta) {
+            if (!$delta instanceof TextDelta) {
                 continue;
             }
 

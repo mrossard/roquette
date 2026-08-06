@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Ai\ToolRegistry;
+use App\Ai\ToolRunner;
 use App\Message\LlmQueryMessage;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
@@ -37,8 +39,15 @@ final readonly class LlmQueryHandler
         private LoggerInterface $logger,
         private \Twig\Environment $twig,
         private RetrieverInterface $retriever,
+        private ToolRegistry $toolRegistry,
+        private ToolRunner $toolRunner,
+        private \App\Repository\WorkspaceRepository $workspaceRepository,
         #[Autowire(env: 'int:LLM_MAX_SUMMARY_MESSAGES')]
         private int $maxSummaryMessages = 100,
+        #[Autowire(env: 'bool:LLM_TOOLS_ENABLED')]
+        private bool $toolsEnabled = true,
+        #[Autowire(env: 'int:LLM_MEMORY_MESSAGES')]
+        private int $memoryMessages = 10,
     ) {}
 
     public function __invoke(LlmQueryMessage $message): void
@@ -57,7 +66,22 @@ final readonly class LlmQueryHandler
 
         $channels = $this->channelRepository->findAllForUser($user);
 
-        [$prompt, $systemPrompt] = $this->getDefaultHelpPrompts($message->getQuestion(), $channels);
+        $workspace = null;
+        if ($message->getWorkspaceId() !== null) {
+            $workspace = $this->workspaceRepository->find($message->getWorkspaceId());
+        }
+
+        $currentChannel = $this->channelRepository->findOneBy(['slug' => $channelSlug]);
+        if (!$currentChannel) {
+            foreach ($channels as $c) {
+                if (strtolower($c->getSlug()) === strtolower($channelSlug) || strtolower($c->getName()) === strtolower($channelSlug)) {
+                    $currentChannel = $c;
+                    break;
+                }
+            }
+        }
+
+        [$prompt, $systemPrompt] = $this->getDefaultHelpPrompts($message->getQuestion(), $channels, $workspace, $currentChannel);
 
         $intent = $message->getIntent() ?? 'help';
         $channelName = null;
@@ -65,7 +89,7 @@ final readonly class LlmQueryHandler
 
         try {
             if ($message->getIntent() === null && str_starts_with($channelSlug, 'dm-robot-roquette-')) {
-                $classification = $this->classifyIntent($message->getQuestion(), $channels, $channelSlug);
+                $classification = $this->classifyIntent($message->getQuestion(), $channels, $channelSlug, $workspace);
                 $this->logger->info('Classification result:', ['classification' => $classification]);
                 $intent = $classification['intent'] ?? 'help';
                 $targetChannelSlug = $classification['channelSlug'] ?? null;
@@ -168,8 +192,12 @@ final readonly class LlmQueryHandler
                     . '- Ne fais pas une simple juxtaposition des résumés. Fais-en une synthèse globale.';
             }
 
+            if ($intent === 'help') {
+                $prompt = $this->addConversationContext($prompt, $channelSlug, $message->getQuestion());
+            }
+
             $accumulatedText = '';
-            $generator = $this->llmService->generateTextStream($prompt, $systemPrompt);
+            $generator = $this->createGenerator($prompt, $systemPrompt, $user, $message, $personalTopic);
 
             $chunkCount = 0;
             foreach ($generator as $chunk) {
@@ -183,26 +211,6 @@ final readonly class LlmQueryHandler
             }
 
             $formattedHtml = $this->messageFormatter->format($prefix . $accumulatedText);
-
-            // If the model returned a JSON tool call instead of plain text, parse and execute the tool
-            $trimmedText = trim($accumulatedText);
-            if (str_starts_with($trimmedText, '```')) {
-                $trimmedText = preg_replace('/^```(?:json)?|```$/', '', $trimmedText);
-                $trimmedText = trim($trimmedText);
-            }
-            $toolData = json_decode($trimmedText, true);
-            if (is_array($toolData)) {
-                $args = $this->extractToolArguments($toolData);
-                if (is_array($args) && (isset($args['reminderText']) || isset($args['delayMinutes']))) {
-                    $toolResult = ($this->llmService->getScheduleReminderTool())(
-                        channelSlug: $args['channelSlug'] ?? 'assistant',
-                        reminderText: $args['reminderText'] ?? 'Rappel',
-                        delayMinutes: (int) ($args['delayMinutes'] ?? 5),
-                        authorUserId: $user->getId(),
-                    );
-                    $formattedHtml = $this->messageFormatter->format($toolResult);
-                }
-            }
 
             $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $formattedHtml, $channelSlug);
 
@@ -228,23 +236,89 @@ final readonly class LlmQueryHandler
         }
     }
 
-    private function extractToolArguments(array $toolData): ?array
-    {
-        foreach (['parameters', 'arguments', 'action', 'input'] as $key) {
-            if (isset($toolData[$key]) && is_array($toolData[$key])) {
-                return $toolData[$key];
-            }
+    private function createGenerator(
+        string $prompt,
+        string $systemPrompt,
+        \App\Entity\User $user,
+        LlmQueryMessage $message,
+        string $personalTopic,
+    ): \Generator {
+        if (!$this->toolsEnabled) {
+            return $this->llmService->generateTextStream($prompt, $systemPrompt);
         }
 
-        return $toolData;
+        $tools = $this->toolRegistry->getOpenAiTools();
+        if ([] === $tools) {
+            return $this->llmService->generateTextStream($prompt, $systemPrompt);
+        }
+
+        return $this->toolRunner->streamResponse(
+            $prompt,
+            $systemPrompt,
+            $tools,
+            $user->getId(),
+            $message->getWorkspaceId(),
+            function (string $toolName) use ($personalTopic, $message): void {
+                $this->publishUpdate(
+                    $personalTopic,
+                    $message->getHelpMessageId(),
+                    $this->messageFormatter->format(sprintf("Exécution de l'outil **%s**... ⏳", $toolName)),
+                    $message->getChannelSlug(),
+                );
+            },
+        );
+    }
+
+    private function addConversationContext(string $prompt, string $channelSlug, string $question): string
+    {
+        if ($this->memoryMessages <= 0) {
+            return $prompt;
+        }
+
+        $channel = $this->channelRepository->findOneBy(['slug' => $channelSlug]);
+        if (!$channel) {
+            return $prompt;
+        }
+
+        $recent = $this->messageRepository->findLatestInChannel($channel, $this->memoryMessages + 1);
+        if ([] === $recent) {
+            return $prompt;
+        }
+
+        // findLatestInChannel returns messages DESC: reverse to chronological and skip the last
+        // one (the message that triggered this very request).
+        $recent = array_reverse($recent);
+        $history = [];
+        foreach ($recent as $msg) {
+            $content = trim($msg->getContent() ?? '');
+            if ($content === '' || $msg->isPoll() || $content === trim($question)) {
+                continue;
+            }
+
+            $author = $msg->getAuthor()?->getUsername() ?? 'robot-roquette';
+            $history[] = sprintf('%s: %s', $author, mb_substr($content, 0, 500));
+        }
+
+        if ([] === $history) {
+            return $prompt;
+        }
+
+        return "Historique de la conversation (messages précédents) :\n"
+            . implode("\n", $history)
+            . "\n\n---\n\n"
+            . $prompt;
     }
 
     /**
      * @param \App\Entity\Channel[] $channels
      * @return array{0: string, 1: string}
      */
-    private function getDefaultHelpPrompts(string $question, array $channels): array
-    {
+    private function getDefaultHelpPrompts(
+        string $question,
+        array $channels,
+        ?\App\Entity\Workspace $currentWorkspace = null,
+        ?\App\Entity\Channel $currentChannel = null,
+    ): array {
         $chunks = [];
         try {
             $retrieved = $this->retriever->retrieve($question, ['limit' => 5]);
@@ -271,20 +345,49 @@ final readonly class LlmQueryHandler
         }
 
         $channelList = array_map(
-            fn($c) => sprintf('- Nom: "%s", Slug: "%s"', $c->getName(), $c->getSlug()),
+            fn($c) => sprintf(
+                '- Nom: "%s", Slug: "%s", Workspace: "%s"',
+                $c->getName(),
+                $c->getSlug(),
+                $c->getWorkspace()?->getName() ?? 'Hors workspace',
+            ),
             $channels
         );
+
+        $currentWorkspaceName = $currentWorkspace?->getName();
+        $currentWorkspaceHint = $currentWorkspaceName !== null
+            ? "Tu es actuellement dans le workspace \"{$currentWorkspaceName}\". "
+            : '';
+
+        $currentChannelHint = $currentChannel !== null
+            ? "CANAL ACTUEL : L'utilisateur est actuellement dans le canal \"{$currentChannel->getName()}\" (Slug: \"{$currentChannel->getSlug()}\"). Quand il fait référence à \"ce canal\", \"ici\" ou ne précise pas de canal, cible le canal \"{$currentChannel->getSlug()}\".\n"
+            : '';
 
         $now = new \DateTimeImmutable();
 
         $systemPrompt =
-            "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette.\n"
+            "Tu es 'Assistant Roquette', un assistant virtuel d'aide dédié EXCLUSIVEMENT à l'application Roquette.\n"
             . "La date et l'heure actuelles sont : " . $now->format('d/m/Y H:i') . ".\n"
+            . $currentChannelHint
+            . "CONSIGNES STRICTES DE PÉRIMÈTRE ET DE SÉCURITÉ :\n"
+            . "- Tu réponds UNIQUEMENT et EXCLUSIVEMENT aux questions à l'aide des outils (Tools) disponibles ou de la documentation utilisateur fournie ci-dessous.\n"
+            . "- Si la demande concerne une action ou une donnée de l'application (créer un sondage, programmer un rappel, résumer un canal, chercher un message/fichier), tu DOIS appeler l'outil (Tool) correspondant.\n"
+            . "- Si la question concerne l'utilisation ou les fonctionnalités de Roquette, réponds en te basant STRICTEMENT sur la documentation utilisateur ci-dessous.\n"
+            . "- Si une demande ne peut pas être traitée par l'un des outils disponibles NI par la documentation utilisateur (ex: questions de culture générale, code hors sujet, demandes sans rapport avec Roquette), tu DOIS poliment refuser d'y répondre en précisant que tu es uniquement formé pour aider sur l'application Roquette et exécuter ses fonctionnalités.\n\n"
             . "Tu peux créer des sondages interactifs dans un canal en appelant l'outil 'create_poll'.\n"
-            . "Liste des canaux existants (utilise TOUJOURS le Slug exact pour le paramètre channelSlug) :\n"
+            . "Tu peux programmer des rappels en appelant l'outil 'schedule_reminder'.\n"
+            . "Tu peux résumer les échanges d'un canal en appelant l'outil 'summarize_channel'.\n"
+            . "Tu peux rechercher des messages/fichiers en appelant l'outil 'search_messages'.\n"
+            . "Liste des canaux existants :\n"
             . implode("\n", $channelList) . "\n\n"
+            . $currentWorkspaceHint
+            . "DIRECTIVES STRICTES SUR LES OUTILS :\n"
+            . "- Pour utiliser un outil ('schedule_reminder', 'create_poll', 'summarize_channel', 'search_messages'), tu DOIS EXCLUSIVEMENT effectuer un appel d'outil natif (tool call / function call).\n"
+            . "- Ne génère JAMAIS de JSON brut, d'objet JSON, ni de bloc de code (ex: ```json ... ``` ou {\"tool\": ...}) dans ton message texte pour appeler un outil.\n"
+            . "- N'écris AUCUN texte d'accompagnement ni format JSON dans ta réponse lorsque tu déclenches un outil.\n\n"
+            . "POUR TOUS LES OUTILS, le paramètre 'channelSlug' doit TOUJOURS être le Slug exact d'un canal de la liste ci-dessus. "
+            . "Quand l'utilisateur cite un canal par son NOM sans préciser de workspace, résous-le dans le workspace courant.\n\n"
             . "RÈGLES IMPÉRATIVES POUR 'create_poll' :\n"
-            . "- Le paramètre 'channelSlug' doit correspondre au Slug ou au Nom d'un canal existant dans la liste ci-dessus.\n"
             . "- Ne mets JAMAIS les choix de réponse dans le champ 'question'. La 'question' doit être uniquement l'intitulé (ex: 'Quel est votre choix ?').\n"
             . "- Extraie TOUJOURS chaque alternative ou choix de réponse sous forme d'éléments séparés dans le tableau 'options' (ex: pour 'A, B ou C? Voire D?', extrais options: ['A', 'B', 'C', 'D']).\n"
             . "- Si l'utilisateur mentionne 'plusieurs choix', 'choix multiples', 'plusieurs réponses' ou équivalent, passe impérativement 'allowMultiple' à true (sinon false).\n"
@@ -293,16 +396,7 @@ final readonly class LlmQueryHandler
             . "- Dans 'reminderText', extrais EXCLUSIVEMENT l'action ou le sujet brut de la tâche (ex: pour 'Rappelle-moi de finir mon verre dans 2 minutes', extrais 'Finir mon verre').\n"
             . "- Ne mets JAMAIS les mots 'Rappel', 'Rappelle-moi', ni le délai/durée (ex: 'dans 2 minutes') dans le champ 'reminderText'.\n"
             . "- Calcule 'delayMinutes' uniquement à partir de l'heure courante fournie ci-dessus : si l'utilisateur donne une heure absolue (ex: 'à 11h10'), fais la différence entre cette heure et l'heure actuelle ; s'il donne un délai (ex: 'dans 2 minutes'), utilise ce délai tel quel.\n"
-            . "- Pour un rappel personnel, utilise 'channelSlug': 'assistant'.\n"
-            . "- Réponds STRICTEMENT avec le JSON exact suivant (sans texte avant/après, sans balises ```json ni bloc de code) :\n"
-            . "{\n"
-            . "  \"tool\": \"schedule_reminder\",\n"
-            . "  \"action\": {\n"
-            . "    \"channelSlug\": \"assistant\",\n"
-            . "    \"reminderText\": \"<action ou sujet brut>\",\n"
-            . "    \"delayMinutes\": <nombre entier de minutes>\n"
-            . "  }\n"
-            . "}\n\n"
+            . "- Pour un rappel personnel, utilise 'channelSlug': 'assistant'.\n\n"
             . "Documentation utilisateur :\n"
             . $context;
 
@@ -312,7 +406,7 @@ final readonly class LlmQueryHandler
     /**
      * @param \App\Entity\Channel[] $channels
      */
-    private function classifyIntent(string $question, array $channels, string $currentChannelSlug): ?array
+    private function classifyIntent(string $question, array $channels, string $currentChannelSlug, ?\App\Entity\Workspace $currentWorkspace = null): ?array
     {
         $accessibleChannels = [];
         foreach ($channels as $c) {
@@ -324,11 +418,13 @@ final readonly class LlmQueryHandler
                 'name' => $c->getName(),
                 'slug' => $c->getSlug(),
                 'description' => $c->getDescription(),
+                'workspace' => $c->getWorkspace()?->getName() ?? 'Hors workspace',
             ];
         }
 
         $promptData = [
             'message' => $question,
+            'currentWorkspace' => $currentWorkspace?->getName(),
             'channels' => $accessibleChannels,
         ];
         $classificationPrompt = json_encode($promptData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -337,8 +433,10 @@ final readonly class LlmQueryHandler
             "Tu es un outil d'analyse d'intention d'utilisateur pour l'application Roquette. "
             . "L'entrée qui te sera fournie sous forme de prompt est un objet JSON contenant :\n"
             . "- \"message\" : Le message ou la question écrite par l'utilisateur.\n"
-            . "- \"channels\" : La liste des canaux auxquels l'utilisateur a accès, chaque canal ayant un \"name\", \"slug\", et \"description\".\n\n"
-            . "Ton rôle unique est de classifier le message pour déterminer l'intention de l'utilisateur et d'extraire le slug du canal cible si nécessaire.\n\n"
+            . "- \"currentWorkspace\" : Le nom du workspace courant de l'utilisateur (ou null).\n"
+            . "- \"channels\" : La liste des canaux auxquels l'utilisateur a accès, chaque canal ayant un \"name\", \"slug\", \"description\", et \"workspace\".\n\n"
+            . "Ton rôle unique est de classifier le message pour déterminer l'intention de l'utilisateur et d'extraire le slug du canal cible si nécessaire. "
+            . "Quand l'utilisateur cite un canal par son NOM, privilégie en priorité les canaux du \"currentWorkspace\".\n\n"
             . "Les intentions possibles sont :\n"
             . "1. \"resumer\" : L'utilisateur demande explicitement un résumé des messages récents d'un canal (ex. : 'résume le canal général', 'fais-moi une synthèse de htmx').\n"
             . "2. \"sondage\" : L'utilisateur demande de créer ou lancer un sondage dans un canal (ex. : 'crée un sondage', 'lance un vote').\n"
