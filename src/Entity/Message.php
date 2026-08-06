@@ -108,6 +108,15 @@ class Message
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $labels = null;
 
+    #[ORM\Column(length: 30, nullable: true)]
+    private ?string $moderationStatus = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $moderationReason = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $originalContent = null;
+
     #[ORM\Column(options: ['default' => false])]
     private bool $isCompleted = false;
 
@@ -424,4 +433,41 @@ class Message
 
         return $this;
     }
+
+    public function getModerationStatus(): ?string
+    {
+        return $this->moderationStatus;
+    }
+
+    public function setModerationStatus(?string $moderationStatus): static
+    {
+        $this->moderationStatus = $moderationStatus;
+
+        return $this;
+    }
+
+    public function getModerationReason(): ?string
+    {
+        return $this->moderationReason;
+    }
+
+    public function setModerationReason(?string $moderationReason): static
+    {
+        $this->moderationReason = $moderationReason;
+
+        return $this;
+    }
+
+    public function getOriginalContent(): ?string
+    {
+        return $this->originalContent;
+    }
+
+    public function setOriginalContent(?string $originalContent): static
+    {
+        $this->originalContent = $originalContent;
+
+        return $this;
+    }
 }
+

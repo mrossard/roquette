@@ -8,8 +8,10 @@ use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
+use App\Message\ModerateMessageMessage;
 use App\Message\ScanFileMessage;
 use App\Repository\MessageRepository;
+
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -105,6 +107,11 @@ class MessagePublishService
         if ($file !== null) {
             $this->messageBus->dispatch(new ScanFileMessage($message->getId()));
         }
+
+        if ($message->getContent() !== null && !$isPoll) {
+            $this->messageBus->dispatch(new ModerateMessageMessage($message->getId()));
+        }
+
 
         $renderedHtml = $this->messageRenderer->renderFeedItem($message);
 

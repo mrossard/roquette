@@ -83,6 +83,8 @@
                                             <span class="status-pill status-pill--create">{{ 'Création Groupe'|trans }}</span>
                                         {% elseif log.action.value == 'group_delete' %}
                                             <span class="status-pill status-pill--delete">{{ 'Suppr. Groupe'|trans }}</span>
+                                        {% elseif log.action.value == 'message_moderated' %}
+                                            <span class="status-pill status-pill--banned">{{ 'Modération IA'|trans }}</span>
                                         {% else %}
                                             <span class="status-pill status-pill--default">{{ log.action.value }}</span>
                                         {% endif %}
@@ -99,14 +101,17 @@
                                         {% elseif log.action.value == 'export_delete' %}
                                             {{ "Suppression d'export pour"|trans }} <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu'|trans) }}</strong> (Fichier: <code>{{ log.details.file_name|default('—') }}</code>)
                                         {% elseif log.action.value == 'channel_create' %}
-                                            {{ "Création du canal"|trans }} <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu'|trans) }}</strong> (Privé : {{ log.details.is_private ? 'Oui'|trans : 'Non'|trans }}{% if log.details.parent_channel_id is defined %}, {{ 'sous-canal'|trans }}{% endif %})
+                                            {{ "Création du canal"|trans }} <strong style="color: var(--accent-cyan);">#{{ log.details.channel_name|default('Inconnu'|trans) }}</strong> (Privé : {{ log.details.is_private|default(false) ? 'Oui'|trans : 'Non'|trans }}{% if log.details.parent_channel_id is defined %}, {{ 'sous-canal'|trans }}{% endif %})
                                         {% elseif log.action.value == 'channel_delete' %}
                                             {{ "Suppression du canal"|trans }} <strong style="color: var(--text-normal);">#{{ log.details.channel_name|default('Inconnu'|trans) }}</strong> (slug: <code>{{ log.details.slug|default('—') }}</code>)
                                         {% elseif log.action.value == 'group_create' %}
                                             {{ "Création du groupe"|trans }} <strong style="color: var(--accent-cyan);">{{ log.details.group_name|default('Inconnu'|trans) }}</strong> (Identifier : <code>{{ log.details.group_identifier|default('—') }}</code>{% if log.details.imported is defined and log.details.imported %}, {{ 'importé'|trans }}{% endif %})
                                         {% elseif log.action.value == 'group_delete' %}
                                             {{ "Suppression du groupe"|trans }} <strong style="color: var(--text-normal);">{{ log.details.group_name|default('Inconnu'|trans) }}</strong> (Identifier : <code>{{ log.details.group_identifier|default('—') }}</code>)
+                                        {% elseif log.action.value == 'message_moderated' %}
+                                            {{ "Modération d'un message dans"|trans }} <strong style="color: var(--accent-cyan);">#{{ log.details.channel_slug|default('Inconnu'|trans) }}</strong> (Motif: <code>{{ log.details.reason|default('Inconnu'|trans) }}</code>, ID: <code>#{{ log.details.message_id|default('—') }}</code>)
                                         {% else %}
+
                                             <span class="json-fallback">{{ log.details|json_encode }}</span>
                                         {% endif %}
                                     </td>

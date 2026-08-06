@@ -6,6 +6,7 @@ namespace App\Twig;
 
 use App\Entity\Channel;
 use App\Repository\ChannelRepository;
+use App\Repository\MessageRepository;
 use App\Repository\UserChannelReadRepository;
 use App\Service\MessageFormatter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,6 +29,7 @@ class AppExtension extends AbstractExtension
         private readonly UserChannelReadRepository $ucrRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly string $mercureTopicPrefix,
+        private readonly ?MessageRepository $messageRepository = null,
     ) {}
 
     public function getFunctions(): array
@@ -40,6 +42,7 @@ class AppExtension extends AbstractExtension
             new \Twig\TwigFunction('get_subchannel', [$this, 'getSubchannel']),
             new \Twig\TwigFunction('get_user_mercure_topics', [$this, 'getUserMercureTopics']),
             new \Twig\TwigFunction('get_user_channel_notifications_map', [$this, 'getUserChannelNotificationsMap']),
+            new \Twig\TwigFunction('get_pending_moderation_count', [$this, 'getPendingModerationCount']),
         ];
     }
 
@@ -202,4 +205,10 @@ class AppExtension extends AbstractExtension
 
         return $map;
     }
+
+    public function getPendingModerationCount(): int
+    {
+        return $this->messageRepository?->countPendingModeration() ?? 0;
+    }
 }
+

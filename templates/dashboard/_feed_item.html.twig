@@ -138,9 +138,22 @@
                 {% include 'dashboard/_poll.html.twig' with { poll: messageObject.poll } %}
             {% else %}
                 {% set scanStatusKey = messageObject ? messageObject.virusScanStatus|default('none') : 'none' %}
-                {% set cacheKey = 'feed_item_body_' ~ message_id ~ '_' ~ scanStatusKey ~ '_' ~ (updated_at ? updated_at.timestamp : (timestamp ? timestamp.timestamp : 0)) ~ '_' ~ (message|default('')|length) %}
+                {% set moderationStatusKey = messageObject ? messageObject.moderationStatus|default('none') : 'none' %}
+                {% set cacheKey = 'feed_item_body_' ~ message_id ~ '_' ~ scanStatusKey ~ '_' ~ moderationStatusKey ~ '_' ~ (updated_at ? updated_at.timestamp : (timestamp ? timestamp.timestamp : 0)) ~ '_' ~ (message|default('')|length) %}
                 {% cache cacheKey %}
                     {% if message is defined and message is not empty and message != '' %}
+                        {% if messageObject and messageObject.moderationStatus and messageObject.moderationStatus != 'clean' %}
+                            <div class="moderation-badge moderation-{{ messageObject.moderationStatus }}" title="{{ messageObject.moderationReason|default('') }}">
+                                <span class="moderation-icon">🛡️</span>
+                                <span class="moderation-label">
+                                    {% if messageObject.moderationStatus == 'masked' %}
+                                        {{ 'Donnée sensible masquée par la modération IA'|trans }}
+                                    {% else %}
+                                        {{ 'Signalé par la modération'|trans }} ({{ messageObject.moderationReason }})
+                                    {% endif %}
+                                </span>
+                            </div>
+                        {% endif %}
                         <div class="feed-item-content-area">
                             {% if is_html|default(false) %}
                                 {{ message|raw }}
@@ -152,6 +165,7 @@
                         </div>
                         {% include 'dashboard/feed_item/_link_previews.html.twig' %}
                     {% endif %}
+
 
                     {% if fileName is defined and fileName %}
                         {% include 'dashboard/feed_item/_attachment.html.twig' with {isSubchannelParent: isSubchannelParent|default(false)} %}

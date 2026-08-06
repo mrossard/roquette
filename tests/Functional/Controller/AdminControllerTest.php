@@ -261,4 +261,72 @@ class AdminControllerTest extends WebTestCase
         static::assertStringContainsString('Bannissement', $content);
         static::assertStringContainsString('some_banned_user', $content);
     }
+
+    #[Test]
+    public function testModerationDashboardAndApprove(): void
+    {
+        $this->client->loginUser($this->adminUser);
+
+        $channel = new Channel();
+        $channel->setName('Mod General');
+        $channel->setSlug('mod-general-' . uniqid());
+
+        $message = new \App\Entity\Message();
+
+        $message->setAuthor($this->normalUser);
+        $message->setChannel($channel);
+        $message->setContent('Clé [SECRET MASQUÉ]');
+        $message->setOriginalContent('Clé sk-proj-12345678901234567890');
+        $message->setModerationStatus('masked');
+        $message->setModerationReason('Clé OpenAI');
+
+        $this->entityManager->persist($channel);
+        $this->entityManager->persist($message);
+        $this->entityManager->flush();
+
+        $this->client->request('GET', '/admin/moderation');
+        $this->assertResponseIsSuccessful();
+        static::assertStringContainsString('Console de Modération IA', $this->client->getResponse()->getContent() ?? '');
+
+        // Test approve
+        $this->client->request('POST', sprintf('/admin/moderation/%d/approve', $message->getId()));
+        $this->assertResponseRedirects('/admin/moderation');
+
+        $this->entityManager->clear();
+        $reloaded = $this->entityManager->getRepository(\App\Entity\Message::class)->find($message->getId());
+        static::assertNotNull($reloaded);
+        static::assertSame('clean', $reloaded->getModerationStatus());
+        static::assertSame('Clé sk-proj-12345678901234567890', $reloaded->getContent());
+    }
+
+    #[Test]
+    public function testModerationDeleteMessage(): void
+    {
+        $this->client->loginUser($this->adminUser);
+
+        $channel = new Channel();
+        $channel->setName('General');
+        $channel->setSlug('general-del');
+
+        $message = new \App\Entity\Message();
+        $message->setAuthor($this->normalUser);
+        $message->setChannel($channel);
+        $message->setContent('Propos offensants');
+        $message->setModerationStatus('flagged');
+        $message->setModerationReason('Contenu toxique');
+
+        $this->entityManager->persist($channel);
+        $this->entityManager->persist($message);
+        $this->entityManager->flush();
+
+        $messageId = $message->getId();
+
+        $this->client->request('POST', sprintf('/admin/moderation/%d/delete', $messageId));
+        $this->assertResponseRedirects('/admin/moderation');
+
+        $this->entityManager->clear();
+        $reloaded = $this->entityManager->getRepository(\App\Entity\Message::class)->find($messageId);
+        static::assertNull($reloaded);
+    }
 }
+

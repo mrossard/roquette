@@ -69,6 +69,43 @@
         box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
     }
 
+    .btn-moderation-alert {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2));
+        border: 1px solid rgba(239, 68, 68, 0.45);
+        color: #fca5a5;
+        padding: 0.4rem 0.85rem;
+        border-radius: 9999px;
+        font-size: 0.825rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-moderation-alert:hover {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(245, 158, 11, 0.9));
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.6);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+        transform: translateY(-1px);
+    }
+
+    .btn-moderation-alert .badge-count {
+        background: linear-gradient(135deg, #ef4444, #f97316);
+        color: #ffffff;
+        border-radius: 9999px;
+        padding: 0.1rem 0.45rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        letter-spacing: 0.02em;
+    }
+
+
     .btn-back {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid var(--border-glass);

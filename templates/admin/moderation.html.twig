@@ -1,0 +1,204 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'Roquette - Modération IA'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .moderation-table .status-pill-masked {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: #fbbf24;
+            font-weight: 700;
+        }
+        .moderation-table .status-pill-flagged {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            font-weight: 700;
+        }
+        .btn-mod-approve {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35));
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            color: #6ee7b7;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .btn-mod-approve:hover {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-mod-delete {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.35));
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .btn-mod-delete:hover {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+            transform: translateY(-1px);
+        }
+        .original-text-expander {
+            margin-top: 0.4rem;
+            font-size: 0.8rem;
+        }
+        .original-text-expander summary {
+            cursor: pointer;
+            color: var(--accent-cyan);
+            font-weight: 500;
+            user-select: none;
+            transition: color 0.15s;
+        }
+        .original-text-expander summary:hover {
+            color: var(--accent-cyan-hover);
+        }
+        .original-text-box {
+            margin-top: 0.35rem;
+            padding: 0.5rem 0.75rem;
+            background: rgba(0, 0, 0, 0.35);
+            border-left: 3px solid var(--accent-cyan);
+            border-radius: 4px;
+            font-family: var(--font-monospace);
+            font-size: 0.825rem;
+            color: #e2e8f0;
+            word-break: break-all;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="app-container admin-layout" hx-boost="true">
+        <header class="app-header">
+            <div class="logo-area">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="{{ 'Afficher le menu'|trans }}">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+                <span class="logo-rocket">🛡️</span>
+                <div class="logo-text">
+                    <h1>Roquette</h1>
+                    <p class="subtitle">Administration</p>
+                </div>
+            </div>
+
+            {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
+        </header>
+
+        <main class="dashboard-grid" id="main-content">
+            <section class="card glass-panel settings-panel">
+                <div class="card-header">
+                    <div>
+                        <h2>🛡️ {{ 'Console de Modération IA'|trans }}</h2>
+                        <p class="card-description">{{ 'Examinez les messages signalés ou masqués par le filtre automatique et décidez des actions à entreprendre.'|trans }}</p>
+                    </div>
+                    {% include 'admin/_nav.html.twig' %}
+                </div>
+
+                <div class="card-body">
+                    {% for label, messages in app.flashes %}
+                        {% for msg in messages %}
+                            <div class="alert-{{ label == 'error' ? 'error' : 'success' }} fade-in">
+                                {{ msg }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table moderation-table">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'Auteur & Canal'|trans }}</th>
+                                    <th>{{ 'Date'|trans }}</th>
+                                    <th>{{ 'Statut & Motif'|trans }}</th>
+                                    <th>{{ 'Contenu'|trans }}</th>
+                                    <th class="td--right">{{ 'Actions'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for msg in messages %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ msg.author.displayName|default(msg.author.username) }}</strong>
+                                            <div class="text-muted-block">@{{ msg.author.username }} · <strong style="color: var(--accent-cyan);">#{{ msg.channel.name }}</strong></div>
+                                        </td>
+                                        <td>
+                                            <span class="feed-item-time">{{ msg.createdAt|date('d/m/Y H:i') }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="status-pill status-pill-{{ msg.moderationStatus }}">
+                                                {{ msg.moderationStatus|upper }}
+                                            </span>
+                                            <div class="text-muted-block" style="margin-top: 0.25rem;" title="{{ msg.moderationReason }}">{{ msg.moderationReason|u.truncate(45, '…') }}</div>
+                                        </td>
+                                        <td class="detail-cell">
+                                            <div><strong>{{ 'Actuel'|trans }} :</strong> <code>{{ msg.content }}</code></div>
+                                            {% if msg.originalContent %}
+                                                <details class="original-text-expander">
+                                                    <summary>🔍 {{ 'Voir le texte original masqué'|trans }}</summary>
+                                                    <div class="original-text-box"><code>{{ msg.originalContent }}</code></div>
+                                                </details>
+                                            {% endif %}
+                                        </td>
+                                        <td class="td--right">
+                                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                                <form action="{{ path('app_admin_moderation_approve', {id: msg.id}) }}" method="post" hx-boost="false">
+                                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+                                                    <button type="submit" class="btn-mod-approve" title="{{ 'Approuver et rétablir le message original'|trans }}">
+                                                        <span>🟢</span> {{ 'Approuver'|trans }}
+                                                    </button>
+                                                </form>
+                                                <form action="{{ path('app_admin_moderation_delete', {id: msg.id}) }}" method="post" hx-boost="false" onsubmit="return confirm('Voulez-vous vraiment supprimer ce message ?');">
+                                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+                                                    <button type="submit" class="btn-mod-delete" title="{{ 'Supprimer définitivement le message'|trans }}">
+                                                        <span>🔴</span> {{ 'Supprimer'|trans }}
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="empty-state">
+                                            {{ "Aucun message en attente de modération."|trans }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if totalPages > 1 %}
+                        {% include 'admin/_pagination.html.twig' with {
+                            'page': page,
+                            'totalPages': totalPages,
+                            'route': 'app_admin_moderation'
+                        } %}
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+{% endblock %}

@@ -20,7 +20,17 @@
             aria-label="{{ 'Changer de thème'|trans }}">🌓
     </button>
 
+    {% if is_granted('ROLE_ADMIN') %}
+        {% set pendingModCount = get_pending_moderation_count() %}
+        {% if pendingModCount > 0 %}
+            <a href="{{ path('app_admin_moderation') }}" class="btn-moderation-alert" title="{{ '%count% message(s) à modérer'|trans({'%count%': pendingModCount}) }}" hx-boost="false">
+                🛡️ <span class="badge-count">{{ pendingModCount }}</span>
+            </a>
+        {% endif %}
+    {% endif %}
+
     <button id="header-notification-btn" class="btn-account"
+
             style="display: none; align-items: center; gap: 0.35rem; cursor: pointer;"></button>
 
     {% include 'dashboard/_user_menu_dropdown.html.twig' %}

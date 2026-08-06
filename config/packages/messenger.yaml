@@ -32,6 +32,7 @@ framework:
             'App\Message\SendReminderMessage': async_high
             'App\Message\LlmQueryMessage': async_low
             'App\Message\ScanFileMessage': async_low
+            'App\Message\ModerateMessageMessage': async_low
             'App\Message\DownloadEmojiMessage': async_low
             'Symfony\Component\Mailer\Messenger\SendEmailMessage': async_low
             'App\Message\GenerateExportMessage': async_low
@@ -46,5 +47,7 @@ when@test:
                 'App\Message\ChannelNotificationMessage': sync
                 'App\Message\LlmQueryMessage': sync
                 'App\Message\ScanFileMessage': sync
+                'App\Message\ModerateMessageMessage': sync
                 'App\Message\DownloadEmojiMessage': sync
                 'App\Message\GenerateExportMessage': sync
+

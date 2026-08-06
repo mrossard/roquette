@@ -41,11 +41,16 @@
             <span class="option-label">{{ 'Mon Compte'|trans }}</span>
         </a>
         {% if is_granted('ROLE_ADMIN') %}
+            {% set pendingModCount = get_pending_moderation_count() %}
             <a href="{{ path('app_admin_users') }}" class="user-status-option" role="menuitem">
                 <span class="option-icon">🛡️</span>
                 <span class="option-label">Administration</span>
+                {% if pendingModCount > 0 %}
+                    <span class="unread-badge nav-badge" style="background: #ef4444; margin-left: auto; color: #fff; font-size: 0.75rem; padding: 0.1rem 0.45rem; border-radius: 10px; font-weight: 700;">{{ pendingModCount }}</span>
+                {% endif %}
             </a>
         {% endif %}
+
         <a href="{{ path('app_logout') }}" class="user-status-option logout-option" hx-boost="false" role="menuitem">
             <span class="option-icon">🚪</span>
             <span class="option-label">{{ 'Déconnexion'|trans }}</span>

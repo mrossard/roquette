@@ -35,6 +35,17 @@
             Exports
         </a>
 
+        {% set is_active = current_route starts with 'app_admin_moderation' %}
+        {% set pendingModCount = get_pending_moderation_count() %}
+        <a href="{{ path('app_admin_moderation') }}"
+           class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
+            🛡️ {{ 'Modération'|trans }}
+            {% if pendingModCount > 0 %}
+                <span class="unread-badge nav-badge" style="background: #ef4444; margin-left: 0.35rem; color: #fff; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 10px; font-weight: 700;">{{ pendingModCount }}</span>
+            {% endif %}
+        </a>
+
+
         {% set is_active = current_route starts with 'app_admin_audit_logs' %}
         <a href="{{ path('app_admin_audit_logs') }}"
            class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
@@ -42,3 +53,4 @@
         </a>
     {% endif %}
 </div>
+

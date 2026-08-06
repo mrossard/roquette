@@ -15,4 +15,6 @@ enum AuditAction: string
     case CHANNEL_DELETE = 'channel_delete';
     case GROUP_CREATE = 'group_create';
     case GROUP_DELETE = 'group_delete';
+    case MESSAGE_MODERATED = 'message_moderated';
 }
+

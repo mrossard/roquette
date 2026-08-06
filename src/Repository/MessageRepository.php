@@ -506,4 +506,35 @@ class MessageRepository extends ServiceEntityRepository
 
         return array_map('intval', $ids);
     }
+
+    /**
+     * @return Message[]
+     */
+    public function findModeratedPaginated(int $page = 1, int $perPage = 25): array
+    {
+        return $this->createQueryBuilder('m')
+            ->select('m', 'author', 'channel')
+            ->join('m.author', 'author')
+            ->join('m.channel', 'channel')
+            ->where('m.moderationStatus IS NOT NULL')
+            ->andWhere('m.moderationStatus != :cleanStatus')
+            ->setParameter('cleanStatus', 'clean')
+            ->orderBy('m.createdAt', 'DESC')
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countPendingModeration(): int
+    {
+        return (int) $this->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->where('m.moderationStatus IS NOT NULL')
+            ->andWhere('m.moderationStatus != :cleanStatus')
+            ->setParameter('cleanStatus', 'clean')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }
+
