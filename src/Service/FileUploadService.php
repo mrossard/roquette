@@ -6,6 +6,7 @@ namespace App\Service;
 
 use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Mime\MimeTypes;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -133,6 +134,7 @@ class FileUploadService
     private const MAX_FILE_SIZE = 10_485_760; // 10MB
 
     public function __construct(
+        #[Target('defaultStorage')]
         private FilesystemOperator $defaultStorage,
         private LoggerInterface $logger,
         private TranslatorInterface $translator,

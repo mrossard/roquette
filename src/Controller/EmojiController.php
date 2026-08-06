@@ -8,6 +8,7 @@ use App\Message\DownloadEmojiMessage;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,7 +21,9 @@ final class EmojiController extends AbstractController
 {
     public function __construct(
         private readonly MessageBusInterface $messageBus,
+        #[Target('defaultStorage')]
         private readonly FilesystemOperator $defaultStorage,
+        #[Target('emojiApiLimiter')]
         private readonly RateLimiterFactoryInterface $emojiApiLimiter,
         #[Autowire('%env(EMOJI_BASE_URL)%')]
         private readonly string $emojiBaseUrl,

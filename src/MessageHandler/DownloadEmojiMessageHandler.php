@@ -8,6 +8,7 @@ use App\Message\DownloadEmojiMessage;
 use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -17,6 +18,7 @@ class DownloadEmojiMessageHandler
 {
     public function __construct(
         private readonly HttpClientInterface $httpClient,
+        #[Target('defaultStorage')]
         private readonly FilesystemOperator $defaultStorage,
         #[Autowire('%env(EMOJI_BASE_URL)%')]
         private readonly string $emojiBaseUrl,

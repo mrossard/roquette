@@ -2,8 +2,7 @@
 flysystem:
     storages:
         default.storage:
-            adapter: 'aws'
-            options:
+            aws:
                 client: 'app.s3_client'
                 bucket: '%env(AWS_BUCKET)%'
 

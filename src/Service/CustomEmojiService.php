@@ -9,6 +9,7 @@ use App\Repository\CustomEmojiRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Contracts\Cache\CacheInterface;
 
@@ -18,6 +19,7 @@ class CustomEmojiService
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
+        #[Target('defaultStorage')]
         private readonly FilesystemOperator $defaultStorage,
         private readonly CacheInterface $cache,
         private readonly LoggerInterface $logger,

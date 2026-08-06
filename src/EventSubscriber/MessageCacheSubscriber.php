@@ -14,6 +14,7 @@ use Doctrine\ORM\Event\PostRemoveEventArgs;
 use Doctrine\ORM\Event\PostUpdateEventArgs;
 use Doctrine\ORM\Events;
 use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 
 #[AsDoctrineListener(Events::postPersist)]
 #[AsDoctrineListener(Events::postUpdate)]
@@ -21,6 +22,7 @@ use Psr\Cache\CacheItemPoolInterface;
 final readonly class MessageCacheSubscriber
 {
     public function __construct(
+        #[Target('twigCache')]
         private CacheItemPoolInterface $twigCache,
         private AppExtension $appExtension,
     ) {}

@@ -4,11 +4,10 @@ when@dev:
         excluded_ajax_paths: '^/((index|app(_[\w]+)?)\.php/)?_wdt|^/channel/[^/]+/typing|^/user/ping'
 
     framework:
-        profiler:
-            collect_serializer_data: true
+        profiler: true
 
 when@test:
     framework:
         profiler:
             collect: false
-            collect_serializer_data: true
+

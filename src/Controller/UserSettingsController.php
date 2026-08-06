@@ -13,6 +13,7 @@ use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,6 +28,7 @@ final class UserSettingsController extends AbstractController
 {
     public function __construct(
         private readonly TranslatorInterface $translator,
+        #[Target('defaultStorage')]
         private readonly FilesystemOperator $defaultStorage,
     ) {}
 
