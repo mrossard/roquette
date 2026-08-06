@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\MessageHandler;
 
+use App\Ai\Tool\ScheduleReminderTool;
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
 use App\MessageHandler\LlmQueryHandler;
@@ -14,6 +15,8 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\AI\Store\RetrieverInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 
@@ -269,5 +272,99 @@ class LlmQueryHandlerTest extends TestCase
 
         $message = new LlmQueryMessage('résume le canal général', 42, 'dm-robot-roquette-1', 'help-123');
         $handler($message);
+    }
+
+    public function testReminderToolCallWithParametersFormat(): void
+    {
+        $userRepository = $this->createMock(UserRepository::class);
+        $llmService = $this->createMock(LlmService::class);
+        $messageFormatter = $this->createStub(MessageFormatter::class);
+        $hub = $this->createMock(HubInterface::class);
+        $parameterBag = $this->createMock(ParameterBagInterface::class);
+
+        $user = new User();
+        $user->setUsername('test_user');
+        $user->setSlug('test-user');
+
+        $userRepository->method('find')->willReturn($user);
+        $userRepository->method('findOneBy')->willReturn(null);
+
+        $parameterBag->method('get')->willReturn('/tmp');
+
+        // The model answers with the "tool/action/parameters" JSON format
+        $toolJson = '{"tool":"schedule_reminder","action":"schedule_reminder","parameters":{"channelSlug":"assistant","reminderText":"Aller manger","delayMinutes":51}}';
+        $llmService
+            ->expects($this->once())
+            ->method('generateTextStream')
+            ->willReturn((static function () use ($toolJson) {
+                yield $toolJson;
+            })());
+
+        $formattedTexts = [];
+        $messageFormatter->method('format')->willReturnCallback(static function ($text) use (&$formattedTexts) {
+            $formattedTexts[] = $text;
+
+            return '<p>' . $text . '</p>';
+        });
+
+        $hub->expects($this->atLeastOnce())->method('publish')->with(static::isInstanceOf(Update::class));
+
+        $channel = new \App\Entity\Channel();
+        $channel->setName('Assistant');
+        $channel->setSlug('assistant');
+
+        $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
+        $channelRepository->method('findAllForUser')->willReturn([]);
+        $channelRepository->method('findOneBy')->willReturnCallback(static function (array $criteria) use ($channel) {
+            return ($criteria['slug'] ?? null) === 'assistant' ? $channel : null;
+        });
+
+        $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
+        $persisted = null;
+        $entityManager->method('persist')->willReturnCallback(static function ($entity) use (&$persisted) {
+            $persisted = $entity;
+        });
+        $entityManager->method('flush')->willReturnCallback(static function () use (&$persisted) {
+            if ($persisted instanceof \App\Entity\Reminder) {
+                $ref = new \ReflectionProperty(\App\Entity\Reminder::class, 'id');
+                $ref->setValue($persisted, 1);
+            }
+        });
+
+        $bus = $this->createMock(MessageBusInterface::class);
+        $bus->method('dispatch')->willReturnCallback(static fn(object $message, array $stamps = []) => new Envelope($message));
+
+        $tool = new ScheduleReminderTool($entityManager, $channelRepository, $userRepository, $bus);
+        $llmService->method('getScheduleReminderTool')->willReturn($tool);
+
+        $messageRepository = $this->createMock(\App\Repository\MessageRepository::class);
+        $userChannelReadRepository = $this->createMock(\App\Repository\UserChannelReadRepository::class);
+        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+        $twig = $this->createMock(\Twig\Environment::class);
+        $twig->method('render')->willReturn('<div>test</div>');
+        $retriever = $this->createStub(RetrieverInterface::class);
+
+        $handler = new LlmQueryHandler(
+            $userRepository,
+            $channelRepository,
+            $messageRepository,
+            $userChannelReadRepository,
+            $llmService,
+            $messageFormatter,
+            $hub,
+            $parameterBag,
+            $entityManager,
+            'roquette',
+            $logger,
+            $twig,
+            $retriever,
+        );
+
+        $message = new LlmQueryMessage('rappelle moi d\'aller manger à 15h22', 42, 'general', 'help-123');
+        $handler($message);
+
+        $this->assertNotEmpty($formattedTexts);
+        $this->assertStringContainsString('C\'est noté ! J\'ai programmé votre rappel', implode(' ', $formattedTexts));
+        $this->assertStringContainsString('Aller manger', implode(' ', $formattedTexts));
     }
 }

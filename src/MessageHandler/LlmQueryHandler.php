@@ -192,8 +192,8 @@ final readonly class LlmQueryHandler
             }
             $toolData = json_decode($trimmedText, true);
             if (is_array($toolData)) {
-                $args = $toolData['arguments'] ?? $toolData;
-                if (isset($args['reminderText']) || isset($args['delayMinutes'])) {
+                $args = $this->extractToolArguments($toolData);
+                if (is_array($args) && (isset($args['reminderText']) || isset($args['delayMinutes']))) {
                     $toolResult = ($this->llmService->getScheduleReminderTool())(
                         channelSlug: $args['channelSlug'] ?? 'assistant',
                         reminderText: $args['reminderText'] ?? 'Rappel',
@@ -226,6 +226,17 @@ final readonly class LlmQueryHandler
                 . '</p>';
             $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $errorHtml, $channelSlug);
         }
+    }
+
+    private function extractToolArguments(array $toolData): ?array
+    {
+        foreach (['parameters', 'arguments', 'action', 'input'] as $key) {
+            if (isset($toolData[$key]) && is_array($toolData[$key])) {
+                return $toolData[$key];
+            }
+        }
+
+        return $toolData;
     }
 
     /**
@@ -264,8 +275,11 @@ final readonly class LlmQueryHandler
             $channels
         );
 
+        $now = new \DateTimeImmutable();
+
         $systemPrompt =
             "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette.\n"
+            . "La date et l'heure actuelles sont : " . $now->format('d/m/Y H:i') . ".\n"
             . "Tu peux créer des sondages interactifs dans un canal en appelant l'outil 'create_poll'.\n"
             . "Liste des canaux existants (utilise TOUJOURS le Slug exact pour le paramètre channelSlug) :\n"
             . implode("\n", $channelList) . "\n\n"
@@ -278,7 +292,17 @@ final readonly class LlmQueryHandler
             . "RÈGLES IMPÉRATIVES POUR 'schedule_reminder' :\n"
             . "- Dans 'reminderText', extrais EXCLUSIVEMENT l'action ou le sujet brut de la tâche (ex: pour 'Rappelle-moi de finir mon verre dans 2 minutes', extrais 'Finir mon verre').\n"
             . "- Ne mets JAMAIS les mots 'Rappel', 'Rappelle-moi', ni le délai/durée (ex: 'dans 2 minutes') dans le champ 'reminderText'.\n"
-            . "- Calcule le délai uniquement dans 'delayMinutes'. Pour un rappel personnel, utilise 'channelSlug': 'assistant'.\n\n"
+            . "- Calcule 'delayMinutes' uniquement à partir de l'heure courante fournie ci-dessus : si l'utilisateur donne une heure absolue (ex: 'à 11h10'), fais la différence entre cette heure et l'heure actuelle ; s'il donne un délai (ex: 'dans 2 minutes'), utilise ce délai tel quel.\n"
+            . "- Pour un rappel personnel, utilise 'channelSlug': 'assistant'.\n"
+            . "- Réponds STRICTEMENT avec le JSON exact suivant (sans texte avant/après, sans balises ```json ni bloc de code) :\n"
+            . "{\n"
+            . "  \"tool\": \"schedule_reminder\",\n"
+            . "  \"action\": {\n"
+            . "    \"channelSlug\": \"assistant\",\n"
+            . "    \"reminderText\": \"<action ou sujet brut>\",\n"
+            . "    \"delayMinutes\": <nombre entier de minutes>\n"
+            . "  }\n"
+            . "}\n\n"
             . "Documentation utilisateur :\n"
             . $context;
 
