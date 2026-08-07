@@ -62,8 +62,8 @@ final class SummarizeChannelToolTest extends TestCase
         $tool = $this->buildTool($userRepo, $messageRepo, $channelRepo, $workspaceRepo);
         $result = $tool->execute(['channelSlug' => 'general'], 1);
 
-        $this->assertArrayHasKey('messages', $result);
-        $this->assertSame('general', $result['channelName']);
+        static::assertArrayHasKey('messages', $result);
+        static::assertSame('general', $result['channelName']);
     }
 
     public function testSummarizeDeniedWhenUserHasNoAccess(): void
@@ -89,6 +89,6 @@ final class SummarizeChannelToolTest extends TestCase
         $tool = $this->buildTool($userRepo, $messageRepo, $channelRepo, $workspaceRepo, $accessService);
         $result = $tool->execute(['channelSlug' => 'private'], 1);
 
-        $this->assertSame("Vous n'avez pas accès au canal 'private'.", $result['error'] ?? null);
+        static::assertSame("Vous n'avez pas accès au canal 'private'.", $result['error'] ?? null);
     }
 }

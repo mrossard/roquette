@@ -243,8 +243,8 @@ final class UserSettingsController extends AbstractController
                         'filename' => $emoji['filename'],
                     ];
                 }
-            } catch (\Exception $e) {
-                // Ignore if query fails
+            } catch (\Throwable $e) {
+                unset($e);
             }
 
             usort($matchingEmojis, static fn($a, $b) => strcmp($a['name'], $b['name']));

@@ -29,7 +29,7 @@ final class SearchMessagesToolTest extends TestCase
         $tool = new SearchMessagesTool($userRepo, $messageRepo);
         $result = $tool->execute(['query' => 'Test'], 1);
 
-        $this->assertArrayHasKey('results', $result);
-        $this->assertSame(1, $result['count']);
+        static::assertArrayHasKey('results', $result);
+        static::assertSame(1, $result['count']);
     }
 }

@@ -174,8 +174,10 @@ class MessagePublishService
             return false;
         }
 
-        $name = $robot->getUsername() ?: User::ROBOT_USERNAME;
-        $alias = strtok($name, '-') ?: $name;
+        $rawUsername = $robot->getUsername();
+        $name = ($rawUsername !== null && $rawUsername !== '') ? $rawUsername : User::ROBOT_USERNAME;
+        $tokenAlias = strtok($name, '-');
+        $alias = ($tokenAlias !== false && $tokenAlias !== '') ? $tokenAlias : $name;
 
         return preg_match(
             '/@(?:' . preg_quote($name, '/') . '|' . preg_quote($alias, '/') . ')(?![\p{L}\p{N}-])/iu',

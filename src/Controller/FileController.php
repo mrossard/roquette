@@ -44,11 +44,18 @@ final class FileController extends AbstractController
 
         $this->authorizeMessageAccess($message);
 
-        $etag = md5($message->getFilePath() . ($message->getUpdatedAt() ? $message->getUpdatedAt()->getTimestamp() : $message->getCreatedAt()->getTimestamp()));
+        $etag = md5(
+            $message->getFilePath()
+                . (
+                    $message->getUpdatedAt()
+                        ? $message->getUpdatedAt()->getTimestamp()
+                        : $message->getCreatedAt()->getTimestamp()
+                ),
+        );
         $response = new StreamedResponse();
         $response->setEtag($etag);
         $response->setPrivate();
-        $response->setMaxAge(31536000);
+        $response->setMaxAge(31_536_000);
         $response->headers->addCacheControlDirective('immutable');
 
         if ($response->isNotModified($request)) {
@@ -75,14 +82,11 @@ final class FileController extends AbstractController
                 ? $message->getMimeType()
                 : 'application/octet-stream',
         );
-        $response->headers->set(
-            'Content-Disposition',
-            HeaderUtils::makeDisposition(
-                HeaderUtils::DISPOSITION_ATTACHMENT,
-                $message->getFileName(),
-                $this->getFallbackFileName($message->getFileName()),
-            ),
-        );
+        $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
+            HeaderUtils::DISPOSITION_ATTACHMENT,
+            $message->getFileName(),
+            $this->getFallbackFileName($message->getFileName()),
+        ));
 
         return $response;
     }
@@ -103,11 +107,18 @@ final class FileController extends AbstractController
 
         $this->authorizeMessageAccess($message);
 
-        $etag = md5($message->getFilePath() . ($message->getUpdatedAt() ? $message->getUpdatedAt()->getTimestamp() : $message->getCreatedAt()->getTimestamp()));
+        $etag = md5(
+            $message->getFilePath()
+                . (
+                    $message->getUpdatedAt()
+                        ? $message->getUpdatedAt()->getTimestamp()
+                        : $message->getCreatedAt()->getTimestamp()
+                ),
+        );
         $response = new StreamedResponse();
         $response->setEtag($etag);
         $response->setPrivate();
-        $response->setMaxAge(31536000);
+        $response->setMaxAge(31_536_000);
         $response->headers->addCacheControlDirective('immutable');
 
         if ($response->isNotModified($request)) {
@@ -129,14 +140,11 @@ final class FileController extends AbstractController
 
         $response->setStatusCode(200);
         $response->headers->set('Content-Type', self::previewContentType($message));
-        $response->headers->set(
-            'Content-Disposition',
-            HeaderUtils::makeDisposition(
-                HeaderUtils::DISPOSITION_INLINE,
-                $message->getFileName(),
-                $this->getFallbackFileName($message->getFileName()),
-            ),
-        );
+        $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
+            HeaderUtils::DISPOSITION_INLINE,
+            $message->getFileName(),
+            $this->getFallbackFileName($message->getFileName()),
+        ));
 
         return $response;
     }

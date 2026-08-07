@@ -15,7 +15,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Twig\Environment;
 
 #[AllowMockObjectsWithoutExpectations]
 class ScanFileMessageHandlerTest extends TestCase

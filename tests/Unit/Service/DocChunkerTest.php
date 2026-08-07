@@ -19,13 +19,18 @@ final class DocChunkerTest extends TestCase
 
     protected function tearDown(): void
     {
-        @unlink($this->projectDir . '/DOC_UTILISATEUR.md');
-        @rmdir($this->projectDir);
+        $docFile = $this->projectDir . '/DOC_UTILISATEUR.md';
+        if (file_exists($docFile)) {
+            unlink($docFile);
+        }
+        if (is_dir($this->projectDir)) {
+            rmdir($this->projectDir);
+        }
     }
 
     public function testMissingDocReturnsEmpty(): void
     {
-        $this->assertSame([], (new DocChunker())->chunk($this->projectDir));
+        static::assertSame([], new DocChunker()->chunk($this->projectDir));
     }
 
     public function testChunksSectionsAndCleansMarkdown(): void
@@ -48,16 +53,16 @@ final class DocChunkerTest extends TestCase
             [Cliquez ici](https://example.com) pour continuer.
             MD);
 
-        $chunks = (new DocChunker())->chunk($this->projectDir);
+        $chunks = new DocChunker()->chunk($this->projectDir);
 
-        $this->assertCount(3, $chunks);
-        $this->assertStringContainsString('Bienvenue sur Roquette.', $chunks[0]->getMetadata()->getText());
-        $this->assertSame('# Guide', $chunks[0]->getMetadata()->getTitle());
-        $this->assertStringContainsString('Utilisez Roquette pour discuter', $chunks[1]->getMetadata()->getText());
-        $this->assertStringNotContainsString('*', $chunks[1]->getMetadata()->getText());
-        $this->assertStringNotContainsString('```', $chunks[1]->getMetadata()->getText());
-        $this->assertStringContainsString('Cliquez ici pour continuer.', $chunks[2]->getMetadata()->getText());
-        $this->assertStringNotContainsString('Table des matières', implode(' ', array_map(
+        static::assertCount(3, $chunks);
+        static::assertStringContainsString('Bienvenue sur Roquette.', $chunks[0]->getMetadata()->getText());
+        static::assertSame('# Guide', $chunks[0]->getMetadata()->getTitle());
+        static::assertStringContainsString('Utilisez Roquette pour discuter', $chunks[1]->getMetadata()->getText());
+        static::assertStringNotContainsString('*', $chunks[1]->getMetadata()->getText());
+        static::assertStringNotContainsString('```', $chunks[1]->getMetadata()->getText());
+        static::assertStringContainsString('Cliquez ici pour continuer.', $chunks[2]->getMetadata()->getText());
+        static::assertStringNotContainsString('Table des matières', implode(' ', array_map(
             static fn($d) => (string) $d->getMetadata()->getTitle(),
             $chunks,
         )));

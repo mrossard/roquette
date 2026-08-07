@@ -123,9 +123,12 @@ class KanbanManager
 
         $positionMap = array_flip($columnIds);
         foreach ($columns as $column) {
-            if (!(isset($positionMap[$column->getId()]))) { continue; }
+            $colId = $column->getId();
+            if ($colId === null || !\array_key_exists($colId, $positionMap)) {
+                continue;
+            }
 
-$column->setPosition($positionMap[$column->getId()]);
+            $column->setPosition($positionMap[$colId]);
         }
 
         $this->entityManager->flush();

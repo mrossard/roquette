@@ -7,7 +7,6 @@ namespace App\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
-use App\Message\PushNotificationMessage;
 use App\Repository\UserChannelReadRepository;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -105,12 +104,15 @@ class MercurePublisher
 
         $content = $this->buildContentSummary($message);
 
+        $authorDisplayName = $author->getDisplayName();
+        $displayName = ($authorDisplayName !== null && $authorDisplayName !== '') ? $authorDisplayName : $author->getUsername();
+
         $notificationData = [
             'channelSlug' => $channel->getSlug(),
             'channelId' => $channel->getId(),
             'messageId' => $message->getId(),
             'author' => $author->getUsername(),
-            'authorDisplayName' => $author->getDisplayName() ?: $author->getUsername(),
+            'authorDisplayName' => $displayName,
             'channelName' => $channelName,
             'content' => $content,
             'isDm' => $channel->isDm(),
@@ -125,7 +127,7 @@ class MercurePublisher
         $this->publishToChannel($channel, $notificationData, 'channel_notification');
 
         $title = $channelName;
-        $body = ($author->getDisplayName() ?: $author->getUsername()) . ': ' . $content;
+        $body = $displayName . ': ' . $content;
         $url = '/channels/' . $channel->getSlug();
 
         $this->bus->dispatch(new \App\Message\ChannelNotificationMessage(

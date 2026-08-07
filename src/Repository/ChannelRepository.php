@@ -64,7 +64,7 @@ class ChannelRepository extends ServiceEntityRepository
             $qb->expr()->in('w.id', $localGroupWorkspaceDql)
         );
 
-        if (!empty($providerGroupIdentifiers)) {
+        if ($providerGroupIdentifiers !== []) {
             $externalGroupWorkspaceDql = $this->getEntityManager()
                 ->createQueryBuilder()
                 ->select('w4.id')
@@ -95,7 +95,7 @@ class ChannelRepository extends ServiceEntityRepository
 
         $conditions->add($qb->expr()->in('c.id', $localGroupDql));
 
-        if (!empty($providerGroupIdentifiers)) {
+        if ($providerGroupIdentifiers !== []) {
             $externalGroupDql = $this
                 ->getEntityManager()
                 ->createQueryBuilder()
@@ -245,7 +245,7 @@ class ChannelRepository extends ServiceEntityRepository
 
         $accessConditions->add($qb->expr()->in('c.id', $localGroupDql));
 
-        if (!empty($providerGroupIdentifiers)) {
+        if ($providerGroupIdentifiers !== []) {
             $externalGroupDql = $this
                 ->getEntityManager()
                 ->createQueryBuilder()

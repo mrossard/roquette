@@ -139,7 +139,8 @@ final class KanbanController extends AbstractController
             return new Response($this->translator->trans('Le nom de la colonne est requis.'), 400);
         }
 
-        $color = $request->request->get('color') ?: null;
+        $rawColor = (string) $request->request->get('color', '');
+        $color = $rawColor !== '' ? $rawColor : null;
 
         try {
             $this->kanbanManager->createColumn($channel, $name, $color, null, $currentUser);
@@ -291,8 +292,9 @@ final class KanbanController extends AbstractController
 
         $dueAtStr = $request->request->get('dueAt');
         $dueAt = null;
-        if ($dueAtStr !== null && $dueAtStr !== '') {
-            $dueAt = \DateTimeImmutable::createFromFormat('Y-m-d', $dueAtStr) ?: null;
+        if ($dueAtStr !== null && (string) $dueAtStr !== '') {
+            $parsedDate = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $dueAtStr);
+            $dueAt = $parsedDate !== false ? $parsedDate : null;
         }
 
         try {
@@ -318,7 +320,8 @@ final class KanbanController extends AbstractController
             return new Response($this->translator->trans('Message non trouvé.'), 404);
         }
 
-        $priority = $request->request->get('priority') ?: null;
+        $rawPriority = (string) $request->request->get('priority', '');
+        $priority = $rawPriority !== '' ? $rawPriority : null;
 
         try {
             $this->kanbanManager->setPriority($message, $priority, $currentUser);
@@ -354,7 +357,7 @@ final class KanbanController extends AbstractController
         $labels = array_values(array_filter(array_map('trim', $labels)));
 
         try {
-            $this->kanbanManager->setLabels($message, $labels ?: null, $currentUser);
+            $this->kanbanManager->setLabels($message, $labels !== [] ? $labels : null, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }

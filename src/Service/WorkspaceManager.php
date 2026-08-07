@@ -81,7 +81,7 @@ class WorkspaceManager
         $workspace = new Workspace();
         $workspace->setName($name);
         $workspace->setSlug($slug);
-        $workspace->setDescription($description ?: null);
+        $workspace->setDescription($description !== '' ? $description : null);
         $workspace->setCreator($creator);
         $workspace->addMember($creator);
 
@@ -144,7 +144,7 @@ class WorkspaceManager
     public function update(Workspace $workspace, string $name, ?string $description): void
     {
         $workspace->setName($name);
-        $workspace->setDescription($description ?: null);
+        $workspace->setDescription($description !== '' ? $description : null);
 
         $newSlug = strtolower($this->slugger->slug($name)->toString());
         if ($newSlug !== '' && $newSlug !== $workspace->getSlug()) {

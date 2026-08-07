@@ -75,18 +75,18 @@ class PushSubscriptionControllerTest extends WebTestCase
             ],
         ]));
 
-        self::assertSame(201, $this->client->getResponse()->getStatusCode());
+        static::assertSame(201, $this->client->getResponse()->getStatusCode());
 
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertSame('subscribed', $response['status']);
+        static::assertSame('subscribed', $response['status']);
 
         $subscriptionRepository = $this->entityManager->getRepository(PushSubscription::class);
         $subscription = $subscriptionRepository->findOneBy(['endpoint' => 'https://example.com/push/abc123']);
 
-        self::assertNotNull($subscription);
-        self::assertSame('test_public_key_123', $subscription->getPublicKey());
-        self::assertSame('test_auth_token_456', $subscription->getAuthToken());
-        self::assertSame($this->testUser->getId(), $subscription->getUser()->getId());
+        static::assertNotNull($subscription);
+        static::assertSame('test_public_key_123', $subscription->getPublicKey());
+        static::assertSame('test_auth_token_456', $subscription->getAuthToken());
+        static::assertSame($this->testUser->getId(), $subscription->getUser()->getId());
     }
 
     #[Test]
@@ -108,17 +108,17 @@ class PushSubscriptionControllerTest extends WebTestCase
             ],
         ]));
 
-        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        static::assertSame(200, $this->client->getResponse()->getStatusCode());
 
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertSame('updated', $response['status']);
+        static::assertSame('updated', $response['status']);
 
         $subscriptionRepository = $this->entityManager->getRepository(PushSubscription::class);
         $sub = $subscriptionRepository->findOneBy(['endpoint' => 'https://example.com/push/dup']);
 
-        self::assertNotNull($sub);
-        self::assertSame('new_key', $sub->getPublicKey());
-        self::assertSame('new_token', $sub->getAuthToken());
+        static::assertNotNull($sub);
+        static::assertSame('new_key', $sub->getPublicKey());
+        static::assertSame('new_token', $sub->getAuthToken());
     }
 
     #[Test]
@@ -128,7 +128,7 @@ class PushSubscriptionControllerTest extends WebTestCase
             'endpoint' => 'https://example.com/push/bad',
         ]));
 
-        self::assertSame(400, $this->client->getResponse()->getStatusCode());
+        static::assertSame(400, $this->client->getResponse()->getStatusCode());
     }
 
     #[Test]
@@ -151,12 +151,12 @@ class PushSubscriptionControllerTest extends WebTestCase
             json_encode(['endpoint' => 'https://example.com/push/to_delete']),
         );
 
-        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        static::assertSame(200, $this->client->getResponse()->getStatusCode());
 
         $subscriptionRepository = $this->entityManager->getRepository(PushSubscription::class);
         $sub = $subscriptionRepository->findOneBy(['endpoint' => 'https://example.com/push/to_delete']);
 
-        self::assertNull($sub);
+        static::assertNull($sub);
     }
 
     #[Test]
@@ -164,9 +164,9 @@ class PushSubscriptionControllerTest extends WebTestCase
     {
         $this->client->request('GET', '/push/public-key');
 
-        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        static::assertSame(200, $this->client->getResponse()->getStatusCode());
 
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertArrayHasKey('publicKey', $response);
+        static::assertArrayHasKey('publicKey', $response);
     }
 }

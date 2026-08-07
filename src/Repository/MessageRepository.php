@@ -146,7 +146,7 @@ class MessageRepository extends ServiceEntityRepository
             }
         }
 
-        if (!empty($missingParentIds)) {
+        if ($missingParentIds !== []) {
             $this->createQueryBuilder('m')
                 ->select('m', 'author', 'poll')
                 ->leftJoin('m.author', 'author')

@@ -70,17 +70,34 @@ final readonly class ChannelResolver
      */
     public function resolveFromList(string $query, array $channels): ?Channel
     {
-        $query = strtolower(trim($query));
-        if ($query === '') {
+        $normalized = strtolower(trim($query));
+        if ($normalized === '') {
             return null;
         }
 
+        return $this->matchExactChannel($normalized, $channels)
+            ?? $this->matchPartialChannel($normalized, $channels);
+    }
+
+    /**
+     * @param list<Channel> $channels
+     */
+    private function matchExactChannel(string $query, array $channels): ?Channel
+    {
         foreach ($channels as $channel) {
             if (strtolower((string) $channel->getSlug()) === $query || strtolower((string) $channel->getName()) === $query) {
                 return $channel;
             }
         }
 
+        return null;
+    }
+
+    /**
+     * @param list<Channel> $channels
+     */
+    private function matchPartialChannel(string $query, array $channels): ?Channel
+    {
         foreach ($channels as $channel) {
             if (str_contains(strtolower((string) $channel->getName()), $query) || str_contains(strtolower((string) $channel->getSlug()), $query)) {
                 return $channel;

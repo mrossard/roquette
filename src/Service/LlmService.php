@@ -63,9 +63,11 @@ readonly class LlmService
     public function generateTextStream(string $prompt, ?string $systemPrompt = null, array $options = []): \Generator
     {
         foreach ($this->generateStream($prompt, $systemPrompt, $options) as $delta) {
-            if ($delta instanceof TextDelta) {
-                yield $delta->getText();
+            if (!$delta instanceof TextDelta) {
+                continue;
             }
+
+            yield $delta->getText();
         }
     }
 
@@ -78,8 +80,12 @@ readonly class LlmService
      * @param array<string, mixed> $options Platform-specific options.
      * @return \Generator<TextDelta|ToolCallComplete> Yields text deltas and, once complete, the requested tool calls.
      */
-    public function generateStreamWithTools(string $prompt, ?string $systemPrompt, array $tools, array $options = []): \Generator
-    {
+    public function generateStreamWithTools(
+        string $prompt,
+        ?string $systemPrompt,
+        array $tools,
+        array $options = [],
+    ): \Generator {
         $options['tools'] = $tools;
 
         yield from $this->generateStream($prompt, $systemPrompt, $options);

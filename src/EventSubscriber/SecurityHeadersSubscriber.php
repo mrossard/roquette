@@ -37,9 +37,9 @@ readonly class SecurityHeadersSubscriber implements EventSubscriberInterface
         $mercureHost = '';
         if ($this->mercurePublicUrl !== '') {
             $parsed = parse_url($this->mercurePublicUrl);
-            if (isset($parsed['host'])) {
+            if (\array_key_exists('host', $parsed) && $parsed['host'] !== null) {
                 $scheme = $parsed['scheme'] ?? 'https';
-                $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+                $port = \array_key_exists('port', $parsed) && $parsed['port'] !== null ? ':' . $parsed['port'] : '';
                 $mercureHost = $scheme . '://' . $parsed['host'] . $port;
             }
         }
@@ -47,9 +47,9 @@ readonly class SecurityHeadersSubscriber implements EventSubscriberInterface
         $emojiHost = '';
         if ($this->emojiBaseUrl !== '') {
             $parsed = parse_url($this->emojiBaseUrl);
-            if (isset($parsed['host'])) {
+            if (\array_key_exists('host', $parsed) && $parsed['host'] !== null) {
                 $scheme = $parsed['scheme'] ?? 'https';
-                $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+                $port = \array_key_exists('port', $parsed) && $parsed['port'] !== null ? ':' . $parsed['port'] : '';
                 $emojiHost = $scheme . '://' . $parsed['host'] . $port;
             }
         }

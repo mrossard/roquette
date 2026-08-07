@@ -70,81 +70,86 @@ class LinkPreviewService
      */
     public function getPreview(string $url): ?array
     {
-        $url = trim($url);
-        $cacheKey = 'link_preview_' . md5($url);
+        $cleanUrl = trim($url);
+        $cacheKey = 'link_preview_' . md5($cleanUrl);
 
-        $value = $this->cache->get($cacheKey, function (ItemInterface $item) use ($url) {
-            if (!$this->isSafeUrl($url)) {
-                $item->expiresAfter(300); // Cache negative for 5 minutes
-                return null;
-            }
+        $value = $this->cache->get($cacheKey, fn(ItemInterface $item) => $this->fetchPreviewData($cleanUrl, $item));
 
-            // Check image extensions first to avoid unnecessary network request
-            $path = parse_url($url, PHP_URL_PATH) ?? '';
-            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            if (in_array($ext, self::IMAGE_EXTENSIONS, true)) {
-                $item->expiresAfter(86_400 * 7); // Cache successful image preview for 7 days
-                return ['type' => 'direct_image', 'url' => $url];
-            }
-
-            try {
-                $response = $this->fetch($url, 'GET');
-                if ($response === null) {
-                    $item->expiresAfter(300); // Cache negative for 5 minutes
-                    return null;
-                }
-
-                // Verify content type before downloading the stream
-                $headers = $response->getHeaders(false);
-                $contentType = $headers['content-type'][0] ?? '';
-
-                if (str_starts_with($contentType, 'image/')) {
-                    $response->cancel();
-                    $item->expiresAfter(86_400 * 7); // Cache successful image preview for 7 days
-                    return ['type' => 'direct_image', 'url' => $url];
-                }
-
-                if (!str_contains($contentType, 'text/html') && !str_contains($contentType, 'application/xhtml+xml')) {
-                    $response->cancel();
-                    $item->expiresAfter(300); // Cache negative for 5 minutes
-                    return null;
-                }
-
-                $content = '';
-                foreach ($this->httpClient->stream($response, 1.5) as $chunk) {
-                    $content .= $chunk->getContent();
-                    if (strlen($content) >= 1_048_576) {
-                        $response->cancel();
-                        break;
-                    }
-                }
-
-                if ($content === '') {
-                    $item->expiresAfter(300); // Cache negative for 5 minutes
-                    return null;
-                }
-
-                $metadata = $this->parseMetadata($url, $content);
-                $titleVal = $metadata['title'] ?? null;
-                if ($titleVal === null || trim((string) $titleVal) === '') {
-                    $item->expiresAfter(300); // Cache negative for 5 minutes
-                    return null;
-                }
-
-                $item->expiresAfter(86_400 * 7); // Cache successful OG preview for 7 days
-                return array_merge(['type' => 'og_preview'], $metadata);
-            } catch (\Exception) {
-                $item->expiresAfter(300); // Cache negative for 5 minutes
-                return null;
-            }
-        });
-
-        // Add 'type' key if missing (backward compatibility with old cache entries)
         if (is_array($value) && !array_key_exists('type', $value)) {
             $value['type'] = 'og_preview';
         }
 
         return $value;
+    }
+
+    private function fetchPreviewData(string $url, ItemInterface $item): ?array
+    {
+        if (!$this->isSafeUrl($url)) {
+            $item->expiresAfter(300);
+            return null;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH) ?? '';
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (in_array($ext, self::IMAGE_EXTENSIONS, true)) {
+            $item->expiresAfter(86_400 * 7);
+            return ['type' => 'direct_image', 'url' => $url];
+        }
+
+        try {
+            return $this->downloadAndParsePreview($url, $item);
+        } catch (\Exception) {
+            $item->expiresAfter(300);
+            return null;
+        }
+    }
+
+    private function downloadAndParsePreview(string $url, ItemInterface $item): ?array
+    {
+        $response = $this->fetch($url, 'GET');
+        if ($response === null) {
+            $item->expiresAfter(300);
+            return null;
+        }
+
+        $headers = $response->getHeaders(false);
+        $contentType = $headers['content-type'][0] ?? '';
+
+        if (str_starts_with($contentType, 'image/')) {
+            $response->cancel();
+            $item->expiresAfter(86_400 * 7);
+            return ['type' => 'direct_image', 'url' => $url];
+        }
+
+        if (!str_contains($contentType, 'text/html') && !str_contains($contentType, 'application/xhtml+xml')) {
+            $response->cancel();
+            $item->expiresAfter(300);
+            return null;
+        }
+
+        $content = '';
+        foreach ($this->httpClient->stream($response, 1.5) as $chunk) {
+            $content .= $chunk->getContent();
+            if (strlen($content) >= 1_048_576) {
+                $response->cancel();
+                break;
+            }
+        }
+
+        if ($content === '') {
+            $item->expiresAfter(300);
+            return null;
+        }
+
+        $metadata = $this->parseMetadata($url, $content);
+        $titleVal = $metadata['title'] ?? null;
+        if ($titleVal === null || trim((string) $titleVal) === '') {
+            $item->expiresAfter(300);
+            return null;
+        }
+
+        $item->expiresAfter(86_400 * 7);
+        return array_merge(['type' => 'og_preview'], $metadata);
     }
 
     /**
@@ -210,7 +215,7 @@ class LinkPreviewService
             return null;
         }
 
-        $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+        $port = \array_key_exists('port', $parsed) && $parsed['port'] !== null ? ':' . $parsed['port'] : '';
 
         if (str_starts_with($location, '//')) {
             return $scheme . ':' . $location;
@@ -259,7 +264,7 @@ class LinkPreviewService
             $ips[] = $cleanHost;
         } else {
             // Résolution DNS des enregistrements IPv4 (A)
-            $ipv4Records = @dns_get_record($cleanHost, DNS_A);
+            $ipv4Records = dns_get_record($cleanHost, DNS_A);
             if (is_array($ipv4Records)) {
                 foreach ($ipv4Records as $record) {
                     if (($record['ip'] ?? null) === null) {
@@ -270,7 +275,7 @@ class LinkPreviewService
                 }
             }
             // Résolution DNS des enregistrements IPv6 (AAAA)
-            $ipv6Records = @dns_get_record($cleanHost, DNS_AAAA);
+            $ipv6Records = dns_get_record($cleanHost, DNS_AAAA);
             if (is_array($ipv6Records)) {
                 foreach ($ipv6Records as $record) {
                     if (($record['ipv6'] ?? null) === null) {
@@ -283,7 +288,7 @@ class LinkPreviewService
 
             // Repli vers gethostbynamel si aucune IP n'a été résolue (ex. fichiers hosts locaux)
             if ($ips === []) {
-                $fallbackIps = @gethostbynamel($cleanHost);
+                $fallbackIps = gethostbynamel($cleanHost);
                 if (is_array($fallbackIps)) {
                     $ips = array_merge($ips, $fallbackIps);
                 }

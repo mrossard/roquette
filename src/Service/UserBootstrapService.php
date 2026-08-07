@@ -31,7 +31,7 @@ class UserBootstrapService
         }
 
         // Avoid duplicate runs in the same request
-        if (isset($this->bootstrappedUsers[$userId])) {
+        if (\array_key_exists($userId, $this->bootstrappedUsers)) {
             return;
         }
 

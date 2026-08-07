@@ -406,25 +406,25 @@ class OAuthControllerTest extends WebTestCase
         // 1. mockAuthorize
         try {
             $controller->mockAuthorize($request);
-            $this->fail('Expected NotFoundHttpException to be thrown for mockAuthorize in prod environment.');
+            static::fail('Expected NotFoundHttpException to be thrown for mockAuthorize in prod environment.');
         } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
-            $this->assertSame('Cette route n\'est pas disponible en production.', $e->getMessage());
+            static::assertSame('Cette route n\'est pas disponible en production.', $e->getMessage());
         }
 
         // 2. mockToken
         try {
             $controller->mockToken($request);
-            $this->fail('Expected NotFoundHttpException to be thrown for mockToken in prod environment.');
+            static::fail('Expected NotFoundHttpException to be thrown for mockToken in prod environment.');
         } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
-            $this->assertSame('Cette route n\'est pas disponible en production.', $e->getMessage());
+            static::assertSame('Cette route n\'est pas disponible en production.', $e->getMessage());
         }
 
         // 3. mockUser
         try {
             $controller->mockUser($request);
-            $this->fail('Expected NotFoundHttpException to be thrown for mockUser in prod environment.');
+            static::fail('Expected NotFoundHttpException to be thrown for mockUser in prod environment.');
         } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
-            $this->assertSame('Cette route n\'est pas disponible en production.', $e->getMessage());
+            static::assertSame('Cette route n\'est pas disponible en production.', $e->getMessage());
         }
     }
 }

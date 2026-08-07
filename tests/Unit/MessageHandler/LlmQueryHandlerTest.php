@@ -23,15 +23,14 @@ use App\Service\LlmService;
 use App\Service\MessageFormatter;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
-use Symfony\AI\Platform\Result\Stream\Delta\TextDelta;
 use Symfony\AI\Platform\Result\Stream\Delta\ToolCallComplete;
 use Symfony\AI\Platform\Result\ToolCall;
 use Symfony\AI\Store\RetrieverInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Component\Messenger\Envelope;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 #[AllowMockObjectsWithoutExpectations]
 class LlmQueryHandlerTest extends TestCase
@@ -62,7 +61,10 @@ class LlmQueryHandlerTest extends TestCase
             })(),
             'parameterBag' => (function () {
                 $parameterBag = $this->createMock(ParameterBagInterface::class);
-                $parameterBag->method('get')->willReturnCallback(static fn(string $name): ?string => $name === 'kernel.project_dir' ? '/tmp' : null);
+                $parameterBag->method('get')->willReturnCallback(static fn(string $name): ?string => $name
+                === 'kernel.project_dir'
+                        ? '/tmp'
+                        : null);
 
                 return $parameterBag;
             })(),
@@ -181,10 +183,7 @@ class LlmQueryHandlerTest extends TestCase
         }
 
         $llmService = $this->createMock(LlmService::class);
-        $llmService
-            ->expects($this->exactly(2))
-            ->method('generateText')
-            ->willReturn('Résumé intermédiaire');
+        $llmService->expects($this->exactly(2))->method('generateText')->willReturn('Résumé intermédiaire');
 
         // We expect LLM to stream the final combination
         $llmService
@@ -335,16 +334,20 @@ class LlmQueryHandlerTest extends TestCase
 
         $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
         $persistedReminders = [];
-        $entityManager->method('persist')->willReturnCallback(static function ($entity) use (&$persistedReminders) {
-            if ($entity instanceof \App\Entity\Reminder) {
-                $persistedReminders[] = $entity;
-            }
-        });
+        $entityManager
+            ->method('persist')
+            ->willReturnCallback(static function ($entity) use (&$persistedReminders) {
+                if ($entity instanceof \App\Entity\Reminder) {
+                    $persistedReminders[] = $entity;
+                }
+            });
         $entityManager->method('flush');
 
         $bus = $this->createMock(MessageBusInterface::class);
         $dispatched = [];
-        $bus->method('dispatch')->willReturnCallback(static function (object $message, array $stamps = []) use (&$dispatched) {
+        $bus->method('dispatch')->willReturnCallback(static function (object $message, array $stamps = []) use (
+            &$dispatched,
+        ) {
             $dispatched[] = $message;
 
             return new Envelope($message);
@@ -352,9 +355,12 @@ class LlmQueryHandlerTest extends TestCase
 
         $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
         $channelRepository->method('findAllForUser')->willReturn([]);
-        $channelRepository->method('findOneBy')->willReturnCallback(static function (array $criteria) use ($channel) {
-            return ($criteria['slug'] ?? null) === 'assistant' ? $channel : null;
-        });
+        $channelRepository->method('findOneBy')->willReturnCallback(static fn(array $criteria) => (
+            $criteria['slug'] ?? null
+        )
+            === 'assistant'
+                ? $channel
+                : null);
 
         $userRepository = $this->createMock(UserRepository::class);
         $userRepository->method('find')->willReturn($user);
@@ -388,29 +394,27 @@ class LlmQueryHandlerTest extends TestCase
             yield 'Voulez-vous que je programme ce rappel ?';
         })();
 
-        $llmService
-            ->expects($this->once())
-            ->method('generateStreamWithTools')
-            ->willReturn($firstStream);
-        $llmService
-            ->expects($this->once())
-            ->method('generateTextStream')
-            ->willReturn($questionStream);
+        $llmService->expects($this->once())->method('generateStreamWithTools')->willReturn($firstStream);
+        $llmService->expects($this->once())->method('generateTextStream')->willReturn($questionStream);
 
         $formattedTexts = [];
         $messageFormatter = $this->createStub(MessageFormatter::class);
-        $messageFormatter->method('format')->willReturnCallback(static function ($text) use (&$formattedTexts) {
-            $formattedTexts[] = $text;
+        $messageFormatter
+            ->method('format')
+            ->willReturnCallback(static function ($text) use (&$formattedTexts) {
+                $formattedTexts[] = $text;
 
-            return '<p>' . $text . '</p>';
-        });
+                return '<p>' . $text . '</p>';
+            });
 
         $hub = $this->createMock(HubInterface::class);
         $hub->expects($this->atLeastOnce())->method('publish')->with(static::isInstanceOf(Update::class));
 
         $renderedTemplates = [];
         $twig = $this->createStub(\Twig\Environment::class);
-        $twig->method('render')->willReturnCallback(static function (string $name, array $context = []) use (&$renderedTemplates) {
+        $twig->method('render')->willReturnCallback(static function (string $name, array $context = []) use (
+            &$renderedTemplates,
+        ) {
             $renderedTemplates[] = $name;
 
             return '<div>test</div>';
@@ -434,9 +438,9 @@ class LlmQueryHandlerTest extends TestCase
         $message = new LlmQueryMessage('rappelle moi d\'aller manger à 15h22', 42, 'general', 'help-123');
         $handler($message);
 
-        $this->assertSame([], $persistedReminders);
-        $this->assertSame([], $dispatched);
-        $this->assertContains('dashboard/_tool_confirmation.html.twig', $renderedTemplates);
-        $this->assertStringContainsString('Voulez-vous que je programme ce rappel', implode(' ', $formattedTexts));
+        static::assertSame([], $persistedReminders);
+        static::assertSame([], $dispatched);
+        static::assertContains('dashboard/_tool_confirmation.html.twig', $renderedTemplates);
+        static::assertStringContainsString('Voulez-vous que je programme ce rappel', implode(' ', $formattedTexts));
     }
 }

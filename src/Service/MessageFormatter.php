@@ -217,7 +217,8 @@ class MessageFormatter
 
                 $isMe = $currentUsername && strcasecmp($username, $currentUsername) === 0;
                 $class = $isMe ? 'mention mention-me' : 'mention';
-                $displayName = $user->getDisplayName() ?: $user->getUsername();
+                $rawDisplayName = $user->getDisplayName();
+                $displayName = ($rawDisplayName !== null && $rawDisplayName !== '') ? $rawDisplayName : $user->getUsername();
                 $url = '/dm/' . urlencode($user->getUsername());
 
                 return (
@@ -327,7 +328,7 @@ class MessageFormatter
             '/:([a-zA-Z0-9_\-\+]+):/',
             static function ($matches) {
                 $shortcode = $matches[1];
-                if (isset(EmojiMapping::MAPPING[$shortcode])) {
+                if (\array_key_exists($shortcode, EmojiMapping::MAPPING)) {
                     return EmojiMapping::MAPPING[$shortcode];
                 }
 
@@ -344,7 +345,7 @@ class MessageFormatter
         if ($this->reverseEmojiMapping === null) {
             $this->reverseEmojiMapping = [];
             foreach (EmojiMapping::MAPPING as $code => $unicode) {
-                if (isset($this->reverseEmojiMapping[$unicode])) {
+                if (\array_key_exists($unicode, $this->reverseEmojiMapping)) {
                     continue;
                 }
 
@@ -379,7 +380,7 @@ class MessageFormatter
 
     private function replaceCustomEmojis(string $text): string
     {
-        if (empty($this->emojiBaseUrl) || !str_contains($text, '[:')) {
+        if ($this->emojiBaseUrl === '' || !str_contains($text, '[:')) {
             return $text;
         }
 
@@ -447,13 +448,13 @@ class MessageFormatter
 
     private function replaceRedfaceEmoji(string $text): string
     {
-        if (empty($this->emojiBaseUrl)) {
+        if ($this->emojiBaseUrl === '') {
             return $text;
         }
 
         $parsed = parse_url($this->emojiBaseUrl);
         $origin = $parsed['scheme'] . '://' . $parsed['host'];
-        if (isset($parsed['port'])) {
+        if (\array_key_exists('port', $parsed) && $parsed['port'] !== null) {
             $origin .= ':' . $parsed['port'];
         }
         $url = $origin . '/icones/redface.gif';

@@ -69,11 +69,11 @@ final readonly class SummarizeChannelTool implements AiToolInterface
         $userId = $authorUserId ?? 0;
         $result = $this->execute(['channelSlug' => $channelSlug, 'limit' => $limit], $userId, $workspaceId);
 
-        if (isset($result['error'])) {
+        if (($result['error'] ?? null) !== null) {
             return (string) $result['error'];
         }
 
-        if (isset($result['result'])) {
+        if (($result['result'] ?? null) !== null) {
             return (string) $result['result'];
         }
 
@@ -95,7 +95,7 @@ final readonly class SummarizeChannelTool implements AiToolInterface
             return ['error' => 'Veuillez fournir un canal valide.'];
         }
 
-        $limit = isset($arguments['limit']) ? (int) $arguments['limit'] : 50;
+        $limit = \array_key_exists('limit', $arguments) && $arguments['limit'] !== null ? (int) $arguments['limit'] : 50;
         $limit = max(5, min(100, $limit));
 
         $channel = $this->channelResolver->resolve($channelSlug, $workspaceId);
@@ -121,7 +121,8 @@ final readonly class SummarizeChannelTool implements AiToolInterface
                 continue;
             }
 
-            $author = $msg->getAuthor()?->getDisplayName() ?: ($msg->getAuthor()?->getUsername() ?? 'Inconnu');
+            $authorDisp = $msg->getAuthor()?->getDisplayName();
+            $author = ($authorDisp !== null && $authorDisp !== '') ? $authorDisp : ($msg->getAuthor()?->getUsername() ?? 'Inconnu');
             $date = $msg->getCreatedAt()->format('d/m H:i');
             $extractedText[] = sprintf('[%s] %s: %s', $date, $author, mb_substr($content, 0, 500));
         }

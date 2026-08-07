@@ -50,12 +50,20 @@ final readonly class MessageCacheSubscriber
             if ($parent instanceof Message) {
                 $this->invalidate($parent);
             }
-        } elseif ($entity instanceof Channel) {
+
+            return;
+        }
+
+        if ($entity instanceof Channel) {
             $message = $entity->getParentMessage();
             if ($message instanceof Message) {
                 $this->invalidate($message);
             }
-        } elseif ($entity instanceof PollVote) {
+
+            return;
+        }
+
+        if ($entity instanceof PollVote) {
             $message = $entity->getOption()?->getPoll()?->getMessage();
             if ($message instanceof Message) {
                 $this->invalidate($message);

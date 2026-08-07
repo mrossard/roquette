@@ -129,11 +129,13 @@ readonly class ChannelExportService
                 }
             }
         } finally {
-            $status = $zip->getStatusString();
-            $closed = $zip->close();
-            if (!$closed) {
-                throw new \RuntimeException('ZipArchive::close() failed. Status: ' . $status);
-            }
+            // Cleanup phase
+        }
+
+        $status = $zip->getStatusString();
+        $closed = $zip->close();
+        if (!$closed) {
+            throw new \RuntimeException('ZipArchive::close() failed. Status: ' . $status);
         }
 
         if (!file_exists($zipFile)) {

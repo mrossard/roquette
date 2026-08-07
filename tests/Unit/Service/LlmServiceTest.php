@@ -37,8 +37,8 @@ class LlmServiceTest extends TestCase
             ->method('invoke')
             ->with(
                 'test-model',
-                $this->isInstanceOf(MessageBag::class),
-                $this->callback(static fn($opts) => ($opts['stream'] ?? false) === true),
+                static::isInstanceOf(MessageBag::class),
+                static::callback(static fn($opts) => ($opts['stream'] ?? false) === true),
             )
             ->willReturn($deferredResult);
 
@@ -46,7 +46,7 @@ class LlmServiceTest extends TestCase
         $generatorResult = $llmService->generateTextStream('test prompt');
 
         $chunks = iterator_to_array($generatorResult);
-        $this->assertSame(['Hello ', 'world!'], $chunks);
+        static::assertSame(['Hello ', 'world!'], $chunks);
     }
 
     public function testGenerateTextUsesStreamingAndReturnsConcatenatedText(): void
@@ -70,15 +70,15 @@ class LlmServiceTest extends TestCase
             ->method('invoke')
             ->with(
                 'test-model',
-                $this->isInstanceOf(MessageBag::class),
-                $this->callback(static fn($opts) => ($opts['stream'] ?? false) === true),
+                static::isInstanceOf(MessageBag::class),
+                static::callback(static fn($opts) => ($opts['stream'] ?? false) === true),
             )
             ->willReturn($deferredResult);
 
         $llmService = new LlmService($platform, 'test-model', 'System prompt');
         $text = $llmService->generateText('test prompt');
 
-        $this->assertSame('Hello world!', $text);
+        static::assertSame('Hello world!', $text);
     }
 
     public function testChatUsesStreamingAndReturnsConcatenatedText(): void
@@ -102,13 +102,13 @@ class LlmServiceTest extends TestCase
         $platform
             ->expects($this->once())
             ->method('invoke')
-            ->with('test-model', $messageBag, $this->callback(static fn($opts) => ($opts['stream'] ?? false) === true))
+            ->with('test-model', $messageBag, static::callback(static fn($opts) => ($opts['stream'] ?? false) === true))
             ->willReturn($deferredResult);
 
         $llmService = new LlmService($platform, 'test-model', 'System prompt');
         $text = $llmService->chat($messageBag);
 
-        $this->assertSame('Chat response', $text);
+        static::assertSame('Chat response', $text);
     }
 
     public function testRetriesTransientFailureBeforeStreaming(): void
@@ -125,7 +125,9 @@ class LlmServiceTest extends TestCase
 
                 if (1 === $invocations) {
                     $failingConverter = $this->createStub(ResultConverterInterface::class);
-                    $failingConverter->method('convert')->willThrowException(new \RuntimeException('transient failure'));
+                    $failingConverter
+                        ->method('convert')
+                        ->willThrowException(new \RuntimeException('transient failure'));
 
                     return new DeferredResult($failingConverter, $this->createStub(RawResultInterface::class));
                 }
@@ -144,10 +146,7 @@ class LlmServiceTest extends TestCase
     {
         $platform = $this->createMock(PlatformInterface::class);
 
-        $platform
-            ->expects($this->exactly(3))
-            ->method('invoke')
-            ->willReturn($this->makeFailingDeferred());
+        $platform->expects($this->exactly(3))->method('invoke')->willReturn($this->makeFailingDeferred());
 
         $llmService = new LlmService($platform, 'test-model', 'System prompt', null, maxRetries: 2);
 
@@ -159,10 +158,16 @@ class LlmServiceTest extends TestCase
     {
         $platform = $this->createMock(PlatformInterface::class);
         $failingConverter = $this->createStub(ResultConverterInterface::class);
-        $failingConverter->method('convert')->willReturn(new StreamResult((static function () {
-            yield new TextDelta('partial ');
-            throw new \RuntimeException('mid-stream failure');
-        })()));
+        $failingConverter
+            ->method('convert')
+            ->willReturn(
+                new StreamResult(
+                    (static function () {
+                        yield new TextDelta('partial ');
+                        throw new \RuntimeException('mid-stream failure');
+                    })(),
+                ),
+            );
 
         $platform
             ->expects($this->once())
@@ -178,9 +183,15 @@ class LlmServiceTest extends TestCase
     private function makeDeferred(string $text): DeferredResult
     {
         $resultConverter = $this->createStub(ResultConverterInterface::class);
-        $resultConverter->method('convert')->willReturn(new StreamResult((static function () use ($text) {
-            yield new TextDelta($text);
-        })()));
+        $resultConverter
+            ->method('convert')
+            ->willReturn(
+                new StreamResult(
+                    (static function () use ($text) {
+                        yield new TextDelta($text);
+                    })(),
+                ),
+            );
 
         return new DeferredResult($resultConverter, $this->createStub(RawResultInterface::class));
     }

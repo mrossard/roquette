@@ -83,7 +83,7 @@ final class InvitationController extends AbstractController
                 'invitationId' => $invitation->getId(),
                 'channelSlug' => $activeChannel->getSlug(),
                 'channelName' => $activeChannel->getName(),
-                'senderName' => $currentUser->getDisplayName() ?: $currentUser->getUsername(),
+                'senderName' => ($currentUser->getDisplayName() !== null && $currentUser->getDisplayName() !== '') ? $currentUser->getDisplayName() : $currentUser->getUsername(),
                 'html' => $sidebarHtml,
             ],
             'invitation_received',

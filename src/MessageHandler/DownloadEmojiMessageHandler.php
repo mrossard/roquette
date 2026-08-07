@@ -41,7 +41,7 @@ class DownloadEmojiMessageHandler
             return;
         }
 
-        if (empty($this->emojiBaseUrl)) {
+        if ($this->emojiBaseUrl === '') {
             return;
         }
 

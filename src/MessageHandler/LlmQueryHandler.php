@@ -10,8 +10,8 @@ use App\Ai\DocumentContextBuilder;
 use App\Ai\IntentClassifier;
 use App\Ai\ToolActionSigner;
 use App\Ai\ToolRegistry;
-use App\Ai\ToolRunState;
 use App\Ai\ToolRunner;
+use App\Ai\ToolRunState;
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
 use App\Repository\ChannelRepository;
@@ -77,10 +77,17 @@ final readonly class LlmQueryHandler
             $workspace = $this->workspaceRepository->find($message->getWorkspaceId());
         }
 
-        $currentChannel = $this->channelResolver->resolveFromList($channelSlug, $channels)
-            ?? $this->channelRepository->findOneBy(['slug' => $channelSlug]);
+        $currentChannel = $this->channelResolver->resolveFromList(
+            $channelSlug,
+            $channels,
+        ) ?? $this->channelRepository->findOneBy(['slug' => $channelSlug]);
 
-        [$prompt, $systemPrompt] = $this->getDefaultHelpPrompts($message->getQuestion(), $channels, $workspace, $currentChannel);
+        [$prompt, $systemPrompt] = $this->getDefaultHelpPrompts(
+            $message->getQuestion(),
+            $channels,
+            $workspace,
+            $currentChannel,
+        );
 
         $intent = $message->getIntent() ?? 'help';
         $channelName = null;
@@ -89,7 +96,12 @@ final readonly class LlmQueryHandler
 
         try {
             if ($message->getIntent() === null && str_starts_with($channelSlug, 'dm-robot-roquette-')) {
-                $classification = $this->intentClassifier->classify($message->getQuestion(), $channels, $channelSlug, $workspace);
+                $classification = $this->intentClassifier->classify(
+                    $message->getQuestion(),
+                    $channels,
+                    $channelSlug,
+                    $workspace,
+                );
                 $this->logger->info('Classification result:', ['classification' => $classification]);
                 $intent = $classification['intent'];
                 $targetChannelSlug = $classification['channelSlug'];
@@ -334,10 +346,12 @@ final readonly class LlmQueryHandler
             return $prompt;
         }
 
-        return "Historique de la conversation (messages précédents) :\n"
+        return (
+            "Historique de la conversation (messages précédents) :\n"
             . implode("\n", $history)
             . "\n\n---\n\n"
-            . $prompt;
+            . $prompt
+        );
     }
 
     /**
@@ -352,15 +366,12 @@ final readonly class LlmQueryHandler
     ): array {
         $context = $this->documentContextBuilder->buildContext($question);
 
-        $channelList = array_map(
-            fn($c) => sprintf(
-                '- Nom: "%s", Slug: "%s", Workspace: "%s"',
-                $c->getName(),
-                $c->getSlug(),
-                $c->getWorkspace()?->getName() ?? 'Hors workspace',
-            ),
-            $channels
-        );
+        $channelList = array_map(static fn($c) => sprintf(
+            '- Nom: "%s", Slug: "%s", Workspace: "%s"',
+            $c->getName(),
+            $c->getSlug(),
+            $c->getWorkspace()?->getName() ?? 'Hors workspace',
+        ), $channels);
 
         $currentWorkspaceName = $currentWorkspace?->getName();
         $currentWorkspaceHint = $currentWorkspaceName !== null
@@ -375,7 +386,9 @@ final readonly class LlmQueryHandler
 
         $systemPrompt =
             "Tu es 'Assistant Roquette', un assistant virtuel d'aide dédié EXCLUSIVEMENT à l'application Roquette.\n"
-            . "La date et l'heure actuelles sont : " . $now->format('d/m/Y H:i') . ".\n"
+            . "La date et l'heure actuelles sont : "
+            . $now->format('d/m/Y H:i')
+            . ".\n"
             . $currentChannelHint
             . "CONSIGNES STRICTES DE PÉRIMÈTRE ET DE SÉCURITÉ :\n"
             . "- Tu réponds UNIQUEMENT et EXCLUSIVEMENT aux questions à l'aide des outils (Tools) disponibles ou de la documentation utilisateur fournie ci-dessous.\n"
@@ -387,7 +400,8 @@ final readonly class LlmQueryHandler
             . "Tu peux résumer les échanges d'un canal en appelant l'outil 'summarize_channel'.\n"
             . "Tu peux rechercher des messages/fichiers en appelant l'outil 'search_messages'.\n"
             . "Liste des canaux existants :\n"
-            . implode("\n", $channelList) . "\n\n"
+            . implode("\n", $channelList)
+            . "\n\n"
             . $currentWorkspaceHint
             . "DIRECTIVES STRICTES SUR LES OUTILS :\n"
             . "- Pour utiliser un outil ('schedule_reminder', 'create_poll', 'summarize_channel', 'search_messages'), tu DOIS EXCLUSIVEMENT effectuer un appel d'outil natif (tool call / function call).\n"

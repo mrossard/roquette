@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Channel;
+use App\Entity\User;
 use App\Entity\Webhook;
 use App\Repository\ChannelRepository;
 use App\Repository\WebhookRepository;
@@ -120,10 +122,7 @@ final class WebhookController extends AbstractController
         $entityManager->persist($webhook);
         $entityManager->flush();
 
-        return $this->render('dashboard/_channel_webhooks.html.twig', [
-            'activeChannel' => $channel,
-            'webhooks' => $webhookRepository->findBy(['channel' => $channel], ['createdAt' => 'ASC']),
-        ]);
+        return $this->renderWebhooksResponse($channel, $webhookRepository);
     }
 
     #[Route('/webhooks/{id}/toggle', name: 'app_webhook_toggle', methods: ['POST'])]
@@ -133,30 +132,20 @@ final class WebhookController extends AbstractController
         WebhookRepository $webhookRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
         $webhook = $webhookRepository->find($id);
-
         if (!$webhook) {
             return new Response('Webhook non trouvé', Response::HTTP_NOT_FOUND);
         }
 
-        $channel = $webhook->getChannel();
+        $channel = $this->getChannelIfAdmin($webhook);
         if (!$channel) {
-            return new Response('Canal associé non trouvé', Response::HTTP_NOT_FOUND);
-        }
-
-        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
-            return new Response('Accès refusé', Response::HTTP_FORBIDDEN);
+            return new Response('Accès refusé ou canal introuvable', Response::HTTP_FORBIDDEN);
         }
 
         $webhook->setIsActive(!$webhook->isActive());
         $entityManager->flush();
 
-        return $this->render('dashboard/_channel_webhooks.html.twig', [
-            'activeChannel' => $channel,
-            'webhooks' => $webhookRepository->findBy(['channel' => $channel], ['createdAt' => 'ASC']),
-        ]);
+        return $this->renderWebhooksResponse($channel, $webhookRepository);
     }
 
     #[Route('/webhooks/{id}/delete', name: 'app_webhook_delete', methods: ['POST'])]
@@ -166,26 +155,44 @@ final class WebhookController extends AbstractController
         WebhookRepository $webhookRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
         $webhook = $webhookRepository->find($id);
-
         if (!$webhook) {
             return new Response('Webhook non trouvé', Response::HTTP_NOT_FOUND);
         }
 
-        $channel = $webhook->getChannel();
+        $channel = $this->getChannelIfAdmin($webhook);
         if (!$channel) {
-            return new Response('Canal associé non trouvé', Response::HTTP_NOT_FOUND);
-        }
-
-        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
-            return new Response('Accès refusé', Response::HTTP_FORBIDDEN);
+            return new Response('Accès refusé ou canal introuvable', Response::HTTP_FORBIDDEN);
         }
 
         $entityManager->remove($webhook);
         $entityManager->flush();
 
+        return $this->renderWebhooksResponse($channel, $webhookRepository);
+    }
+
+    private function getChannelIfAdmin(Webhook $webhook): ?Channel
+    {
+        $channel = $webhook->getChannel();
+        if (!$channel) {
+            return null;
+        }
+
+        /** @var \App\Entity\User|null $currentUser */
+        $currentUser = $this->getUser();
+        if ($currentUser === null) {
+            return null;
+        }
+
+        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
+            return null;
+        }
+
+        return $channel;
+    }
+
+    private function renderWebhooksResponse(\App\Entity\Channel $channel, WebhookRepository $webhookRepository): Response
+    {
         return $this->render('dashboard/_channel_webhooks.html.twig', [
             'activeChannel' => $channel,
             'webhooks' => $webhookRepository->findBy(['channel' => $channel], ['createdAt' => 'ASC']),

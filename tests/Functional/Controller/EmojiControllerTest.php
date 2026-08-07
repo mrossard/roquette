@@ -132,16 +132,16 @@ class EmojiControllerTest extends WebTestCase
         $this->client->request('GET', '/api/autocomplete/custom-emojis?q=sm');
         $this->assertResponseIsSuccessful();
         $content = $this->client->getResponse()->getContent();
-        $this->assertStringContainsString('smile', $content);
-        $this->assertStringNotContainsString('sad', $content);
-        $this->assertStringNotContainsString('invalid', $content);
+        static::assertStringContainsString('smile', $content);
+        static::assertStringNotContainsString('sad', $content);
+        static::assertStringNotContainsString('invalid', $content);
 
         // Request with empty query
         $this->client->request('GET', '/api/autocomplete/custom-emojis');
         $this->assertResponseIsSuccessful();
         $content = $this->client->getResponse()->getContent();
-        $this->assertStringContainsString('smile', $content);
-        $this->assertStringContainsString('sad', $content);
-        $this->assertStringNotContainsString('invalid', $content);
+        static::assertStringContainsString('smile', $content);
+        static::assertStringContainsString('sad', $content);
+        static::assertStringNotContainsString('invalid', $content);
     }
 }

@@ -112,7 +112,7 @@ final class WorkspaceController extends AbstractController
             return $this->redirectToRoute('app_workspaces');
         }
 
-        $workspace = $this->workspaceManager->create($name, $description ?: null, $currentUser);
+        $workspace = $this->workspaceManager->create($name, $description !== '' ? $description : null, $currentUser);
         $request->getSession()->set('current_workspace_id', $workspace->getId());
 
         $defaultChannel = $this->workspaceManager->getDefaultChannel($workspace);
@@ -198,7 +198,7 @@ final class WorkspaceController extends AbstractController
             }
         }
 
-        $this->workspaceManager->update($workspace, $name, $description ?: null);
+        $this->workspaceManager->update($workspace, $name, $description !== '' ? $description : null);
         $entityManager->flush();
 
         $this->addFlash('success', $this->translator->trans('Les paramètres du workspace ont été modifiés.'));

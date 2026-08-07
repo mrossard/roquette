@@ -152,7 +152,7 @@ class AppExtension extends AbstractExtension
             $messages = $em->getUnitOfWork()->getIdentityMap()[\App\Entity\Message::class] ?? [];
             $messageIds = array_keys($messages);
 
-            if (!empty($messageIds)) {
+            if ($messageIds !== []) {
                 $channels = $this->channelRepository
                     ->createQueryBuilder('c')
                     ->where('c.parentMessage IN (:messageIds)')
@@ -165,9 +165,11 @@ class AppExtension extends AbstractExtension
                 }
 
                 foreach ($channels as $channel) {
-                    if ($channel->getParentMessage() !== null) {
-                        $this->subchannelCache[$channel->getParentMessage()->getId()] = $channel;
+                    if ($channel->getParentMessage() === null) {
+                        continue;
                     }
+
+                    $this->subchannelCache[$channel->getParentMessage()->getId()] = $channel;
                 }
             }
         }
@@ -211,4 +213,3 @@ class AppExtension extends AbstractExtension
         return $this->messageRepository?->countPendingModeration() ?? 0;
     }
 }
-

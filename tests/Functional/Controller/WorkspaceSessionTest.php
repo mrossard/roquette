@@ -139,7 +139,7 @@ class WorkspaceSessionTest extends WebTestCase
         // 1. Visit channel A in Workspace A -> Session should remember Workspace A
         $this->client->request('GET', '/channels/channel-a');
         $this->assertResponseIsSuccessful();
-        $this->assertEquals(
+        static::assertEquals(
             $this->workspaceA->getId(),
             $this->client->getRequest()->getSession()->get('current_workspace_id'),
         );
@@ -147,7 +147,7 @@ class WorkspaceSessionTest extends WebTestCase
         // 2. Visit DM channel (no workspace) -> Session should still keep Workspace A
         $this->client->request('GET', '/channels/dm-test-channel');
         $this->assertResponseIsSuccessful();
-        $this->assertEquals(
+        static::assertEquals(
             $this->workspaceA->getId(),
             $this->client->getRequest()->getSession()->get('current_workspace_id'),
         );
@@ -156,7 +156,7 @@ class WorkspaceSessionTest extends WebTestCase
         $this->client->request('GET', '/w/workspace-b');
         $this->assertResponseRedirects('/channels/channel-b');
         $this->client->followRedirect();
-        $this->assertEquals(
+        static::assertEquals(
             $this->workspaceB->getId(),
             $this->client->getRequest()->getSession()->get('current_workspace_id'),
         );
@@ -164,7 +164,7 @@ class WorkspaceSessionTest extends WebTestCase
         // 4. Visit DM channel again -> Session should still keep Workspace B
         $this->client->request('GET', '/channels/dm-test-channel');
         $this->assertResponseIsSuccessful();
-        $this->assertEquals(
+        static::assertEquals(
             $this->workspaceB->getId(),
             $this->client->getRequest()->getSession()->get('current_workspace_id'),
         );
@@ -174,16 +174,30 @@ class WorkspaceSessionTest extends WebTestCase
     {
         // 1. Create a dummy image file for upload
         $tempFile = tempnam(sys_get_temp_dir(), 'avatar');
-        file_put_contents($tempFile, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='));
-        $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile($tempFile, 'avatar.png', 'image/png', null, true);
+        file_put_contents($tempFile, base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+            strict: true,
+        ));
+        $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
+            $tempFile,
+            'avatar.png',
+            'image/png',
+            null,
+            true,
+        );
 
         // 2. Submit workspace edit form with the avatar
-        $this->client->request('POST', '/workspaces/workspace-a/edit', [
-            'name' => 'Workspace A',
-            'description' => 'Updated Description',
-        ], [
-            'avatar' => $uploadedFile
-        ]);
+        $this->client->request(
+            'POST',
+            '/workspaces/workspace-a/edit',
+            [
+                'name' => 'Workspace A',
+                'description' => 'Updated Description',
+            ],
+            [
+                'avatar' => $uploadedFile,
+            ],
+        );
         $this->assertResponseRedirects('/w/workspace-a');
         $this->client->followRedirect();
 
@@ -191,12 +205,12 @@ class WorkspaceSessionTest extends WebTestCase
         $this->entityManager->clear();
         $wsRepo = $this->entityManager->getRepository(Workspace::class);
         $wsA = $wsRepo->findOneBy(['slug' => 'workspace-a']);
-        $this->assertNotNull($wsA->getAvatarPath());
+        static::assertNotNull($wsA->getAvatarPath());
 
         // 4. Request the serve avatar route and check response content-type
         $this->client->request('GET', '/workspaces/workspace-a/avatar');
         $this->assertResponseIsSuccessful();
-        $this->assertEquals('image/png', $this->client->getResponse()->headers->get('Content-Type'));
+        static::assertSame('image/png', $this->client->getResponse()->headers->get('Content-Type'));
 
         // 5. Delete the avatar
         $this->client->request('POST', '/workspaces/workspace-a/edit', [
@@ -210,11 +224,11 @@ class WorkspaceSessionTest extends WebTestCase
         // 6. Verify avatar path is null in DB
         $this->entityManager->clear();
         $wsA = $wsRepo->findOneBy(['slug' => 'workspace-a']);
-        $this->assertNull($wsA->getAvatarPath());
+        static::assertNull($wsA->getAvatarPath());
 
         // Cleanup temporary file if it still exists
         if (file_exists($tempFile)) {
-            @unlink($tempFile);
+            unlink($tempFile);
         }
     }
 }

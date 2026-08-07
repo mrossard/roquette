@@ -31,18 +31,23 @@ final readonly class LlmRetry
      */
     public function stream(MessageBag $messageBag, array $options): \Generator
     {
-        for ($attempt = 1; ; $attempt++) {
+        for ($attempt = 1;; $attempt++) {
             $produced = false;
 
             try {
                 $result = $this->platform->invoke($this->model, $messageBag, $options);
-                $this->logger?->info('LlmService invoke called (stream)', ['model' => $this->model, 'attempt' => $attempt]);
+                $this->logger?->info('LlmService invoke called (stream)', [
+                    'model' => $this->model,
+                    'attempt' => $attempt,
+                ]);
 
                 foreach ($result->asStream() as $delta) {
-                    if ($delta instanceof TextDelta || $delta instanceof ToolCallComplete) {
-                        $produced = true;
-                        yield $delta;
+                    if (!($delta instanceof TextDelta || $delta instanceof ToolCallComplete)) {
+                        continue;
                     }
+
+                    $produced = true;
+                    yield $delta;
                 }
 
                 return;

@@ -35,16 +35,19 @@ final class MessageController extends AbstractController
         MessageFormatter $messageFormatter,
     ): Response {
         $content = '';
-        if ($request->getContent()) {
-            $data = json_decode($request->getContent(), true);
-            $content = $data['content'] ?? '';
+        $rawBody = $request->getContent();
+        if ($rawBody !== '') {
+            $data = json_decode($rawBody, true);
+            if (is_array($data)) {
+                $content = (string) ($data['content'] ?? '');
+            }
         }
-        if (!$content) {
+
+        if ($content === '') {
             $requestContent = $request->request->get('content');
-            $content =
-                $requestContent !== null && $requestContent !== ''
-                    ? $requestContent
-                    : $request->request->get('message', '');
+            $content = $requestContent !== null && (string) $requestContent !== ''
+                ? (string) $requestContent
+                : (string) $request->request->get('message', '');
         }
 
         $content = $slashCommandHandler->processPreview($content);

@@ -48,7 +48,7 @@ class WorkspaceRepository extends ServiceEntityRepository
 
         $conditions->add($qb->expr()->in('w.id', $localGroupDql));
 
-        if (!empty($providerGroupIdentifiers)) {
+        if ($providerGroupIdentifiers !== []) {
             $conditions->add($qb->expr()->in('ug.groupIdentifier', ':providerGroupIdentifiers'));
             $qb->setParameter('providerGroupIdentifiers', $providerGroupIdentifiers);
         }

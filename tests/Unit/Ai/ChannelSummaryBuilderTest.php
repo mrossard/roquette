@@ -68,7 +68,7 @@ final class ChannelSummaryBuilderTest extends TestCase
 
         [$prompt] = $builder->build($user, [], 'general');
 
-        $this->assertStringContainsString('n\'as pas trouvé le canal', $prompt);
+        static::assertStringContainsString('n\'as pas trouvé le canal', $prompt);
     }
 
     public function testBuildsStructuredMessagesPrompt(): void
@@ -76,9 +76,10 @@ final class ChannelSummaryBuilderTest extends TestCase
         $channel = $this->makeChannel('général', 'general');
 
         $messageRepo = $this->createMock(MessageRepository::class);
-        $messageRepo->expects($this->once())
+        $messageRepo
+            ->expects($this->once())
             ->method('findUnreadInChannel')
-            ->with($channel, $this->isInstanceOf(User::class), null)
+            ->with($channel, static::isInstanceOf(User::class), null)
             ->willReturn([$this->makeMessage('Bonjour tout le monde', 'alice')]);
 
         $builder = $this->buildBuilder($messageRepo);
@@ -86,9 +87,9 @@ final class ChannelSummaryBuilderTest extends TestCase
 
         [$prompt, $systemPrompt] = $builder->build($user, [$channel], 'general');
 
-        $this->assertStringContainsString('Bonjour tout le monde', $prompt);
-        $this->assertStringContainsString('auteur', $prompt);
-        $this->assertStringContainsString('Roquette', $systemPrompt);
+        static::assertStringContainsString('Bonjour tout le monde', $prompt);
+        static::assertStringContainsString('auteur', $prompt);
+        static::assertStringContainsString('Roquette', $systemPrompt);
     }
 
     public function testBatchesWhenMessagesExceedLimit(): void
@@ -102,9 +103,10 @@ final class ChannelSummaryBuilderTest extends TestCase
         ];
 
         $messageRepo = $this->createMock(MessageRepository::class);
-        $messageRepo->expects($this->once())
+        $messageRepo
+            ->expects($this->once())
             ->method('findUnreadInChannel')
-            ->with($channel, $this->isInstanceOf(User::class), null)
+            ->with($channel, static::isInstanceOf(User::class), null)
             ->willReturn($messages);
 
         $builder = $this->buildBuilder($messageRepo, maxSummaryMessages: 2);
@@ -112,10 +114,10 @@ final class ChannelSummaryBuilderTest extends TestCase
 
         [$prompt, , $batches] = $builder->build($user, [$channel], 'general');
 
-        $this->assertSame('', $prompt);
-        $this->assertCount(2, $batches);
-        $this->assertCount(2, $batches[0]);
-        $this->assertCount(1, $batches[1]);
+        static::assertSame('', $prompt);
+        static::assertCount(2, $batches);
+        static::assertCount(2, $batches[0]);
+        static::assertCount(1, $batches[1]);
     }
 
     public function testBatchesAreCappedByMaxSummaryBatches(): void
@@ -128,9 +130,10 @@ final class ChannelSummaryBuilderTest extends TestCase
         }
 
         $messageRepo = $this->createMock(MessageRepository::class);
-        $messageRepo->expects($this->once())
+        $messageRepo
+            ->expects($this->once())
             ->method('findUnreadInChannel')
-            ->with($channel, $this->isInstanceOf(User::class), null)
+            ->with($channel, static::isInstanceOf(User::class), null)
             ->willReturn($messages);
 
         $builder = $this->buildBuilder($messageRepo, maxSummaryMessages: 10, maxSummaryBatches: 2);
@@ -138,11 +141,11 @@ final class ChannelSummaryBuilderTest extends TestCase
 
         [$prompt, , $batches] = $builder->build($user, [$channel], 'general');
 
-        $this->assertSame('', $prompt);
-        $this->assertCount(2, $batches);
-        $this->assertCount(10, $batches[0]);
-        $this->assertCount(10, $batches[1]);
-        $this->assertStringContainsString('message 29', $batches[1][9]['contenu']);
+        static::assertSame('', $prompt);
+        static::assertCount(2, $batches);
+        static::assertCount(10, $batches[0]);
+        static::assertCount(10, $batches[1]);
+        static::assertStringContainsString('message 29', $batches[1][9]['contenu']);
     }
 
     public function testFallbackToLastMessagesWhenNoUnread(): void
@@ -169,6 +172,6 @@ final class ChannelSummaryBuilderTest extends TestCase
 
         [$prompt] = $builder->build($user, [$channel], 'general');
 
-        $this->assertStringContainsString('ancien message', $prompt);
+        static::assertStringContainsString('ancien message', $prompt);
     }
 }

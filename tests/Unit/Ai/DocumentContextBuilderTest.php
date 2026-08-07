@@ -6,13 +6,13 @@ namespace App\Tests\Unit\Ai;
 
 use App\Ai\DocumentContextBuilder;
 use App\Service\DocChunker;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\TextDocument;
 use Symfony\AI\Store\RetrieverInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 #[AllowMockObjectsWithoutExpectations]
 final class DocumentContextBuilderTest extends TestCase
@@ -40,7 +40,10 @@ final class DocumentContextBuilderTest extends TestCase
             MD);
 
         $parameterBag = $this->createMock(ParameterBagInterface::class);
-        $parameterBag->method('get')->willReturnCallback(static fn(string $name): ?string => $name === 'kernel.project_dir' ? $projectDir : null);
+        $parameterBag->method('get')->willReturnCallback(static fn(string $name): ?string => $name
+            === 'kernel.project_dir'
+                ? $projectDir
+                : null);
 
         $builder = new DocumentContextBuilder(
             $retriever,
@@ -63,27 +66,30 @@ final class DocumentContextBuilderTest extends TestCase
 
     public function testRetrievedDocsAreUsed(): void
     {
-        $doc = new TextDocument('doc-1', 'contenu récupéré', new Metadata(['_title' => 'Section A', '_text' => 'contenu récupéré']));
+        $doc = new TextDocument('doc-1', 'contenu récupéré', new Metadata([
+            '_title' => 'Section A',
+            '_text' => 'contenu récupéré',
+        ]));
 
         $context = $this->buildContext([$doc]);
 
-        $this->assertStringContainsString('### Section A', $context);
-        $this->assertStringContainsString('contenu récupéré', $context);
-        $this->assertStringNotContainsString('Intro du guide', $context);
+        static::assertStringContainsString('### Section A', $context);
+        static::assertStringContainsString('contenu récupéré', $context);
+        static::assertStringNotContainsString('Intro du guide', $context);
     }
 
     public function testFallsBackToChunkedDocWhenEmpty(): void
     {
         $context = $this->buildContext([]);
 
-        $this->assertStringContainsString('Intro du guide.', $context);
-        $this->assertStringContainsString('Contenu de présentation.', $context);
+        static::assertStringContainsString('Intro du guide.', $context);
+        static::assertStringContainsString('Contenu de présentation.', $context);
     }
 
     public function testFallsBackToChunkedDocOnFailure(): void
     {
         $context = $this->buildContext(null, throw: true);
 
-        $this->assertStringContainsString('Intro du guide.', $context);
+        static::assertStringContainsString('Intro du guide.', $context);
     }
 }

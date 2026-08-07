@@ -37,7 +37,7 @@ final class EmojiController extends AbstractController
             return new Response('Too many requests.', Response::HTTP_TOO_MANY_REQUESTS);
         }
 
-        if (empty($this->emojiBaseUrl)) {
+        if ($this->emojiBaseUrl === '') {
             return new Response('Emoji base URL is not configured.', Response::HTTP_NOT_FOUND);
         }
 
@@ -66,8 +66,8 @@ final class EmojiController extends AbstractController
                     ],
                 );
             }
-        } catch (\Exception $e) {
-            // Log or ignore connection issues, fall back to remote redirect
+        } catch (\Throwable $e) {
+            unset($e);
         }
 
         // Dispatch background job to download and save this emoji to Flysystem

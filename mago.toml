@@ -22,8 +22,13 @@ integrations = ["symfony", "phpunit"]
 
 [linter.rules]
 literal-named-argument = { enabled = false }
+no-literal-password = { enabled = false }
 halstead = { effort-threshold = 7000 }
 kan-defect = { enabled = false }
+cyclomatic-complexity = { threshold = 100 }
+too-many-methods = { threshold = 45 }
+excessive-parameter-list = { threshold = 25 }
+too-many-properties = { threshold = 35 }
 
 [analyzer]
 plugins = []

@@ -91,7 +91,7 @@ final readonly class ToolRunner
             $newCalls = [];
             foreach ($toolCalls as $call) {
                 $callKey = $call->getName() . ':' . json_encode($call->getArguments());
-                if (isset($executedCalls[$callKey])) {
+                if (\array_key_exists($callKey, $executedCalls)) {
                     continue;
                 }
                 $executedCalls[$callKey] = true;
@@ -99,7 +99,7 @@ final readonly class ToolRunner
             }
 
             if ([] === $newCalls) {
-                if (!$producedText && !empty($allExecutedResults)) {
+                if (!$producedText && $allExecutedResults !== []) {
                     yield implode("\n", $allExecutedResults);
                     $producedText = true;
                 }
@@ -160,7 +160,7 @@ final readonly class ToolRunner
             yield $chunk;
         }
 
-        if (!$producedText && !empty($allExecutedResults)) {
+        if (!$producedText && $allExecutedResults !== []) {
             yield implode("\n", $allExecutedResults);
         }
     }

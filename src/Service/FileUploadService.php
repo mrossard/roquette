@@ -10,6 +10,7 @@ use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Mime\MimeTypes;
 use Symfony\Contracts\Translation\TranslatorInterface;
+
 /**
  * Handles file upload and deletion via Flysystem.
  *
@@ -202,10 +203,12 @@ class FileUploadService
             $mimeFromExt = new MimeTypes()->getMimeTypes($extension);
             if (!in_array($mimeType, $mimeFromExt, true)) {
                 foreach ($mimeFromExt as $candidate) {
-                    if (in_array($candidate, self::ALLOWED_MIME_TYPES, true)) {
-                        $mimeType = $candidate;
-                        break;
+                    if (!in_array($candidate, self::ALLOWED_MIME_TYPES, true)) {
+                        continue;
                     }
+
+                    $mimeType = $candidate;
+                    break;
                 }
             }
         }
@@ -238,7 +241,7 @@ class FileUploadService
                 \fclose($stream);
             }
 
-            $cleanSvg = (new \enshrined\svgSanitize\Sanitizer())->sanitize($dirtySvg);
+            $cleanSvg = new \enshrined\svgSanitize\Sanitizer()->sanitize($dirtySvg);
 
             if ($cleanSvg === false || $cleanSvg === null || $cleanSvg === '') {
                 $this->logger->warning(sprintf(

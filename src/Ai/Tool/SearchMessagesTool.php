@@ -83,11 +83,11 @@ final readonly class SearchMessagesTool implements AiToolInterface
         ];
         $result = $this->execute($args, $userId, $workspaceId);
 
-        if (isset($result['error'])) {
+        if (($result['error'] ?? null) !== null) {
             return (string) $result['error'];
         }
 
-        if (isset($result['result'])) {
+        if (($result['result'] ?? null) !== null) {
             return (string) $result['result'];
         }
 
@@ -97,6 +97,7 @@ final readonly class SearchMessagesTool implements AiToolInterface
             $result['results'] ?? ''
         );
     }
+
     public function execute(array $arguments, int $userId, ?int $workspaceId = null): array
     {
         $user = $this->userRepository->find($userId);
@@ -105,9 +106,11 @@ final readonly class SearchMessagesTool implements AiToolInterface
         }
 
         $query = trim((string) ($arguments['query'] ?? ''));
-        $author = isset($arguments['author']) && trim((string) $arguments['author']) !== '' ? trim((string) $arguments['author']) : null;
-        $channel = isset($arguments['channel']) && trim((string) $arguments['channel']) !== '' ? trim((string) $arguments['channel']) : null;
-        $hasFile = isset($arguments['hasFile']) ? (bool) $arguments['hasFile'] : null;
+        $rawAuthor = \array_key_exists('author', $arguments) && $arguments['author'] !== null ? trim((string) $arguments['author']) : '';
+        $author = $rawAuthor !== '' ? $rawAuthor : null;
+        $rawChannel = \array_key_exists('channel', $arguments) && $arguments['channel'] !== null ? trim((string) $arguments['channel']) : '';
+        $channel = $rawChannel !== '' ? $rawChannel : null;
+        $hasFile = array_key_exists('hasFile', $arguments) && $arguments['hasFile'] !== null ? (bool) $arguments['hasFile'] : null;
 
         $results = $this->messageRepository->searchGlobal(
             currentUser: $user,
@@ -125,12 +128,13 @@ final readonly class SearchMessagesTool implements AiToolInterface
         $formatted = [];
 
         foreach ($results as $msg) {
-            $authorName = $msg->getAuthor()?->getDisplayName() ?: ($msg->getAuthor()?->getUsername() ?? 'Inconnu');
+            $displayName = $msg->getAuthor()?->getDisplayName();
+            $authorName = ($displayName !== null && $displayName !== '') ? $displayName : ($msg->getAuthor()?->getUsername() ?? 'Inconnu');
             $channelName = $msg->getChannel()?->getName() ?? 'Inconnu';
             $channelSlug = $msg->getChannel()?->getSlug() ?? 'general';
             $date = $msg->getCreatedAt()->format('d/m/Y H:i');
             $content = mb_substr(trim($msg->getContent() ?? ''), 0, 300);
-            $messageId = $msg->getId();
+            $messageId = (int) ($msg->getId() ?? 0);
 
             $fileInfo = '';
             if ($msg->getFileName()) {

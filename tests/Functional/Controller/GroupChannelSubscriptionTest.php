@@ -8,11 +8,9 @@ use App\Entity\Channel;
 use App\Entity\GroupSubscription;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-#[AllowMockObjectsWithoutExpectations]
 class GroupChannelSubscriptionTest extends WebTestCase
 {
     private EntityManagerInterface $entityManager;
