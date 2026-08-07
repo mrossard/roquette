@@ -22,6 +22,8 @@ final readonly class ChannelSummaryBuilder
         private ChannelResolver $channelResolver,
         #[Autowire(env: 'int:LLM_MAX_SUMMARY_MESSAGES')]
         private int $maxSummaryMessages = 100,
+        #[Autowire(env: 'int:LLM_MAX_SUMMARY_BATCHES')]
+        private int $maxSummaryBatches = 5,
     ) {}
 
     /**
@@ -115,6 +117,12 @@ final readonly class ChannelSummaryBuilder
         }
 
         if (!$isFallback && count($structuredMessages) > $this->maxSummaryMessages) {
+            // Cap the number of batches to bound the number of LLM calls per summary.
+            $cap = max(1, $this->maxSummaryBatches) * $this->maxSummaryMessages;
+            if (count($structuredMessages) > $cap) {
+                $structuredMessages = array_slice($structuredMessages, -$cap);
+            }
+
             $batches = array_chunk($structuredMessages, $this->maxSummaryMessages);
 
             return ['', $systemPrompt, $batches];

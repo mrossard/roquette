@@ -8,7 +8,9 @@ use App\Ai\ChannelResolver;
 use App\Ai\ChannelSummaryBuilder;
 use App\Ai\DocumentContextBuilder;
 use App\Ai\IntentClassifier;
+use App\Ai\ToolActionSigner;
 use App\Ai\ToolRegistry;
+use App\Ai\ToolRunState;
 use App\Ai\ToolRunner;
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
@@ -45,6 +47,7 @@ final readonly class LlmQueryHandler
         private IntentClassifier $intentClassifier,
         private ChannelSummaryBuilder $summaryBuilder,
         private DocumentContextBuilder $documentContextBuilder,
+        private ToolActionSigner $toolActionSigner,
         #[Autowire(env: 'bool:LLM_TOOLS_ENABLED')]
         private bool $toolsEnabled = true,
         #[Autowire(env: 'int:LLM_MEMORY_MESSAGES')]
@@ -60,6 +63,8 @@ final readonly class LlmQueryHandler
 
         $personalTopic = $this->mercureTopicPrefix . '/users/' . $user->getUsername();
         $channelSlug = $message->getChannelSlug();
+        $startedAt = microtime(true);
+        $state = new ToolRunState();
 
         // 1. Immediately upon receipt: show "Analyse de la demande... 🔍"
         $initialHtml = $this->messageFormatter->format('Analyse de la demande... 🔍');
@@ -133,7 +138,7 @@ final readonly class LlmQueryHandler
             }
 
             $accumulatedText = '';
-            $generator = $this->createGenerator($prompt, $systemPrompt, $user, $message, $personalTopic);
+            $generator = $this->createGenerator($prompt, $systemPrompt, $message, $personalTopic, $state);
 
             $chunkCount = 0;
             foreach ($generator as $chunk) {
@@ -148,7 +153,24 @@ final readonly class LlmQueryHandler
 
             $formattedHtml = $this->messageFormatter->format($prefix . $accumulatedText);
 
+            if ($state->pendingConfirmation !== null) {
+                $formattedHtml .= $this->twig->render('dashboard/_tool_confirmation.html.twig', [
+                    'token' => $state->pendingConfirmation,
+                ]);
+            }
+
             $this->publishUpdate($personalTopic, $message->getHelpMessageId(), $formattedHtml, $channelSlug);
+
+            $this->logger->info('LlmQueryHandler completed', [
+                'intent' => $intent,
+                'channelSlug' => $channelSlug,
+                'targetChannelSlug' => $targetChannelSlug,
+                'batchCount' => $batches !== null ? count($batches) : 0,
+                'chunkCount' => $chunkCount,
+                'toolsExecuted' => $state->toolsExecuted,
+                'confirmationRequested' => $state->pendingConfirmation !== null,
+                'durationMs' => (int) ((microtime(true) - $startedAt) * 1000),
+            ]);
 
             // Persist the message in the database so it is saved only if it is a DM with the robot
             $robotUser = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME]);
@@ -237,9 +259,9 @@ final readonly class LlmQueryHandler
     private function createGenerator(
         string $prompt,
         string $systemPrompt,
-        User $user,
         LlmQueryMessage $message,
         string $personalTopic,
+        ToolRunState $state,
     ): \Generator {
         if (!$this->toolsEnabled) {
             return $this->llmService->generateTextStream($prompt, $systemPrompt);
@@ -254,15 +276,26 @@ final readonly class LlmQueryHandler
             $prompt,
             $systemPrompt,
             $tools,
-            $user->getId(),
+            $message->getUserId(),
             $message->getWorkspaceId(),
-            function (string $toolName) use ($personalTopic, $message): void {
+            function (string $toolName) use ($personalTopic, $message, $state): void {
+                $state->toolsExecuted++;
                 $this->publishUpdate(
                     $personalTopic,
                     $message->getHelpMessageId(),
                     $this->messageFormatter->format(sprintf("Exécution de l'outil **%s**... ⏳", $toolName)),
                     $message->getChannelSlug(),
                 );
+            },
+            function (string $toolName, array $arguments) use ($message, $state): void {
+                $state->pendingConfirmation = $this->toolActionSigner->sign([
+                    'tool' => $toolName,
+                    'args' => $arguments,
+                    'uid' => $message->getUserId(),
+                    'ws' => $message->getWorkspaceId(),
+                    'helpMessageId' => $message->getHelpMessageId(),
+                    'channelSlug' => $message->getChannelSlug(),
+                ]);
             },
         );
     }

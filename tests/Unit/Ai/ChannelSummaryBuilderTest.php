@@ -42,6 +42,7 @@ final class ChannelSummaryBuilderTest extends TestCase
         MessageRepository $messageRepo,
         ?UserChannelReadRepository $readRepo = null,
         int $maxSummaryMessages = 100,
+        int $maxSummaryBatches = 5,
     ): ChannelSummaryBuilder {
         $readRepo ??= $this->createMock(UserChannelReadRepository::class);
 
@@ -53,6 +54,7 @@ final class ChannelSummaryBuilderTest extends TestCase
                 $this->createMock(WorkspaceRepository::class),
             ),
             $maxSummaryMessages,
+            $maxSummaryBatches,
         );
     }
 
@@ -114,6 +116,33 @@ final class ChannelSummaryBuilderTest extends TestCase
         $this->assertCount(2, $batches);
         $this->assertCount(2, $batches[0]);
         $this->assertCount(1, $batches[1]);
+    }
+
+    public function testBatchesAreCappedByMaxSummaryBatches(): void
+    {
+        $channel = $this->makeChannel('général', 'general');
+
+        $messages = [];
+        for ($i = 0; $i < 30; $i++) {
+            $messages[] = $this->makeMessage('message ' . $i, 'alice');
+        }
+
+        $messageRepo = $this->createMock(MessageRepository::class);
+        $messageRepo->expects($this->once())
+            ->method('findUnreadInChannel')
+            ->with($channel, $this->isInstanceOf(User::class), null)
+            ->willReturn($messages);
+
+        $builder = $this->buildBuilder($messageRepo, maxSummaryMessages: 10, maxSummaryBatches: 2);
+        $user = new User();
+
+        [$prompt, , $batches] = $builder->build($user, [$channel], 'general');
+
+        $this->assertSame('', $prompt);
+        $this->assertCount(2, $batches);
+        $this->assertCount(10, $batches[0]);
+        $this->assertCount(10, $batches[1]);
+        $this->assertStringContainsString('message 29', $batches[1][9]['contenu']);
     }
 
     public function testFallbackToLastMessagesWhenNoUnread(): void

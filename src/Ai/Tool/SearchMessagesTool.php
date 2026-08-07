@@ -24,6 +24,11 @@ final readonly class SearchMessagesTool implements AiToolInterface
         return "Recherche des messages ou des fichiers partagés dans tous les canaux accessibles par l'utilisateur.";
     }
 
+    public function requiresConfirmation(): bool
+    {
+        return false;
+    }
+
     /**
      * @return array<string, mixed>
      */

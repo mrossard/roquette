@@ -88,4 +88,12 @@ class ToolRegistryTest extends TestCase
 
         static::assertStringContainsString('Outil inconnu', $result);
     }
+
+    public function testGetReturnsToolByNameOrNull(): void
+    {
+        $registry = new ToolRegistry([new FakeTool()]);
+
+        static::assertInstanceOf(FakeTool::class, $registry->get('fake_tool'));
+        static::assertNull($registry->get('missing_tool'));
+    }
 }

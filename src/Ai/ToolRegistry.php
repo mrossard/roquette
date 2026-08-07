@@ -47,6 +47,11 @@ final readonly class ToolRegistry
         return $definitions;
     }
 
+    public function get(string $name): ?AiToolInterface
+    {
+        return $this->tools[$name] ?? null;
+    }
+
     public function execute(ToolCall $call, ?int $authorUserId = null, ?int $workspaceId = null): string
     {
         $tool = $this->tools[$call->getName()] ?? null;

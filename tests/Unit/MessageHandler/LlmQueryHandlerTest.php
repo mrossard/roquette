@@ -10,6 +10,7 @@ use App\Ai\DocumentContextBuilder;
 use App\Ai\IntentClassifier;
 use App\Ai\LlmIntentClassifier;
 use App\Ai\Tool\ScheduleReminderTool;
+use App\Ai\ToolActionSigner;
 use App\Ai\ToolRegistry;
 use App\Ai\ToolRunner;
 use App\Entity\User;
@@ -68,6 +69,7 @@ class LlmQueryHandlerTest extends TestCase
             'toolsEnabled' => false,
             'memoryMessages' => 10,
             'maxSummaryMessages' => 10,
+            'toolActionSigner' => new ToolActionSigner('test-secret'),
         ];
         $deps = array_merge($defaults, $overrides);
 
@@ -109,6 +111,7 @@ class LlmQueryHandlerTest extends TestCase
             intentClassifier: $intentClassifier,
             summaryBuilder: $summaryBuilder,
             documentContextBuilder: $documentContextBuilder,
+            toolActionSigner: $deps['toolActionSigner'],
             toolsEnabled: $deps['toolsEnabled'],
             memoryMessages: $deps['memoryMessages'],
         );
@@ -318,11 +321,13 @@ class LlmQueryHandlerTest extends TestCase
         $handler($message);
     }
 
-    public function testReminderToolCallIsExecutedThroughNativeToolLoop(): void
+    public function testReminderToolCallRequestsConfirmationBeforeExecuting(): void
     {
         $user = new User();
         $user->setUsername('test_user');
         $user->setSlug('test-user');
+        $ref = new \ReflectionProperty(User::class, 'id');
+        $ref->setValue($user, 42);
 
         $channel = new \App\Entity\Channel();
         $channel->setName('Assistant');
@@ -335,12 +340,7 @@ class LlmQueryHandlerTest extends TestCase
                 $persistedReminders[] = $entity;
             }
         });
-        $entityManager->method('flush')->willReturnCallback(static function () use (&$persistedReminders) {
-            if ([] !== $persistedReminders) {
-                $ref = new \ReflectionProperty(\App\Entity\Reminder::class, 'id');
-                $ref->setValue($persistedReminders[0], 1);
-            }
-        });
+        $entityManager->method('flush');
 
         $bus = $this->createMock(MessageBusInterface::class);
         $dispatched = [];
@@ -374,7 +374,7 @@ class LlmQueryHandlerTest extends TestCase
         $toolRegistry = new ToolRegistry([$tool]);
         $toolRunner = new ToolRunner($llmService, $toolRegistry);
 
-        // First stream: the model requests the schedule_reminder tool.
+        // The model requests the schedule_reminder tool.
         $firstStream = (static function () {
             yield new ToolCallComplete([new ToolCall('1', 'schedule_reminder', [
                 'channelSlug' => 'assistant',
@@ -383,15 +383,19 @@ class LlmQueryHandlerTest extends TestCase
             ])]);
         })();
 
-        // Second stream: the model confirms the reminder once the tool has run.
-        $secondStream = (static function () {
-            yield new TextDelta("C'est noté ! Votre rappel est programmé.");
+        // The final generation asks the user for confirmation.
+        $questionStream = (static function () {
+            yield 'Voulez-vous que je programme ce rappel ?';
         })();
 
         $llmService
-            ->expects($this->exactly(2))
+            ->expects($this->once())
             ->method('generateStreamWithTools')
-            ->willReturnOnConsecutiveCalls($firstStream, $secondStream);
+            ->willReturn($firstStream);
+        $llmService
+            ->expects($this->once())
+            ->method('generateTextStream')
+            ->willReturn($questionStream);
 
         $formattedTexts = [];
         $messageFormatter = $this->createStub(MessageFormatter::class);
@@ -404,6 +408,14 @@ class LlmQueryHandlerTest extends TestCase
         $hub = $this->createMock(HubInterface::class);
         $hub->expects($this->atLeastOnce())->method('publish')->with(static::isInstanceOf(Update::class));
 
+        $renderedTemplates = [];
+        $twig = $this->createStub(\Twig\Environment::class);
+        $twig->method('render')->willReturnCallback(static function (string $name, array $context = []) use (&$renderedTemplates) {
+            $renderedTemplates[] = $name;
+
+            return '<div>test</div>';
+        });
+
         $overrides = [
             'userRepository' => $userRepository,
             'channelRepository' => $channelRepository,
@@ -411,6 +423,7 @@ class LlmQueryHandlerTest extends TestCase
             'llmService' => $llmService,
             'messageFormatter' => $messageFormatter,
             'hub' => $hub,
+            'twig' => $twig,
             'toolsEnabled' => true,
             'toolRegistry' => $toolRegistry,
             'toolRunner' => $toolRunner,
@@ -421,10 +434,9 @@ class LlmQueryHandlerTest extends TestCase
         $message = new LlmQueryMessage('rappelle moi d\'aller manger à 15h22', 42, 'general', 'help-123');
         $handler($message);
 
-        $this->assertCount(1, $persistedReminders);
-        $this->assertSame('Aller manger', $persistedReminders[0]->getMessage());
-        $this->assertCount(1, $dispatched);
-        $this->assertInstanceOf(\App\Message\SendReminderMessage::class, $dispatched[0]);
-        $this->assertStringContainsString('Votre rappel est programmé', implode(' ', $formattedTexts));
+        $this->assertSame([], $persistedReminders);
+        $this->assertSame([], $dispatched);
+        $this->assertContains('dashboard/_tool_confirmation.html.twig', $renderedTemplates);
+        $this->assertStringContainsString('Voulez-vous que je programme ce rappel', implode(' ', $formattedTexts));
     }
 }

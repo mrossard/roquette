@@ -358,6 +358,9 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                     } else {
                         existing.replaceWith(oobElem);
                     }
+                    if (window.htmx) {
+                        window.htmx.process(existing);
+                    }
                     if (window.highlightAllCodeBlocks) {
                         window.highlightAllCodeBlocks(existing);
                     }
@@ -373,6 +376,9 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                         }
                         oobElem.removeAttribute('hx-swap-oob');
                         liveFeed.appendChild(oobElem);
+                        if (window.htmx) {
+                            window.htmx.process(oobElem);
+                        }
                         if (window.highlightAllCodeBlocks) {
                             window.highlightAllCodeBlocks(oobElem);
                         }

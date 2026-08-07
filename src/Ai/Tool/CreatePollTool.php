@@ -39,6 +39,11 @@ final readonly class CreatePollTool implements AiToolInterface
         return "Crée un sondage interactif dans un canal spécifié de l'application Roquette.";
     }
 
+    public function requiresConfirmation(): bool
+    {
+        return true;
+    }
+
     /**
      * @return array<string, mixed>
      */

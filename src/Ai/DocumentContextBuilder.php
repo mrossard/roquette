@@ -44,6 +44,10 @@ final class DocumentContextBuilder
             if ($chunks !== []) {
                 return implode("\n\n---\n\n", $chunks);
             }
+
+            $this->logger->info('RAG retrieval returned no chunks, falling back to DOC_UTILISATEUR.md', [
+                'question' => mb_substr($question, 0, 200),
+            ]);
         } catch (\Exception $e) {
             $this->logger->warning('RAG retrieval failed, falling back to DOC_UTILISATEUR.md', [
                 'error' => $e->getMessage(),

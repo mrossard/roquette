@@ -33,6 +33,11 @@ final readonly class ScheduleReminderTool implements AiToolInterface
         return 'Programme un rappel contextuel pour un utilisateur dans un canal spécifique à une heure future (délai en minutes).';
     }
 
+    public function requiresConfirmation(): bool
+    {
+        return true;
+    }
+
     /**
      * @return array<string, mixed>
      */

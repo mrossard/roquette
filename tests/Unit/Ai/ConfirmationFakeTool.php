@@ -6,20 +6,19 @@ namespace App\Tests\Unit\Ai;
 
 use App\Ai\Tool\AiToolInterface;
 
-class FakeTool implements AiToolInterface
+class ConfirmationFakeTool implements AiToolInterface
 {
-    public string $lastChannelSlug = '';
+    public bool $executed = false;
     public ?int $lastAuthorUserId = null;
-    public ?int $lastWorkspaceId = null;
 
     public function getName(): string
     {
-        return 'fake_tool';
+        return 'confirm_tool';
     }
 
     public function getDescription(): string
     {
-        return 'A fake tool for tests.';
+        return 'A fake side-effect tool that requires confirmation.';
     }
 
     public function getParametersSchema(): array
@@ -35,15 +34,14 @@ class FakeTool implements AiToolInterface
 
     public function requiresConfirmation(): bool
     {
-        return false;
+        return true;
     }
 
     public function __invoke(string $channelSlug, ?int $authorUserId = null, ?int $workspaceId = null): string
     {
-        $this->lastChannelSlug = $channelSlug;
+        $this->executed = true;
         $this->lastAuthorUserId = $authorUserId;
-        $this->lastWorkspaceId = $workspaceId;
 
-        return 'Tool executed for ' . $channelSlug;
+        return 'Side-effect done';
     }
 }

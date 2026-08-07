@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Ai;
 
 use App\Service\LlmService;
+use Psr\Log\LoggerInterface;
 use Symfony\AI\Platform\Result\Stream\Delta\TextDelta;
 use Symfony\AI\Platform\Result\Stream\Delta\ToolCallComplete;
 use Symfony\AI\Platform\Result\ToolCall;
@@ -19,6 +20,7 @@ final readonly class ToolRunner
     public function __construct(
         private LlmService $llmService,
         private ToolRegistry $toolRegistry,
+        private ?LoggerInterface $logger = null,
     ) {}
 
     /**
@@ -30,6 +32,7 @@ final readonly class ToolRunner
      * @param int|null $authorUserId ID of the user authoring tool actions (injected into tools that support it).
      * @param int|null $workspaceId ID of the current workspace (injected into tools that support it).
      * @param callable(string, string): void|null $onToolExecuted Called with the tool name and its result after execution.
+     * @param callable(string, array<string, mixed>): void|null $onConfirmationRequired Called with the tool name and its arguments when a side-effect tool needs user confirmation.
      * @return \Generator<string> Yields the text chunks of the final answer.
      */
     public function streamResponse(
@@ -39,6 +42,7 @@ final readonly class ToolRunner
         ?int $authorUserId = null,
         ?int $workspaceId = null,
         ?callable $onToolExecuted = null,
+        ?callable $onConfirmationRequired = null,
     ): \Generator {
         $currentPrompt = $prompt;
         $producedText = false;
@@ -102,14 +106,45 @@ final readonly class ToolRunner
                 return;
             }
 
+            $confirmationPending = false;
             $results = [];
             foreach ($newCalls as $call) {
+                if ($onConfirmationRequired !== null && $this->toolRegistry->get($call->getName())?->requiresConfirmation()) {
+                    $confirmationPending = true;
+                    $this->logger?->info('Tool action requires user confirmation', [
+                        'tool' => $call->getName(),
+                        'arguments' => $call->getArguments(),
+                        'authorUserId' => $authorUserId,
+                    ]);
+                    $onConfirmationRequired($call->getName(), $call->getArguments());
+                    $results[] = sprintf(
+                        "L'action de l'outil '%s' nécessite une confirmation de l'utilisateur.\n"
+                        . "N'appelle plus aucun outil et demande à l'utilisateur de confirmer l'action via le bouton de confirmation qui lui a été affiché.",
+                        $call->getName(),
+                    );
+                    continue;
+                }
+
+                $startedAt = microtime(true);
                 $result = $this->toolRegistry->execute($call, $authorUserId, $workspaceId);
+                $this->logger?->info('Tool executed', [
+                    'tool' => $call->getName(),
+                    'durationMs' => (int) ((microtime(true) - $startedAt) * 1000),
+                    'authorUserId' => $authorUserId,
+                ]);
                 if ($onToolExecuted !== null) {
                     $onToolExecuted($call->getName(), $result);
                 }
                 $results[] = $result;
                 $allExecutedResults[] = $result;
+            }
+
+            if ($confirmationPending) {
+                $currentPrompt = "Une action demandée nécessite une confirmation de l'utilisateur :\n"
+                    . implode("\n", $results)
+                    . "\n\nRéponds maintenant brièvement à l'utilisateur : explique l'action demandée et demande-lui de la confirmer via le bouton de confirmation. N'appelle aucun outil.\n"
+                    . $prompt;
+                break;
             }
 
             $currentPrompt = "Résultats des outils exécutés :\n"

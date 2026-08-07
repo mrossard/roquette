@@ -132,4 +132,46 @@ class ToolRunnerTest extends TestCase
         static::assertSame(['C\'est fait !'], $chunks);
         static::assertSame([['fake_tool', 'Tool executed for general']], $executed);
     }
+
+    public function testConfirmationRequiredToolIsPausedAndAsksUser(): void
+    {
+        $llmService = $this->createMock(LlmService::class);
+        $tool = new ConfirmationFakeTool();
+
+        $llmService
+            ->expects($this->once())
+            ->method('generateStreamWithTools')
+            ->willReturn((static function () {
+                yield new ToolCallComplete([new ToolCall('1', 'confirm_tool', ['channelSlug' => 'general'])]);
+            })());
+        $llmService
+            ->expects($this->once())
+            ->method('generateTextStream')
+            ->willReturn((static function () {
+                yield 'Voulez-vous confirmer cette action ?';
+            })());
+
+        $runner = new ToolRunner($llmService, new ToolRegistry([$tool]));
+        $confirmationRequests = [];
+        $executed = [];
+
+        $chunks = iterator_to_array($runner->streamResponse(
+            prompt: 'Crée un sondage',
+            systemPrompt: 'sys',
+            tools: [],
+            authorUserId: 42,
+            workspaceId: 7,
+            onToolExecuted: static function (string $name, string $result) use (&$executed): void {
+                $executed[] = [$name, $result];
+            },
+            onConfirmationRequired: static function (string $name, array $arguments) use (&$confirmationRequests): void {
+                $confirmationRequests[] = [$name, $arguments];
+            },
+        ));
+
+        static::assertSame(['Voulez-vous confirmer cette action ?'], $chunks);
+        static::assertFalse($tool->executed);
+        static::assertSame([['confirm_tool', ['channelSlug' => 'general']]], $confirmationRequests);
+        static::assertSame([], $executed);
+    }
 }

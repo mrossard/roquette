@@ -28,6 +28,11 @@ final readonly class SummarizeChannelTool implements AiToolInterface
         return "Permet à l'assistant de lire et résumer les messages récents d'un canal spécifique auquel l'utilisateur a accès.";
     }
 
+    public function requiresConfirmation(): bool
+    {
+        return false;
+    }
+
     /**
      * @return array<string, mixed>
      */

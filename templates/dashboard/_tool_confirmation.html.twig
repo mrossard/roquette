@@ -1,0 +1,11 @@
+<button
+    type="button"
+    class="btn-publish ai-tool-confirmation-btn"
+    hx-post="{{ path('ai_tool_confirm') }}"
+    hx-vals='{"token":"{{ token }}"}'
+    hx-swap="none"
+    hx-disabled-elt="this"
+    hx-indicator="this"
+>
+    {{ 'Confirmer'|trans }}
+</button>
