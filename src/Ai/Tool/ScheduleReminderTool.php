@@ -7,8 +7,8 @@ namespace App\Ai\Tool;
 use App\Ai\ChannelResolver;
 use App\Entity\Reminder;
 use App\Message\SendReminderMessage;
-use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
+use App\Service\ChannelAccessService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
@@ -17,10 +17,10 @@ final readonly class ScheduleReminderTool implements AiToolInterface
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private ChannelRepository $channelRepository,
         private UserRepository $userRepository,
         private MessageBusInterface $bus,
         private ChannelResolver $channelResolver,
+        private ChannelAccessService $channelAccessService,
     ) {}
 
     public function getName(): string
@@ -73,7 +73,7 @@ final readonly class ScheduleReminderTool implements AiToolInterface
         if ($user) {
             $dmSlug = 'dm-robot-roquette-' . $user->getSlug();
             if ($channelSlug === 'assistant' || $channelSlug === 'dm' || str_contains($channelSlug, 'robot')) {
-                $channel = $this->channelRepository->findOneBy(['slug' => $dmSlug]);
+                $channel = $this->channelResolver->resolve($dmSlug, $workspaceId);
             }
         }
 
@@ -84,7 +84,7 @@ final readonly class ScheduleReminderTool implements AiToolInterface
         if (!$channel && $user) {
             // Fallback 1: Canal DM avec le robot roquette
             $dmSlug = 'dm-robot-roquette-' . $user->getSlug();
-            $channel = $this->channelRepository->findOneBy(['slug' => $dmSlug]);
+            $channel = $this->channelResolver->resolve($dmSlug, $workspaceId);
         }
 
         if (!$channel) {
@@ -98,6 +98,10 @@ final readonly class ScheduleReminderTool implements AiToolInterface
         if (!$user) {
             $user = $this->userRepository->findOneBy(['username' => 'robot-roquette'])
                 ?? $this->userRepository->findOneBy([]);
+        }
+
+        if ($user !== null && !$this->channelAccessService->canUserAccess($channel, $user)) {
+            return sprintf("Impossible de programmer le rappel : vous n'avez pas accès au canal '%s'.", $channel->getName());
         }
 
         if ($delayMinutes < 1) {

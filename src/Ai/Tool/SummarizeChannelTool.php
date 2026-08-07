@@ -7,6 +7,7 @@ namespace App\Ai\Tool;
 use App\Ai\ChannelResolver;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
+use App\Service\ChannelAccessService;
 
 final readonly class SummarizeChannelTool implements AiToolInterface
 {
@@ -14,6 +15,7 @@ final readonly class SummarizeChannelTool implements AiToolInterface
         private UserRepository $userRepository,
         private MessageRepository $messageRepository,
         private ChannelResolver $channelResolver,
+        private ChannelAccessService $channelAccessService,
     ) {}
 
     public function getName(): string
@@ -94,6 +96,10 @@ final readonly class SummarizeChannelTool implements AiToolInterface
         $channel = $this->channelResolver->resolve($channelSlug, $workspaceId);
         if (!$channel) {
             return ['error' => sprintf("Canal '%s' non trouvé ou vous n'y avez pas accès.", $channelSlug)];
+        }
+
+        if (!$this->channelAccessService->canUserAccess($channel, $user)) {
+            return ['error' => sprintf("Vous n'avez pas accès au canal '%s'.", $channel->getName())];
         }
 
         $recentMessages = $this->messageRepository->findLatestInChannel($channel, $limit);

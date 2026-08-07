@@ -9,6 +9,7 @@ use App\Entity\Message;
 use App\Entity\Poll;
 use App\Entity\PollOption;
 use App\Repository\UserRepository;
+use App\Service\ChannelAccessService;
 use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
 use App\Service\MessageRenderer;
@@ -25,6 +26,7 @@ final readonly class CreatePollTool implements AiToolInterface
         private Environment $twig,
         private MessageRenderer $messageRenderer,
         private ChannelResolver $channelResolver,
+        private ChannelAccessService $channelAccessService,
     ) {}
 
     public function getName(): string
@@ -83,6 +85,10 @@ final readonly class CreatePollTool implements AiToolInterface
         if (!$author) {
             $author = $this->userRepository->findOneBy(['username' => 'robot-roquette'])
                 ?? $this->userRepository->findOneBy([]);
+        }
+
+        if (!$this->channelAccessService->canUserAccess($channel, $author)) {
+            return sprintf("Impossible de créer le sondage : vous n'avez pas accès au canal '%s'.", $channelSlug);
         }
 
         // Fallback: If LLM failed to split options properly into an array, attempt regex extraction from question/prompt

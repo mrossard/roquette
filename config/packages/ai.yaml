@@ -14,7 +14,7 @@ ai:
                 table_name: 'doc_chunks'
                 vector_field: 'embedding'
                 distance: 'cosine'
-                lang: 'english'
+                lang: 'french'
                 setup_options:
                     vector_size: 768
                     index_method: 'hnsw'

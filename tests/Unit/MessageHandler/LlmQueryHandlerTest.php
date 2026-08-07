@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Unit\MessageHandler;
 
 use App\Ai\ChannelResolver;
+use App\Ai\ChannelSummaryBuilder;
+use App\Ai\DocumentContextBuilder;
+use App\Ai\IntentClassifier;
+use App\Ai\LlmIntentClassifier;
 use App\Ai\Tool\ScheduleReminderTool;
 use App\Ai\ToolRegistry;
 use App\Ai\ToolRunner;
@@ -12,6 +16,8 @@ use App\Entity\User;
 use App\Message\LlmQueryMessage;
 use App\MessageHandler\LlmQueryHandler;
 use App\Repository\UserRepository;
+use App\Service\ChannelAccessService;
+use App\Service\DocChunker;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -29,62 +35,125 @@ use Symfony\Component\Mercure\Update;
 #[AllowMockObjectsWithoutExpectations]
 class LlmQueryHandlerTest extends TestCase
 {
+    /**
+     * @param array<string, mixed> $overrides
+     * @return array{0: LlmQueryHandler, 1: array<string, mixed>}
+     */
+    private function buildHandler(array $overrides = []): array
+    {
+        $defaults = [
+            'userRepository' => $this->createMock(UserRepository::class),
+            'channelRepository' => $this->createMock(\App\Repository\ChannelRepository::class),
+            'messageRepository' => $this->createMock(\App\Repository\MessageRepository::class),
+            'llmService' => $this->createMock(LlmService::class),
+            'messageFormatter' => $this->createStub(MessageFormatter::class),
+            'hub' => $this->createMock(HubInterface::class),
+            'entityManager' => $this->createMock(\Doctrine\ORM\EntityManagerInterface::class),
+            'logger' => $this->createMock(\Psr\Log\LoggerInterface::class),
+            'twig' => $this->createMock(\Twig\Environment::class),
+            'workspaceRepository' => $this->createStub(\App\Repository\WorkspaceRepository::class),
+            'userChannelReadRepository' => $this->createMock(\App\Repository\UserChannelReadRepository::class),
+            'retriever' => (static function (): RetrieverInterface {
+                $retriever = TestCase::createStub(RetrieverInterface::class);
+                $retriever->method('retrieve')->willReturn([]);
+
+                return $retriever;
+            })(),
+            'parameterBag' => (function () {
+                $parameterBag = $this->createMock(ParameterBagInterface::class);
+                $parameterBag->method('get')->willReturnCallback(static fn(string $name): ?string => $name === 'kernel.project_dir' ? '/tmp' : null);
+
+                return $parameterBag;
+            })(),
+            'toolsEnabled' => false,
+            'memoryMessages' => 10,
+            'maxSummaryMessages' => 10,
+        ];
+        $deps = array_merge($defaults, $overrides);
+
+        $deps['twig']->method('render')->willReturn('<div>test</div>');
+
+        $channelResolver = new ChannelResolver($deps['channelRepository'], $deps['workspaceRepository']);
+        $intentClassifier = new IntentClassifier(new LlmIntentClassifier($deps['llmService'], $deps['logger']));
+        $summaryBuilder = new ChannelSummaryBuilder(
+            $deps['userChannelReadRepository'],
+            $deps['messageRepository'],
+            $channelResolver,
+            $deps['maxSummaryMessages'],
+        );
+        $documentContextBuilder = new DocumentContextBuilder(
+            $deps['retriever'],
+            new DocChunker(),
+            $deps['logger'],
+            $deps['parameterBag'],
+        );
+
+        $toolRegistry = $deps['toolRegistry'] ?? new ToolRegistry([]);
+        $toolRunner = $deps['toolRunner'] ?? new ToolRunner($deps['llmService'], $toolRegistry);
+
+        $handler = new LlmQueryHandler(
+            userRepository: $deps['userRepository'],
+            channelRepository: $deps['channelRepository'],
+            messageRepository: $deps['messageRepository'],
+            llmService: $deps['llmService'],
+            messageFormatter: $deps['messageFormatter'],
+            hub: $deps['hub'],
+            entityManager: $deps['entityManager'],
+            mercureTopicPrefix: 'roquette',
+            logger: $deps['logger'],
+            twig: $deps['twig'],
+            toolRegistry: $toolRegistry,
+            toolRunner: $toolRunner,
+            workspaceRepository: $deps['workspaceRepository'],
+            channelResolver: $channelResolver,
+            intentClassifier: $intentClassifier,
+            summaryBuilder: $summaryBuilder,
+            documentContextBuilder: $documentContextBuilder,
+            toolsEnabled: $deps['toolsEnabled'],
+            memoryMessages: $deps['memoryMessages'],
+        );
+
+        return [$handler, $deps];
+    }
+
     public function testHandlerInvokesLlmAndPublishesToMercure(): void
     {
-        $userRepository = $this->createMock(UserRepository::class);
-        $llmService = $this->createMock(LlmService::class);
-        $messageFormatter = $this->createStub(MessageFormatter::class);
-        $hub = $this->createMock(HubInterface::class);
-        $parameterBag = $this->createMock(ParameterBagInterface::class);
         $user = new User();
         $user->setUsername('test_user');
 
-        $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
-
-        $parameterBag->expects($this->once())->method('get')->with('kernel.project_dir')->willReturn('/tmp');
-
-        // Mock generator for streaming response
-        $generatorClosure = static function () {
+        $generator = (static function () {
             yield 'Hello ';
             yield 'world!';
-        };
-        $generator = $generatorClosure();
+        })();
 
-        $llmService->expects($this->once())->method('generateTextStream')->willReturn($generator);
+        $overrides = [
+            'userRepository' => (function () use ($user) {
+                $userRepository = $this->createMock(UserRepository::class);
+                $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
 
-        $messageFormatter->method('format')->willReturnCallback(static fn($text) => '<p>' . $text . '</p>');
+                return $userRepository;
+            })(),
+            'llmService' => (function () use ($generator) {
+                $llmService = $this->createMock(LlmService::class);
+                $llmService->expects($this->once())->method('generateTextStream')->willReturn($generator);
 
-        $hub->expects($this->atLeastOnce())->method('publish')->with(static::isInstanceOf(Update::class));
+                return $llmService;
+            })(),
+            'messageFormatter' => (function () {
+                $messageFormatter = $this->createStub(MessageFormatter::class);
+                $messageFormatter->method('format')->willReturnCallback(static fn($text) => '<p>' . $text . '</p>');
 
-        $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
-        $messageRepository = $this->createMock(\App\Repository\MessageRepository::class);
-        $userChannelReadRepository = $this->createMock(\App\Repository\UserChannelReadRepository::class);
-        $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
-        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
-        $twig = $this->createMock(\Twig\Environment::class);
-        $twig->method('render')->willReturn('<div>test</div>');
-        $retriever = $this->createStub(RetrieverInterface::class);
+                return $messageFormatter;
+            })(),
+            'hub' => (function () {
+                $hub = $this->createMock(HubInterface::class);
+                $hub->expects($this->atLeastOnce())->method('publish')->with($this->isInstanceOf(Update::class));
 
-        $handler = new LlmQueryHandler(
-            userRepository: $userRepository,
-            channelRepository: $channelRepository,
-            messageRepository: $messageRepository,
-            userChannelReadRepository: $userChannelReadRepository,
-            llmService: $llmService,
-            messageFormatter: $messageFormatter,
-            hub: $hub,
-            parameterBag: $parameterBag,
-            entityManager: $entityManager,
-            mercureTopicPrefix: 'roquette',
-            logger: $logger,
-            twig: $twig,
-            retriever: $retriever,
-            toolRegistry: new ToolRegistry([]),
-            toolRunner: new ToolRunner($llmService, new ToolRegistry([])),
-            workspaceRepository: $this->createStub(\App\Repository\WorkspaceRepository::class),
-            toolsEnabled: false,
-            memoryMessages: 10,
-        );
+                return $hub;
+            })(),
+        ];
+
+        [$handler] = $this->buildHandler($overrides);
 
         $message = new LlmQueryMessage('How does it work?', 42, 'general', 'help-123');
         $handler($message);
@@ -92,43 +161,13 @@ class LlmQueryHandlerTest extends TestCase
 
     public function testSummaryLimitsMessages(): void
     {
-        $userRepository = $this->createMock(UserRepository::class);
-        $llmService = $this->createMock(LlmService::class);
-        $messageFormatter = $this->createMock(MessageFormatter::class);
-        $hub = $this->createMock(HubInterface::class);
-        $parameterBag = $this->createMock(ParameterBagInterface::class);
-        $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
-        $messageRepository = $this->createMock(\App\Repository\MessageRepository::class);
-        $userChannelReadRepository = $this->createMock(\App\Repository\UserChannelReadRepository::class);
-        $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
-        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
-
         $user = new User();
         $user->setUsername('test_user');
-
-        $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
-
-        // Classification output and intermediate summaries
-        $llmService
-            ->expects($this->exactly(3))
-            ->method('generateText')
-            ->willReturnCallback(static function (string $prompt, ?string $systemPrompt = null) {
-                if (str_contains($prompt, 'résume le canal général')) {
-                    return json_encode(['intent' => 'resumer', 'channelSlug' => 'general']);
-                }
-
-                return 'Résumé intermédiaire';
-            });
 
         $channel = new \App\Entity\Channel();
         $channel->setName('general');
         $channel->setSlug('general');
 
-        $channelRepository->expects($this->once())->method('findAllForUser')->willReturn([$channel]);
-
-        $userChannelReadRepository->expects($this->once())->method('findOneBy')->willReturn(null);
-
-        // Return 5 messages
         $messages = [];
         for ($i = 1; $i <= 5; $i++) {
             $msg = new \App\Entity\Message();
@@ -138,7 +177,11 @@ class LlmQueryHandlerTest extends TestCase
             $messages[] = $msg;
         }
 
-        $messageRepository->expects($this->once())->method('findUnreadInChannel')->willReturn($messages);
+        $llmService = $this->createMock(LlmService::class);
+        $llmService
+            ->expects($this->exactly(2))
+            ->method('generateText')
+            ->willReturn('Résumé intermédiaire');
 
         // We expect LLM to stream the final combination
         $llmService
@@ -151,31 +194,36 @@ class LlmQueryHandlerTest extends TestCase
                 })(),
             );
 
-        $twig = $this->createMock(\Twig\Environment::class);
-        $twig->method('render')->willReturn('<div>test</div>');
-        $retriever = $this->createStub(RetrieverInterface::class);
+        $overrides = [
+            'userRepository' => (function () use ($user) {
+                $userRepository = $this->createMock(UserRepository::class);
+                $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
 
-        $handler = new LlmQueryHandler(
-            userRepository: $userRepository,
-            channelRepository: $channelRepository,
-            messageRepository: $messageRepository,
-            userChannelReadRepository: $userChannelReadRepository,
-            llmService: $llmService,
-            messageFormatter: $messageFormatter,
-            hub: $hub,
-            parameterBag: $parameterBag,
-            entityManager: $entityManager,
-            mercureTopicPrefix: 'roquette',
-            logger: $logger,
-            twig: $twig,
-            retriever: $retriever,
-            toolRegistry: new ToolRegistry([]),
-            toolRunner: new ToolRunner($llmService, new ToolRegistry([])),
-            workspaceRepository: $this->createStub(\App\Repository\WorkspaceRepository::class),
-            maxSummaryMessages: 3,
-            toolsEnabled: false,
-            memoryMessages: 10,
-        );
+                return $userRepository;
+            })(),
+            'channelRepository' => (function () use ($channel) {
+                $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
+                $channelRepository->expects($this->once())->method('findAllForUser')->willReturn([$channel]);
+
+                return $channelRepository;
+            })(),
+            'userChannelReadRepository' => (function () {
+                $repo = $this->createMock(\App\Repository\UserChannelReadRepository::class);
+                $repo->expects($this->once())->method('findOneBy')->willReturn(null);
+
+                return $repo;
+            })(),
+            'messageRepository' => (function () use ($messages) {
+                $repo = $this->createMock(\App\Repository\MessageRepository::class);
+                $repo->expects($this->once())->method('findUnreadInChannel')->willReturn($messages);
+
+                return $repo;
+            })(),
+            'llmService' => $llmService,
+            'maxSummaryMessages' => 3,
+        ];
+
+        [$handler] = $this->buildHandler($overrides);
 
         $message = new LlmQueryMessage('résume le canal général', 42, 'dm-robot-roquette-1', 'help-123');
         $handler($message);
@@ -183,33 +231,12 @@ class LlmQueryHandlerTest extends TestCase
 
     public function testSummaryPrependsLastReadMessages(): void
     {
-        $userRepository = $this->createMock(UserRepository::class);
-        $llmService = $this->createMock(LlmService::class);
-        $messageFormatter = $this->createMock(MessageFormatter::class);
-        $hub = $this->createMock(HubInterface::class);
-        $parameterBag = $this->createMock(ParameterBagInterface::class);
-        $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
-        $messageRepository = $this->createMock(\App\Repository\MessageRepository::class);
-        $userChannelReadRepository = $this->createMock(\App\Repository\UserChannelReadRepository::class);
-        $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
-        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
-
         $user = new User();
         $user->setUsername('test_user');
-
-        $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
-
-        // Classification output
-        $llmService
-            ->expects($this->once())
-            ->method('generateText')
-            ->willReturn(json_encode(['intent' => 'resumer', 'channelSlug' => 'general']));
 
         $channel = new \App\Entity\Channel();
         $channel->setName('general');
         $channel->setSlug('general');
-
-        $channelRepository->expects($this->once())->method('findAllForUser')->willReturn([$channel]);
 
         $lastReadMsg = $this->createMock(\App\Entity\Message::class);
         $lastReadMsg->method('getId')->willReturn(10);
@@ -217,9 +244,6 @@ class LlmQueryHandlerTest extends TestCase
         $activeRead = $this->createMock(\App\Entity\UserChannelRead::class);
         $activeRead->method('getLastReadMessage')->willReturn($lastReadMsg);
 
-        $userChannelReadRepository->expects($this->once())->method('findOneBy')->willReturn($activeRead);
-
-        // Unread messages (3 messages)
         $unread = [];
         for ($i = 1; $i <= 3; $i++) {
             $msg = new \App\Entity\Message();
@@ -229,9 +253,6 @@ class LlmQueryHandlerTest extends TestCase
             $unread[] = $msg;
         }
 
-        $messageRepository->expects($this->once())->method('findUnreadInChannel')->willReturn($unread);
-
-        // Mock query builder for last 5 read messages
         $readMsg = new \App\Entity\Message();
         $readMsg->setContent('Read context');
         $readMsg->setAuthor($user);
@@ -239,9 +260,6 @@ class LlmQueryHandlerTest extends TestCase
 
         $qb = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
         $query = $this->createMock(\Doctrine\ORM\Query::class);
-
-        $messageRepository->expects($this->once())->method('createQueryBuilder')->willReturn($qb);
-
         $qb->method('where')->willReturnSelf();
         $qb->method('andWhere')->willReturnSelf();
         $qb->method('orderBy')->willReturnSelf();
@@ -250,7 +268,7 @@ class LlmQueryHandlerTest extends TestCase
         $qb->method('getQuery')->willReturn($query);
         $query->method('getResult')->willReturn([$readMsg]);
 
-        // We expect LLM to receive both the read message and unread messages (total 4 messages)
+        $llmService = $this->createMock(LlmService::class);
         $llmService
             ->expects($this->once())
             ->method('generateTextStream')
@@ -265,31 +283,36 @@ class LlmQueryHandlerTest extends TestCase
                 })(),
             );
 
-        $twig = $this->createMock(\Twig\Environment::class);
-        $twig->method('render')->willReturn('<div>test</div>');
-        $retriever = $this->createStub(RetrieverInterface::class);
+        $overrides = [
+            'userRepository' => (function () use ($user) {
+                $userRepository = $this->createMock(UserRepository::class);
+                $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
 
-        $handler = new LlmQueryHandler(
-            userRepository: $userRepository,
-            channelRepository: $channelRepository,
-            messageRepository: $messageRepository,
-            userChannelReadRepository: $userChannelReadRepository,
-            llmService: $llmService,
-            messageFormatter: $messageFormatter,
-            hub: $hub,
-            parameterBag: $parameterBag,
-            entityManager: $entityManager,
-            mercureTopicPrefix: 'roquette',
-            logger: $logger,
-            twig: $twig,
-            retriever: $retriever,
-            toolRegistry: new ToolRegistry([]),
-            toolRunner: new ToolRunner($llmService, new ToolRegistry([])),
-            workspaceRepository: $this->createStub(\App\Repository\WorkspaceRepository::class),
-            maxSummaryMessages: 10,
-            toolsEnabled: false,
-            memoryMessages: 10,
-        );
+                return $userRepository;
+            })(),
+            'channelRepository' => (function () use ($channel) {
+                $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
+                $channelRepository->expects($this->once())->method('findAllForUser')->willReturn([$channel]);
+
+                return $channelRepository;
+            })(),
+            'userChannelReadRepository' => (function () use ($activeRead) {
+                $repo = $this->createMock(\App\Repository\UserChannelReadRepository::class);
+                $repo->expects($this->once())->method('findOneBy')->willReturn($activeRead);
+
+                return $repo;
+            })(),
+            'messageRepository' => (function () use ($unread, $qb) {
+                $repo = $this->createMock(\App\Repository\MessageRepository::class);
+                $repo->expects($this->once())->method('findUnreadInChannel')->willReturn($unread);
+                $repo->expects($this->once())->method('createQueryBuilder')->willReturn($qb);
+
+                return $repo;
+            })(),
+            'llmService' => $llmService,
+        ];
+
+        [$handler] = $this->buildHandler($overrides);
 
         $message = new LlmQueryMessage('résume le canal général', 42, 'dm-robot-roquette-1', 'help-123');
         $handler($message);
@@ -297,29 +320,13 @@ class LlmQueryHandlerTest extends TestCase
 
     public function testReminderToolCallIsExecutedThroughNativeToolLoop(): void
     {
-        $userRepository = $this->createMock(UserRepository::class);
-        $llmService = $this->createMock(LlmService::class);
-        $messageFormatter = $this->createStub(MessageFormatter::class);
-        $hub = $this->createMock(HubInterface::class);
-        $parameterBag = $this->createMock(ParameterBagInterface::class);
-
         $user = new User();
         $user->setUsername('test_user');
         $user->setSlug('test-user');
 
-        $userRepository->method('find')->willReturn($user);
-
-        $parameterBag->method('get')->willReturn('/tmp');
-
         $channel = new \App\Entity\Channel();
         $channel->setName('Assistant');
         $channel->setSlug('assistant');
-
-        $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
-        $channelRepository->method('findAllForUser')->willReturn([]);
-        $channelRepository->method('findOneBy')->willReturnCallback(static function (array $criteria) use ($channel) {
-            return ($criteria['slug'] ?? null) === 'assistant' ? $channel : null;
-        });
 
         $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
         $persistedReminders = [];
@@ -343,12 +350,26 @@ class LlmQueryHandlerTest extends TestCase
             return new Envelope($message);
         });
 
+        $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
+        $channelRepository->method('findAllForUser')->willReturn([]);
+        $channelRepository->method('findOneBy')->willReturnCallback(static function (array $criteria) use ($channel) {
+            return ($criteria['slug'] ?? null) === 'assistant' ? $channel : null;
+        });
+
+        $userRepository = $this->createMock(UserRepository::class);
+        $userRepository->method('find')->willReturn($user);
+
+        $accessService = $this->createMock(ChannelAccessService::class);
+        $accessService->method('canUserAccess')->willReturn(true);
+
+        $llmService = $this->createMock(LlmService::class);
+
         $tool = new ScheduleReminderTool(
             $entityManager,
-            $channelRepository,
             $userRepository,
             $bus,
             new ChannelResolver($channelRepository, $this->createStub(\App\Repository\WorkspaceRepository::class)),
+            $accessService,
         );
         $toolRegistry = new ToolRegistry([$tool]);
         $toolRunner = new ToolRunner($llmService, $toolRegistry);
@@ -373,41 +394,29 @@ class LlmQueryHandlerTest extends TestCase
             ->willReturnOnConsecutiveCalls($firstStream, $secondStream);
 
         $formattedTexts = [];
+        $messageFormatter = $this->createStub(MessageFormatter::class);
         $messageFormatter->method('format')->willReturnCallback(static function ($text) use (&$formattedTexts) {
             $formattedTexts[] = $text;
 
             return '<p>' . $text . '</p>';
         });
 
+        $hub = $this->createMock(HubInterface::class);
         $hub->expects($this->atLeastOnce())->method('publish')->with(static::isInstanceOf(Update::class));
 
-        $messageRepository = $this->createMock(\App\Repository\MessageRepository::class);
-        $userChannelReadRepository = $this->createMock(\App\Repository\UserChannelReadRepository::class);
-        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
-        $twig = $this->createMock(\Twig\Environment::class);
-        $twig->method('render')->willReturn('<div>test</div>');
-        $retriever = $this->createStub(RetrieverInterface::class);
+        $overrides = [
+            'userRepository' => $userRepository,
+            'channelRepository' => $channelRepository,
+            'entityManager' => $entityManager,
+            'llmService' => $llmService,
+            'messageFormatter' => $messageFormatter,
+            'hub' => $hub,
+            'toolsEnabled' => true,
+            'toolRegistry' => $toolRegistry,
+            'toolRunner' => $toolRunner,
+        ];
 
-        $handler = new LlmQueryHandler(
-            userRepository: $userRepository,
-            channelRepository: $channelRepository,
-            messageRepository: $messageRepository,
-            userChannelReadRepository: $userChannelReadRepository,
-            llmService: $llmService,
-            messageFormatter: $messageFormatter,
-            hub: $hub,
-            parameterBag: $parameterBag,
-            entityManager: $entityManager,
-            mercureTopicPrefix: 'roquette',
-            logger: $logger,
-            twig: $twig,
-            retriever: $retriever,
-            toolRegistry: $toolRegistry,
-            toolRunner: $toolRunner,
-            workspaceRepository: $this->createStub(\App\Repository\WorkspaceRepository::class),
-            toolsEnabled: true,
-            memoryMessages: 10,
-        );
+        [$handler] = $this->buildHandler($overrides);
 
         $message = new LlmQueryMessage('rappelle moi d\'aller manger à 15h22', 42, 'general', 'help-123');
         $handler($message);

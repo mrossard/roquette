@@ -22,13 +22,17 @@ final class DocChunker
         }
 
         $content = file_get_contents($path);
-        $sections = preg_split('/^## /m', $content, -1, PREG_SPLIT_NO_EMPTY);
+        $parts = preg_split('/^## /m', $content, -1, PREG_SPLIT_NO_EMPTY);
 
         $documents = [];
-        foreach ($sections as $section) {
-            $lines = explode("\n", trim($section));
+        foreach ($parts as $part) {
+            $lines = explode("\n", trim($part));
             $title = array_shift($lines);
-            $body = trim(implode("\n", $lines));
+            $body = $this->cleanMarkdown(trim(implode("\n", $lines)));
+
+            if ($title === null || $body === '' || str_contains(strtolower($title), 'table des matières')) {
+                continue;
+            }
 
             $metadata = new Metadata([
                 '_title' => $title,
@@ -39,6 +43,17 @@ final class DocChunker
         }
 
         return $documents;
+    }
+
+    private function cleanMarkdown(string $text): string
+    {
+        $text = preg_replace('/\[([^\]]+)\]\([^)]+\)/', '$1', $text);
+        $text = preg_replace('/[*_~`]/', '', $text);
+        $text = preg_replace('/^#{1,6}\s*/m', '', $text);
+        $text = preg_replace('/<\s*\/?\s*[a-zA-Z][^>]*>/', '', $text);
+        $text = preg_replace('/[ \t]+/', ' ', $text);
+
+        return trim($text);
     }
 
     private function generateUuid(): string

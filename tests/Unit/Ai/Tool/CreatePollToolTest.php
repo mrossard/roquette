@@ -12,29 +12,38 @@ use App\Entity\Workspace;
 use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
 use App\Repository\WorkspaceRepository;
+use App\Service\ChannelAccessService;
 use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
 use App\Service\MessageRenderer;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Twig\Environment;
 
+#[AllowMockObjectsWithoutExpectations]
 class CreatePollToolTest extends TestCase
 {
     private function buildTool(
         ChannelRepository $channelRepo,
         WorkspaceRepository $workspaceRepo,
         EntityManagerInterface $em,
+        ?ChannelAccessService $accessService = null,
     ): CreatePollTool {
         $userRepo = $this->createMock(UserRepository::class);
-        $userRepo->expects($this->any())->method('findOneBy')->with(['username' => 'robot-roquette'])->willReturn($this->makeUser());
+        $userRepo->method('findOneBy')->willReturn($this->makeUser());
 
         $mercurePublisher = $this->createMock(MercurePublisher::class);
         $messageFormatter = $this->createMock(MessageFormatter::class);
-        $messageFormatter->expects($this->any())->method('format')->willReturn('formatted text');
+        $messageFormatter->method('format')->willReturn('formatted text');
         $twig = $this->createMock(Environment::class);
         $messageRenderer = $this->createMock(MessageRenderer::class);
-        $messageRenderer->expects($this->any())->method('renderFeedItem')->willReturn('<div>Poll HTML</div>');
+        $messageRenderer->method('renderFeedItem')->willReturn('<div>Poll HTML</div>');
+
+        if ($accessService === null) {
+            $accessService = $this->createMock(ChannelAccessService::class);
+            $accessService->method('canUserAccess')->willReturn(true);
+        }
 
         return new CreatePollTool(
             $em,
@@ -44,6 +53,7 @@ class CreatePollToolTest extends TestCase
             $twig,
             $messageRenderer,
             new ChannelResolver($channelRepo, $workspaceRepo),
+            $accessService ?? $this->createMock(ChannelAccessService::class),
         );
     }
 
@@ -72,7 +82,7 @@ class CreatePollToolTest extends TestCase
 
         $channel = $this->makeChannel('general', 'general');
         $channelRepo = $this->createMock(ChannelRepository::class);
-        $channelRepo->expects($this->any())->method('findOneBy')->with(['slug' => 'general'])->willReturn($channel);
+        $channelRepo->method('findOneBy')->willReturn($channel);
 
         $workspaceRepo = $this->createMock(WorkspaceRepository::class);
         $tool = $this->buildTool($channelRepo, $workspaceRepo, $em);
@@ -90,7 +100,7 @@ class CreatePollToolTest extends TestCase
 
         $globalChannel = $this->makeChannel('général', 'test');
         $channelRepo = $this->createMock(ChannelRepository::class);
-        $channelRepo->expects($this->any())->method('findOneBy')->with(['slug' => 'test'])->willReturn($globalChannel);
+        $channelRepo->method('findOneBy')->willReturn($globalChannel);
 
         $workspace = new Workspace();
         $workspace->setName('Workspace A');
@@ -99,7 +109,7 @@ class CreatePollToolTest extends TestCase
         $workspace->addChannel($workspaceChannel);
 
         $workspaceRepo = $this->createMock(WorkspaceRepository::class);
-        $workspaceRepo->expects($this->any())->method('find')->with(46)->willReturn($workspace);
+        $workspaceRepo->method('find')->willReturn($workspace);
 
         $tool = $this->buildTool($channelRepo, $workspaceRepo, $em);
 
@@ -116,19 +126,53 @@ class CreatePollToolTest extends TestCase
 
         $globalChannel = $this->makeChannel('test', 'test');
         $channelRepo = $this->createMock(ChannelRepository::class);
-        $channelRepo->expects($this->any())->method('findOneBy')->with(['slug' => 'test'])->willReturn($globalChannel);
+        $channelRepo->method('findOneBy')->willReturn($globalChannel);
 
         $workspace = new Workspace();
         $workspace->setName('Workspace A');
         $workspace->setSlug('ws-a');
 
         $workspaceRepo = $this->createMock(WorkspaceRepository::class);
-        $workspaceRepo->expects($this->any())->method('find')->with(46)->willReturn($workspace);
+        $workspaceRepo->method('find')->willReturn($workspace);
 
         $tool = $this->buildTool($channelRepo, $workspaceRepo, $em);
 
         $result = $tool->__invoke('test', 'Choix ?', ['A', 'B'], false, null, 46);
 
         static::assertStringContainsString('canal #test', $result);
+    }
+
+    public function testCreatePollDeniedWhenUserHasNoAccess(): void
+    {
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->expects($this->never())->method('persist');
+        $em->expects($this->never())->method('flush');
+
+        $channel = $this->makeChannel('private', 'private');
+        $channelRepo = $this->createMock(ChannelRepository::class);
+        $channelRepo->method('findOneBy')->willReturn($channel);
+
+        $workspaceRepo = $this->createMock(WorkspaceRepository::class);
+
+        $accessService = $this->createMock(ChannelAccessService::class);
+        $accessService->method('canUserAccess')->willReturn(false);
+
+        $userRepo = $this->createMock(UserRepository::class);
+        $userRepo->method('find')->willReturn($this->makeUser());
+
+        $tool = new CreatePollTool(
+            $em,
+            $userRepo,
+            $this->createMock(MercurePublisher::class),
+            $this->createMock(MessageFormatter::class),
+            $this->createMock(Environment::class),
+            $this->createMock(MessageRenderer::class),
+            new ChannelResolver($channelRepo, $workspaceRepo),
+            $accessService,
+        );
+
+        $result = $tool->__invoke('private', 'Choix ?', ['A', 'B'], false, 7, null);
+
+        static::assertStringContainsString('pas accès', $result);
     }
 }

@@ -1,0 +1,145 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Unit\Ai;
+
+use App\Ai\ChannelResolver;
+use App\Ai\ChannelSummaryBuilder;
+use App\Entity\Channel;
+use App\Entity\Message;
+use App\Entity\User;
+use App\Repository\ChannelRepository;
+use App\Repository\MessageRepository;
+use App\Repository\UserChannelReadRepository;
+use App\Repository\WorkspaceRepository;
+use Doctrine\ORM\QueryBuilder;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+
+#[AllowMockObjectsWithoutExpectations]
+final class ChannelSummaryBuilderTest extends TestCase
+{
+    private function makeChannel(string $name, string $slug): Channel
+    {
+        $channel = new Channel();
+        $channel->setName($name);
+        $channel->setSlug($slug);
+
+        return $channel;
+    }
+
+    private function makeMessage(string $content, string $author): Message
+    {
+        $msg = new Message();
+        $msg->setContent($content);
+        $msg->setCreatedAt(new \DateTimeImmutable('2026-01-01 10:00:00'));
+
+        return $msg;
+    }
+
+    private function buildBuilder(
+        MessageRepository $messageRepo,
+        ?UserChannelReadRepository $readRepo = null,
+        int $maxSummaryMessages = 100,
+    ): ChannelSummaryBuilder {
+        $readRepo ??= $this->createMock(UserChannelReadRepository::class);
+
+        return new ChannelSummaryBuilder(
+            $readRepo,
+            $messageRepo,
+            new ChannelResolver(
+                $this->createMock(ChannelRepository::class),
+                $this->createMock(WorkspaceRepository::class),
+            ),
+            $maxSummaryMessages,
+        );
+    }
+
+    public function testChannelNotFoundReturnsNotFoundPrompt(): void
+    {
+        $messageRepo = $this->createMock(MessageRepository::class);
+        $messageRepo->expects($this->never())->method('findUnreadInChannel');
+
+        $builder = $this->buildBuilder($messageRepo);
+        $user = new User();
+
+        [$prompt] = $builder->build($user, [], 'general');
+
+        $this->assertStringContainsString('n\'as pas trouvé le canal', $prompt);
+    }
+
+    public function testBuildsStructuredMessagesPrompt(): void
+    {
+        $channel = $this->makeChannel('général', 'general');
+
+        $messageRepo = $this->createMock(MessageRepository::class);
+        $messageRepo->expects($this->once())
+            ->method('findUnreadInChannel')
+            ->with($channel, $this->isInstanceOf(User::class), null)
+            ->willReturn([$this->makeMessage('Bonjour tout le monde', 'alice')]);
+
+        $builder = $this->buildBuilder($messageRepo);
+        $user = new User();
+
+        [$prompt, $systemPrompt] = $builder->build($user, [$channel], 'general');
+
+        $this->assertStringContainsString('Bonjour tout le monde', $prompt);
+        $this->assertStringContainsString('auteur', $prompt);
+        $this->assertStringContainsString('Roquette', $systemPrompt);
+    }
+
+    public function testBatchesWhenMessagesExceedLimit(): void
+    {
+        $channel = $this->makeChannel('général', 'general');
+
+        $messages = [
+            $this->makeMessage('message un', 'alice'),
+            $this->makeMessage('message deux', 'bob'),
+            $this->makeMessage('message trois', 'charlie'),
+        ];
+
+        $messageRepo = $this->createMock(MessageRepository::class);
+        $messageRepo->expects($this->once())
+            ->method('findUnreadInChannel')
+            ->with($channel, $this->isInstanceOf(User::class), null)
+            ->willReturn($messages);
+
+        $builder = $this->buildBuilder($messageRepo, maxSummaryMessages: 2);
+        $user = new User();
+
+        [$prompt, , $batches] = $builder->build($user, [$channel], 'general');
+
+        $this->assertSame('', $prompt);
+        $this->assertCount(2, $batches);
+        $this->assertCount(2, $batches[0]);
+        $this->assertCount(1, $batches[1]);
+    }
+
+    public function testFallbackToLastMessagesWhenNoUnread(): void
+    {
+        $channel = $this->makeChannel('général', 'general');
+
+        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('andWhere')->willReturnSelf();
+        $queryBuilder->method('orderBy')->willReturnSelf();
+        $queryBuilder->method('setParameter')->willReturnSelf();
+        $queryBuilder->method('setMaxResults')->willReturnSelf();
+
+        $query = $this->createMock(\Doctrine\ORM\Query::class);
+        $query->method('getResult')->willReturn([$this->makeMessage('ancien message', 'alice')]);
+        $queryBuilder->method('getQuery')->willReturn($query);
+
+        $messageRepo = $this->createMock(MessageRepository::class);
+        $messageRepo->method('findUnreadInChannel')->willReturn([]);
+        $messageRepo->method('createQueryBuilder')->willReturn($queryBuilder);
+
+        $builder = $this->buildBuilder($messageRepo);
+        $user = new User();
+
+        [$prompt] = $builder->build($user, [$channel], 'general');
+
+        $this->assertStringContainsString('ancien message', $prompt);
+    }
+}

@@ -61,4 +61,32 @@ final readonly class ChannelResolver
 
         return null;
     }
+
+    /**
+     * Resolves a channel within the user's accessible channel list, by exact
+     * slug/name first, then by substring match.
+     *
+     * @param list<Channel> $channels
+     */
+    public function resolveFromList(string $query, array $channels): ?Channel
+    {
+        $query = strtolower(trim($query));
+        if ($query === '') {
+            return null;
+        }
+
+        foreach ($channels as $channel) {
+            if (strtolower((string) $channel->getSlug()) === $query || strtolower((string) $channel->getName()) === $query) {
+                return $channel;
+            }
+        }
+
+        foreach ($channels as $channel) {
+            if (str_contains(strtolower((string) $channel->getName()), $query) || str_contains(strtolower((string) $channel->getSlug()), $query)) {
+                return $channel;
+            }
+        }
+
+        return null;
+    }
 }
