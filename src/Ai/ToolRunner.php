@@ -43,6 +43,7 @@ final readonly class ToolRunner
         $currentPrompt = $prompt;
         $producedText = false;
         $allExecutedResults = [];
+        $executedCalls = [];
 
         for ($i = 0; $i < self::MAX_TOOL_ITERATIONS; $i++) {
             $toolCalls = null;

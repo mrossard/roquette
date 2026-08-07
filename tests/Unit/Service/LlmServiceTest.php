@@ -110,4 +110,86 @@ class LlmServiceTest extends TestCase
 
         $this->assertSame('Chat response', $text);
     }
+
+    public function testRetriesTransientFailureBeforeStreaming(): void
+    {
+        $platform = $this->createMock(PlatformInterface::class);
+        $invocations = 0;
+        $goodDeferred = $this->makeDeferred('Hello ');
+
+        $platform
+            ->expects($this->exactly(2))
+            ->method('invoke')
+            ->willReturnCallback(function () use (&$invocations, $goodDeferred): DeferredResult {
+                $invocations++;
+
+                if (1 === $invocations) {
+                    $failingConverter = $this->createStub(ResultConverterInterface::class);
+                    $failingConverter->method('convert')->willThrowException(new \RuntimeException('transient failure'));
+
+                    return new DeferredResult($failingConverter, $this->createStub(RawResultInterface::class));
+                }
+
+                return $goodDeferred;
+            });
+
+        $llmService = new LlmService($platform, 'test-model', 'System prompt', null, maxRetries: 2);
+        $text = $llmService->generateText('test prompt');
+
+        static::assertSame('Hello ', $text);
+        static::assertSame(2, $invocations);
+    }
+
+    public function testRethrowsWhenAllRetriesAreExhausted(): void
+    {
+        $platform = $this->createMock(PlatformInterface::class);
+
+        $platform
+            ->expects($this->exactly(3))
+            ->method('invoke')
+            ->willReturn($this->makeFailingDeferred());
+
+        $llmService = new LlmService($platform, 'test-model', 'System prompt', null, maxRetries: 2);
+
+        $this->expectException(\RuntimeException::class);
+        $llmService->generateText('test prompt');
+    }
+
+    public function testDoesNotRetryAfterPartialOutputWasStreamed(): void
+    {
+        $platform = $this->createMock(PlatformInterface::class);
+        $failingConverter = $this->createStub(ResultConverterInterface::class);
+        $failingConverter->method('convert')->willReturn(new StreamResult((static function () {
+            yield new TextDelta('partial ');
+            throw new \RuntimeException('mid-stream failure');
+        })()));
+
+        $platform
+            ->expects($this->once())
+            ->method('invoke')
+            ->willReturn(new DeferredResult($failingConverter, $this->createStub(RawResultInterface::class)));
+
+        $llmService = new LlmService($platform, 'test-model', 'System prompt', null, maxRetries: 2);
+
+        $this->expectException(\RuntimeException::class);
+        $llmService->generateText('test prompt');
+    }
+
+    private function makeDeferred(string $text): DeferredResult
+    {
+        $resultConverter = $this->createStub(ResultConverterInterface::class);
+        $resultConverter->method('convert')->willReturn(new StreamResult((static function () use ($text) {
+            yield new TextDelta($text);
+        })()));
+
+        return new DeferredResult($resultConverter, $this->createStub(RawResultInterface::class));
+    }
+
+    private function makeFailingDeferred(): DeferredResult
+    {
+        $resultConverter = $this->createStub(ResultConverterInterface::class);
+        $resultConverter->method('convert')->willThrowException(new \RuntimeException('transient failure'));
+
+        return new DeferredResult($resultConverter, $this->createStub(RawResultInterface::class));
+    }
 }

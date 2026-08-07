@@ -18,6 +18,8 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  */
 readonly class LlmService
 {
+    private LlmRetry $retry;
+
     public function __construct(
         #[Autowire(service: 'ai.platform.generic.cloud')]
         private PlatformInterface $platform,
@@ -26,7 +28,11 @@ readonly class LlmService
         #[Autowire(env: 'LLM_SYSTEM_PROMPT')]
         private ?string $defaultSystemPrompt = null,
         private ?\Psr\Log\LoggerInterface $logger = null,
-    ) {}
+        #[Autowire(env: 'int:LLM_MAX_RETRIES')]
+        private int $maxRetries = 2,
+    ) {
+        $this->retry = new LlmRetry($this->platform, $this->model, $this->maxRetries, $this->logger);
+    }
 
     /**
      * Generates a text response from a user prompt.
@@ -98,14 +104,7 @@ readonly class LlmService
 
         $options['stream'] = true;
 
-        $result = $this->platform->invoke($this->model, $messageBag, $options);
-        $this->logger?->info('LlmService invoke called (stream)', ['model' => $this->model]);
-
-        foreach ($result->asStream() as $delta) {
-            if ($delta instanceof TextDelta || $delta instanceof ToolCallComplete) {
-                yield $delta;
-            }
-        }
+        yield from $this->retry->stream($messageBag, $options);
     }
 
     /**
@@ -120,9 +119,8 @@ readonly class LlmService
     {
         $options['stream'] = true;
 
-        $resultStream = $this->platform->invoke($this->model, $messageBag, $options)->asStream();
         $text = '';
-        foreach ($resultStream as $delta) {
+        foreach ($this->retry->stream($messageBag, $options) as $delta) {
             if (!$delta instanceof TextDelta) {
                 continue;
             }

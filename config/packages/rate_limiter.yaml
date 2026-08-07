@@ -24,6 +24,12 @@ framework:
             limit: 30
             rate: { interval: '1 minute', amount: 10 }
 
+        # Rate limiter for LLM assistant queries (@robot, /help, /poll, robot DM)
+        llm_api:
+            policy: 'token_bucket'
+            limit: 6
+            rate: { interval: '1 minute', amount: 2 }
+
 when@test:
     framework:
         rate_limiter:
@@ -34,4 +40,6 @@ when@test:
             emoji_api:
                 limit: 1000
             webhook_api:
+                limit: 1000
+            llm_api:
                 limit: 1000

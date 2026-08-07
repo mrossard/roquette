@@ -11,11 +11,15 @@ use App\Message\LlmQueryMessage;
 use App\Message\ModerateMessageMessage;
 use App\Message\ScanFileMessage;
 use App\Repository\MessageRepository;
+use App\Repository\UserRepository;
 
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -23,6 +27,7 @@ class MessagePublishService
 {
     public function __construct(
         private readonly MessageRepository $messageRepository,
+        private readonly UserRepository $userRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly MercurePublisher $mercurePublisher,
         private readonly FileUploadService $fileUploadService,
@@ -30,6 +35,8 @@ class MessagePublishService
         private readonly TranslatorInterface $translator,
         private readonly MessageRenderer $messageRenderer,
         private readonly Environment $twig,
+        #[Autowire(service: 'limiter.llm_api')]
+        private readonly RateLimiterFactoryInterface $llmRateLimiter,
     ) {}
 
     /**
@@ -88,9 +95,18 @@ class MessagePublishService
         }
 
         $isDmWithRobot = $channel->getSlug() === 'dm-robot-roquette-' . $currentUser->getSlug();
-        $isRobotMentioned = str_contains(strtolower($messageText), '@robot');
+        $isRobotMentioned = $this->isRobotMentioned($messageText);
 
         if ($isRobotMentioned && !$isDmWithRobot) {
+            if (!$this->consumeLlmToken($currentUser)) {
+                return new PublishResult(
+                    success: false,
+                    channel: $channel,
+                    error: $this->translator->trans('Trop de demandes pour l\'Assistant. Veuillez patienter un instant.'),
+                    statusCode: Response::HTTP_TOO_MANY_REQUESTS,
+                );
+            }
+
             // When querying the robot in a channel, do NOT persist the message in DB nor broadcast it to everyone.
             // Dispatch async LLM processing with the user's question, which will stream privately back to the user.
             $helpMessageId = 'help-' . uniqid();
@@ -99,6 +115,19 @@ class MessagePublishService
             );
 
             return new PublishResult(success: true, channel: $channel, message: $message, renderedHtml: '');
+        }
+
+        $llmAllowed = $isDmWithRobot && !$isPoll && $file === null
+            ? $this->consumeLlmToken($currentUser)
+            : true;
+
+        if (!$llmAllowed) {
+            return new PublishResult(
+                success: false,
+                channel: $channel,
+                error: $this->translator->trans('Trop de demandes pour l\'Assistant. Veuillez patienter un instant.'),
+                statusCode: Response::HTTP_TOO_MANY_REQUESTS,
+            );
         }
 
         $this->entityManager->persist($message);
@@ -136,6 +165,27 @@ class MessagePublishService
         }
 
         return new PublishResult(success: true, channel: $channel, message: $message, renderedHtml: $renderedHtml);
+    }
+
+    private function isRobotMentioned(string $messageText): bool
+    {
+        $robot = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME]);
+        if ($robot === null) {
+            return false;
+        }
+
+        $name = $robot->getUsername() ?: User::ROBOT_USERNAME;
+        $alias = strtok($name, '-') ?: $name;
+
+        return preg_match(
+            '/@(?:' . preg_quote($name, '/') . '|' . preg_quote($alias, '/') . ')(?![\p{L}\p{N}-])/iu',
+            $messageText,
+        ) === 1;
+    }
+
+    private function consumeLlmToken(User $user): bool
+    {
+        return $this->llmRateLimiter->create('user_' . $user->getId())->consume(1)->isAccepted();
     }
 
     private function attachPoll(Message $message, string $pollQuestion, array $optionsData, bool $allowMultiple): void

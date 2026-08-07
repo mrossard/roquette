@@ -95,4 +95,41 @@ class ToolRunnerTest extends TestCase
         static::assertSame(['Réponse finale'], $chunks);
         static::assertStringContainsString('Outil inconnu', $calls[1]);
     }
+
+    public function testDeduplicatesIdenticalToolCalls(): void
+    {
+        $llmService = $this->createMock(LlmService::class);
+        $tool = new FakeTool();
+
+        $llmService
+            ->expects($this->exactly(2))
+            ->method('generateStreamWithTools')
+            ->willReturnOnConsecutiveCalls(
+                (static function () {
+                    yield new ToolCallComplete([
+                        new ToolCall('1', 'fake_tool', ['channelSlug' => 'general']),
+                        new ToolCall('2', 'fake_tool', ['channelSlug' => 'general']),
+                    ]);
+                })(),
+                (static function () {
+                    yield new TextDelta('C\'est fait !');
+                })(),
+            );
+
+        $runner = new ToolRunner($llmService, new ToolRegistry([$tool]));
+        $executed = [];
+        $chunks = iterator_to_array($runner->streamResponse(
+            prompt: 'Crée ça deux fois',
+            systemPrompt: 'sys',
+            tools: [],
+            authorUserId: 42,
+            workspaceId: 7,
+            onToolExecuted: static function (string $name, string $result) use (&$executed): void {
+                $executed[] = [$name, $result];
+            },
+        ));
+
+        static::assertSame(['C\'est fait !'], $chunks);
+        static::assertSame([['fake_tool', 'Tool executed for general']], $executed);
+    }
 }
