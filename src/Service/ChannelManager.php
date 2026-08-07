@@ -11,6 +11,7 @@ use App\Entity\User;
 use App\Entity\Workspace;
 use App\Enum\AuditAction;
 use App\Repository\ChannelRepository;
+use App\Service\Group\GroupSubscriptionManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -33,6 +34,7 @@ class ChannelManager
         private readonly SluggerInterface $slugger,
         private readonly KanbanManager $kanbanManager,
         private readonly WorkspaceManager $workspaceManager,
+        private readonly GroupSubscriptionManager $groupSubscriptionManager,
     ) {}
 
     public function create(string $name, string $description, array $extra, User $currentUser): Channel
@@ -79,26 +81,8 @@ class ChannelManager
             $groupIdentifier = $extra['groupIdentifier'] ?? '';
             if ($groupIdentifier !== '') {
                 $isGroupChannel = $extra['isGroupChannel'] ?? false;
-
-                if ($isGroupChannel) {
-                    $existingGroupSub = $this->entityManager
-                        ->getRepository(GroupSubscription::class)
-                        ->findOneBy([
-                            'groupIdentifier' => $groupIdentifier,
-                            'isGroupChannel' => true,
-                        ]);
-                    if ($existingGroupSub) {
-                        throw new \InvalidArgumentException($this->translator->trans(
-                            'Ce groupe possède déjà un canal officiel.',
-                        ));
-                    }
-                }
-
-                $groupSubscription = new GroupSubscription();
-                $groupSubscription->setGroupIdentifier($groupIdentifier);
-                $groupSubscription->setIsGroupChannel($isGroupChannel);
-                $channel->addGroupSubscription($groupSubscription);
-                $this->entityManager->persist($groupSubscription);
+                $groupSub = $this->groupSubscriptionManager->attachGroupSubscription($channel, $groupIdentifier, (bool) $isGroupChannel);
+                $this->entityManager->persist($groupSub);
             }
         }
 

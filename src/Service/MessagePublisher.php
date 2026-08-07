@@ -85,7 +85,7 @@ class MessagePublisher
             messageText: $messageText,
             file: $uploadedFile,
             pollQuestion: $pollQuestion,
-            pollOptions: $this->getPollOptions($request),
+            pollOptions: $this->parsePollOptions($request),
             pollAllowMultiple: (bool) $request->request->get('allow_multiple'),
             replyToId: ($replyTo = $request->request->get('replyTo')) ? (int) $replyTo : null,
             workspaceId: $this->getCurrentWorkspaceId($request),
@@ -144,16 +144,5 @@ class MessagePublisher
         if ($session !== null && $session->isStarted()) {
             $session->getFlashBag()->add($type, $message);
         }
-    }
-
-    /** @return string[] */
-    private function getPollOptions(Request $request): array
-    {
-        $optionsData = $request->request->all()['poll_options'] ?? [];
-        if (!is_array($optionsData)) {
-            return [];
-        }
-
-        return array_filter(array_map('trim', $optionsData), static fn($val) => $val !== '');
     }
 }

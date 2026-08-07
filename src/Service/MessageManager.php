@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Controller\Trait\RequestValidationTrait;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Repository\MessageRepository;
@@ -16,6 +17,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class MessageManager
 {
+    use RequestValidationTrait;
     public function __construct(
         private readonly MessageRepository $messageRepository,
         private readonly EntityManagerInterface $entityManager,
@@ -157,7 +159,7 @@ class MessageManager
     private function editPoll(Message $message, Request $request, User $currentUser): array
     {
         $pollQuestion = $request->request->get('poll_question');
-        $optionsData = $this->getPollOptions($request);
+        $optionsData = $this->parsePollOptions($request);
 
         if ($pollQuestion === null || trim($pollQuestion) === '') {
             return [
@@ -212,16 +214,5 @@ class MessageManager
         );
 
         return ['renderedHtml' => $renderedHtml];
-    }
-
-    /** @return string[] */
-    private function getPollOptions(Request $request): array
-    {
-        $optionsData = $request->request->all()['poll_options'] ?? [];
-        if (!is_array($optionsData)) {
-            return [];
-        }
-
-        return array_filter(array_map('trim', $optionsData), static fn($val) => $val !== '');
     }
 }

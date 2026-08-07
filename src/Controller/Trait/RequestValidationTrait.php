@@ -21,4 +21,19 @@ trait RequestValidationTrait
             && (int) $request->headers->get('CONTENT_LENGTH', 0) > 0
         );
     }
+
+    /**
+     * Extracts non-empty poll options from a request.
+     *
+     * @return string[]
+     */
+    private function parsePollOptions(Request $request): array
+    {
+        $optionsData = $request->request->all()['poll_options'] ?? [];
+        if (!is_array($optionsData)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', $optionsData), static fn($val) => $val !== ''));
+    }
 }
