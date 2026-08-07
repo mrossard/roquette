@@ -18,14 +18,17 @@
     .feed-container::-webkit-scrollbar {
         width: 6px;
     }
+
     .feed-container::-webkit-scrollbar-track {
         background: rgba(0, 0, 0, 0.1);
         border-radius: 999px;
     }
+
     .feed-container::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 999px;
     }
+
     .feed-container::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.2);
     }
@@ -215,7 +218,7 @@
             padding-right: 0.75rem; /* Standardize padding to match other feed items */
         }
 
-        /* Reset the todo channel item header so it does not position absolutely, 
+        /* Reset the todo channel item header so it does not position absolutely,
            as actions are now positioned absolutely at the top right of the feed-item. */
         .feed-item.is-todo-channel-item .feed-item-header {
             position: static;
@@ -654,8 +657,8 @@
 
     .feed-item.editing-inline {
         background: linear-gradient(90deg,
-            hsla(271, 91%, 65%, 0.08) 0%,
-            transparent 100%);
+        hsla(271, 91%, 65%, 0.08) 0%,
+        transparent 100%);
         border-left: 2px solid var(--accent-purple);
         padding-left: calc(1rem - 2px);
         transition: background 0.25s, border-color 0.25s;
@@ -707,6 +710,7 @@
     .offline-status-label {
         animation: fade-in 0.3s ease;
     }
+
     .reply-context-bar {
         display: flex;
         align-items: center;
@@ -788,6 +792,7 @@
         border: 1px solid rgba(6, 182, 212, 0.3) !important;
         opacity: 1 !important;
     }
+
     .feed-item-actions-list a.btn-subchannel-direct-link:hover {
         background: rgba(6, 182, 212, 0.22) !important;
         border-color: rgba(6, 182, 212, 0.45) !important;
@@ -835,27 +840,29 @@
             padding: 0;
             margin-left: auto;
         }
-    .moderation-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.25rem 0.6rem;
-        margin-bottom: 0.35rem;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 500;
-    }
 
-    .moderation-badge.moderation-masked {
-        background: rgba(245, 158, 11, 0.12);
-        border: 1px solid rgba(245, 158, 11, 0.3);
-        color: #f59e0b;
-    }
+        .moderation-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.6rem;
+            margin-bottom: 0.35rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
 
-    .moderation-badge.moderation-flagged {
-        background: rgba(239, 68, 68, 0.12);
-        border: 1px solid rgba(239, 68, 68, 0.3);
-        color: #ef4444;
+        .moderation-badge.moderation-masked {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #f59e0b;
+        }
+
+        .moderation-badge.moderation-flagged {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
     }
 }
 
