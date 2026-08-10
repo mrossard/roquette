@@ -37,7 +37,7 @@ class PendingConfirmationService
         private readonly ?LlmService $llmService = null,
     ) {}
 
-    public function savePendingConfirmation(User|int $user, string $token, ?string $channelSlug = null): void
+    public function savePendingConfirmation(User|int $user, #[\SensitiveParameter] string $token, ?string $channelSlug = null): void
     {
         $userId = $user instanceof User ? $user->getId() : $user;
         if ($userId === null) {
@@ -107,7 +107,7 @@ class PendingConfirmationService
      * Hybrid confirmation check: combines a fast-path keyword/phrase check
      * for instant execution with an LLM classification fallback for complex natural language expressions.
      */
-    public function isConfirmation(string $text, ?string $token = null, ?User $user = null): bool
+    public function isConfirmation(string $text, #[\SensitiveParameter] ?string $token = null, ?User $user = null): bool
     {
         if ($this->isConfirmationText($text)) {
             return true;
@@ -171,7 +171,7 @@ class PendingConfirmationService
             $text,
         );
 
-        $systemPrompt = "Tu es un classifieur strict d'intention de confirmation pour l'application Roquette. Tu réponds STRICTEMENT par le mot 'YES' si le message exprime un accord ou une validation de l'action demandée, ou 'NO' dans le cas contraire. Ne génère aucun autre texte.";
+        $systemPrompt = "Tu es un classifieur strict d'intention de confirmation pour l'application Roquette. Tu réponds STRICTEMENT par le mot 'YES' si le message exprime un accord ou me validation de l'action demandée, ou 'NO' dans le cas contraire. Ne génère aucun autre texte.";
 
         try {
             $response = trim($this->llmService->generateText($prompt, $systemPrompt));
@@ -185,7 +185,7 @@ class PendingConfirmationService
     /**
      * Verifies the token, executes the tool action, broadcasts Mercure update, and clears pending state.
      */
-    public function executeConfirmation(string $token, User $user): bool
+    public function executeConfirmation(#[\SensitiveParameter] string $token, User $user): bool
     {
         $payload = $this->toolActionSigner->verify($token, $user->getId());
         if ($payload === null) {

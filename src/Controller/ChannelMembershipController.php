@@ -177,11 +177,7 @@ final class ChannelMembershipController extends AbstractController
             return new Response('', 404);
         }
 
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
-            return new Response('', 403);
-        }
+        $this->denyAccessUnlessGranted('MANAGE', $channel);
 
         $this->authorizeChannelAccess($channel);
 
@@ -211,11 +207,7 @@ final class ChannelMembershipController extends AbstractController
             return new Response('', 404);
         }
 
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
-        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
-            return new Response('', 403);
-        }
+        $this->denyAccessUnlessGranted('MANAGE', $channel);
 
         $this->authorizeChannelAccess($channel);
 

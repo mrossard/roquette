@@ -359,7 +359,7 @@ class ChannelControllerTest extends WebTestCase
         $this->client->getContainer()->set(\App\Service\FileUploadService::class, $mock);
 
         // 2. Request export
-        $this->client->request('GET', sprintf('/channels/%s/export', $this->channel->getSlug()));
+        $this->client->request('POST', sprintf('/channels/%s/export', $this->channel->getSlug()));
 
         $this->assertResponseIsSuccessful();
         $content = $this->client->getResponse()->getContent();
@@ -385,6 +385,19 @@ class ChannelControllerTest extends WebTestCase
         } else {
             static::assertSame('application/x-tar', $response->headers->get('Content-Type'));
         }
+
+        static::assertStringContainsString(
+            $this->channel->getSlug() . '-export',
+            $response->headers->get('Content-Disposition') ?? '',
+        );
+    }
+
+    #[Test]
+    public function testExportChannelGetMethodNotAllowed(): void
+    {
+        $this->client->request('GET', sprintf('/channels/%s/export', $this->channel->getSlug()));
+
+        $this->assertResponseStatusCodeSame(405);
     }
 
     #[Test]
@@ -404,7 +417,7 @@ class ChannelControllerTest extends WebTestCase
         $this->client->loginUser($otherUser);
 
         // Try to export
-        $this->client->request('GET', sprintf('/channels/%s/export', $this->channel->getSlug()));
+        $this->client->request('POST', sprintf('/channels/%s/export', $this->channel->getSlug()));
 
         $this->assertResponseStatusCodeSame(403);
     }

@@ -293,4 +293,25 @@ class SecurityControllerTest extends WebTestCase
         putenv('AUTH_FORM_ENABLED');
         putenv('AUTH_OAUTH_ENABLED');
     }
+
+    #[Test]
+    public function testRegistrationIsRateLimited(): void
+    {
+        $limiter = $this->createMock(\Symfony\Component\RateLimiter\LimiterInterface::class);
+        $rateLimit = new \Symfony\Component\RateLimiter\RateLimit(0, new \DateTimeImmutable(), false, 0);
+        $limiter->method('consume')->willReturn($rateLimit);
+
+        $factory = $this->createMock(\Symfony\Component\RateLimiter\RateLimiterFactoryInterface::class);
+        $factory->method('create')->willReturn($limiter);
+
+        $this->client->getContainer()->set('limiter.register_api', $factory);
+
+        $this->client->request('POST', '/register', [
+            'registration_form[username]' => 'rate_limited_user',
+            'registration_form[email]' => 'rl@example.com',
+            'registration_form[plainPassword]' => 'password123',
+        ]);
+
+        $this->assertResponseStatusCodeSame(429);
+    }
 }

@@ -240,4 +240,22 @@ class InvitationControllerTest extends WebTestCase
 
         $this->assertResponseStatusCodeSame(403);
     }
+
+    #[Test]
+    public function testSearchInvitableUsersSuccessForCreator(): void
+    {
+        $this->client->loginUser($this->creator);
+        $this->client->request('GET', sprintf('/channels/%s/invite/search?q=test', $this->channel->getSlug()));
+
+        $this->assertResponseIsSuccessful();
+    }
+
+    #[Test]
+    public function testSearchInvitableUsersForbiddenForNonCreator(): void
+    {
+        $this->client->loginUser($this->invitee);
+        $this->client->request('GET', sprintf('/channels/%s/invite/search?q=test', $this->channel->getSlug()));
+
+        $this->assertResponseStatusCodeSame(403);
+    }
 }

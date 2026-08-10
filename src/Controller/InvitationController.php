@@ -121,6 +121,19 @@ final class InvitationController extends AbstractController
             return new Response('Canal non trouvé.', 404);
         }
 
+        if ($activeChannel->isDm()) {
+            return new Response('Opération non autorisée pour un message direct.', 403);
+        }
+
+        $workspace = $activeChannel->getWorkspace();
+        if ($workspace !== null) {
+            if ($workspace->getCreator() !== $currentUser) {
+                return new Response('Non autorisé.', 403);
+            }
+        } elseif ($activeChannel->getCreator() !== $currentUser) {
+            return new Response('Non autorisé.', 403);
+        }
+
         $query = $request->query->get('q', '');
         $query = trim($query);
 

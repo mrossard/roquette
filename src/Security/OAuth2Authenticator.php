@@ -170,6 +170,18 @@ class OAuth2Authenticator extends AbstractAuthenticator
             // 2. Search by username to link account
             $existingUserByUsername = $this->userRepository->findOneBy(['username' => $username]);
             if ($existingUserByUsername) {
+                if ($existingUserByUsername->getOauthId() !== null && $existingUserByUsername->getOauthId() !== $oauthId) {
+                    $this->logger->warning(sprintf(
+                        'Refused linking OAuth account for username "%s": existing OAuth ID "%s" does not match incoming "%s".',
+                        $username,
+                        $existingUserByUsername->getOauthId(),
+                        $oauthId,
+                    ));
+                    throw new CustomUserMessageAuthenticationException(
+                        'Ce nom d\'utilisateur est déjà lié à un autre compte OAuth.',
+                    );
+                }
+
                 $user = $existingUserByUsername;
 
                 if ($user->isBanned()) {

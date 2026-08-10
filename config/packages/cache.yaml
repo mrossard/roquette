@@ -17,4 +17,4 @@ framework:
 when@test:
     framework:
         cache:
-            app: cache.adapter.filesystem
+            app: cache.adapter.array

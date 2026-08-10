@@ -24,31 +24,7 @@ final class EmailVerificationController extends AbstractController
         private LoggerInterface $logger,
     ) {}
 
-    #[Route('/verify-email/{token}', name: 'app_verify_email', methods: ['GET'])]
-    public function verify(#[\SensitiveParameter] string $token, EntityManagerInterface $entityManager): Response
-    {
-        $user = $entityManager
-            ->getRepository(User::class)
-            ->findOneBy([
-                'emailVerificationToken' => $token,
-            ]);
-
-        if ($user === null) {
-            $this->addFlash('error', $this->translator->trans('Lien de vérification invalide ou expiré.'));
-            return $this->redirectToRoute('app_login');
-        }
-
-        $user->setEmailVerifiedAt(new \DateTimeImmutable());
-        $user->setEmailVerificationToken(null);
-        $entityManager->flush();
-
-        $this->logger->info(sprintf('Email verified for user "%s" (ID: %d).', $user->getUsername(), $user->getId()));
-
-        $this->addFlash('success', $this->translator->trans('Votre adresse email a été vérifiée avec succès !'));
-        return $this->redirectToRoute('app_dashboard');
-    }
-
-    #[Route('/verify-email/resend', name: 'app_resend_verification', methods: ['GET'])]
+    #[Route('/verify-email/resend', name: 'app_resend_verification', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
     public function resend(EntityManagerInterface $entityManager): Response
     {
@@ -114,5 +90,29 @@ final class EmailVerificationController extends AbstractController
         }
 
         return $this->redirectToRoute('app_account');
+    }
+
+    #[Route('/verify-email/{token}', name: 'app_verify_email', requirements: ['token' => '[a-f0-9]{64}'], methods: ['GET'])]
+    public function verify(#[\SensitiveParameter] string $token, EntityManagerInterface $entityManager): Response
+    {
+        $user = $entityManager
+            ->getRepository(User::class)
+            ->findOneBy([
+                'emailVerificationToken' => $token,
+            ]);
+
+        if ($user === null) {
+            $this->addFlash('error', $this->translator->trans('Lien de vérification invalide ou expiré.'));
+            return $this->redirectToRoute('app_login');
+        }
+
+        $user->setEmailVerifiedAt(new \DateTimeImmutable());
+        $user->setEmailVerificationToken(null);
+        $entityManager->flush();
+
+        $this->logger->info(sprintf('Email verified for user "%s" (ID: %d).', $user->getUsername(), $user->getId()));
+
+        $this->addFlash('success', $this->translator->trans('Votre adresse email a été vérifiée avec succès !'));
+        return $this->redirectToRoute('app_dashboard');
     }
 }

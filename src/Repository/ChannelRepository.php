@@ -183,40 +183,21 @@ class ChannelRepository extends ServiceEntityRepository
 
     public function findDmBetween(User $user1, User $user2): ?Channel
     {
+        $isSelf = $user1->getId() === $user2->getId();
+        $targetCount = $isSelf ? 1 : 2;
+
         $qb = $this
             ->createQueryBuilder('c')
-            ->join('c.members', 'm1')
-            ->join('c.members', 'm2')
+            ->join('c.members', 'm')
             ->where('c.isDm = true')
-            ->andWhere('m1.id = :u1')
-            ->andWhere('m2.id = :u2')
-            ->setParameter('u1', $user1->getId())
-            ->setParameter('u2', $user2->getId());
+            ->andWhere('m.id IN (:userIds)')
+            ->setParameter('userIds', array_unique([$user1->getId(), $user2->getId()]))
+            ->groupBy('c.id')
+            ->having('COUNT(m.id) = :targetCount')
+            ->setParameter('targetCount', $targetCount)
+            ->setMaxResults(1);
 
-        // If DM with self
-        if ($user1->getId() === $user2->getId()) {
-            // We need to make sure there is only 1 member, or handle differently.
-            // But typical systems only have the 1 user.
-            // Let's filter by the number of members being 1 if needed,
-            // but the join on m1 and m2 with same ID works as long as the user is a member.
-        }
-
-        $results = $qb->getQuery()->getResult();
-        foreach ($results as $channel) {
-            // Double check that members count is correct (2 for normal DMs, 1 for self-DMs)
-            $memberCount = $channel->getMembers()->count();
-            if ($user1->getId() === $user2->getId()) {
-                if ($memberCount === 1) {
-                    return $channel;
-                }
-            } else {
-                if ($memberCount === 2) {
-                    return $channel;
-                }
-            }
-        }
-
-        return null;
+        return $qb->getQuery()->getOneOrNullResult();
     }
 
     public function searchByName(string $query, User $user): array

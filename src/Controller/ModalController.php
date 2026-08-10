@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\ChannelAccessTrait;
 use App\Repository\ChannelRepository;
 use App\Repository\WebhookRepository;
 use App\Repository\WorkspaceRepository;
@@ -15,6 +16,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 final class ModalController extends AbstractController
 {
+    use ChannelAccessTrait;
+
     public function __construct(
         private readonly \App\Service\Group\GroupProviderInterface $groupProvider,
     ) {}
@@ -33,9 +36,7 @@ final class ModalController extends AbstractController
             return new Response('Canal non trouvé', 404);
         }
 
-        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
-            return new Response('Accès refusé', 403);
-        }
+        $this->denyAccessUnlessGranted('EDIT', $channel);
 
         $webhooks = $webhookRepository->findBy(['channel' => $channel], ['createdAt' => 'ASC']);
 
@@ -100,6 +101,8 @@ final class ModalController extends AbstractController
         if (!$channel) {
             return new Response('Canal non trouvé', 404);
         }
+
+        $this->authorizeChannelAccess($channel);
 
         $resolvedSubscriptions = [];
         $groupMembers = [];

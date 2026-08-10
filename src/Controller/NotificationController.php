@@ -229,7 +229,7 @@ final class NotificationController extends AbstractController
         Request $request,
         ChannelRepository $channelRepository,
         MercurePublisher $mercurePublisher,
-        CacheInterface $cache,
+        \App\Service\TypingIndicatorService $typingIndicatorService,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -246,44 +246,18 @@ final class NotificationController extends AbstractController
             $isTyping = filter_var($data['isTyping'] ?? false, FILTER_VALIDATE_BOOLEAN);
         }
 
-        $cacheKey = 'channel_typing_' . $activeChannel->getSlug();
-
-        $typingUsers = $cache->get($cacheKey, static fn() => []);
-
-        $now = time();
-        $displayName =
-            $currentUser->getDisplayName() !== null && $currentUser->getDisplayName() !== ''
-                ? $currentUser->getDisplayName()
-                : $currentUser->getUsername();
-
-        if ($isTyping) {
-            $typingUsers[$currentUser->getUsername()] = [
-                'name' => $displayName,
-                'expires_at' => $now + 5,
-            ];
-        } else {
-            unset($typingUsers[$currentUser->getUsername()]);
-        }
-
-        foreach ($typingUsers as $username => $info) {
-            if ($info['expires_at'] >= $now) {
-                continue;
-            }
-
-            unset($typingUsers[$username]);
-        }
-
-        $cache->delete($cacheKey);
-        $cache->get($cacheKey, static fn() => $typingUsers);
-
+        $typingIndicatorService->updateTypingStatus($activeChannel, $currentUser, $isTyping);
         $mercurePublisher->publishToChannel($activeChannel, 'ping', 'typing_' . $activeChannel->getSlug());
 
-        return $this->typingIndicator($slug, $channelRepository, $cache);
+        return $this->typingIndicator($slug, $channelRepository, $typingIndicatorService);
     }
 
     #[Route('/channel/{slug}/typing-indicator', name: 'app_channel_typing_indicator', methods: ['GET'])]
-    public function typingIndicator(string $slug, ChannelRepository $channelRepository, CacheInterface $cache): Response
-    {
+    public function typingIndicator(
+        string $slug,
+        ChannelRepository $channelRepository,
+        \App\Service\TypingIndicatorService $typingIndicatorService,
+    ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
@@ -293,31 +267,7 @@ final class NotificationController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        $cacheKey = 'channel_typing_' . $activeChannel->getSlug();
-
-        $typingUsers = $cache->get($cacheKey, static fn() => []);
-
-        $now = time();
-        $changed = false;
-        foreach ($typingUsers as $username => $info) {
-            if ($info['expires_at'] >= $now) {
-                continue;
-            }
-
-            unset($typingUsers[$username]);
-            $changed = true;
-        }
-
-        if ($changed) {
-            $cache->delete($cacheKey);
-            $cache->get($cacheKey, static fn() => $typingUsers);
-        }
-
-        if ($currentUser) {
-            unset($typingUsers[$currentUser->getUsername()]);
-        }
-
-        $names = array_map(static fn($info) => $info['name'], array_values($typingUsers));
+        $names = $typingIndicatorService->getTypingUsers($activeChannel, $currentUser);
 
         return $this->render('dashboard/_typing_indicator.html.twig', [
             'typingUsers' => $names,

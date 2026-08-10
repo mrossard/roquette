@@ -35,12 +35,8 @@ final class MessagePinController extends AbstractController
         }
 
         /** @var User $currentUser */
-        $currentUser = $this->getUser();
-
         $channel = $message->getChannel();
-        if ($channel->getCreator() !== $currentUser && !$this->isGranted('ROLE_ADMIN')) {
-            return new Response($this->translator->trans('Seul le créateur du canal peut épingler un message.'), 403);
-        }
+        $this->denyAccessUnlessGranted('EDIT', $channel);
 
         $previousPinnedMessage = $channel->getPinnedMessage();
         $channel->setPinnedMessage($message);
@@ -80,15 +76,8 @@ final class MessagePinController extends AbstractController
         }
 
         /** @var User $currentUser */
-        $currentUser = $this->getUser();
-
         $channel = $message->getChannel();
-        if ($channel->getCreator() !== $currentUser && !$this->isGranted('ROLE_ADMIN')) {
-            return new Response(
-                $this->translator->trans('Seul le créateur du canal peut désépingler un message.'),
-                403,
-            );
-        }
+        $this->denyAccessUnlessGranted('EDIT', $channel);
 
         if ($channel->getPinnedMessage() === $message) {
             $channel->setPinnedMessage(null);

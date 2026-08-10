@@ -105,9 +105,7 @@ final class WebhookController extends AbstractController
             return new Response('Canal non trouvé', Response::HTTP_NOT_FOUND);
         }
 
-        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
-            return new Response('Accès refusé', Response::HTTP_FORBIDDEN);
-        }
+        $this->denyAccessUnlessGranted('MANAGE', $channel);
 
         $name = trim((string) $request->request->get('name', ''));
         if ($name === '') {
@@ -184,7 +182,7 @@ final class WebhookController extends AbstractController
             return null;
         }
 
-        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
+        if (!$this->isGranted('MANAGE', $channel)) {
             return null;
         }
 

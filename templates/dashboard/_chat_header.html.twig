@@ -213,15 +213,16 @@
 
                             {# 3b. Exporter #}
                             {% if not activeChannel.isDm and (activeChannel.isAdministrator(app.user) or is_granted('ROLE_ADMIN')) %}
-                                <a href="{{ path('app_channel_export', {slug: activeChannel.slug}) }}"
-                                   class="user-status-option"
-                                   hx-boost="false"
-                                   target="_blank"
-                                   role="menuitem"
-                                   style="cursor: pointer; text-decoration: none; color: inherit; display: flex; align-items: center; width: 100%;">
+                                <button type="button"
+                                        class="user-status-option"
+                                        hx-post="{{ path('app_channel_export', {slug: activeChannel.slug}) }}"
+                                        hx-target="#modal-container"
+                                        hx-trigger="click"
+                                        role="menuitem"
+                                        style="cursor: pointer; border: none; background: none; text-align: left; width: 100%; display: flex; align-items: center; color: inherit;">
                                     <span class="option-icon">📤</span>
                                     <span class="option-label">{{ 'Exporter l\'historique'|trans }}</span>
-                                </a>
+                                </button>
                             {% endif %}
 
                             {# Divider if there is leave or delete #}

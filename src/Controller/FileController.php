@@ -24,6 +24,58 @@ final class FileController extends AbstractController
 {
     use ChannelAccessTrait;
 
+    /**
+     * MIME types rendered as text/plain instead of being executed/served raw.
+     *
+     * @var list<string>
+     */
+    private const TEXT_PLAIN_DOWNGRADES = [
+        'text/html',
+        'text/x-php',
+        'application/x-php',
+        'application/x-httpd-php',
+        'application/javascript',
+        'text/javascript',
+        'text/css',
+        'application/json',
+        'text/xml',
+        'application/xml',
+    ];
+
+    /**
+     * MIME types served as octet-stream (never rendered by the browser).
+     *
+     * @var list<string>
+     */
+    private const BINARY_DOWNGRADES = [
+        'image/svg+xml',
+        'application/zip',
+        'application/x-tar',
+        'application/gzip',
+        'application/x-gzip',
+        'application/x-zip-compressed',
+        'application/x-rar-compressed',
+    ];
+
+    /**
+     * MIME types that must always be served as attachment, never inline.
+     *
+     * @var list<string>
+     */
+    private const UNSAFE_INLINE_TYPES = [
+        'text/html',
+        'text/x-php',
+        'application/x-php',
+        'application/x-httpd-php',
+        'application/javascript',
+        'text/javascript',
+        'text/css',
+        'application/json',
+        'text/xml',
+        'application/xml',
+        'image/svg+xml',
+    ];
+
     public function __construct(
         private TranslatorInterface $translator,
     ) {}
@@ -141,7 +193,9 @@ final class FileController extends AbstractController
         $response->setStatusCode(200);
         $response->headers->set('Content-Type', self::previewContentType($message));
         $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
-            HeaderUtils::DISPOSITION_INLINE,
+            self::isUnsafeForInlinePreview($message)
+                ? HeaderUtils::DISPOSITION_ATTACHMENT
+                : HeaderUtils::DISPOSITION_INLINE,
             $message->getFileName(),
             $this->getFallbackFileName($message->getFileName()),
         ));
@@ -332,14 +386,25 @@ final class FileController extends AbstractController
 
         $lower = strtolower($mimeType);
 
-        if ($lower === 'text/html') {
+        if (in_array($lower, self::TEXT_PLAIN_DOWNGRADES, true)) {
             return 'text/plain';
         }
 
-        if ($lower === 'image/svg+xml') {
+        if (in_array($lower, self::BINARY_DOWNGRADES, true)) {
             return 'application/octet-stream';
         }
 
         return $mimeType;
+    }
+
+    /**
+     * Returns whether the file must never be rendered inline in the app origin
+     * (defense in depth against stored XSS via uploaded scripts/markup).
+     */
+    private static function isUnsafeForInlinePreview(Message $message): bool
+    {
+        $mimeType = strtolower($message->getMimeType() ?? '');
+
+        return in_array($mimeType, self::UNSAFE_INLINE_TYPES, true);
     }
 }

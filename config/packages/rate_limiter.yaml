@@ -1,7 +1,13 @@
 framework:
     rate_limiter:
-        # Rate limiter for login, registration and oauth
+        # Rate limiter for login and oauth
         login_api:
+            policy: 'token_bucket'
+            limit: 5
+            rate: { interval: '1 minute', amount: 1 }
+
+        # Rate limiter for account registration (per IP)
+        register_api:
             policy: 'token_bucket'
             limit: 5
             rate: { interval: '1 minute', amount: 1 }
@@ -35,6 +41,8 @@ when@test:
         rate_limiter:
             login_api:
                 limit: 1000
+            register_api:
+                limit: 2
             message_api:
                 limit: 1000
             emoji_api:

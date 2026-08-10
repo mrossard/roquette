@@ -320,17 +320,13 @@ class NotificationControllerTest extends WebTestCase
     {
         $otherUser = $this->createOtherUser();
 
-        $this->client->disableReboot();
+        $cache = $this->client->getContainer()->get('cache.app');
+        $item = $cache->getItem('channel_typing_' . $this->channel->getSlug());
+        $item->set([$otherUser->getUsername() => ['name' => $otherUser->getUsername(), 'expires_at' => time() + 10]]);
+        $cache->save($item);
 
-        // Log in as other user to type
-        $this->client->loginUser($otherUser);
-        $this->client->request('POST', '/channel/test-notif-channel/typing', [
-            'isTyping' => '1',
-        ]);
-
-        // Log back in as test user to check the indicator
         $this->client->loginUser($this->testUser);
-        $this->client->request('GET', '/channel/test-notif-channel/typing-indicator');
+        $this->client->request('GET', sprintf('/channel/%s/typing-indicator', $this->channel->getSlug()));
 
         $this->assertResponseIsSuccessful();
         $content = $this->client->getResponse()->getContent();

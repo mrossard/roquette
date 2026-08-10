@@ -53,6 +53,7 @@ final class ChannelController extends AbstractController
         WorkspaceRepository $workspaceRepository,
         EntityManagerInterface $entityManager,
         WorkspaceManager $workspaceManager,
+        \App\Service\TypingIndicatorService $typingIndicatorService,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -93,10 +94,11 @@ final class ChannelController extends AbstractController
             $activeChannel = $existingChannel;
             $isMember =
                 $workspace && $workspaceManager->isUserMember($workspace, $currentUser)
-                || $existingChannel->getMembers()->contains($currentUser);
+                    ? true
+                    : $existingChannel->getMembers()->contains($currentUser);
         }
 
-        if ($activeChannel && $activeChannel->getWorkspace()) {
+        if ($activeChannel->getWorkspace()) {
             $request->getSession()->set('current_workspace_id', $activeChannel->getWorkspace()->getId());
         }
 
@@ -128,13 +130,11 @@ final class ChannelController extends AbstractController
             }
 
             if ($lastReadMessageId !== null) {
-                foreach ($messages as $msg) {
-                    if (!($msg->getId() > $lastReadMessageId && $msg->getAuthor()->getId() !== $currentUser->getId())) {
-                        continue;
+                foreach ($messages as $m) {
+                    if ($m->getId() > $lastReadMessageId) {
+                        $firstUnreadMessageId = $m->getId();
+                        break;
                     }
-
-                    $firstUnreadMessageId = $msg->getId();
-                    break;
                 }
             }
 
@@ -155,7 +155,7 @@ final class ChannelController extends AbstractController
             $notificationsEnabled = $activeChannel->isDm();
         }
 
-        $typingUsers = $this->getTypingUsers($activeChannel, $currentUser, $isMember);
+        $typingUsers = $this->getTypingUsers($activeChannel, $currentUser, $isMember, $typingIndicatorService);
 
         $subChannelsByParent = $this->buildSubChannelsByParent($channels);
 
@@ -270,9 +270,7 @@ final class ChannelController extends AbstractController
             return new Response($this->translator->trans('Canal non trouvé.'), 404);
         }
 
-        if (!$this->channelAccessService->canUserAccess($channel, $currentUser)) {
-            return new Response($this->translator->trans('Non autorisé.'), 403);
-        }
+        $this->denyAccessUnlessGranted('VIEW', $channel);
 
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
@@ -408,33 +406,12 @@ final class ChannelController extends AbstractController
         return $counts;
     }
 
-    private function getTypingUsers(?Channel $channel, User $currentUser, bool $isMember): array
+    private function getTypingUsers(?Channel $channel, User $currentUser, bool $isMember, \App\Service\TypingIndicatorService $typingIndicatorService): array
     {
         if (!$isMember || !$channel) {
             return [];
         }
 
-        $cacheKey = 'channel_typing_' . $channel->getSlug();
-        $typingUsersFromCache = $this->cache->get($cacheKey, static fn() => []);
-
-        $now = time();
-        $changed = false;
-        foreach ($typingUsersFromCache as $username => $info) {
-            if ($info['expires_at'] >= $now) {
-                continue;
-            }
-
-            unset($typingUsersFromCache[$username]);
-            $changed = true;
-        }
-
-        if ($changed) {
-            $this->cache->delete($cacheKey);
-            $this->cache->get($cacheKey, static fn() => $typingUsersFromCache);
-        }
-
-        unset($typingUsersFromCache[$currentUser->getUsername()]);
-
-        return array_map(static fn($info) => $info['name'], array_values($typingUsersFromCache));
+        return $typingIndicatorService->getTypingUsers($channel, $currentUser);
     }
 }

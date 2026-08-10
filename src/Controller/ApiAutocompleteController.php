@@ -30,7 +30,7 @@ final class ApiAutocompleteController extends AbstractController
                 '%' . mb_strtolower($q) . '%',
             );
         }
-        $users = $qb->getQuery()->getResult();
+        $users = $qb->setMaxResults(20)->getQuery()->getResult();
 
         $data = [];
         foreach ($users as $user) {
@@ -48,7 +48,7 @@ final class ApiAutocompleteController extends AbstractController
     #[Route('/api/users-options', name: 'app_api_users_options', methods: ['GET'])]
     public function apiUsersOptions(EntityManagerInterface $entityManager): Response
     {
-        $users = $entityManager->getRepository(User::class)->findBy([], ['displayName' => 'ASC']);
+        $users = $entityManager->getRepository(User::class)->findBy([], ['displayName' => 'ASC'], 20);
 
         return $this->render('api/_user_options.html.twig', [
             'users' => $users,
@@ -80,7 +80,7 @@ final class ApiAutocompleteController extends AbstractController
             );
         }
 
-        $channels = $qb->orderBy('LOWER(c.name)', 'ASC')->getQuery()->getResult();
+        $channels = $qb->orderBy('LOWER(c.name)', 'ASC')->setMaxResults(20)->getQuery()->getResult();
 
         $data = [];
         foreach ($channels as $channel) {
@@ -139,7 +139,7 @@ final class ApiAutocompleteController extends AbstractController
 
             return $this->render('api/_autocomplete_items.html.twig', [
                 'type' => 'users',
-                'users' => $qb->getQuery()->getResult(),
+                'users' => $qb->setMaxResults(20)->getQuery()->getResult(),
             ]);
         }
 
@@ -162,7 +162,7 @@ final class ApiAutocompleteController extends AbstractController
 
         return $this->render('api/_autocomplete_items.html.twig', [
             'type' => 'channels',
-            'channels' => $qb->orderBy('LOWER(c.name)', 'ASC')->getQuery()->getResult(),
+            'channels' => $qb->orderBy('LOWER(c.name)', 'ASC')->setMaxResults(20)->getQuery()->getResult(),
         ]);
     }
 }

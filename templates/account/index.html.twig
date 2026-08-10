@@ -68,6 +68,11 @@
                                     <span style="color: var(--success); font-size: 0.85rem; white-space: nowrap;">✓ {{ 'Vérifié'|trans }}</span>
                                 {% else %}
                                     <span style="color: var(--warning); font-size: 0.85rem; white-space: nowrap;">{{ 'Non vérifié'|trans }}</span>
+                                    <form action="{{ path('app_resend_verification') }}" method="POST" style="margin: 0; display: inline;">
+                                        <button type="submit" class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;">
+                                            {{ 'Renvoyer l\'email'|trans }}
+                                        </button>
+                                    </form>
                                 {% endif %}
                             </div>
                         </div>

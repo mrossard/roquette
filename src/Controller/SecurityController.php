@@ -64,7 +64,7 @@ final class SecurityController extends AbstractController
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $entityManager,
-        RateLimiterFactoryInterface $loginApiLimiter,
+        RateLimiterFactoryInterface $registerApiLimiter,
         \Psr\Log\LoggerInterface $logger,
     ): Response {
         if (!$this->authFormEnabled) {
@@ -77,10 +77,9 @@ final class SecurityController extends AbstractController
 
         $user = new User();
         $form = $this->createForm(\App\Form\RegistrationFormType::class, $user);
-        $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $limiter = $loginApiLimiter->create($request->getClientIp());
+        if ($request->isMethod('POST')) {
+            $limiter = $registerApiLimiter->create($request->getClientIp());
             if (false === $limiter->consume(1)->isAccepted()) {
                 $logger->warning(sprintf('Registration rate limit exceeded for IP %s', $request->getClientIp()));
                 $this->addFlash(
@@ -95,7 +94,11 @@ final class SecurityController extends AbstractController
                     new Response('', Response::HTTP_TOO_MANY_REQUESTS),
                 );
             }
+        }
 
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
             $user->setPassword($passwordHasher->hashPassword($user, $form->get('plainPassword')->getData()));
             $user->setRoles(['ROLE_USER']);
             $user->setAdmin(false);
@@ -158,27 +161,6 @@ final class SecurityController extends AbstractController
                 ),
             );
             return $this->redirectToRoute('app_login');
-        }
-
-        if ($request->isMethod('POST')) {
-            $limiter = $loginApiLimiter->create($request->getClientIp());
-            if (false === $limiter->consume(1)->isAccepted()) {
-                $logger->warning(sprintf(
-                    'Registration rate limit exceeded for IP %s during POST verification',
-                    $request->getClientIp(),
-                ));
-                $this->addFlash(
-                    'error',
-                    $this->translator->trans("Trop de tentatives d'inscription. Veuillez réessayer plus tard."),
-                );
-                return $this->render(
-                    'security/register.html.twig',
-                    [
-                        'registrationForm' => $form->createView(),
-                    ],
-                    new Response('', Response::HTTP_TOO_MANY_REQUESTS),
-                );
-            }
         }
 
         return $this->render('security/register.html.twig', [

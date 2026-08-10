@@ -249,6 +249,84 @@ class FileControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(404);
     }
 
+    private function createMessageWithMime(string $fileName, string $mimeType): Message
+    {
+        $message = new Message();
+        $message->setChannel($this->channel);
+        $message->setAuthor($this->testUser);
+        $message->setContent('File attached');
+        $message->setFileName($fileName);
+        $message->setFilePath('uploads/' . $fileName . '-' . uniqid());
+        $message->setFileSize(1024);
+        $message->setMimeType($mimeType);
+        $this->entityManager->persist($message);
+        $this->entityManager->flush();
+
+        return $message;
+    }
+
+    #[Test]
+    public function testPreviewJavaScriptServedAsTextPlainAttachment(): void
+    {
+        $message = $this->createMessageWithMime('evil.js', 'application/javascript');
+        $this->mockFileUploadService(true, 'alert(1)');
+
+        $this->client->request('GET', sprintf('/messages/%d/preview', $message->getId()));
+
+        $this->assertResponseIsSuccessful();
+        static::assertStringContainsString(
+            'text/plain',
+            (string) $this->client->getResponse()->headers->get('Content-Type'),
+        );
+        $disposition = (string) $this->client->getResponse()->headers->get('Content-Disposition');
+        static::assertStringContainsString('attachment', $disposition);
+        static::assertStringNotContainsString('inline', $disposition);
+    }
+
+    #[Test]
+    public function testPreviewHtmlServedAsTextPlainAttachment(): void
+    {
+        $message = $this->createMessageWithMime('page.html', 'text/html');
+        $this->mockFileUploadService(true, '<script>alert(1)</script>');
+
+        $this->client->request('GET', sprintf('/messages/%d/preview', $message->getId()));
+
+        $this->assertResponseIsSuccessful();
+        static::assertStringContainsString(
+            'text/plain',
+            (string) $this->client->getResponse()->headers->get('Content-Type'),
+        );
+        static::assertStringContainsString('attachment', (string) $this->client->getResponse()->headers->get('Content-Disposition'));
+    }
+
+    #[Test]
+    public function testPreviewSvgServedAsOctetStreamAttachment(): void
+    {
+        $message = $this->createMessageWithMime('image.svg', 'image/svg+xml');
+        $this->mockFileUploadService(true, '<svg></svg>');
+
+        $this->client->request('GET', sprintf('/messages/%d/preview', $message->getId()));
+
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseHeaderSame('Content-Type', 'application/octet-stream');
+        static::assertStringContainsString('attachment', (string) $this->client->getResponse()->headers->get('Content-Disposition'));
+    }
+
+    #[Test]
+    public function testPreviewJsonServedAsTextPlainAttachment(): void
+    {
+        $message = $this->createMessageWithMime('data.json', 'application/json');
+        $this->mockFileUploadService(true, '{"x":1}');
+
+        $this->client->request('GET', sprintf('/messages/%d/preview', $message->getId()));
+
+        $this->assertResponseIsSuccessful();
+        static::assertStringContainsString(
+            'text/plain',
+            (string) $this->client->getResponse()->headers->get('Content-Type'),
+        );
+    }
+
     // -------------------------------------------------------------------------
     // textPreview
     // -------------------------------------------------------------------------

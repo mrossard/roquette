@@ -51,13 +51,14 @@ class MessageRepository extends ServiceEntityRepository
     /**
      * @return Message[]
      */
-    public function searchInChannel(Channel $channel, string $query): array
+    public function searchInChannel(Channel $channel, string $query, int $limit = 50): array
     {
         $conn = $this->getEntityManager()->getConnection();
         $ids = $conn->fetchFirstColumn('SELECT m.id FROM "message" m
              WHERE m.channel_id = :channelId
                AND LOWER(m.content) LIKE :query
-             ORDER BY m.created_at DESC', [
+             ORDER BY m.created_at DESC
+             LIMIT ' . max(1, min($limit, 100)), [
             'channelId' => $channel->getId(),
             'query' => '%' . strtolower($query) . '%',
         ]);

@@ -89,7 +89,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             )->setParameter('searchQuery', '%' . strtolower($searchQuery) . '%');
         }
 
-        return $qb->getQuery()->getResult();
+        return $qb->setMaxResults(20)->getQuery()->getResult();
     }
 
     public function searchByName(string $query): array
@@ -133,6 +133,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
      */
     public function findPaginated(int $page, int $perPage = 25, bool $withRobot = false): array
     {
+        $page = max(1, min($page, 10000));
+        $perPage = max(1, min($perPage, 100));
+
         $qb = $this
             ->createQueryBuilder('u')
             ->addSelect('COALESCE(u.displayName, u.username) AS HIDDEN sortName')

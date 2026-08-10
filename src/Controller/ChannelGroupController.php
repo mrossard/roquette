@@ -36,9 +36,7 @@ final class ChannelGroupController extends AbstractController
             return new Response('Canal non trouvé', 404);
         }
 
-        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
-            return new Response('Accès refusé', 403);
-        }
+        $this->denyAccessUnlessGranted('MANAGE', $channel);
 
         $newGroupIdentifier = $request->request->get('newGroupIdentifier');
         if ($newGroupIdentifier !== null && $newGroupIdentifier !== '') {
@@ -96,9 +94,7 @@ final class ChannelGroupController extends AbstractController
             return new Response('Canal non trouvé', 404);
         }
 
-        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
-            return new Response('Accès refusé', 403);
-        }
+        $this->denyAccessUnlessGranted('MANAGE', $channel);
 
         $subscription = $entityManager->getRepository(GroupSubscription::class)->find($subscriptionId);
         if ($subscription && $subscription->getChannel() === $channel) {

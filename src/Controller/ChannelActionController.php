@@ -355,7 +355,7 @@ final class ChannelActionController extends AbstractController
         return $this->redirectToRoute('app_channel', ['slug' => $channel->getSlug()]);
     }
 
-    #[Route('/channels/{slug}/export', name: 'app_channel_export', methods: ['GET'])]
+    #[Route('/channels/{slug}/export', name: 'app_channel_export', methods: ['POST'])]
     public function exportChannel(
         string $slug,
         ChannelRepository $channelRepository,
@@ -370,11 +370,7 @@ final class ChannelActionController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        if (!$this->isGranted('ROLE_ADMIN') && !$channel->isAdministrator($currentUser)) {
-            throw $this->createAccessDeniedException($this->translator->trans(
-                'Non autorisé à exporter l\'historique de ce canal.',
-            ));
-        }
+        $this->denyAccessUnlessGranted('MANAGE', $channel);
 
         $messageBus->dispatch(new GenerateExportMessage($channel->getId(), $currentUser->getId()));
 
