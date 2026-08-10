@@ -119,7 +119,7 @@ final readonly class ToolRunner
                     $onConfirmationRequired($call->getName(), $call->getArguments());
                     $results[] = sprintf(
                         "L'action de l'outil '%s' nécessite une confirmation de l'utilisateur.\n"
-                        . "N'appelle plus aucun outil et demande à l'utilisateur de confirmer l'action via le bouton de confirmation qui lui a été affiché.",
+                        . "N'appelle plus aucun outil et demande à l'utilisateur de confirmer l'action soit via le bouton de confirmation, soit en répondant simplement 'ok'.",
                         $call->getName(),
                     );
                     continue;
@@ -142,7 +142,7 @@ final readonly class ToolRunner
             if ($confirmationPending) {
                 $currentPrompt = "Une action demandée nécessite une confirmation de l'utilisateur :\n"
                     . implode("\n", $results)
-                    . "\n\nRéponds maintenant brièvement à l'utilisateur : explique l'action demandée et demande-lui de la confirmer via le bouton de confirmation. N'appelle aucun outil.\n"
+                    . "\n\nRéponds maintenant brièvement à l'utilisateur : explique l'action demandée et demande-lui de la confirmer (via le bouton ou en répondant simplement 'ok'). N'appelle aucun outil.\n"
                     . $prompt;
                 break;
             }

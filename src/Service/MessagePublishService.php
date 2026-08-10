@@ -37,6 +37,7 @@ class MessagePublishService
         private readonly Environment $twig,
         #[Autowire(service: 'limiter.llm_api')]
         private readonly RateLimiterFactoryInterface $llmRateLimiter,
+        private readonly ?\App\Ai\PendingConfirmationService $pendingConfirmationService = null,
     ) {}
 
     /**
@@ -57,6 +58,15 @@ class MessagePublishService
 
         if (trim($messageText) === '' && !$file && !$isPoll) {
             return new PublishResult(success: false, channel: $channel);
+        }
+
+        if (!$isPoll && $file === null && $messageText !== '' && $this->pendingConfirmationService !== null) {
+            $pendingToken = $this->pendingConfirmationService->getPendingConfirmation($currentUser, $channel->getSlug());
+            if ($pendingToken !== null && $this->pendingConfirmationService->isConfirmation($messageText, $pendingToken, $currentUser)) {
+                if ($this->pendingConfirmationService->executeConfirmation($pendingToken, $currentUser)) {
+                    return new PublishResult(success: true, channel: $channel, message: null, renderedHtml: '');
+                }
+            }
         }
 
         if ($isPoll && $pollOptions !== null && count($pollOptions) < 2) {

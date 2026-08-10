@@ -32,6 +32,7 @@ class MessagePublisher
         private readonly TranslatorInterface $translator,
         #[Autowire(service: 'limiter.message_api')]
         private readonly RateLimiterFactoryInterface $rateLimiter,
+        private readonly ?\App\Ai\PendingConfirmationService $pendingConfirmationService = null,
     ) {}
 
     public function publish(string $slug, Request $request, User $currentUser): Response
@@ -62,6 +63,15 @@ class MessagePublisher
 
         if (trim($messageText) === '' && !$uploadedFile && ($pollQuestion === null || $pollQuestion === '')) {
             return $this->renderForm($channel);
+        }
+
+        if ($pollQuestion === null && !$uploadedFile && $messageText !== '' && $this->pendingConfirmationService !== null) {
+            $pendingToken = $this->pendingConfirmationService->getPendingConfirmation($currentUser, $slug);
+            if ($pendingToken !== null && $this->pendingConfirmationService->isConfirmation($messageText, $pendingToken, $currentUser)) {
+                if ($this->pendingConfirmationService->executeConfirmation($pendingToken, $currentUser)) {
+                    return $this->renderForm($channel);
+                }
+            }
         }
 
         // Handle slash commands that return a direct Response

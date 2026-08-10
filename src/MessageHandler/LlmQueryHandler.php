@@ -52,6 +52,7 @@ final readonly class LlmQueryHandler
         private bool $toolsEnabled = true,
         #[Autowire(env: 'int:LLM_MEMORY_MESSAGES')]
         private int $memoryMessages = 10,
+        private ?\App\Ai\PendingConfirmationService $pendingConfirmationService = null,
     ) {}
 
     public function __invoke(LlmQueryMessage $message): void
@@ -308,6 +309,11 @@ final readonly class LlmQueryHandler
                     'helpMessageId' => $message->getHelpMessageId(),
                     'channelSlug' => $message->getChannelSlug(),
                 ]);
+                $this->pendingConfirmationService?->savePendingConfirmation(
+                    $message->getUserId(),
+                    $state->pendingConfirmation,
+                    $message->getChannelSlug(),
+                );
             },
         );
     }

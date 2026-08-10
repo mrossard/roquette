@@ -24,6 +24,7 @@ class SlashCommandHandler
         private readonly EntityManagerInterface $entityManager,
         #[Autowire(service: 'limiter.llm_api')]
         private readonly RateLimiterFactoryInterface $llmRateLimiter,
+        private readonly ?\App\Ai\PendingConfirmationService $pendingConfirmationService = null,
     ) {}
 
     /**
@@ -113,6 +114,17 @@ class SlashCommandHandler
     private function handleHelp(string $args, User $user, Channel $channel, ?int $workspaceId = null): Response
     {
         $helpMessageId = 'help-' . uniqid();
+
+        if ($this->pendingConfirmationService !== null) {
+            $token = $this->pendingConfirmationService->getPendingConfirmation($user, $channel->getSlug());
+            if ($token !== null && $this->pendingConfirmationService->isConfirmation($args, $token, $user)) {
+                if ($this->pendingConfirmationService->executeConfirmation($token, $user)) {
+                    return new Response($this->twig->render('dashboard/_input_form.html.twig', [
+                        'activeChannel' => $channel,
+                    ]));
+                }
+            }
+        }
 
         if ($args === '') {
             $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
