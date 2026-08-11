@@ -20,7 +20,7 @@
         </span>
         {% if updated_at is defined and updated_at %}
             <span class="feed-item-edited-indicator"
-                  title="{{ 'Modifié le'|trans }} {{ updated_at|date('d/m/Y H:i') }}">(modifié)</span>
+                  title="{{ 'Modifié le'|trans }} {{ updated_at|date('d/m/Y H:i') }}">({{ 'modifié'|trans }})</span>
         {% endif %}
     </div>
     {% include 'dashboard/_feed_item_actions.html.twig' %}

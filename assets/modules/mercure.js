@@ -16,6 +16,17 @@ const console = {
 let isRedirecting = false;
 let offlineBannerTimer = null;
 
+function isSameOriginUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    if (url.startsWith('/') && !url.startsWith('//')) return true;
+    try {
+        const parsed = new URL(url, window.location.origin);
+        return parsed.origin === window.location.origin;
+    } catch {
+        return false;
+    }
+}
+
 function safeRedirectToLogin(reason = '') {
     if (isRedirecting) return;
     isRedirecting = true;
@@ -456,7 +467,7 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
             if (statusBadge) {
                 const activeChannelSlug = statusBadge.getAttribute('data-active-channel-slug');
                 if (data.channelSlug === activeChannelSlug) {
-                    window.location.href = data.redirectUrl || '/';
+                    window.location.href = isSameOriginUrl(data.redirectUrl) ? data.redirectUrl : '/';
                 }
             }
         } else if (type === 'kanban_columns_changed') {

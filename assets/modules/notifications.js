@@ -555,8 +555,8 @@ export function handleGlobalNotification(data) {
         } else if (data.isDm) {
             const dmsList = document.getElementById('section-dms');
             if (dmsList && !document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`)) {
-                const emptyState = dmsList.querySelector('p');
-                if (emptyState && emptyState.textContent.includes('Aucun message direct')) {
+                const emptyState = dmsList.querySelector('.empty-state, .no-dms, p');
+                if (emptyState) {
                     emptyState.remove();
                 }
                 htmx.ajax('GET', `/channels/${data.channelSlug}/sidebar-item`, {
@@ -573,17 +573,67 @@ export function handleGlobalNotification(data) {
 
 function updateOtherWorkspaceUnreadTotal() {
     const activeWsItem = document.querySelector('.workspace-dropdown-item.active');
-    const activeWsId = activeWsItem ? activeWsItem.getAttribute('data-workspace-id') : null;
+    if (!activeWsItem) return;
 
-    let total = 0;
-    document.querySelectorAll('.workspace-dropdown-item .workspace-unread-badge').forEach(badge => {
-        const item = badge.closest('.workspace-dropdown-item');
-        const wsId = item ? item.getAttribute('data-workspace-id') : null;
-        if (wsId && wsId !== activeWsId) {
-            total += parseInt(badge.textContent, 10) || 0;
+    let unreadSum = 0;
+    const wsItems = document.querySelectorAll('.workspace-dropdown-item');
+    wsItems.forEach((item) => {
+        if (!item.classList.contains('active')) {
+            const countBadge = item.querySelector('.workspace-unread-count');
+            if (countBadge) {
+                const text = countBadge.textContent.trim();
+                const num = parseInt(text, 10);
+                if (!isNaN(num)) {
+                    unreadSum += num;
+                }
+            }
         }
     });
 
+    const triggerBadge = document.querySelector('.current-workspace-trigger .workspace-unread-count');
+    if (triggerBadge) {
+        if (unreadSum > 0) {
+            triggerBadge.textContent = unreadSum;
+            triggerBadge.style.display = 'inline-flex';
+        } else {
+            triggerBadge.style.display = 'none';
+        }
+    }
+}
+
+export function updateUnreadBadgeAndFavicon() {
+    const channelLinks = document.querySelectorAll('.channel-link[data-channel-slug]');
+    const activeChannelSlug = document.getElementById('mercure-status')?.getAttribute('data-active-channel-slug');
+
+    let totalUnread = 0;
+
+    channelLinks.forEach(link => {
+        const slug = link.getAttribute('data-channel-slug');
+        const badge = link.querySelector('.unread-badge');
+
+        if (!badge) return;
+
+        const isChannelActive = (slug === activeChannelSlug);
+        const isPageActive = (document.visibilityState === 'visible' && document.hasFocus());
+
+        if (badge.style.display !== 'none' && (!isChannelActive || !isPageActive)) {
+            const count = parseInt(badge.textContent, 10) || 0;
+            totalUnread += count;
+        }
+    });
+
+    if (totalUnread === lastTotalUnread) {
+        return;
+    }
+    lastTotalUnread = totalUnread;
+
+    // Update document title
+    const cleanTitle = document.title.replace(/\s*\(\d+[^)]*\)/gi, '').replace(/^\(\d+\)\s*/, '').trim();
+    if (totalUnread > 0) {
+        document.title = `(${totalUnread}) ${cleanTitle}`;
+    } else {
+        document.title = cleanTitle;
+    }
     const selector = document.querySelector('.sidebar-workspace-selector');
     const summary = document.querySelector('.workspace-dropdown-trigger');
     if (!summary) return;

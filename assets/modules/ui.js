@@ -631,7 +631,7 @@ document.addEventListener('click', (e) => {
 });
 
 
-export function showCustomConfirm(message, callback) {
+export function showCustomConfirm(message, callback, options = {}) {
     const dialog = document.getElementById('custom-confirm-dialog');
     if (!dialog) {
         if (confirm(message)) {
@@ -646,24 +646,23 @@ export function showCustomConfirm(message, callback) {
     const cancelBtn = document.getElementById('confirm-dialog-cancel');
     const okBtn = document.getElementById('confirm-dialog-ok');
 
-    const lowerMsg = message.toLowerCase();
     titleEl.className = 'confirmation-title';
     okBtn.className = 'btn-confirm-action';
 
-    if (lowerMsg.includes('supprimer') || lowerMsg.includes('perdu')) {
-        iconEl.textContent = '🗑️';
-        titleEl.textContent = 'Supprimer ?';
-        okBtn.textContent = 'Supprimer';
-    } else if (lowerMsg.includes('quitter')) {
-        iconEl.textContent = '🚪';
-        titleEl.textContent = 'Quitter ?';
-        okBtn.textContent = 'Quitter';
+    if (options.variant === 'danger' || options.variant === 'delete') {
+        iconEl.textContent = options.icon || '🗑️';
+        titleEl.textContent = options.title || (window.trans ? window.trans('Supprimer ?') : 'Supprimer ?');
+        okBtn.textContent = options.okText || (window.trans ? window.trans('Supprimer') : 'Supprimer');
+    } else if (options.variant === 'warning') {
+        iconEl.textContent = options.icon || '🚪';
+        titleEl.textContent = options.title || (window.trans ? window.trans('Quitter ?') : 'Quitter ?');
+        okBtn.textContent = options.okText || (window.trans ? window.trans('Quitter') : 'Quitter');
         titleEl.classList.add('warning-type');
         okBtn.classList.add('warning-type');
     } else {
-        iconEl.textContent = '❓';
-        titleEl.textContent = 'Confirmer ?';
-        okBtn.textContent = 'Confirmer';
+        iconEl.textContent = options.icon || '❓';
+        titleEl.textContent = options.title || (window.trans ? window.trans('Confirmer ?') : 'Confirmer ?');
+        okBtn.textContent = options.okText || (window.trans ? window.trans('Confirmer') : 'Confirmer');
         titleEl.classList.add('info-type');
         okBtn.classList.add('info-type');
     }

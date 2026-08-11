@@ -96,7 +96,7 @@
                     class="feed-item-time">{% if timestamp|date('Y-m-d') != 'now'|date('Y-m-d') %}{{ timestamp|date('d/m/Y') }} {% endif %}{{ timestamp|date('H:i') }}</span>
                 {% if updated_at is defined and updated_at %}
                     <span class="feed-item-edited-indicator"
-                          title="{{ 'Modifié le'|trans }} {{ updated_at|date('d/m/Y H:i') }}">(modifié)</span>
+                          title="{{ 'Modifié le'|trans }} {{ updated_at|date('d/m/Y H:i') }}">({{ 'modifié'|trans }})</span>
                 {% endif %}
                 {% if isThisMessagePinned %}
                     <span class="feed-item-pinned-indicator"

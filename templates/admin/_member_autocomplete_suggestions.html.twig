@@ -10,7 +10,7 @@
                 <span>{{ user.displayName ?: user.username }} (@{{ user.username }})</span>
             </button>
         {% else %}
-            <div class="autocomplete-empty">Aucun utilisateur correspondant</div>
+            <div class="autocomplete-empty">{{ 'Aucun utilisateur correspondant'|trans }}</div>
         {% endfor %}
     </div>
 </div>

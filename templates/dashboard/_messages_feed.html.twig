@@ -27,7 +27,7 @@
     {% else %}
         <div id="feed-empty-state" class="empty-state">
             <div class="empty-icon">✅</div>
-            <h3>Tout est à jour !</h3>
+            <h3>{{ 'Tout est à jour !'|trans }}</h3>
             <p>{{ 'Aucun message non lu dans ce canal.'|trans }}</p>
             <button class="btn-clear-search"
                     hx-on:click="clearSearchFilters()"

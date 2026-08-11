@@ -61,6 +61,9 @@ jobs:
         bin/console doctrine:database:create --env=test --if-not-exists
         bin/console doctrine:migrations:migrate --env=test --no-interaction
 
+    - name: Run Linter (Mago)
+      run: vendor/bin/mago lint src tests
+
     - name: Run Tests
       env:
         DATABASE_URL: postgresql://app:!ChangeMePostgresPassword!@127.0.0.1:5432/roquette?serverVersion=16&charset=utf8
