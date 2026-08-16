@@ -56,42 +56,11 @@ final class ChannelController extends AbstractController
         $sidebarData = $this->sidebarDataProvider->getSidebarData($currentUser);
         $channels = $sidebarData['channels'];
 
-        $activeChannel = null;
-        foreach ($channels as $channel) {
-            if ($channel->getSlug() !== $slug) {
-                continue;
-            }
-
-            $activeChannel = $channel;
-            break;
+        $resolved = $this->resolveActiveChannel($slug, $channels, $currentUser, $channelRepository);
+        if ($resolved instanceof Response) {
+            return $resolved;
         }
-
-        $isMember = true;
-        if (!$activeChannel) {
-            $existingChannel = $entityManager->getRepository(Channel::class)->findOneBy(['slug' => $slug]);
-            if (!$existingChannel) {
-                throw $this->createNotFoundException($this->translator->trans('Canal non trouvé.'));
-            }
-
-            // Check workspace access
-            $workspace = $existingChannel->getWorkspace();
-            if ($workspace) {
-                if (!$this->isGranted('VIEW', $workspace)) {
-                    $this->addFlash('error', $this->translator->trans('Vous n\'avez pas accès à ce canal.'));
-
-                    return $this->redirectToRoute('app_dashboard');
-                }
-            } elseif ($existingChannel->isPrivate()) {
-                $this->addFlash('error', $this->translator->trans('Vous n\'avez pas accès à ce canal privé.'));
-
-                return $this->redirectToRoute('app_dashboard');
-            }
-            $activeChannel = $existingChannel;
-            $isMember =
-                $workspace && $this->isGranted('VIEW', $workspace)
-                    ? true
-                    : $existingChannel->getMembers()->contains($currentUser);
-        }
+        [$activeChannel, $isMember] = $resolved;
 
         if ($activeChannel->getWorkspace()) {
             $request->getSession()->set('current_workspace_id', $activeChannel->getWorkspace()->getId());
@@ -107,31 +76,14 @@ final class ChannelController extends AbstractController
 
         $messages = [];
         $firstUnreadMessageId = null;
-        $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
-
         if ($isMember) {
-            /** @var UserChannelRead|null $activeRead */
-            $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $activeChannel]);
-            $lastReadMessageId = $activeRead?->getLastReadMessage()?->getId();
-
-            $jumpTo = $request->query->getInt('jumpTo');
-            if ($jumpTo > 0) {
-                $messages = $messageRepository->findMessagesAround($activeChannel, $jumpTo, 50);
-            } else {
-                $messages = $messageRepository->findLatestInChannel($activeChannel, 50);
-                $messages = array_reverse($messages);
-            }
-
-            if ($lastReadMessageId !== null) {
-                foreach ($messages as $m) {
-                    if ($m->getId() > $lastReadMessageId) {
-                        $firstUnreadMessageId = $m->getId();
-                        break;
-                    }
-                }
-            }
-
-            $this->readTrackingService->markChannelAsRead($currentUser, $activeChannel);
+            [$messages, $firstUnreadMessageId] = $this->loadChannelMessages(
+                $activeChannel,
+                $currentUser,
+                $request->query->getInt('jumpTo'),
+                $entityManager,
+                $messageRepository,
+            );
         }
 
         $unreadCounts = $sidebarData['unreadCounts'];
@@ -172,37 +124,13 @@ final class ChannelController extends AbstractController
         Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
-        EntityManagerInterface $entityManager,
-        WorkspaceManager $workspaceManager,
     ): Response {
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-
-        $activeChannel = $entityManager->getRepository(Channel::class)->findOneBy(['slug' => $slug]);
+        $activeChannel = $channelRepository->findOneBy(['slug' => $slug]);
         if (!$activeChannel) {
             throw $this->createNotFoundException($this->translator->trans('Canal non trouvé.'));
         }
 
-        $channels = $channelRepository->findAllForUser($currentUser);
-        $isMember = false;
-        foreach ($channels as $channel) {
-            if ($channel->getId() !== $activeChannel->getId()) {
-                continue;
-            }
-
-            $isMember = true;
-            break;
-        }
-
-        if (!$isMember) {
-            // Check workspace membership
-            $workspace = $activeChannel->getWorkspace();
-            if ($workspace && $workspaceManager->isUserMember($workspace, $currentUser)) {
-                $isMember = true;
-            }
-        }
-
-        if (!$isMember) {
+        if (!$this->isGranted('VIEW', $activeChannel)) {
             return new Response($this->translator->trans('Accès interdit'), Response::HTTP_FORBIDDEN);
         }
 
@@ -361,5 +289,77 @@ final class ChannelController extends AbstractController
         }
 
         return $typingIndicatorService->getTypingUsers($channel, $currentUser);
+    }
+
+    /**
+     * @param Channel[] $channels
+     * @return array{0: Channel, 1: bool}|Response
+     */
+    private function resolveActiveChannel(
+        string $slug,
+        array $channels,
+        User $currentUser,
+        ChannelRepository $channelRepository,
+    ): array|Response {
+        foreach ($channels as $channel) {
+            if ($channel->getSlug() === $slug) {
+                return [$channel, true];
+            }
+        }
+
+        $existingChannel = $channelRepository->findOneBy(['slug' => $slug]);
+        if (!$existingChannel) {
+            throw $this->createNotFoundException($this->translator->trans('Canal non trouvé.'));
+        }
+
+        if (!$this->isGranted('VIEW', $existingChannel)) {
+            $errorMsg = $existingChannel->isPrivate() && !$existingChannel->getWorkspace()
+                ? $this->translator->trans('Vous n\'avez pas accès à ce canal privé.')
+                : $this->translator->trans('Vous n\'avez pas accès à ce canal.');
+            $this->addFlash('error', $errorMsg);
+
+            return $this->redirectToRoute('app_dashboard');
+        }
+
+        $isMember = $existingChannel->getWorkspace() !== null
+            ? $this->isGranted('VIEW', $existingChannel->getWorkspace())
+            : $existingChannel->getMembers()->contains($currentUser);
+
+        return [$existingChannel, $isMember];
+    }
+
+    /**
+     * @return array{0: Message[], 1: ?int}
+     */
+    private function loadChannelMessages(
+        Channel $channel,
+        User $currentUser,
+        int $jumpTo,
+        EntityManagerInterface $entityManager,
+        MessageRepository $messageRepository,
+    ): array {
+        $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
+        $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $channel]);
+        $lastReadMessageId = $activeRead?->getLastReadMessage()?->getId();
+
+        if ($jumpTo > 0) {
+            $messages = $messageRepository->findMessagesAround($channel, $jumpTo, 50);
+        } else {
+            $messages = array_reverse($messageRepository->findLatestInChannel($channel, 50));
+        }
+
+        $firstUnreadMessageId = null;
+        if ($lastReadMessageId !== null) {
+            foreach ($messages as $m) {
+                if ($m->getId() > $lastReadMessageId) {
+                    $firstUnreadMessageId = $m->getId();
+                    break;
+                }
+            }
+        }
+
+        $this->readTrackingService->markChannelAsRead($currentUser, $channel);
+
+        return [$messages, $firstUnreadMessageId];
     }
 }
