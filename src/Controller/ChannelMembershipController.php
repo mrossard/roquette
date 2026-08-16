@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
+use App\Service\ChannelManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -91,16 +92,13 @@ final class ChannelMembershipController extends AbstractController
     public function joinChannel(
         string $slug,
         Request $request,
-        ChannelRepository $channelRepository,
+        ChannelManager $channelManager,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel) {
-            return new Response($this->translator->trans('Canal non trouvé.'), 404);
-        }
+        $channel = $channelManager->findChannelBySlug($slug);
 
         if ($channel->isPrivate()) {
             return new Response(
@@ -126,16 +124,13 @@ final class ChannelMembershipController extends AbstractController
     public function leaveChannel(
         string $slug,
         Request $request,
-        ChannelRepository $channelRepository,
+        ChannelManager $channelManager,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel) {
-            return new Response($this->translator->trans('Canal non trouvé.'), 404);
-        }
+        $channel = $channelManager->findChannelBySlug($slug);
 
         if ($channel->getMembers()->contains($currentUser)) {
             $channel->removeMember($currentUser);

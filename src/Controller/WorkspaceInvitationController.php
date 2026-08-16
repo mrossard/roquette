@@ -6,8 +6,8 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
-use App\Repository\WorkspaceRepository;
 use App\Service\InvitationManager;
+use App\Service\WorkspaceManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,16 +20,14 @@ final class WorkspaceInvitationController extends AbstractController
 {
     public function __construct(
         private readonly InvitationManager $invitationManager,
+        private readonly WorkspaceManager $workspaceManager,
         private readonly TranslatorInterface $translator,
     ) {}
 
     #[Route('/workspaces/{slug}/invite-modal', name: 'app_workspace_invite_modal', methods: ['GET'])]
-    public function inviteModal(string $slug, WorkspaceRepository $workspaceRepository): Response
+    public function inviteModal(string $slug): Response
     {
-        $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
-        if (!$workspace) {
-            return new Response($this->translator->trans('Espace non trouvé.'), 404);
-        }
+        $workspace = $this->workspaceManager->findWorkspaceBySlug($slug);
 
         $this->denyAccessUnlessGranted('INVITE', $workspace);
 
@@ -43,16 +41,12 @@ final class WorkspaceInvitationController extends AbstractController
     public function invite(
         string $slug,
         Request $request,
-        WorkspaceRepository $workspaceRepository,
         UserRepository $userRepository,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
-        if (!$workspace) {
-            return new Response($this->translator->trans('Espace non trouvé.'), 404);
-        }
+        $workspace = $this->workspaceManager->findWorkspaceBySlug($slug);
 
         $this->denyAccessUnlessGranted('INVITE', $workspace);
 
@@ -80,18 +74,12 @@ final class WorkspaceInvitationController extends AbstractController
     }
 
     #[Route('/workspaces/{slug}/invite/search', name: 'app_workspace_invite_search', methods: ['GET'])]
-    public function searchInvitableUsers(
-        string $slug,
-        Request $request,
-        WorkspaceRepository $workspaceRepository,
-    ): Response {
+    public function searchInvitableUsers(string $slug, Request $request): Response
+    {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
-        if (!$workspace) {
-            return new Response($this->translator->trans('Espace non trouvé.'), 404);
-        }
+        $workspace = $this->workspaceManager->findWorkspaceBySlug($slug);
 
         $this->denyAccessUnlessGranted('INVITE', $workspace);
 

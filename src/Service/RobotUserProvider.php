@@ -9,19 +9,18 @@ use App\Repository\UserRepository;
 
 class RobotUserProvider
 {
-    private ?User $robotUser = null;
-
     public function __construct(
         private readonly UserRepository $userRepository,
     ) {}
 
+    /**
+     * Always re-queries the repository: the EntityManager is cleared between
+     * Messenger messages, so a cached entity would be detached and cause
+     * persist errors (e.g. when used as a Message author).
+     */
     public function getRobotUser(): ?User
     {
-        if ($this->robotUser === null) {
-            $this->robotUser = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME]);
-        }
-
-        return $this->robotUser;
+        return $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME]);
     }
 
     public function isRobotUser(?User $user): bool

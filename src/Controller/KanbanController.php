@@ -8,10 +8,10 @@ use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
-use App\Repository\ChannelRepository;
 use App\Repository\KanbanColumnRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
+use App\Service\ChannelManager;
 use App\Service\KanbanManager;
 use App\Service\SidebarDataProvider;
 use Doctrine\ORM\EntityManagerInterface;
@@ -32,7 +32,7 @@ final class KanbanController extends AbstractController
         private readonly KanbanManager $kanbanManager,
         private readonly KanbanColumnRepository $kanbanColumnRepository,
         private readonly MessageRepository $messageRepository,
-        private readonly ChannelRepository $channelRepository,
+        private readonly ChannelManager $channelManager,
         private readonly UserRepository $userRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly SidebarDataProvider $sidebarDataProvider,
@@ -46,8 +46,8 @@ final class KanbanController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channel = $this->channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel || !$channel->isTodoList()) {
+        $channel = $this->channelManager->findChannelBySlug($slug);
+        if (!$channel->isTodoList()) {
             throw $this->createNotFoundException($this->translator->trans('Canal non trouvé ou non configuré en todo.'));
         }
 

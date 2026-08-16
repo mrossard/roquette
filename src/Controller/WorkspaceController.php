@@ -56,17 +56,12 @@ final class WorkspaceController extends AbstractController
     public function switchWorkspace(
         string $workspaceSlug,
         Request $request,
-        WorkspaceRepository $workspaceRepository,
-        ChannelRepository $channelRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $workspace = $workspaceRepository->findOneBy(['slug' => $workspaceSlug]);
-        if (!$workspace) {
-            throw $this->createNotFoundException($this->translator->trans('Espace non trouvé.'));
-        }
+        $workspace = $this->workspaceManager->findWorkspaceBySlug($workspaceSlug);
 
         $this->denyAccessUnlessGranted('VIEW', $workspace);
 
@@ -122,15 +117,12 @@ final class WorkspaceController extends AbstractController
     }
 
     #[Route('/workspaces/{slug}/settings-modal', name: 'app_workspace_settings_modal', methods: ['GET'])]
-    public function settingsModal(string $slug, WorkspaceRepository $workspaceRepository): Response
+    public function settingsModal(string $slug): Response
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
-        if (!$workspace) {
-            return new Response($this->translator->trans('Espace non trouvé.'), 404);
-        }
+        $workspace = $this->workspaceManager->findWorkspaceBySlug($slug);
 
         $this->denyAccessUnlessGranted('EDIT', $workspace);
 
@@ -143,14 +135,13 @@ final class WorkspaceController extends AbstractController
     public function edit(
         string $slug,
         Request $request,
-        WorkspaceRepository $workspaceRepository,
         EntityManagerInterface $entityManager,
         FileUploadService $fileUploadService,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
+        $workspace = $this->workspaceManager->findWorkspaceBySlugOrNull($slug);
         if (!$workspace) {
             return $this->redirectToRoute('app_workspaces');
         }
@@ -203,13 +194,12 @@ final class WorkspaceController extends AbstractController
     #[Route('/workspaces/{slug}/delete', name: 'app_workspace_delete', methods: ['POST'])]
     public function delete(
         string $slug,
-        WorkspaceRepository $workspaceRepository,
         FileUploadService $fileUploadService,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
+        $workspace = $this->workspaceManager->findWorkspaceBySlugOrNull($slug);
         if (!$workspace) {
             return $this->redirectToRoute('app_workspaces');
         }
@@ -238,11 +228,10 @@ final class WorkspaceController extends AbstractController
     #[Route('/workspaces/{slug}/avatar', name: 'app_workspace_avatar', methods: ['GET'])]
     public function serveAvatar(
         string $slug,
-        WorkspaceRepository $workspaceRepository,
         FileUploadService $fileUploadService,
         \App\Service\FileStreamResponseFactory $fileResponseFactory,
     ): Response {
-        $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
+        $workspace = $this->workspaceManager->findWorkspaceBySlugOrNull($slug);
         if (!$workspace || !$workspace->getAvatarPath()) {
             throw $this->createNotFoundException($this->translator->trans('Avatar non trouvé.'));
         }
@@ -254,12 +243,12 @@ final class WorkspaceController extends AbstractController
 
 
     #[Route('/workspaces/{slug}/leave', name: 'app_workspace_leave', methods: ['POST'])]
-    public function leave(string $slug, WorkspaceRepository $workspaceRepository): Response
+    public function leave(string $slug): Response
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
+        $workspace = $this->workspaceManager->findWorkspaceBySlugOrNull($slug);
         if (!$workspace) {
             return $this->redirectToRoute('app_workspaces');
         }
@@ -276,15 +265,12 @@ final class WorkspaceController extends AbstractController
     }
 
     #[Route('/workspaces/{slug}/members-modal', name: 'app_workspace_members_modal', methods: ['GET'])]
-    public function membersModal(string $slug, WorkspaceRepository $workspaceRepository): Response
+    public function membersModal(string $slug): Response
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
-        if (!$workspace) {
-            return new Response($this->translator->trans('Espace non trouvé.'), 404);
-        }
+        $workspace = $this->workspaceManager->findWorkspaceBySlug($slug);
 
         $this->denyAccessUnlessGranted('VIEW', $workspace);
 

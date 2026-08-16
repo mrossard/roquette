@@ -6,13 +6,11 @@ namespace App\Service;
 
 use App\Entity\Channel;
 use App\Entity\User;
-use App\Repository\ChannelRepository;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -25,7 +23,7 @@ use Twig\Environment;
 class MessageSubmissionHandler
 {
     public function __construct(
-        private readonly ChannelRepository $channelRepository,
+        private readonly ChannelManager $channelManager,
         private readonly ChannelAccessService $channelAccessService,
         private readonly MessagePublishService $publishService,
         private readonly SlashCommandHandler $slashCommandHandler,
@@ -127,10 +125,7 @@ class MessageSubmissionHandler
 
     private function findChannel(string $slug, User $currentUser): Channel
     {
-        $channel = $this->channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel) {
-            throw new NotFoundHttpException($this->translator->trans('Canal non trouvé.'));
-        }
+        $channel = $this->channelManager->findChannelBySlug($slug);
 
         if (!$this->channelAccessService->canUserAccess($channel, $currentUser)) {
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));

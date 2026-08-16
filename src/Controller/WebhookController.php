@@ -7,8 +7,8 @@ namespace App\Controller;
 use App\Entity\Channel;
 use App\Entity\User;
 use App\Entity\Webhook;
-use App\Repository\ChannelRepository;
 use App\Repository\WebhookRepository;
+use App\Service\ChannelManager;
 use App\Service\WebhookManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -93,17 +93,13 @@ final class WebhookController extends AbstractController
     public function create(
         string $slug,
         Request $request,
-        ChannelRepository $channelRepository,
+        ChannelManager $channelManager,
         WebhookRepository $webhookRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-
-        if (!$channel) {
-            return new Response('Canal non trouvé', Response::HTTP_NOT_FOUND);
-        }
+        $channel = $channelManager->findChannelBySlug($slug);
 
         $this->denyAccessUnlessGranted('MANAGE', $channel);
 

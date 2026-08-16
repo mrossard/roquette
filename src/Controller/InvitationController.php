@@ -6,9 +6,9 @@ namespace App\Controller;
 
 use App\Entity\Invitation;
 use App\Entity\User;
-use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\UserRepository;
+use App\Service\ChannelManager;
 use App\Service\InvitationManager;
 use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,16 +31,13 @@ final class InvitationController extends AbstractController
     public function inviteUser(
         string $slug,
         Request $request,
-        ChannelRepository $channelRepository,
+        ChannelManager $channelManager,
         UserRepository $userRepository,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $activeChannel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$activeChannel) {
-            return new Response($this->translator->trans('Canal non trouvé.'), 404);
-        }
+        $activeChannel = $channelManager->findChannelBySlug($slug);
 
         if ($activeChannel->isDm()) {
             return new Response($this->translator->trans('Opération non autorisée pour un message direct.'), 403);
@@ -78,18 +75,12 @@ final class InvitationController extends AbstractController
     }
 
     #[Route('/channels/{slug}/invite/search', name: 'app_channel_invite_search', methods: ['GET'])]
-    public function searchInvitableUsers(
-        string $slug,
-        Request $request,
-        ChannelRepository $channelRepository,
-    ): Response {
+    public function searchInvitableUsers(string $slug, Request $request, ChannelManager $channelManager): Response
+    {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $activeChannel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$activeChannel) {
-            return new Response($this->translator->trans('Canal non trouvé.'), 404);
-        }
+        $activeChannel = $channelManager->findChannelBySlug($slug);
 
         if ($activeChannel->isDm()) {
             return new Response($this->translator->trans('Opération non autorisée pour un message direct.'), 403);

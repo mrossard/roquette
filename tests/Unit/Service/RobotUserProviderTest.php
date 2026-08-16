@@ -13,14 +13,14 @@ use PHPUnit\Framework\TestCase;
 #[AllowMockObjectsWithoutExpectations]
 class RobotUserProviderTest extends TestCase
 {
-    public function testGetRobotUserReturnsUserAndCachesResult(): void
+    public function testGetRobotUserReturnsUserFromRepository(): void
     {
         $userRepository = $this->createMock(UserRepository::class);
         $robotUser = new User();
         $robotUser->setUsername(User::ROBOT_USERNAME);
 
         $userRepository
-            ->expects(static::once())
+            ->expects(static::exactly(2))
             ->method('findOneBy')
             ->with(['username' => User::ROBOT_USERNAME])
             ->willReturn($robotUser);
@@ -28,7 +28,7 @@ class RobotUserProviderTest extends TestCase
         $provider = new RobotUserProvider($userRepository);
 
         static::assertSame($robotUser, $provider->getRobotUser());
-        // Second call should return cached instance without calling repo again
+        // No caching: each call re-queries to always return a managed entity
         static::assertSame($robotUser, $provider->getRobotUser());
     }
 

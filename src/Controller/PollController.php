@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\PollOption;
+use App\Service\ChannelManager;
 use App\Service\MercurePublisher;
 use App\Service\MessageRenderer;
 use App\Service\PollManager;
@@ -76,12 +77,9 @@ final class PollController extends AbstractController
     }
 
     #[Route('/channel/{slug}/composer/toggle', name: 'app_composer_toggle', methods: ['GET', 'POST'])]
-    public function toggleComposer(string $slug, Request $request, EntityManagerInterface $entityManager): Response
+    public function toggleComposer(string $slug, Request $request, ChannelManager $channelManager): Response
     {
-        $channel = $entityManager->getRepository(\App\Entity\Channel::class)->findOneBy(['slug' => $slug]);
-        if (!$channel) {
-            throw $this->createNotFoundException('Canal non trouvé.');
-        }
+        $channel = $channelManager->findChannelBySlug($slug);
 
         $open = (bool) ($request->query->get('open') ?? $request->request->get('open', false));
         $messageValue = $request->query->get('message') ?? $request->request->get('message', '');

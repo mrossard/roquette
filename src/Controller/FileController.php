@@ -6,8 +6,8 @@ namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\Message;
-use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
+use App\Service\ChannelManager;
 use App\Service\FileStreamResponseFactory;
 use App\Service\FileUploadService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -145,11 +145,11 @@ final class FileController extends AbstractController
     public function channelFilesList(
         string $slug,
         Request $request,
-        ChannelRepository $channelRepository,
+        ChannelManager $channelManager,
         MessageRepository $messageRepository,
     ): Response {
         try {
-            $channel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+            $channel = $this->findAuthorizedChannel($slug, $channelManager);
         } catch (HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }

@@ -11,6 +11,7 @@ use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
+use App\Service\ChannelManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +26,7 @@ final class SearchController extends AbstractController
 
     public function __construct(
         private readonly ChannelRepository $channelRepository,
+        private readonly ChannelManager $channelManager,
         private readonly MessageRepository $messageRepository,
         private readonly UserRepository $userRepository,
         private readonly EntityManagerInterface $entityManager,
@@ -37,7 +39,7 @@ final class SearchController extends AbstractController
         $currentUser = $this->getUser();
 
         try {
-            $activeChannel = $this->findAndAuthorizeChannel($slug, $this->channelRepository);
+            $activeChannel = $this->findAuthorizedChannel($slug, $this->channelManager);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }

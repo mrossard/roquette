@@ -198,6 +198,11 @@ class WorkspaceManager
         return $workspace;
     }
 
+    public function findWorkspaceBySlugOrNull(string $slug): ?Workspace
+    {
+        return $this->workspaceRepository->findOneBy(['slug' => $slug]);
+    }
+
     public function inviteUser(Workspace $workspace, User $invitedBy, User $invitee): Invitation
     {
         $invitation = new Invitation();

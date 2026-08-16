@@ -7,7 +7,7 @@ namespace App\Tests\Unit\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
-use App\Repository\ChannelRepository;
+use App\Service\ChannelManager;
 use App\Service\ChannelAccessService;
 use App\Service\MessagePublishService;
 use App\Service\MessageSubmissionHandler;
@@ -33,7 +33,7 @@ use Twig\Environment;
 #[AllowMockObjectsWithoutExpectations]
 class MessageSubmissionHandlerTest extends TestCase
 {
-    private ChannelRepository $channelRepository;
+    private ChannelManager $channelManager;
     private ChannelAccessService $channelAccessService;
     private MessagePublishService $publishService;
     private SlashCommandHandler $slashCommandHandler;
@@ -46,7 +46,7 @@ class MessageSubmissionHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->channelRepository = $this->createMock(ChannelRepository::class);
+        $this->channelManager = $this->createMock(ChannelManager::class);
         $this->channelAccessService = $this->createMock(ChannelAccessService::class);
         $this->publishService = $this->createMock(MessagePublishService::class);
         $this->slashCommandHandler = $this->createMock(SlashCommandHandler::class);
@@ -61,7 +61,7 @@ class MessageSubmissionHandlerTest extends TestCase
         $this->twig->method('render')->willReturn('<form></form>');
 
         $this->handler = new MessageSubmissionHandler(
-            $this->channelRepository,
+            $this->channelManager,
             $this->channelAccessService,
             $this->publishService,
             $this->slashCommandHandler,
@@ -96,7 +96,7 @@ class MessageSubmissionHandlerTest extends TestCase
     public function channelNotFoundThrowsNotFoundHttpException(): void
     {
         $user = new User();
-        $this->channelRepository->method('findOneBy')->willReturn(null);
+        $this->channelManager->method('findChannelBySlug')->willThrowException(new NotFoundHttpException());
 
         $request = new Request();
         $this->expectException(NotFoundHttpException::class);
@@ -108,7 +108,7 @@ class MessageSubmissionHandlerTest extends TestCase
     {
         $user = new User();
         $channel = new Channel();
-        $this->channelRepository->method('findOneBy')->willReturn($channel);
+        $this->channelManager->method('findChannelBySlug')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(false);
 
         $request = new Request();
@@ -124,7 +124,7 @@ class MessageSubmissionHandlerTest extends TestCase
         $ref->setValue($user, 1);
 
         $channel = new Channel();
-        $this->channelRepository->method('findOneBy')->willReturn($channel);
+        $this->channelManager->method('findChannelBySlug')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createRejectedLimiter());
 
@@ -144,7 +144,7 @@ class MessageSubmissionHandlerTest extends TestCase
         $ref->setValue($user, 1);
 
         $channel = new Channel();
-        $this->channelRepository->method('findOneBy')->willReturn($channel);
+        $this->channelManager->method('findChannelBySlug')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
@@ -165,7 +165,7 @@ class MessageSubmissionHandlerTest extends TestCase
         $ref->setValue($user, 1);
 
         $channel = new Channel();
-        $this->channelRepository->method('findOneBy')->willReturn($channel);
+        $this->channelManager->method('findChannelBySlug')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
@@ -190,7 +190,7 @@ class MessageSubmissionHandlerTest extends TestCase
         $ref->setValue($user, 1);
 
         $channel = new Channel();
-        $this->channelRepository->method('findOneBy')->willReturn($channel);
+        $this->channelManager->method('findChannelBySlug')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
@@ -216,7 +216,7 @@ class MessageSubmissionHandlerTest extends TestCase
         $ref->setValue($user, 1);
 
         $channel = new Channel();
-        $this->channelRepository->method('findOneBy')->willReturn($channel);
+        $this->channelManager->method('findChannelBySlug')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
@@ -243,7 +243,7 @@ class MessageSubmissionHandlerTest extends TestCase
         $ref->setValue($user, 1);
 
         $channel = new Channel();
-        $this->channelRepository->method('findOneBy')->willReturn($channel);
+        $this->channelManager->method('findChannelBySlug')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 

@@ -5,26 +5,24 @@ declare(strict_types=1);
 namespace App\Controller\Trait;
 
 use App\Entity\Channel;
-use App\Repository\ChannelRepository;
+use App\Service\ChannelManager;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 trait ChannelAccessTrait
 {
     /**
-     * Resolves the channel by slug and verifies if the current user has access to it.
+     * Resolves the channel by slug and verifies that the current user has the
+     * given attribute on it.
      *
      * @throws NotFoundHttpException if the channel does not exist
-     * @throws AccessDeniedHttpException if the user does not have view access
+     * @throws AccessDeniedHttpException if the user does not have access
      */
-    private function findAndAuthorizeChannel(string $slug, ChannelRepository $channelRepository): Channel
+    private function findAuthorizedChannel(string $slug, ChannelManager $channelManager, string $attribute = 'VIEW'): Channel
     {
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel) {
-            throw new NotFoundHttpException('Canal non trouvé.');
-        }
+        $channel = $channelManager->findChannelBySlug($slug);
 
-        $this->denyAccessUnlessGranted('VIEW', $channel);
+        $this->denyAccessUnlessGranted($attribute, $channel);
 
         return $channel;
     }
@@ -48,7 +46,7 @@ trait ChannelAccessTrait
     {
         $channel = $message->getChannel();
         if ($channel === null) {
-            throw new AccessDeniedHttpException('Non autorisé.');
+            throw new AccessDeniedHttpException($this->trans('Non autorisé.'));
         }
 
         $this->authorizeChannelAccess($channel);

@@ -7,7 +7,7 @@ namespace App\Controller;
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
-use App\Repository\ChannelRepository;
+use App\Service\ChannelManager;
 use App\Service\MercurePublisher;
 use App\Service\ReadTrackingService;
 use App\Service\TypingIndicatorService;
@@ -24,7 +24,7 @@ final class NotificationController extends AbstractController
     use ChannelAccessTrait;
 
     public function __construct(
-        private readonly ChannelRepository $channelRepository,
+        private readonly ChannelManager $channelManager,
         private readonly EntityManagerInterface $entityManager,
         private readonly ReadTrackingService $readTrackingService,
         private readonly TypingIndicatorService $typingIndicatorService,
@@ -38,7 +38,7 @@ final class NotificationController extends AbstractController
         $currentUser = $this->getUser();
 
         try {
-            $activeChannel = $this->findAndAuthorizeChannel($slug, $this->channelRepository);
+            $activeChannel = $this->findAuthorizedChannel($slug, $this->channelManager);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
@@ -55,7 +55,7 @@ final class NotificationController extends AbstractController
         $currentUser = $this->getUser();
 
         try {
-            $channel = $this->findAndAuthorizeChannel($slug, $this->channelRepository);
+            $channel = $this->findAuthorizedChannel($slug, $this->channelManager);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
@@ -92,7 +92,7 @@ final class NotificationController extends AbstractController
         $currentUser = $this->getUser();
 
         try {
-            $activeChannel = $this->findAndAuthorizeChannel($slug, $this->channelRepository);
+            $activeChannel = $this->findAuthorizedChannel($slug, $this->channelManager);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
@@ -121,7 +121,7 @@ final class NotificationController extends AbstractController
         $currentUser = $this->getUser();
 
         try {
-            $activeChannel = $this->findAndAuthorizeChannel($slug, $this->channelRepository);
+            $activeChannel = $this->findAuthorizedChannel($slug, $this->channelManager);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }

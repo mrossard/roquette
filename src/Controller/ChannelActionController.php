@@ -46,13 +46,12 @@ final class ChannelActionController extends AbstractController
     public function summarizeChannel(
         string $slug,
         Request $request,
-        ChannelRepository $channelRepository,
         MessageBusInterface $messageBus,
         string $mercureTopicPrefix,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-        $channel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+        $channel = $this->findAuthorizedChannel($slug, $this->channelManager);
 
         $helpMessageId = 'summary-modal-stream-' . uniqid();
         $promptText = 'résume le canal ' . $channel->getName();
@@ -203,10 +202,7 @@ final class ChannelActionController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel) {
-            return new Response($this->translator->trans('Canal non trouvé.'), 404);
-        }
+        $channel = $this->channelManager->findChannelBySlug($slug);
 
         $currentUser->isChannelFavorite($channel)
             ? $currentUser->removeFavoriteChannel($channel)
@@ -328,19 +324,16 @@ final class ChannelActionController extends AbstractController
     #[Route('/channels/{slug}/export', name: 'app_channel_export', methods: ['POST'])]
     public function exportChannel(
         string $slug,
-        ChannelRepository $channelRepository,
         MessageBusInterface $messageBus,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         try {
-            $channel = $this->findAndAuthorizeChannel($slug, $channelRepository);
+            $channel = $this->findAuthorizedChannel($slug, $this->channelManager, 'MANAGE');
         } catch (HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
-
-        $this->denyAccessUnlessGranted('MANAGE', $channel);
 
         $messageBus->dispatch(new GenerateExportMessage($channel->getId(), $currentUser->getId()));
 

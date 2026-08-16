@@ -125,10 +125,7 @@ final class ChannelController extends AbstractController
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
     ): Response {
-        $activeChannel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$activeChannel) {
-            throw $this->createNotFoundException($this->translator->trans('Canal non trouvé.'));
-        }
+        $activeChannel = $this->channelManager->findChannelBySlug($slug);
 
         if (!$this->isGranted('VIEW', $activeChannel)) {
             return new Response($this->translator->trans('Accès interdit'), Response::HTTP_FORBIDDEN);
@@ -162,17 +159,13 @@ final class ChannelController extends AbstractController
     #[Route('/channels/{slug}/sidebar-item', name: 'app_channel_sidebar_item', methods: ['GET'])]
     public function sidebarItem(
         string $slug,
-        ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-        if (!$channel) {
-            return new Response($this->translator->trans('Canal non trouvé.'), 404);
-        }
+        $channel = $this->channelManager->findChannelBySlug($slug);
 
         $this->denyAccessUnlessGranted('VIEW', $channel);
 

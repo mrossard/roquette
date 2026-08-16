@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
-use App\Repository\ChannelRepository;
 use App\Repository\WebhookRepository;
 use App\Repository\WorkspaceRepository;
+use App\Service\ChannelManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -25,18 +25,12 @@ final class ModalController extends AbstractController
     #[Route('/channels/{slug}/edit-modal', name: 'app_channel_edit_modal', methods: ['GET'])]
     public function editModal(
         string $slug,
-        ChannelRepository $channelRepository,
+        ChannelManager $channelManager,
         WebhookRepository $webhookRepository,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-
-        if (!$channel) {
-            return new Response('Canal non trouvé', 404);
-        }
-
-        $this->denyAccessUnlessGranted('EDIT', $channel);
+        $channel = $this->findAuthorizedChannel($slug, $channelManager, 'EDIT');
 
         $webhooks = $webhookRepository->findBy(['channel' => $channel], ['createdAt' => 'ASC']);
 
@@ -61,15 +55,11 @@ final class ModalController extends AbstractController
     }
 
     #[Route('/channels/{slug}/invite-modal', name: 'app_channel_invite_modal', methods: ['GET'])]
-    public function inviteModal(string $slug, ChannelRepository $channelRepository): Response
+    public function inviteModal(string $slug, ChannelManager $channelManager): Response
     {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-
-        if (!$channel) {
-            return new Response('Canal non trouvé', 404);
-        }
+        $channel = $channelManager->findChannelBySlug($slug);
 
         if ($channel->isDm() || $channel->isSubChannel()) {
             return new Response('Accès refusé', 403);
@@ -93,14 +83,10 @@ final class ModalController extends AbstractController
     #[Route('/channels/{slug}/members-modal', name: 'app_channel_members_modal', methods: ['GET'])]
     public function membersModal(
         string $slug,
-        ChannelRepository $channelRepository,
+        ChannelManager $channelManager,
         \Doctrine\ORM\EntityManagerInterface $entityManager,
     ): Response {
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-
-        if (!$channel) {
-            return new Response('Canal non trouvé', 404);
-        }
+        $channel = $channelManager->findChannelBySlug($slug);
 
         $this->authorizeChannelAccess($channel);
 

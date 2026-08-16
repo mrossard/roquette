@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\GroupSubscription;
-use App\Repository\ChannelRepository;
+use App\Service\ChannelManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,16 +25,12 @@ final class ChannelGroupController extends AbstractController
     public function subscribeGroup(
         string $slug,
         Request $request,
-        ChannelRepository $channelRepository,
+        ChannelManager $channelManager,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-
-        if (!$channel) {
-            return new Response('Canal non trouvé', 404);
-        }
+        $channel = $channelManager->findChannelBySlug($slug);
 
         $this->denyAccessUnlessGranted('MANAGE', $channel);
 
@@ -83,16 +79,12 @@ final class ChannelGroupController extends AbstractController
     public function unsubscribeGroup(
         string $slug,
         int $subscriptionId,
-        ChannelRepository $channelRepository,
+        ChannelManager $channelManager,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
-        $channel = $channelRepository->findOneBy(['slug' => $slug]);
-
-        if (!$channel) {
-            return new Response('Canal non trouvé', 404);
-        }
+        $channel = $channelManager->findChannelBySlug($slug);
 
         $this->denyAccessUnlessGranted('MANAGE', $channel);
 
