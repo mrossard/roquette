@@ -85,9 +85,9 @@ final class ReactionController extends AbstractController
 $hasCheck = true;
                     break;
             }
-            $message->setIsCompleted($hasCheck);
-            $entityManager->flush();
-            $this->kanbanManager->toggleCompletion($message, $hasCheck, $currentUser);
+            $hasCheck
+                ? $this->kanbanManager->markAsCompleted($message, $currentUser)
+                : $this->kanbanManager->markAsIncomplete($message, $currentUser);
         }
 
         $renderedHtml = $this->messageRenderer->renderFeedItem($message, ['no_fade' => true]);

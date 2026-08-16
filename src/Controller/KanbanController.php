@@ -302,7 +302,9 @@ final class KanbanController extends AbstractController
         $currentUser = $this->getUser();
 
         try {
-            $this->kanbanManager->toggleCompletion($message, !$message->isCompleted(), $currentUser);
+            $message->isCompleted()
+                ? $this->kanbanManager->markAsIncomplete($message, $currentUser)
+                : $this->kanbanManager->markAsCompleted($message, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }

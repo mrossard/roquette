@@ -181,16 +181,16 @@ class FileUploadService
     private function extractExtension(UploadedFile $file): string
     {
         $origExt = $file->getClientOriginalExtension();
-        $guessedExt = $file->guessExtension();
         if ($origExt !== null && $origExt !== '') {
-            $ext = $origExt;
-        } elseif ($guessedExt !== null && $guessedExt !== '') {
-            $ext = $guessedExt;
-        } else {
-            $ext = 'bin';
+            return strtolower($origExt);
         }
 
-        return strtolower($ext);
+        $guessedExt = $file->guessExtension();
+        if ($guessedExt !== null && $guessedExt !== '') {
+            return strtolower($guessedExt);
+        }
+
+        return 'bin';
     }
 
     private function validateFile(UploadedFile $file, string $extension): void
@@ -273,11 +273,12 @@ class FileUploadService
         if ($extension === 'svg') {
             $cleanSvg = $this->sanitizeSvg($stream, $file->getClientOriginalName());
             $this->defaultStorage->write($newFilename, $cleanSvg);
-        } else {
-            $this->defaultStorage->writeStream($newFilename, $stream);
-            if (is_resource($stream)) {
-                \fclose($stream);
-            }
+            return;
+        }
+
+        $this->defaultStorage->writeStream($newFilename, $stream);
+        if (is_resource($stream)) {
+            \fclose($stream);
         }
     }
 

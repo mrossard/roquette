@@ -144,11 +144,9 @@ class KanbanManager
         $isCompleted = ($column !== null && in_array($column->getName(), ['Terminé', 'Done'], true));
         $message->setIsCompleted($isCompleted);
 
-        if ($isCompleted) {
-            $this->addCompletionReaction($message, $currentUser);
-        } else {
-            $this->removeCompletionReaction($message, $currentUser);
-        }
+        $isCompleted
+            ? $this->addCompletionReaction($message, $currentUser)
+            : $this->removeCompletionReaction($message, $currentUser);
         $this->entityManager->flush();
 
         $this->publishKanbanCardMoved($message, $column);
@@ -198,17 +196,25 @@ class KanbanManager
         $this->publishKanbanCardUpdated($message);
     }
 
+    public function markAsCompleted(Message $message, User $currentUser): void
+    {
+        $this->toggleCompletion($message, true, $currentUser);
+    }
+
+    public function markAsIncomplete(Message $message, User $currentUser): void
+    {
+        $this->toggleCompletion($message, false, $currentUser);
+    }
+
     public function toggleCompletion(Message $message, bool $completed, User $currentUser): void
     {
         $channel = $message->getChannel();
         $this->assertCanAccessKanban($channel, $currentUser);
 
         $message->setIsCompleted($completed);
-        if ($completed) {
-            $this->addCompletionReaction($message, $currentUser);
-        } else {
-            $this->removeCompletionReaction($message, $currentUser);
-        }
+        $completed
+            ? $this->addCompletionReaction($message, $currentUser)
+            : $this->removeCompletionReaction($message, $currentUser);
         $this->entityManager->flush();
 
         $this->publishKanbanCardUpdated($message);

@@ -114,12 +114,11 @@ class CustomEmojiService
         }
 
         $customEmoji = $this->emojiRepository->findOneBy(['code' => $code]);
-        if ($customEmoji) {
+        $filename = self::storageFilename($code);
+        if ($customEmoji !== null) {
             $filename = $customEmoji->getFilename();
             $this->entityManager->remove($customEmoji);
             $this->entityManager->flush();
-        } else {
-            $filename = self::storageFilename($code);
         }
 
         $storagePath = 'emojis/' . $filename;

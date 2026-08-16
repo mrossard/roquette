@@ -13,7 +13,7 @@ use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserChannelReadRepository;
 use App\Repository\WorkspaceRepository;
-use Doctrine\ORM\QueryBuilder;
+
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 

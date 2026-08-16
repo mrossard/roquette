@@ -262,6 +262,7 @@ class LinkPreviewService
         }
 
         // 4. Nom du site
+        $siteName = parse_url($url, PHP_URL_HOST);
         $siteNameNode = $crawler->filter('meta[property="og:site_name"]');
         if ($siteNameNode->count() > 0) {
             $siteName = html_entity_decode(
@@ -269,8 +270,6 @@ class LinkPreviewService
                 ENT_QUOTES | ENT_HTML5,
                 'UTF-8',
             );
-        } else {
-            $siteName = parse_url($url, PHP_URL_HOST);
         }
 
         return [

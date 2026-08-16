@@ -225,11 +225,8 @@ final class ChannelController extends AbstractController
         $session = $request->getSession();
         if ($currentWorkspace) {
             $session->set('current_workspace_id', $currentWorkspace->getId());
-        } else {
-            $currentWorkspaceId = $session->get('current_workspace_id');
-            if ($currentWorkspaceId) {
-                $currentWorkspace = $workspaceRepository->find($currentWorkspaceId);
-            }
+        } elseif ($currentWorkspaceId = $session->get('current_workspace_id')) {
+            $currentWorkspace = $workspaceRepository->find($currentWorkspaceId);
         }
 
         if (!$currentWorkspace) {
@@ -346,11 +343,9 @@ final class ChannelController extends AbstractController
         $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $channel]);
         $lastReadMessageId = $activeRead?->getLastReadMessage()?->getId();
 
-        if ($jumpTo > 0) {
-            $messages = $messageRepository->findMessagesAround($channel, $jumpTo, 50);
-        } else {
-            $messages = array_reverse($messageRepository->findLatestInChannel($channel, 50));
-        }
+        $messages = $jumpTo > 0
+            ? $messageRepository->findMessagesAround($channel, $jumpTo, 50)
+            : array_reverse($messageRepository->findLatestInChannel($channel, 50));
 
         $firstUnreadMessageId = null;
         if ($lastReadMessageId !== null) {

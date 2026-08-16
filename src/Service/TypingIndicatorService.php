@@ -16,25 +16,46 @@ class TypingIndicatorService
         private readonly CacheInterface $cache,
     ) {}
 
-    public function updateTypingStatus(Channel $channel, User $user, bool $isTyping): void
+    public function startTyping(Channel $channel, User $user): void
     {
         $cacheKey = 'channel_typing_' . $channel->getSlug();
         $typingUsers = $this->cache->get($cacheKey, static fn() => []);
 
-        if ($isTyping) {
-            $displayName =
-                $user->getDisplayName() !== null && $user->getDisplayName() !== ''
-                    ? $user->getDisplayName()
-                    : $user->getUsername();
+        $displayName =
+            $user->getDisplayName() !== null && $user->getDisplayName() !== ''
+                ? $user->getDisplayName()
+                : $user->getUsername();
 
-            $typingUsers[$user->getUsername()] = [
-                'name' => $displayName,
-                'expires_at' => time() + self::TTL,
-            ];
-        } else {
-            unset($typingUsers[$user->getUsername()]);
+        $typingUsers[$user->getUsername()] = [
+            'name' => $displayName,
+            'expires_at' => time() + self::TTL,
+        ];
+
+        $this->saveCleanedTypingUsers($cacheKey, $typingUsers);
+    }
+
+    public function stopTyping(Channel $channel, User $user): void
+    {
+        $cacheKey = 'channel_typing_' . $channel->getSlug();
+        $typingUsers = $this->cache->get($cacheKey, static fn() => []);
+
+        unset($typingUsers[$user->getUsername()]);
+
+        $this->saveCleanedTypingUsers($cacheKey, $typingUsers);
+    }
+
+    public function updateTypingStatus(Channel $channel, User $user, bool $isTyping): void
+    {
+        if ($isTyping) {
+            $this->startTyping($channel, $user);
+            return;
         }
 
+        $this->stopTyping($channel, $user);
+    }
+
+    private function saveCleanedTypingUsers(string $cacheKey, array $typingUsers): void
+    {
         $now = time();
         foreach ($typingUsers as $username => $info) {
             if (($info['expires_at'] ?? 0) >= $now) {
