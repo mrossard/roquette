@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Repository\UserRepository;
 use App\Repository\WorkspaceRepository;
-use App\Service\WorkspaceManager;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\InvitationManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,7 +19,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class WorkspaceInvitationController extends AbstractController
 {
     public function __construct(
-        private readonly WorkspaceManager $workspaceManager,
+        private readonly InvitationManager $invitationManager,
         private readonly TranslatorInterface $translator,
     ) {}
 
@@ -44,7 +44,7 @@ final class WorkspaceInvitationController extends AbstractController
         string $slug,
         Request $request,
         WorkspaceRepository $workspaceRepository,
-        EntityManagerInterface $entityManager,
+        UserRepository $userRepository,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -56,23 +56,20 @@ final class WorkspaceInvitationController extends AbstractController
 
         $this->denyAccessUnlessGranted('INVITE', $workspace);
 
-        $userId = $request->request->get('userId');
-        if (!$userId) {
+        $userId = $request->request->getInt('userId');
+        if ($userId <= 0) {
             return new Response($this->translator->trans('ID utilisateur manquant.'), 400);
         }
 
-        $invitedUser = $entityManager->getRepository(User::class)->find($userId);
+        $invitedUser = $userRepository->find($userId);
         if (!$invitedUser) {
             return new Response($this->translator->trans('Utilisateur non trouvé.'), 404);
         }
 
-        $this->workspaceManager->inviteUser($workspace, $currentUser, $invitedUser);
+        $this->invitationManager->inviteToWorkspace($workspace, $currentUser, $invitedUser);
 
         $query = trim((string) $request->request->get('q', ''));
-        $usersToInvite = [];
-        if ($query !== '') {
-            $usersToInvite = $workspaceRepository->findMembersNotInWorkspace($workspace, $currentUser, $query);
-        }
+        $usersToInvite = $this->invitationManager->searchInvitableUsersForWorkspace($workspace, $currentUser, $query);
 
         return $this->render('modals/_workspace_invite_results.html.twig', [
             'workspace' => $workspace,
@@ -107,7 +104,7 @@ final class WorkspaceInvitationController extends AbstractController
             ]);
         }
 
-        $usersToInvite = $workspaceRepository->findMembersNotInWorkspace($workspace, $currentUser, $query);
+        $usersToInvite = $this->invitationManager->searchInvitableUsersForWorkspace($workspace, $currentUser, $query);
 
         return $this->render('modals/_workspace_invite_results.html.twig', [
             'workspace' => $workspace,

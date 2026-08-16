@@ -6,16 +6,12 @@ namespace App\Controller\Admin;
 
 use App\Entity\User;
 use App\Entity\UserGroup;
-use App\Entity\Workspace;
-use App\Enum\AuditAction;
 use App\Repository\UserGroupRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\UserGroupVoter;
-use App\Service\AuditLoggerService;
 use App\Service\Group\GroupProviderInterface;
-use App\Service\WorkspaceManager;
-use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
+use App\Service\Group\UserGroupManager;
+use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,15 +21,14 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class AdminGroupController extends AbstractController
 {
     public function __construct(
-        private readonly LoggerInterface $logger,
         private readonly TranslatorInterface $translator,
         private readonly GroupProviderInterface $groupProvider,
         private readonly UserGroupRepository $userGroupRepository,
-        private readonly WorkspaceManager $workspaceManager,
+        private readonly UserGroupManager $userGroupManager,
     ) {}
 
     #[Route('/admin/groups', name: 'app_admin_groups', methods: ['GET', 'POST'])]
-    public function index(Request $request, EntityManagerInterface $entityManager): Response
+    public function index(Request $request): Response
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -57,7 +52,7 @@ final class AdminGroupController extends AbstractController
         $totalPages = (int) ceil($totalGroups / 25);
         $importedIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
 
-        $searchQuery = trim($request->request->get('search', $request->query->get('search', '')));
+        $searchQuery = trim((string) $request->request->get('search', (string) $request->query->get('search', '')));
         $providerResults = [];
 
         if ($searchQuery !== '' && $isGlobalAdmin) {
@@ -83,131 +78,58 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/create', name: 'app_admin_group_create', methods: ['POST'])]
-    public function create(
-        Request $request,
-        EntityManagerInterface $entityManager,
-        AuditLoggerService $auditLogger,
-    ): Response {
+    public function create(Request $request): Response
+    {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-        $name = trim($request->request->get('name', ''));
-        if ($name === '') {
-            $this->addFlash('error', $this->translator->trans('Le nom du groupe ne peut pas être vide.'));
-            return $this->redirectToRoute('app_admin_groups');
-        }
-
-        $groupIdentifier = 'local-group-' . uniqid();
-
-        $userGroup = new UserGroup();
-        $userGroup->setName($name);
-        $userGroup->setGroupIdentifier($groupIdentifier);
-
-        // Auto-create official workspace
-        $workspace = $this->createOfficialWorkspaceForGroup($name, $groupIdentifier, $entityManager);
-        $userGroup->setWorkspace($workspace);
-        $workspace->setUserGroup($userGroup);
-
+        $name = trim((string) $request->request->get('name', ''));
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-        $userGroup->addAdministrator($currentUser);
 
-        $entityManager->persist($userGroup);
-        $entityManager->flush();
-
-        $auditLogger->log(AuditAction::GROUP_CREATE, $currentUser, [
-            'group_id' => $userGroup->getId(),
-            'group_name' => $name,
-            'group_identifier' => $groupIdentifier,
-        ]);
-
-        $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été créé avec son espace de travail.', [
-            '%name%' => $name,
-        ]));
+        try {
+            $userGroup = $this->userGroupManager->createLocalGroup($name, $currentUser);
+            $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été créé avec son espace de travail.', [
+                '%name%' => $userGroup->getName(),
+            ]));
+        } catch (InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
 
         return $this->redirectToRoute('app_admin_groups');
     }
 
     #[Route('/admin/groups/import', name: 'app_admin_group_import', methods: ['POST'])]
-    public function import(
-        Request $request,
-        EntityManagerInterface $entityManager,
-        AuditLoggerService $auditLogger,
-    ): Response {
+    public function import(Request $request): Response
+    {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-        $identifier = $request->request->get('identifier');
-        $name = $request->request->get('name');
-
-        if (!$identifier || !$name) {
-            $this->addFlash('error', $this->translator->trans('Paramètres d\'import invalides.'));
-            return $this->redirectToRoute('app_admin_groups');
-        }
-
-        $existing = $this->userGroupRepository->findOneBy(['groupIdentifier' => $identifier]);
-        if ($existing) {
-            $this->addFlash('error', $this->translator->trans('Ce groupe est déjà importé dans l\'application.'));
-            return $this->redirectToRoute('app_admin_groups');
-        }
-
-        $userGroup = new UserGroup();
-        $userGroup->setName($name);
-        $userGroup->setGroupIdentifier($identifier);
-
-        // Auto-create official workspace
-        $workspace = $this->createOfficialWorkspaceForGroup($name, $identifier, $entityManager);
-        $userGroup->setWorkspace($workspace);
-        $workspace->setUserGroup($userGroup);
-
+        $identifier = (string) $request->request->get('identifier', '');
+        $name = (string) $request->request->get('name', '');
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-        $userGroup->addAdministrator($currentUser);
 
-        $entityManager->persist($userGroup);
-        $entityManager->flush();
-
-        $auditLogger->log(AuditAction::GROUP_CREATE, $currentUser, [
-            'group_id' => $userGroup->getId(),
-            'group_name' => $name,
-            'group_identifier' => $identifier,
-            'imported' => true,
-        ]);
-
-        $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été importé avec son espace de travail.', [
-            '%name%' => $name,
-        ]));
+        try {
+            $userGroup = $this->userGroupManager->importGroup($identifier, $name, $currentUser);
+            $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été importé avec son espace de travail.', [
+                '%name%' => $userGroup->getName(),
+            ]));
+        } catch (InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
 
         return $this->redirectToRoute('app_admin_groups');
     }
 
     #[Route('/admin/groups/{id}/delete', name: 'app_admin_group_delete', methods: ['POST'])]
-    public function delete(
-        UserGroup $userGroup,
-        EntityManagerInterface $entityManager,
-        AuditLoggerService $auditLogger,
-    ): Response {
+    public function delete(UserGroup $userGroup): Response
+    {
         $this->denyAccessUnlessGranted(UserGroupVoter::DELETE, $userGroup);
-
-        $name = $userGroup->getName();
-        $groupId = $userGroup->getId();
-        $groupIdentifier = $userGroup->getGroupIdentifier();
-
-        // Remove the associated Workspace if it exists
-        $workspace = $userGroup->getWorkspace();
-        if ($workspace) {
-            $entityManager->remove($workspace);
-        }
-
-        $entityManager->remove($userGroup);
-        $entityManager->flush();
 
         /** @var User $currentUser */
         $currentUser = $this->getUser();
+        $name = $userGroup->getName();
 
-        $auditLogger->log(AuditAction::GROUP_DELETE, $currentUser, [
-            'group_id' => $groupId,
-            'group_name' => $name,
-            'group_identifier' => $groupIdentifier,
-        ]);
+        $this->userGroupManager->deleteGroup($userGroup, $currentUser);
 
         $this->addFlash('success', $this->translator->trans('Le groupe "%name%" et son espace de travail ont été supprimés.', [
             '%name%' => $name,
@@ -217,71 +139,32 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/{id}/members/autocomplete', name: 'app_admin_group_member_autocomplete', methods: ['GET'])]
-    public function memberAutocomplete(UserGroup $userGroup, Request $request, UserRepository $userRepository): Response
+    public function memberAutocomplete(UserGroup $userGroup, Request $request): Response
     {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
-        $query = trim($request->query->get('search', ''));
-        if ($query === '') {
+        $query = (string) $request->query->get('search', '');
+        if (trim($query) === '') {
             return new Response(
                 '<div id="member-autocomplete-suggestions" class="emoji-autocomplete-dropdown" style="display: none;"></div>',
             );
         }
 
-        $allUsers = $userRepository->getAllSortedByDisplayName($withRobot = false);
-        $currentMemberIds = array_map(static fn($u) => $u->getId(), $userGroup->getMembers()->toArray());
-
-        $matches = [];
-        $q = strtolower($query);
-        foreach ($allUsers as $user) {
-            if (in_array($user->getId(), $currentMemberIds, true)) {
-                continue;
-            }
-
-            $username = strtolower($user->getUsername());
-            $displayName = strtolower($user->getDisplayName() ?? '');
-
-            if (str_contains($username, $q) || str_contains($displayName, $q)) {
-                $matches[] = $user;
-            }
-        }
+        $matches = $this->userGroupManager->searchInvitableMembers($userGroup, $query);
 
         return $this->render('admin/_member_autocomplete_suggestions.html.twig', [
-            'matches' => array_slice($matches, 0, 6),
+            'matches' => $matches,
             'group' => $userGroup,
         ]);
     }
 
     #[Route('/admin/groups/{id}/members', name: 'app_admin_group_members', methods: ['GET'])]
-    public function members(UserGroup $userGroup, EntityManagerInterface $entityManager): Response
+    public function members(UserGroup $userGroup): Response
     {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $isExternal = !str_starts_with($userGroup->getGroupIdentifier(), 'local-group-');
-        $externalMembers = [];
-
-        if ($isExternal) {
-            $externalUsernames = $this->groupProvider->getGroupMembers($userGroup->getGroupIdentifier());
-            $registeredUsers = $entityManager
-                ->getRepository(\App\Entity\User::class)
-                ->findBy(['username' => $externalUsernames]);
-
-            $registeredUsersByUsername = [];
-            foreach ($registeredUsers as $u) {
-                $registeredUsersByUsername[$u->getUsername()] = $u;
-            }
-
-            foreach ($externalUsernames as $username) {
-                $isReg = array_key_exists($username, $registeredUsersByUsername);
-                $externalMembers[] = [
-                    'username' => $username,
-                    'isRegistered' => $isReg,
-                    'user' => $isReg ? $registeredUsersByUsername[$username] : null,
-                ];
-            }
-
-            usort($externalMembers, static fn($a, $b) => strcasecmp($a['username'], $b['username']));
-        }
+        $externalMembers = $this->userGroupManager->getExternalGroupMembers($userGroup);
 
         return $this->render('admin/group_members.html.twig', [
             'group' => $userGroup,
@@ -295,7 +178,6 @@ final class AdminGroupController extends AbstractController
         UserGroup $userGroup,
         Request $request,
         UserRepository $userRepository,
-        EntityManagerInterface $entityManager,
     ): Response {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
@@ -307,8 +189,7 @@ final class AdminGroupController extends AbstractController
             return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
         }
 
-        $userGroup->addMember($user);
-        $entityManager->flush();
+        $this->userGroupManager->addMember($userGroup, $user);
 
         $this->addFlash('success', $this->translator->trans('L\'utilisateur "%username%" a été ajouté au groupe.', [
             '%username%' => $user->getUsername(),
@@ -322,7 +203,6 @@ final class AdminGroupController extends AbstractController
         UserGroup $userGroup,
         int $userId,
         UserRepository $userRepository,
-        EntityManagerInterface $entityManager,
     ): Response {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
@@ -333,8 +213,7 @@ final class AdminGroupController extends AbstractController
             return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
         }
 
-        $userGroup->removeMember($user);
-        $entityManager->flush();
+        $this->userGroupManager->removeMember($userGroup, $user);
 
         $this->addFlash('success', $this->translator->trans('L\'utilisateur "%username%" a été retiré du groupe.', [
             '%username%' => $user->getUsername(),
@@ -348,7 +227,6 @@ final class AdminGroupController extends AbstractController
         UserGroup $userGroup,
         Request $request,
         UserRepository $userRepository,
-        EntityManagerInterface $entityManager,
     ): Response {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
@@ -360,8 +238,7 @@ final class AdminGroupController extends AbstractController
             return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
         }
 
-        $userGroup->addAdministrator($user);
-        $entityManager->flush();
+        $this->userGroupManager->addAdministrator($userGroup, $user);
 
         $this->addFlash('success', $this->translator->trans('L\'utilisateur "%username%" a été promu administrateur du groupe.', [
             '%username%' => $user->getUsername(),
@@ -379,7 +256,6 @@ final class AdminGroupController extends AbstractController
         UserGroup $userGroup,
         int $userId,
         UserRepository $userRepository,
-        EntityManagerInterface $entityManager,
     ): Response {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
@@ -390,37 +266,15 @@ final class AdminGroupController extends AbstractController
             return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
         }
 
-        // Prevent removing the last admin
-        if ($userGroup->getAdministrators()->count() <= 1 && $userGroup->getAdministrators()->contains($user)) {
-            $this->addFlash(
-                'error',
-                $this->translator->trans('Impossible de retirer le dernier administrateur du groupe.'),
-            );
-            return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
+        try {
+            $this->userGroupManager->removeAdministrator($userGroup, $user);
+            $this->addFlash('success', $this->translator->trans('L\'utilisateur "%username%" n\'est plus administrateur du groupe.', [
+                '%username%' => $user->getUsername(),
+            ]));
+        } catch (InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
         }
 
-        $userGroup->removeAdministrator($user);
-        $entityManager->flush();
-
-        $this->addFlash('success', $this->translator->trans('L\'utilisateur "%username%" n\'est plus administrateur du groupe.', [
-            '%username%' => $user->getUsername(),
-        ]));
-
         return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
-    }
-
-    private function createOfficialWorkspaceForGroup(
-        string $groupName,
-        string $groupIdentifier,
-        EntityManagerInterface $entityManager,
-    ): Workspace {
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-
-        return $this->workspaceManager->create(
-            $groupName,
-            'Espace de travail officiel du groupe ' . $groupName,
-            $currentUser
-        );
     }
 }

@@ -43,7 +43,7 @@ final class StreamResponseCoordinatorTest extends TestCase
         // Chunk 6: published (6 % 3 === 0)
         // Final flush: published (with token)
         // Total Mercure publishes = 5
-        $hub->expects(self::exactly(5))->method('publish')->with(self::isInstanceOf(Update::class));
+        $hub->expects(static::exactly(5))->method('publish')->with(static::isInstanceOf(Update::class));
 
         $token = 'token-abc';
         $result = $coordinator->streamAndPublish(

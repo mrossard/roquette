@@ -391,13 +391,8 @@ class OAuthControllerTest extends WebTestCase
     #[Test]
     public function testMockEndpointsAreDisabledInProduction(): void
     {
-        $controller = new OAuthController(
-            'client_id',
-            'auth_url',
-            'redirect_uri',
-            'scope',
+        $controller = new \App\Controller\MockOAuthController(
             $this->mockStorePath,
-            true,
             'prod',
         );
 

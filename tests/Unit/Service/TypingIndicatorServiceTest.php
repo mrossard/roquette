@@ -49,8 +49,8 @@ final class TypingIndicatorServiceTest extends TestCase
         $service->stopTyping($channel, $alice);
         static::assertSame(['bob'], $service->getTypingUsers($channel));
 
-        // Bob stops typing via updateTypingStatus(false)
-        $service->updateTypingStatus($channel, $bob, false);
+        // Bob stops typing
+        $service->stopTyping($channel, $bob);
         static::assertSame([], $service->getTypingUsers($channel));
     }
 }

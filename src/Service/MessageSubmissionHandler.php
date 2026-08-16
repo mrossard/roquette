@@ -60,8 +60,8 @@ class MessageSubmissionHandler
 
         $messageText = (string) $request->request->get('message', '');
         $uploadedFile = $request->files->get('file');
-        $pollQuestion = $request->request->get('poll_question');
-        $isPoll = $pollQuestion !== null && $pollQuestion !== '';
+        $pollDto = \App\Dto\Poll\CreatePollDto::fromRequest($request);
+        $isPoll = $pollDto !== null;
 
         if (trim($messageText) === '' && !$uploadedFile && !$isPoll) {
             return $this->renderForm($channel);
@@ -87,9 +87,9 @@ class MessageSubmissionHandler
             currentUser: $currentUser,
             messageText: $messageText,
             file: $uploadedFile,
-            pollQuestion: $pollQuestion !== null ? (string) $pollQuestion : null,
-            pollOptions: $this->parsePollOptions($request),
-            pollAllowMultiple: (bool) $request->request->get('allow_multiple'),
+            pollQuestion: $pollDto?->question,
+            pollOptions: $pollDto?->options,
+            pollAllowMultiple: $pollDto?->allowMultiple ?? false,
             replyToId: ($replyTo = $request->request->get('replyTo')) ? (int) $replyTo : null,
             workspaceId: $this->getCurrentWorkspaceId($request),
         );
@@ -166,20 +166,5 @@ class MessageSubmissionHandler
             && count($request->files) === 0
             && (int) $request->headers->get('CONTENT_LENGTH', 0) > 0
         );
-    }
-
-    /**
-     * Extracts non-empty poll options from a request.
-     *
-     * @return list<string>
-     */
-    private function parsePollOptions(Request $request): array
-    {
-        $optionsData = $request->request->all('poll_options');
-        if (!is_array($optionsData)) {
-            return [];
-        }
-
-        return array_values(array_filter(array_map('trim', $optionsData), static fn($val) => $val !== ''));
     }
 }

@@ -198,23 +198,23 @@ class KanbanManager
 
     public function markAsCompleted(Message $message, User $currentUser): void
     {
-        $this->toggleCompletion($message, true, $currentUser);
+        $channel = $message->getChannel();
+        $this->assertCanAccessKanban($channel, $currentUser);
+
+        $message->setIsCompleted(true);
+        $this->addCompletionReaction($message, $currentUser);
+        $this->entityManager->flush();
+
+        $this->publishKanbanCardUpdated($message);
     }
 
     public function markAsIncomplete(Message $message, User $currentUser): void
     {
-        $this->toggleCompletion($message, false, $currentUser);
-    }
-
-    public function toggleCompletion(Message $message, bool $completed, User $currentUser): void
-    {
         $channel = $message->getChannel();
         $this->assertCanAccessKanban($channel, $currentUser);
 
-        $message->setIsCompleted($completed);
-        $completed
-            ? $this->addCompletionReaction($message, $currentUser)
-            : $this->removeCompletionReaction($message, $currentUser);
+        $message->setIsCompleted(false);
+        $this->removeCompletionReaction($message, $currentUser);
         $this->entityManager->flush();
 
         $this->publishKanbanCardUpdated($message);

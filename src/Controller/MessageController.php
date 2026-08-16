@@ -92,20 +92,16 @@ final class MessageController extends AbstractController
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $content = $request->request->getString('content');
-        $pollQuestion = $request->request->get('poll_question');
-        $pollOptions = $request->request->all('poll_options');
-        $pollOptions = is_array($pollOptions) ? array_values(array_filter(array_map('trim', $pollOptions), static fn($v) => $v !== '')) : [];
-        $allowMultiple = $request->request->getBoolean('allow_multiple');
+        $dto = \App\Dto\Message\EditMessageDto::fromRequest($request);
 
         try {
             $renderedHtml = $messageManager->editMessage(
                 $id,
                 $currentUser,
-                $content,
-                $pollQuestion !== null ? (string) $pollQuestion : null,
-                $pollOptions,
-                $allowMultiple,
+                $dto->content,
+                $dto->pollQuestion,
+                $dto->pollOptions,
+                $dto->allowMultiple,
             );
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());

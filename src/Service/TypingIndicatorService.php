@@ -44,15 +44,6 @@ class TypingIndicatorService
         $this->saveCleanedTypingUsers($cacheKey, $typingUsers);
     }
 
-    public function updateTypingStatus(Channel $channel, User $user, bool $isTyping): void
-    {
-        if ($isTyping) {
-            $this->startTyping($channel, $user);
-            return;
-        }
-
-        $this->stopTyping($channel, $user);
-    }
 
     private function saveCleanedTypingUsers(string $cacheKey, array $typingUsers): void
     {
