@@ -27,21 +27,22 @@ final class LinkPreviewController extends AbstractController
             return new JsonResponse(['error' => 'URL parameter is missing'], 400);
         }
 
-        $result = $this->linkPreviewService->getPreviewWithType($url);
-
-        $response = match ($result['type'] ?? null) {
-            null => new Response('', 200),
-            'direct_image' => $this->render('dashboard/_image_preview.html.twig', [
-                'url' => $result['url'],
-            ]),
-            default => $this->render('dashboard/_link_preview.html.twig', [
-                'url' => $result['url'],
-                'title' => $result['title'],
-                'description' => $result['description'],
-                'image' => $result['image'],
-                'siteName' => $result['siteName'],
-            ]),
-        };
+        $dto = $this->linkPreviewService->getPreviewDto($url);
+        if ($dto === null) {
+            $response = new Response('', 200);
+        } elseif ($dto->isDirectImage()) {
+            $response = $this->render('dashboard/_image_preview.html.twig', [
+                'url' => $dto->url,
+            ]);
+        } else {
+            $response = $this->render('dashboard/_link_preview.html.twig', [
+                'url' => $dto->url,
+                'title' => $dto->title,
+                'description' => $dto->description,
+                'image' => $dto->image,
+                'siteName' => $dto->siteName,
+            ]);
+        }
 
         // Configure public HTTP caching (both for browser and Souin reverse proxy)
         $response->setPublic();

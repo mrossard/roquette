@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Channel\CreateChannelDto;
+use App\Dto\Channel\UpdateChannelDto;
 use App\Entity\Channel;
-use App\Entity\GroupSubscription;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\Workspace;
@@ -17,7 +18,6 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
-use App\Service\UniqueSlugGenerator;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ChannelManager
@@ -37,57 +37,69 @@ class ChannelManager
         private readonly GroupSubscriptionManager $groupSubscriptionManager,
     ) {}
 
-    public function create(string $name, string $description, array $extra, User $currentUser): Channel
+    public function create(CreateChannelDto|string $dtoOrName, string|User $descriptionOrUser = '', array $extra = [], ?User $currentUser = null): Channel
     {
+        if ($dtoOrName instanceof CreateChannelDto) {
+            $dto = $dtoOrName;
+            $user = $descriptionOrUser instanceof User ? $descriptionOrUser : $currentUser;
+            if (!$user) {
+                throw new \InvalidArgumentException('A User is required to create a channel.');
+            }
+        } else {
+            $user = $currentUser ?? ($descriptionOrUser instanceof User ? $descriptionOrUser : null);
+            if (!$user) {
+                throw new \InvalidArgumentException('A User is required to create a channel.');
+            }
+            $dto = CreateChannelDto::fromNameDescriptionAndExtra(
+                (string) $dtoOrName,
+                is_string($descriptionOrUser) ? $descriptionOrUser : '',
+                $extra,
+            );
+        }
+
         $slug = $this->slugGenerator->generate(
-            $name,
+            $dto->name,
             'channel',
             fn(string $s) => $this->channelRepository->findOneBy(['slug' => $s]) !== null,
         );
 
         $channel = new Channel();
-        $channel->setName($name);
+        $channel->setName($dto->name);
         $channel->setSlug($slug);
-        $channel->setDescription($description);
-        $channel->setCreator($currentUser);
-        $channel->addMember($currentUser);
+        $channel->setDescription($dto->description);
+        $channel->setCreator($user);
+        $channel->addMember($user);
 
         // Workspace assignment
-        $workspace = $extra['workspace'] ?? null;
-        if ($workspace instanceof Workspace) {
-            if (!$this->workspaceManager->isUserMember($workspace, $currentUser)) {
+        if ($dto->workspace instanceof Workspace) {
+            if (!$this->workspaceManager->isUserMember($dto->workspace, $user)) {
                 throw new \InvalidArgumentException($this->translator->trans(
                     'Vous ne pouvez pas créer un canal dans cet espace de travail.',
                 ));
             }
 
-            $channel->setWorkspace($workspace);
+            $channel->setWorkspace($dto->workspace);
             $channel->setIsPrivate(false);
         }
 
-        $isPrivate = $extra['isPrivate'] ?? false;
-        if ($isPrivate) {
+        if ($dto->isPrivate) {
             $channel->setIsPrivate(true);
 
-            $groupIdentifier = $extra['groupIdentifier'] ?? '';
-            if ($groupIdentifier !== '') {
-                $isGroupChannel = $extra['isGroupChannel'] ?? false;
-                $groupSub = $this->groupSubscriptionManager->attachGroupSubscription($channel, $groupIdentifier, (bool) $isGroupChannel);
+            if ($dto->groupIdentifier !== '') {
+                $groupSub = $this->groupSubscriptionManager->attachGroupSubscription(
+                    $channel,
+                    $dto->groupIdentifier,
+                    $dto->isGroupChannel,
+                );
                 $this->entityManager->persist($groupSub);
             }
         }
 
-        if ($extra['isTodoList'] ?? false) {
+        if ($dto->isTodoList) {
             $channel->setIsTodoList(true);
         }
 
-        $retention = $extra['retentionMonths'] ?? null;
-        if ($retention !== null && $retention !== '') {
-            $retentionVal = (int) $retention;
-            $channel->setMessageRetentionMonths($retentionVal === 0 ? null : $retentionVal);
-        } else {
-            $channel->setMessageRetentionMonths(6);
-        }
+        $channel->setMessageRetentionMonths($dto->retentionMonths);
 
         $this->entityManager->persist($channel);
         $this->entityManager->flush();
@@ -96,7 +108,7 @@ class ChannelManager
             $this->kanbanManager->initializeDefaultColumns($channel);
         }
 
-        $this->auditLogger->log(AuditAction::CHANNEL_CREATE, $currentUser, [
+        $this->auditLogger->log(AuditAction::CHANNEL_CREATE, $user, [
             'channel_id' => $channel->getId(),
             'channel_name' => $channel->getName(),
             'slug' => $channel->getSlug(),
@@ -108,48 +120,64 @@ class ChannelManager
             $channel->getName(),
             $channel->getSlug(),
             $channel->isPrivate() ? 'yes' : 'no',
-            $currentUser->getUsername(),
+            $user->getUsername(),
         ));
 
         return $channel;
     }
 
-    public function update(Channel $channel, string $name, string $description, array $extra, User $currentUser): void
-    {
-        $isAdmin = $this->isCurrentUserAdmin() || $channel->isAdministrator($currentUser);
+    public function update(
+        Channel $channel,
+        UpdateChannelDto|string $dtoOrName,
+        string|User $descriptionOrUser = '',
+        array $extra = [],
+        ?User $currentUser = null,
+    ): void {
+        if ($dtoOrName instanceof UpdateChannelDto) {
+            $dto = $dtoOrName;
+            $user = $descriptionOrUser instanceof User ? $descriptionOrUser : $currentUser;
+            if (!$user) {
+                throw new \InvalidArgumentException('A User is required to update a channel.');
+            }
+        } else {
+            $user = $currentUser ?? ($descriptionOrUser instanceof User ? $descriptionOrUser : null);
+            if (!$user) {
+                throw new \InvalidArgumentException('A User is required to update a channel.');
+            }
+            $dto = UpdateChannelDto::fromNameDescriptionAndExtra(
+                (string) $dtoOrName,
+                is_string($descriptionOrUser) ? $descriptionOrUser : '',
+                $extra,
+            );
+        }
+
+        $isAdmin = $this->isCurrentUserAdmin() || $channel->isAdministrator($user);
         if (!$isAdmin) {
             throw new AccessDeniedHttpException($this->translator->trans(
                 'Vous n\'êtes pas autorisé à modifier les paramètres de ce canal.',
             ));
         }
 
-        if ($channel->getName() !== $name) {
+        if ($channel->getName() !== $dto->name) {
             $newSlug = $this->slugGenerator->generate(
-                $name,
+                $dto->name,
                 'channel',
                 fn(string $s) => ($existing = $this->channelRepository->findOneBy(['slug' => $s])) !== null && $existing->getId() !== $channel->getId(),
             );
             $channel->setSlug($newSlug);
-            $channel->setName($name);
+            $channel->setName($dto->name);
         }
 
-        $channel->setDescription($description);
+        $channel->setDescription($dto->description);
 
         if ($channel->isSubChannel()) {
-            $channel->setIsTodoList($extra['isTodoList'] ?? false);
+            $channel->setIsTodoList($dto->isTodoList);
         }
 
-        $retention = $extra['retentionMonths'] ?? null;
-        if ($retention !== null && $retention !== '') {
-            $retentionVal = (int) $retention;
-            $channel->setMessageRetentionMonths($retentionVal === 0 ? null : $retentionVal);
-        } else {
-            $channel->setMessageRetentionMonths(6);
-        }
+        $channel->setMessageRetentionMonths($dto->retentionMonths);
 
-        $adminIds = $extra['administratorIds'] ?? [];
         foreach ($channel->getAdministrators() as $admin) {
-            if (in_array((string) $admin->getId(), $adminIds, true)) {
+            if (in_array((string) $admin->getId(), array_map('strval', $dto->administratorIds), true)) {
                 continue;
             }
 
@@ -157,7 +185,7 @@ class ChannelManager
         }
 
         $userRepository = $this->entityManager->getRepository(User::class);
-        foreach ($adminIds as $adminId) {
+        foreach ($dto->administratorIds as $adminId) {
             $adminUser = $userRepository->find((int) $adminId);
             if ($adminUser && $adminUser !== $channel->getCreator()) {
                 if ($channel->getMembers()->contains($adminUser)) {

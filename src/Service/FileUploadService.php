@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\File\UploadedFileMetadata;
 use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -144,10 +145,9 @@ class FileUploadService
     /**
      * Uploads an UploadedFile to the default storage and returns file metadata.
      *
-     * @return array{fileName: string, filePath: string, fileSize: int, mimeType: string}
      * @throws \InvalidArgumentException if the file type or extension is not allowed
      */
-    public function upload(UploadedFile $file): array
+    public function upload(UploadedFile $file): UploadedFileMetadata
     {
         if (!$file->isValid()) {
             $this->logger->warning(sprintf(
@@ -269,12 +269,12 @@ class FileUploadService
             $mimeType,
         ));
 
-        return [
-            'fileName' => $fileName,
-            'filePath' => $newFilename,
-            'fileSize' => $fileSize,
-            'mimeType' => $mimeType,
-        ];
+        return new UploadedFileMetadata(
+            fileName: $fileName,
+            filePath: $newFilename,
+            fileSize: (int) $fileSize,
+            mimeType: (string) $mimeType,
+        );
     }
 
     /**
@@ -332,9 +332,9 @@ class FileUploadService
     public function uploadAndAttachToMessage(UploadedFile $file, \App\Entity\Message $message): void
     {
         $meta = $this->upload($file);
-        $message->setFileName($meta['fileName']);
-        $message->setFilePath($meta['filePath']);
-        $message->setFileSize($meta['fileSize']);
-        $message->setMimeType($meta['mimeType']);
+        $message->setFileName($meta->fileName);
+        $message->setFilePath($meta->filePath);
+        $message->setFileSize($meta->fileSize);
+        $message->setMimeType($meta->mimeType);
     }
 }

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
+use App\Dto\Channel\CreateChannelDto;
+use App\Dto\Channel\UpdateChannelDto;
 use App\Entity\Channel;
 use App\Entity\ChannelExport;
 use App\Entity\User;
@@ -113,16 +115,18 @@ final class ChannelActionController extends AbstractController
 
         try {
             $channel = $channelManager->create(
-                $name,
-                $description,
-                [
-                    'isPrivate' => $request->request->getBoolean('isPrivate', false),
-                    'groupIdentifier' => $request->request->get('groupIdentifier', ''),
-                    'isGroupChannel' => $request->request->getBoolean('isGroupChannel', false),
-                    'isTodoList' => $request->request->getBoolean('isTodoList', false),
-                    'retentionMonths' => $request->request->get('messageRetentionMonths'),
-                    'workspace' => $workspace,
-                ],
+                CreateChannelDto::fromNameDescriptionAndExtra(
+                    $name,
+                    $description,
+                    [
+                        'isPrivate' => $request->request->getBoolean('isPrivate', false),
+                        'groupIdentifier' => $request->request->get('groupIdentifier', ''),
+                        'isGroupChannel' => $request->request->getBoolean('isGroupChannel', false),
+                        'isTodoList' => $request->request->getBoolean('isTodoList', false),
+                        'retentionMonths' => $request->request->get('messageRetentionMonths'),
+                        'workspace' => $workspace,
+                    ],
+                ),
                 $currentUser,
             );
         } catch (\InvalidArgumentException $e) {
@@ -312,13 +316,15 @@ final class ChannelActionController extends AbstractController
         try {
             $channelManager->update(
                 $channel,
-                $name,
-                $description,
-                [
-                    'isTodoList' => $request->request->getBoolean('isTodoList', false),
-                    'retentionMonths' => $request->request->get('messageRetentionMonths'),
-                    'administratorIds' => $request->request->all('administrators'),
-                ],
+                UpdateChannelDto::fromNameDescriptionAndExtra(
+                    $name,
+                    $description,
+                    [
+                        'isTodoList' => $request->request->getBoolean('isTodoList', false),
+                        'retentionMonths' => $request->request->get('messageRetentionMonths'),
+                        'administratorIds' => $request->request->all('administrators'),
+                    ],
+                ),
                 $currentUser,
             );
         } catch (HttpExceptionInterface $e) {

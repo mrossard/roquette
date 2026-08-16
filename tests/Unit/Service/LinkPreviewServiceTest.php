@@ -325,4 +325,24 @@ class LinkPreviewServiceTest extends TestCase
         $result = $service->getCachedPreview('https://example.com');
         static::assertNull($result);
     }
+
+    #[Test]
+    public function testGetPreviewDtoDirectImage(): void
+    {
+        $cache = $this->createMock(CacheInterface::class);
+        $cache
+            ->method('get')
+            ->willReturnCallback(function ($key, $callback) {
+                $item = $this->createMock(ItemInterface::class);
+                return $callback($item);
+            });
+
+        $httpClient = $this->createMock(HttpClientInterface::class);
+        $service = new LinkPreviewService($cache, $httpClient);
+
+        $dto = $service->getPreviewDto('https://example.com/photo.png');
+        static::assertNotNull($dto);
+        static::assertTrue($dto->isDirectImage());
+        static::assertSame('https://example.com/photo.png', $dto->url);
+    }
 }

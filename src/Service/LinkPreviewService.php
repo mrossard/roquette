@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Link\LinkPreviewDto;
+use App\Service\Link\UrlSafetyValidator;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
@@ -11,25 +13,19 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class LinkPreviewService
 {
+    private readonly UrlSafetyValidator $urlSafetyValidator;
+
     public function __construct(
         private readonly CacheInterface $cache,
         private readonly HttpClientInterface $httpClient,
-    ) {}
+        ?UrlSafetyValidator $urlSafetyValidator = null,
+    ) {
+        $this->urlSafetyValidator = $urlSafetyValidator ?? new UrlSafetyValidator();
+    }
 
     private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'bmp', 'tiff', 'tif'];
 
     private const MAX_REDIRECTS = 3;
-
-    /**
-     * IPv4 ranges not covered by FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
-     * but that must never be fetched (SSRF protection).
-     */
-    private const EXTRA_BLOCKED_RANGES = [
-        ['100.64.0.0', '100.127.255.255'], // CGNAT
-        ['198.18.0.0', '198.19.255.255'],  // Benchmarking
-        ['192.0.0.0', '192.0.0.255'],      // IETF protocol assignments
-        ['0.0.0.0', '0.255.255.255'],      // "This network"
-    ];
 
     /**
      * Vérifie si l'URL pointe directement vers une image (extension ou Content-Type).
@@ -66,6 +62,29 @@ class LinkPreviewService
     }
 
     /**
+     * Retourne un DTO LinkPreviewDto typé, ou null en cas d'échec.
+     */
+    public function getPreviewDto(string $url): ?LinkPreviewDto
+    {
+        $preview = $this->getPreview($url);
+        if ($preview === null) {
+            return null;
+        }
+
+        if (($preview['type'] ?? '') === 'direct_image') {
+            return LinkPreviewDto::directImage((string) ($preview['url'] ?? $url));
+        }
+
+        return LinkPreviewDto::ogPreview(
+            url: (string) ($preview['url'] ?? $url),
+            title: $preview['title'] ?? null,
+            description: $preview['description'] ?? null,
+            image: $preview['image'] ?? null,
+            siteName: $preview['siteName'] ?? null,
+        );
+    }
+
+    /**
      * Obtient l'aperçu du lien (Open Graph) ou null s'il échoue.
      */
     public function getPreview(string $url): ?array
@@ -84,7 +103,7 @@ class LinkPreviewService
 
     private function fetchPreviewData(string $url, ItemInterface $item): ?array
     {
-        if (!$this->isSafeUrl($url)) {
+        if (!$this->urlSafetyValidator->isSafeUrl($url)) {
             $item->expiresAfter(300);
             return null;
         }
@@ -161,7 +180,7 @@ class LinkPreviewService
     {
         $current = $url;
         for ($hop = 0; $hop <= self::MAX_REDIRECTS; $hop++) {
-            if (!$this->isSafeUrl($current)) {
+            if (!$this->urlSafetyValidator->isSafeUrl($current)) {
                 return null;
             }
 
@@ -180,7 +199,7 @@ class LinkPreviewService
                         return null;
                     }
 
-                    $next = $this->resolveUrl($current, $location);
+                    $next = $this->urlSafetyValidator->resolveUrl($current, $location);
                     if ($next === null) {
                         return null;
                     }
@@ -196,164 +215,6 @@ class LinkPreviewService
         }
 
         return null;
-    }
-
-    /**
-     * Résout une URL de redirection, éventuellement relative, par rapport à l'URL courante.
-     */
-    private function resolveUrl(string $base, string $location): ?string
-    {
-        $location = trim($location);
-        if (preg_match('#^https?://#i', $location)) {
-            return $location;
-        }
-
-        $parsed = parse_url($base);
-        $scheme = $parsed['scheme'] ?? 'https';
-        $host = $parsed['host'] ?? null;
-        if ($host === null) {
-            return null;
-        }
-
-        $port = \array_key_exists('port', $parsed) && $parsed['port'] !== null ? ':' . $parsed['port'] : '';
-
-        if (str_starts_with($location, '//')) {
-            return $scheme . ':' . $location;
-        }
-
-        if (str_starts_with($location, '/')) {
-            return $scheme . '://' . $host . $port . $location;
-        }
-
-        $path = $parsed['path'] ?? '/';
-        $dir = str_replace('\\', '/', dirname($path));
-        if ($dir === '.' || $dir === '/') {
-            $dir = '';
-        }
-
-        return $scheme . '://' . $host . $port . $dir . '/' . $location;
-    }
-
-    /**
-     * Vérifie si l'URL est valide et sûre (évite SSRF).
-     */
-    private function isSafeUrl(string $url): bool
-    {
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            return false;
-        }
-
-        $parsed = parse_url($url);
-        if (!$parsed || ($parsed['scheme'] ?? null) === null || ($parsed['host'] ?? null) === null) {
-            return false;
-        }
-
-        $scheme = strtolower($parsed['scheme']);
-        if (!in_array($scheme, ['http', 'https'], true)) {
-            return false;
-        }
-
-        $host = $parsed['host'];
-        $cleanHost = $host;
-        if (str_starts_with($cleanHost, '[') && str_ends_with($cleanHost, ']')) {
-            $cleanHost = substr($cleanHost, 1, -1);
-        }
-
-        $ips = [];
-        if (filter_var($cleanHost, FILTER_VALIDATE_IP)) {
-            $ips[] = $cleanHost;
-        } else {
-            // Résolution DNS des enregistrements IPv4 (A)
-            $ipv4Records = dns_get_record($cleanHost, DNS_A);
-            if (is_array($ipv4Records)) {
-                foreach ($ipv4Records as $record) {
-                    if (($record['ip'] ?? null) === null) {
-                        continue;
-                    }
-
-                    $ips[] = $record['ip'];
-                }
-            }
-            // Résolution DNS des enregistrements IPv6 (AAAA)
-            $ipv6Records = dns_get_record($cleanHost, DNS_AAAA);
-            if (is_array($ipv6Records)) {
-                foreach ($ipv6Records as $record) {
-                    if (($record['ipv6'] ?? null) === null) {
-                        continue;
-                    }
-
-                    $ips[] = $record['ipv6'];
-                }
-            }
-
-            // Repli vers gethostbynamel si aucune IP n'a été résolue (ex. fichiers hosts locaux)
-            if ($ips === []) {
-                $fallbackIps = gethostbynamel($cleanHost);
-                if (is_array($fallbackIps)) {
-                    $ips = array_merge($ips, $fallbackIps);
-                }
-            }
-        }
-
-        if ($ips === []) {
-            return false;
-        }
-
-        foreach ($ips as $ip) {
-            if (!$this->isPublicIp($ip)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Retourne true si l'IP est publique (ni privée, ni réservée, ni dans les
-     * plages bloquées supplémentaires).
-     */
-    private function isPublicIp(string $ip): bool
-    {
-        // IPv4-mapped IPv6 (ex. ::ffff:127.0.0.1) — vérifie la partie IPv4.
-        $lower = strtolower($ip);
-        if (str_starts_with($lower, '::ffff:')) {
-            $v4 = substr($lower, 7);
-            if (filter_var($v4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-                return filter_var(
-                    $v4,
-                    FILTER_VALIDATE_IP,
-                    FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
-                ) !== false && !$this->isInExtraBlockedRange($v4);
-            }
-
-            return false;
-        }
-
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-            return false;
-        }
-
-        return !$this->isInExtraBlockedRange($ip);
-    }
-
-    private function isInExtraBlockedRange(string $ip): bool
-    {
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
-            return false;
-        }
-
-        $long = ip2long($ip);
-        if ($long === false) {
-            return false;
-        }
-
-        foreach (self::EXTRA_BLOCKED_RANGES as [$start, $end]) {
-            if ($long >= ip2long($start) && $long <= ip2long($end)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
