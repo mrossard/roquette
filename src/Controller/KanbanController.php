@@ -53,22 +53,7 @@ final class KanbanController extends AbstractController
         $this->authorizeChannelAccess($channel);
 
         $columns = $this->kanbanColumnRepository->findByChannelWithMessages($channel);
-
-        // Messages not assigned to any column (untriaged)
-        $untriagedMessages = $this->messageRepository->createQueryBuilder('m')
-            ->leftJoin('m.author', 'a')
-            ->addSelect('a')
-            ->leftJoin('m.assignedTo', 'at')
-            ->addSelect('at')
-            ->leftJoin('m.reactions', 'r')
-            ->addSelect('r')
-            ->where('m.channel = :channel')
-            ->andWhere('m.kanbanColumn IS NULL')
-            ->setParameter('channel', $channel)
-            ->orderBy('m.id', 'ASC')
-            ->getQuery()
-            ->getResult();
-
+        $untriagedMessages = $this->messageRepository->findUntriagedByChannel($channel);
         $members = $channel->getMembers()->toArray();
 
         if ($request->headers->has('HX-Request') && in_array($request->headers->get('HX-Target'), ['live-feed', 'kanban-board'], true)) {

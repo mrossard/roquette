@@ -533,5 +533,28 @@ class MessageRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    /**
+     * Finds messages not assigned to any Kanban column (untriaged) in a channel,
+     * eager loading author, assignedTo, and reactions.
+     *
+     * @return Message[]
+     */
+    public function findUntriagedByChannel(Channel $channel): array
+    {
+        return $this->createQueryBuilder('m')
+            ->leftJoin('m.author', 'a')
+            ->addSelect('a')
+            ->leftJoin('m.assignedTo', 'at')
+            ->addSelect('at')
+            ->leftJoin('m.reactions', 'r')
+            ->addSelect('r')
+            ->where('m.channel = :channel')
+            ->andWhere('m.kanbanColumn IS NULL')
+            ->setParameter('channel', $channel)
+            ->orderBy('m.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
 
