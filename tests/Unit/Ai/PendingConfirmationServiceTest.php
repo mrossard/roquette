@@ -186,4 +186,79 @@ class PendingConfirmationServiceTest extends TestCase
         static::assertTrue($fakeTool->executed);
         static::assertNull($service->getPendingConfirmation($user, 'general'));
     }
+
+    public function testExecuteConfirmationUpdatesRobotDmMessageInDatabase(): void
+    {
+        $user = new User();
+        $user->setUsername('alice');
+        $ref = new \ReflectionProperty(User::class, 'id');
+        $ref->setValue($user, 42);
+
+        $robotUser = new User();
+        $robotUser->setUsername(User::ROBOT_USERNAME);
+
+        $channel = new \App\Entity\Channel();
+        $channel->setSlug('dm-' . User::ROBOT_USERNAME . '-alice');
+
+        $robotMsg = new \App\Entity\Message();
+        $robotMsg->setAuthor($robotUser);
+        $robotMsg->setChannel($channel);
+        $robotMsg->setContent('Veuillez confirmer cette action en cliquant sur le bouton de confirmation...');
+
+        $payload = [
+            'tool' => 'confirm_tool',
+            'args' => ['channelSlug' => 'general'],
+            'uid' => 42,
+            'channelSlug' => $channel->getSlug(),
+            'helpMessageId' => 'help-456',
+        ];
+        $token = $this->signer->sign($payload);
+
+        $fakeTool = new ConfirmationFakeTool();
+        $toolRegistry = new ToolRegistry([$fakeTool]);
+
+        $hub = $this->createStub(HubInterface::class);
+        $twig = $this->createStub(Environment::class);
+        $formatter = $this->createStub(MessageFormatter::class);
+
+        $limiter = $this->createStub(LimiterInterface::class);
+        $rateLimit = $this->createStub(RateLimit::class);
+        $rateLimit->method('isAccepted')->willReturn(true);
+        $limiter->method('consume')->willReturn($rateLimit);
+
+        $rateLimiterFactory = $this->createStub(RateLimiterFactoryInterface::class);
+        $rateLimiterFactory->method('create')->willReturn($limiter);
+
+        $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('flush');
+
+        $channelRepo = $this->createMock(\App\Repository\ChannelRepository::class);
+        $channelRepo->expects($this->once())->method('findOneBy')->with(['slug' => $channel->getSlug()])->willReturn($channel);
+
+        $messageRepo = $this->createMock(\App\Repository\MessageRepository::class);
+        $messageRepo->expects($this->once())->method('findLatestInChannel')->with($channel, 5)->willReturn([$robotMsg]);
+
+        $userRepo = $this->createStub(\App\Repository\UserRepository::class);
+
+        $service = new PendingConfirmationService(
+            $this->signer,
+            $toolRegistry,
+            $hub,
+            $twig,
+            $formatter,
+            new ArrayAdapter(),
+            $rateLimiterFactory,
+            'roquette',
+            null,
+            $entityManager,
+            $channelRepo,
+            $messageRepo,
+            $userRepo,
+        );
+
+        $result = $service->executeConfirmation($token, $user);
+
+        static::assertTrue($result);
+        static::assertSame('Side-effect done', $robotMsg->getContent());
+    }
 }

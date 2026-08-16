@@ -95,27 +95,37 @@ class LlmQueryHandlerTest extends TestCase
         $toolRegistry = $deps['toolRegistry'] ?? new ToolRegistry([]);
         $toolRunner = $deps['toolRunner'] ?? new ToolRunner($deps['llmService'], $toolRegistry);
 
+        $helpPromptBuilder = new \App\Ai\HelpPromptBuilder(
+            $documentContextBuilder,
+            $deps['channelRepository'],
+            $deps['messageRepository'],
+            $deps['memoryMessages'],
+        );
+        $batchSummarizer = new \App\Ai\BatchSummarizer($deps['llmService']);
+        $streamPublisher = new \App\Ai\HelpStreamPublisher(
+            $deps['hub'],
+            $deps['messageFormatter'],
+            $deps['twig'],
+            'roquette',
+        );
+
         $handler = new LlmQueryHandler(
             userRepository: $deps['userRepository'],
             channelRepository: $deps['channelRepository'],
-            messageRepository: $deps['messageRepository'],
-            llmService: $deps['llmService'],
-            messageFormatter: $deps['messageFormatter'],
-            hub: $deps['hub'],
-            entityManager: $deps['entityManager'],
-            mercureTopicPrefix: 'roquette',
-            logger: $deps['logger'],
-            twig: $deps['twig'],
-            toolRegistry: $toolRegistry,
-            toolRunner: $toolRunner,
             workspaceRepository: $deps['workspaceRepository'],
+            entityManager: $deps['entityManager'],
+            llmService: $deps['llmService'],
+            logger: $deps['logger'],
             channelResolver: $channelResolver,
             intentClassifier: $intentClassifier,
             summaryBuilder: $summaryBuilder,
-            documentContextBuilder: $documentContextBuilder,
+            helpPromptBuilder: $helpPromptBuilder,
+            batchSummarizer: $batchSummarizer,
+            streamPublisher: $streamPublisher,
+            toolRegistry: $toolRegistry,
+            toolRunner: $toolRunner,
             toolActionSigner: $deps['toolActionSigner'],
             toolsEnabled: $deps['toolsEnabled'],
-            memoryMessages: $deps['memoryMessages'],
         );
 
         return [$handler, $deps];

@@ -1,0 +1,110 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Unit\Ai;
+
+use App\Ai\HelpStreamPublisher;
+use App\Entity\User;
+use App\Service\MessageFormatter;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Update;
+use Twig\Environment;
+
+class HelpStreamPublisherTest extends TestCase
+{
+    public function testGetPersonalTopic(): void
+    {
+        $hub = $this->createStub(HubInterface::class);
+        $formatter = $this->createStub(MessageFormatter::class);
+        $twig = $this->createStub(Environment::class);
+
+        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');
+
+        $user = new User();
+        $user->setUsername('alice');
+
+        self::assertSame('roquette/users/alice', $publisher->getPersonalTopic($user));
+    }
+
+    public function testPublishStatusFormatsMarkdownAndPublishesUpdate(): void
+    {
+        $hub = $this->createMock(HubInterface::class);
+        $hub->expects($this->once())
+            ->method('publish')
+            ->with($this->callback(static function (Update $update): bool {
+                return $update->getTopics() === ['roquette/users/alice']
+                    && $update->getType() === 'help_stream_update';
+            }));
+
+        $formatter = $this->createMock(MessageFormatter::class);
+        $formatter->expects($this->once())
+            ->method('format')
+            ->with('Traitement en cours... ⏳')
+            ->willReturn('<p>Traitement en cours... ⏳</p>');
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects($this->once())
+            ->method('render')
+            ->with('dashboard/_help_message_update.html.twig', $this->callback(static function (array $context): bool {
+                return ($context['helpMessageId'] ?? null) === 'msg-123'
+                    && ($context['html'] ?? null) === '<p>Traitement en cours... ⏳</p>'
+                    && ($context['channelSlug'] ?? null) === 'general';
+            }))
+            ->willReturn('<div>rendered</div>');
+
+        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');
+        $publisher->publishStatus('roquette/users/alice', 'msg-123', 'Traitement en cours... ⏳', 'general');
+    }
+
+    public function testPublishStreamTextIncludesConfirmationWhenTokenPresent(): void
+    {
+        $hub = $this->createMock(HubInterface::class);
+        $hub->expects($this->once())->method('publish');
+
+        $formatter = $this->createStub(MessageFormatter::class);
+        $formatter->method('format')->willReturn('<p>Voulez-vous confirmer ?</p>');
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects($this->exactly(2))
+            ->method('render')
+            ->willReturnCallback(static function (string $template, array $context = []): string {
+                if ($template === 'dashboard/_tool_confirmation.html.twig') {
+                    return '<button>Confirmer</button>';
+                }
+                if ($template === 'dashboard/_help_message_update.html.twig') {
+                    return '<div>full rendered</div>';
+                }
+                return '';
+            });
+
+        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');
+        $publisher->publishStreamText(
+            'roquette/users/alice',
+            'msg-123',
+            '',
+            'Voulez-vous confirmer ?',
+            'general',
+            'token-xyz',
+        );
+    }
+
+    public function testPublishErrorPublishesStandardErrorMessage(): void
+    {
+        $hub = $this->createMock(HubInterface::class);
+        $hub->expects($this->once())->method('publish');
+
+        $formatter = $this->createStub(MessageFormatter::class);
+        $twig = $this->createMock(Environment::class);
+        $twig->expects($this->once())
+            ->method('render')
+            ->with('dashboard/_help_message_update.html.twig', $this->callback(static function (array $context): bool {
+                return str_contains((string) ($context['html'] ?? ''), 'Désolé, une erreur est survenue');
+            }))
+            ->willReturn('<div>error rendered</div>');
+
+        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');
+        $publisher->publishError('roquette/users/alice', 'msg-123', 'general');
+    }
+}
