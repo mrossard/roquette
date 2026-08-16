@@ -10,13 +10,12 @@ use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
-use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
 use App\Repository\WorkspaceRepository;
 use App\Service\ChannelManager;
 use App\Service\MercurePublisher;
 use App\Service\ReadTrackingService;
-use App\Service\WorkspaceManager;
+use App\Service\SidebarDataProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -37,6 +36,7 @@ final class ChannelController extends AbstractController
         private readonly CacheInterface $cache,
         private readonly TranslatorInterface $translator,
         private readonly ChannelManager $channelManager,
+        private readonly SidebarDataProvider $sidebarDataProvider,
     ) {}
 
     #[Route('/channels/{slug}', name: 'app_channel', requirements: [
@@ -47,17 +47,14 @@ final class ChannelController extends AbstractController
         Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
-        InvitationRepository $invitationRepository,
-        WorkspaceRepository $workspaceRepository,
         EntityManagerInterface $entityManager,
-        WorkspaceManager $workspaceManager,
         \App\Service\TypingIndicatorService $typingIndicatorService,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channels = $channelRepository->findAllForUser($currentUser);
-        $workspaces = $workspaceRepository->findAllForUser($currentUser);
+        $sidebarData = $this->sidebarDataProvider->getSidebarData($currentUser);
+        $channels = $sidebarData['channels'];
 
         $activeChannel = null;
         foreach ($channels as $channel) {
@@ -108,8 +105,6 @@ final class ChannelController extends AbstractController
             }
         }
 
-        $this->readTrackingService->ensureUserChannelReads($currentUser, $channels);
-
         $messages = [];
         $firstUnreadMessageId = null;
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
@@ -139,11 +134,7 @@ final class ChannelController extends AbstractController
             $this->readTrackingService->markChannelAsRead($currentUser, $activeChannel);
         }
 
-        $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
-        $workspaceUnreadCounts = $this->computeWorkspaceUnreadCounts($channels, $unreadCounts);
-
-        $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
-
+        $unreadCounts = $sidebarData['unreadCounts'];
         $notificationsEnabled = null;
         if ($isMember) {
             $activeUnread = $unreadCounts[$activeChannel->getId()] ?? null;
@@ -155,37 +146,24 @@ final class ChannelController extends AbstractController
 
         $typingUsers = $this->getTypingUsers($activeChannel, $currentUser, $isMember, $typingIndicatorService);
 
-        $subChannelsByParent = $this->buildSubChannelsByParent($channels);
-
         $messageIds = array_map(static fn(Message $m) => $m->getId(), $messages);
         $replyCounts = $messageRepository->findReplyCounts($messageIds);
         $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($activeChannel);
-        $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(
-            static fn(Channel $c) => $c->getId(),
-            $channels,
-        ));
         $savedMessageIds = $messageRepository->findSavedMessageIdsForUser($currentUser);
 
-        return $this->render('dashboard/index.html.twig', [
-            'channels' => $channels,
+        return $this->render('dashboard/index.html.twig', array_merge([
             'activeChannel' => $activeChannel,
             'messages' => $messages,
             'savedMessageIds' => $savedMessageIds,
             'topic_url' => $this->getChannelTopicUrl($activeChannel),
-            'unreadCounts' => $unreadCounts,
             'firstUnreadMessageId' => $firstUnreadMessageId,
             'usersToInvite' => [],
-            'pendingInvitations' => $pendingInvitations,
             'isMember' => $isMember,
             'notificationsEnabled' => $notificationsEnabled,
             'typingUsers' => $typingUsers,
-            'subChannelsByParent' => $subChannelsByParent,
             'replyCounts' => $replyCounts,
             'subchannelByParentMessageId' => $subchannelByParentMessageId,
-            'lastMessages' => $lastMessages,
-            'workspaces' => $workspaces,
-            'workspaceUnreadCounts' => $workspaceUnreadCounts,
-        ]);
+        ], $sidebarData));
     }
 
     #[Route('/channels/{slug}/more', name: 'app_channel_load_more', methods: ['GET'])]
@@ -299,8 +277,9 @@ final class ChannelController extends AbstractController
         $currentUser = $this->getUser();
 
         $query = trim($request->query->get('q', ''));
-        $channels = $channelRepository->findAllForUser($currentUser);
-        $workspaces = $workspaceRepository->findAllForUser($currentUser);
+        $sidebarData = $this->sidebarDataProvider->getSidebarData($currentUser);
+        $channels = $sidebarData['channels'];
+        $workspaces = $sidebarData['workspaces'];
 
         $currentUrl = $request->headers->get('HX-Current-URL');
         $activeChannel = null;
@@ -351,7 +330,7 @@ final class ChannelController extends AbstractController
             );
         }
 
-        $subChannelsByParent = $this->buildSubChannelsByParent($channels);
+        $subChannelsByParent = $this->channelManager->buildSubChannelsByParent($channels);
 
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
@@ -373,35 +352,6 @@ final class ChannelController extends AbstractController
     private function getChannelTopicUrl(Channel $channel): string
     {
         return $this->mercurePublisher->getChannelTopic($channel);
-    }
-
-    /** @param Channel[] $channels */
-    private function buildSubChannelsByParent(array $channels): array
-    {
-        return $this->channelManager->buildSubChannelsByParent($channels);
-    }
-
-    /**
-     * @param Channel[] $channels
-     * @param array<int, array{count: int, hasMention: bool}> $unreadCounts
-     * @return array<int, int>
-     */
-    private function computeWorkspaceUnreadCounts(array $channels, array $unreadCounts): array
-    {
-        $counts = [];
-        foreach ($channels as $ch) {
-            $ws = $ch->getWorkspace();
-            if (!$ws) {
-                continue;
-            }
-            $wsId = $ws->getId();
-            if (!array_key_exists($wsId, $counts)) {
-                $counts[$wsId] = 0;
-            }
-            $counts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
-        }
-
-        return $counts;
     }
 
     private function getTypingUsers(?Channel $channel, User $currentUser, bool $isMember, \App\Service\TypingIndicatorService $typingIndicatorService): array

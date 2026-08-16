@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Channel;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
@@ -21,6 +22,7 @@ class SidebarDataProvider
         private readonly MessageRepository $messageRepository,
         private readonly ChannelManager $channelManager,
         private readonly EntityManagerInterface $entityManager,
+        private readonly ReadTrackingService $readTrackingService,
     ) {}
 
     /**
@@ -29,25 +31,15 @@ class SidebarDataProvider
     public function getSidebarData(User $user): array
     {
         $channels = $this->channelRepository->findAllForUser($user);
+        $this->readTrackingService->ensureUserChannelReads($user, $channels);
+
         $workspaces = $this->workspaceRepository->findAllForUser($user);
         $pendingInvitations = $this->invitationRepository->findPendingForUser($user);
 
         $ucrRepo = $this->entityManager->getRepository(UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($user);
 
-        $workspaceUnreadCounts = [];
-        foreach ($channels as $ch) {
-            $ws = $ch->getWorkspace();
-            if (!$ws) {
-                continue;
-            }
-            $wsId = $ws->getId();
-            if (!array_key_exists($wsId, $workspaceUnreadCounts)) {
-                $workspaceUnreadCounts[$wsId] = 0;
-            }
-            $workspaceUnreadCounts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
-        }
-
+        $workspaceUnreadCounts = $this->computeWorkspaceUnreadCounts($channels, $unreadCounts);
         $subChannelsByParent = $this->channelManager->buildSubChannelsByParent($channels);
 
         $channelIds = array_map(static fn($c) => $c->getId(), $channels);
@@ -62,5 +54,28 @@ class SidebarDataProvider
             'subChannelsByParent' => $subChannelsByParent,
             'lastMessages' => $lastMessages,
         ];
+    }
+
+    /**
+     * @param Channel[] $channels
+     * @param array<int, array{count: int, hasMention: bool, notificationsEnabled?: bool}> $unreadCounts
+     * @return array<int, int>
+     */
+    public function computeWorkspaceUnreadCounts(array $channels, array $unreadCounts): array
+    {
+        $workspaceUnreadCounts = [];
+        foreach ($channels as $ch) {
+            $ws = $ch->getWorkspace();
+            if (!$ws) {
+                continue;
+            }
+            $wsId = $ws->getId();
+            if (!array_key_exists($wsId, $workspaceUnreadCounts)) {
+                $workspaceUnreadCounts[$wsId] = 0;
+            }
+            $workspaceUnreadCounts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
+        }
+
+        return $workspaceUnreadCounts;
     }
 }

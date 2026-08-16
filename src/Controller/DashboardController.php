@@ -4,17 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\Channel;
-use App\Entity\User;
-use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
-use App\Repository\InvitationRepository;
-use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use App\Repository\WorkspaceRepository;
-use App\Service\ReadTrackingService;
-use App\Service\WorkspaceManager;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,6 +30,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 final class DashboardController extends AbstractController
 {
+    public function __construct(
+        private readonly \App\Service\SidebarDataProvider $sidebarDataProvider,
+    ) {}
+
     // -------------------------------------------------------------------------
     // Root redirect
     // -------------------------------------------------------------------------
@@ -82,37 +78,13 @@ final class DashboardController extends AbstractController
     public function directory(
         Request $request,
         ChannelRepository $channelRepository,
-        MessageRepository $messageRepository,
         UserRepository $userRepository,
-        InvitationRepository $invitationRepository,
         WorkspaceRepository $workspaceRepository,
-        WorkspaceManager $workspaceManager,
-        EntityManagerInterface $entityManager,
-        ReadTrackingService $readTrackingService,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $channels = $channelRepository->findAllForUser($currentUser);
-
-        $readTrackingService->ensureUserChannelReads($currentUser, $channels);
-
-        $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
-        $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
-
-        // Aggregate unread counts per workspace
-        $workspaceUnreadCounts = [];
-        foreach ($channels as $ch) {
-            $ws = $ch->getWorkspace();
-            if (!$ws) {
-                continue;
-            }
-            $wsId = $ws->getId();
-            if (!array_key_exists($wsId, $workspaceUnreadCounts)) {
-                $workspaceUnreadCounts[$wsId] = 0;
-            }
-            $workspaceUnreadCounts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
-        }
+        $sidebarData = $this->sidebarDataProvider->getSidebarData($currentUser);
 
         // Get active workspace
         $session = $request->getSession();
@@ -128,43 +100,19 @@ final class DashboardController extends AbstractController
             }
         }
 
-        $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
         $allPublicChannels = $currentWorkspace
             ? $channelRepository->findPublicForWorkspace($currentWorkspace)
             : [];
-        $workspaces = $workspaceRepository->findAllForUser($currentUser);
         $allUsers = $currentWorkspace
             ? $userRepository->findMembersForWorkspace($currentWorkspace, $currentUser)
             : [];
 
-        $subChannelsByParent = [];
-        foreach ($channels as $ch) {
-            if (!($ch->isSubChannel() && $ch->getParentMessage())) {
-                continue;
-            }
-
-            $parentId = $ch->getParentMessage()->getChannel()->getId();
-            $subChannelsByParent[$parentId][] = $ch;
-        }
-
-        $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(
-            static fn(Channel $c) => $c->getId(),
-            $channels,
-        ));
-
-        return $this->render('dashboard/directory.html.twig', [
-            'channels' => $channels,
+        return $this->render('dashboard/directory.html.twig', array_merge([
             'allPublicChannels' => $allPublicChannels,
-            'unreadCounts' => $unreadCounts,
-            'pendingInvitations' => $pendingInvitations,
             'activeChannel' => null,
             'allUsers' => $allUsers,
-            'subChannelsByParent' => $subChannelsByParent,
-            'lastMessages' => $lastMessages,
-            'workspaces' => $workspaces,
-            'workspaceUnreadCounts' => $workspaceUnreadCounts,
             'currentWorkspace' => $currentWorkspace,
-        ]);
+        ], $sidebarData));
     }
 
     #[Route('/channels/directory/panel/{type}', name: 'app_directory_panel')]

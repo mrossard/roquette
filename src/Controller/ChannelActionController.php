@@ -8,25 +8,22 @@ use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\Channel;
 use App\Entity\ChannelExport;
 use App\Entity\User;
-use App\Entity\UserChannelRead;
 use App\Enum\AuditAction;
 use App\Message\GenerateExportMessage;
+use App\Message\LlmQueryMessage;
 use App\Repository\ChannelRepository;
-use App\Repository\InvitationRepository;
-use App\Repository\MessageRepository;
 use App\Repository\WorkspaceRepository;
 use App\Service\AuditLoggerService;
 use App\Service\ChannelManager;
 use App\Service\FileUploadService;
+use App\Service\SidebarDataProvider;
 use App\Service\WorkspaceManager;
-
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use App\Message\LlmQueryMessage;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -43,6 +40,7 @@ final class ChannelActionController extends AbstractController
         private readonly TranslatorInterface $translator,
         private readonly ChannelManager $channelManager,
         private readonly WorkspaceManager $workspaceManager,
+        private readonly SidebarDataProvider $sidebarDataProvider,
     ) {}
 
     #[Route('/channels/{slug}/summarize', name: 'app_channel_summarize_modal', methods: ['POST'])]
@@ -199,9 +197,6 @@ final class ChannelActionController extends AbstractController
         string $slug,
         Request $request,
         ChannelRepository $channelRepository,
-        InvitationRepository $invitationRepository,
-        MessageRepository $messageRepository,
-        WorkspaceRepository $workspaceRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
@@ -221,11 +216,8 @@ final class ChannelActionController extends AbstractController
         $entityManager->flush();
 
         if ($request->headers->has('HX-Request')) {
-            $channels = $channelRepository->findAllForUser($currentUser);
-            $workspaces = $workspaceRepository->findAllForUser($currentUser);
-            $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
-            $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
-            $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
+            $sidebarData = $this->sidebarDataProvider->getSidebarData($currentUser);
+            $channels = $sidebarData['channels'];
 
             $currentUrl = $request->headers->get('HX-Current-URL');
             $activeChannel = null;
@@ -236,24 +228,9 @@ final class ChannelActionController extends AbstractController
                 }
             }
 
-            $subChannelsByParent = $this->buildSubChannelsByParent($channels);
-            $lastMessages = $messageRepository->findLastMessagesForChannels(array_map(
-                static fn(Channel $c) => $c->getId(),
-                $channels,
-            ));
-
-            $workspaceUnreadCounts = $this->computeWorkspaceUnreadCounts($channels, $unreadCounts);
-
-            $sidebarHtml = $this->renderView('dashboard/_sidebar.html.twig', [
-                'channels' => $channels,
-                'unreadCounts' => $unreadCounts,
+            $sidebarHtml = $this->renderView('dashboard/_sidebar.html.twig', array_merge([
                 'activeChannel' => $activeChannel,
-                'pendingInvitations' => $pendingInvitations,
-                'subChannelsByParent' => $subChannelsByParent,
-                'lastMessages' => $lastMessages,
-                'workspaces' => $workspaces,
-                'workspaceUnreadCounts' => $workspaceUnreadCounts,
-            ]);
+            ], $sidebarData));
 
             $sidebarHtml = preg_replace(
                 '/<section class="card glass-panel sidebar-panel" id="sidebar-panel">/',
@@ -423,34 +400,5 @@ final class ChannelActionController extends AbstractController
                 ),
             ],
         );
-    }
-
-    /** @param Channel[] $channels */
-    private function buildSubChannelsByParent(array $channels): array
-    {
-        return $this->channelManager->buildSubChannelsByParent($channels);
-    }
-
-    /**
-     * @param Channel[] $channels
-     * @param array<int, array{count: int, hasMention: bool}> $unreadCounts
-     * @return array<int, int>
-     */
-    private function computeWorkspaceUnreadCounts(array $channels, array $unreadCounts): array
-    {
-        $counts = [];
-        foreach ($channels as $ch) {
-            $ws = $ch->getWorkspace();
-            if (!$ws) {
-                continue;
-            }
-            $wsId = $ws->getId();
-            if (!array_key_exists($wsId, $counts)) {
-                $counts[$wsId] = 0;
-            }
-            $counts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
-        }
-
-        return $counts;
     }
 }

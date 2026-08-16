@@ -6,16 +6,13 @@ namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\Channel;
-
 use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Repository\KanbanColumnRepository;
 use App\Repository\MessageRepository;
-use App\Repository\InvitationRepository;
 use App\Repository\UserRepository;
-use App\Repository\WorkspaceRepository;
-use App\Service\ChannelManager;
 use App\Service\KanbanManager;
+use App\Service\SidebarDataProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -37,15 +34,13 @@ final class KanbanController extends AbstractController
         private readonly ChannelRepository $channelRepository,
         private readonly UserRepository $userRepository,
         private readonly EntityManagerInterface $entityManager,
+        private readonly SidebarDataProvider $sidebarDataProvider,
     ) {}
 
     #[Route('/channels/{slug}/kanban', name: 'app_channel_kanban', methods: ['GET'])]
     public function kanbanBoard(
         string $slug,
         Request $request,
-        \App\Repository\InvitationRepository $invitationRepository,
-        \App\Repository\WorkspaceRepository $workspaceRepository,
-        \App\Service\ChannelManager $channelManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -86,40 +81,28 @@ final class KanbanController extends AbstractController
         }
 
         // Full page render: reuse channel controller data
-        $channels = $this->channelRepository->findAllForUser($currentUser);
-        $workspaces = $workspaceRepository->findAllForUser($currentUser);
-        $ucrRepo = $this->entityManager->getRepository(\App\Entity\UserChannelRead::class);
-        $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
-        $pendingInvitations = $invitationRepository->findPendingForUser($currentUser);
+        $sidebarData = $this->sidebarDataProvider->getSidebarData($currentUser);
+        $unreadCounts = $sidebarData['unreadCounts'];
+        $activeRead = $unreadCounts[$channel->getId()] ?? null;
+        $notificationsEnabled = $activeRead['notificationsEnabled'] ?? $channel->isDm();
 
-        $activeRead = $ucrRepo->findOneBy(['user' => $currentUser, 'channel' => $channel]);
-        $notificationsEnabled = $activeRead ? $activeRead->isNotificationsEnabled() : $channel->isDm();
-
-        $subChannelsByParent = $channelManager->buildSubChannelsByParent($channels);
-
-        return $this->render('dashboard/index.html.twig', [
-            'channels' => $channels,
+        return $this->render('dashboard/index.html.twig', array_merge([
             'activeChannel' => $channel,
             'messages' => [],
             'topic_url' => '',
-            'unreadCounts' => $unreadCounts,
             'firstUnreadMessageId' => null,
             'usersToInvite' => [],
-            'pendingInvitations' => $pendingInvitations,
             'isMember' => true,
             'notificationsEnabled' => $notificationsEnabled,
             'typingUsers' => [],
-            'subChannelsByParent' => $subChannelsByParent,
             'replyCounts' => [],
             'subchannelByParentMessageId' => [],
             'lastMessages' => [],
-            'workspaces' => $workspaces,
-            'workspaceUnreadCounts' => $this->computeWorkspaceUnreadCounts($channels, $unreadCounts),
             'kanbanView' => true,
             'kanbanColumns' => $columns,
             'untriagedMessages' => $untriagedMessages,
             'kanbanMembers' => $members,
-        ]);
+        ], $sidebarData));
     }
 
     #[Route('/kanban/columns', name: 'app_kanban_column_create', methods: ['POST'])]
@@ -408,28 +391,5 @@ final class KanbanController extends AbstractController
             'message' => $message,
             'channel' => $message->getChannel(),
         ]);
-    }
-
-    /**
-     * @param Channel[] $channels
-     * @param array<int, array{count: int, hasMention: bool}> $unreadCounts
-     * @return array<int, int>
-     */
-    private function computeWorkspaceUnreadCounts(array $channels, array $unreadCounts): array
-    {
-        $counts = [];
-        foreach ($channels as $ch) {
-            $ws = $ch->getWorkspace();
-            if (!$ws) {
-                continue;
-            }
-            $wsId = $ws->getId();
-            if (!array_key_exists($wsId, $counts)) {
-                $counts[$wsId] = 0;
-            }
-            $counts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
-        }
-
-        return $counts;
     }
 }

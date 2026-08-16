@@ -26,8 +26,8 @@ final class ReactionController extends AbstractController
     use ChannelAccessTrait;
 
     public function __construct(
-        private TranslatorInterface $translator,
-        private KanbanManager $kanbanManager,
+        private readonly TranslatorInterface $translator,
+        private readonly KanbanManager $kanbanManager,
         private readonly MessageRenderer $messageRenderer,
         private readonly SidebarDataProvider $sidebarDataProvider,
     ) {}
