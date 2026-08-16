@@ -13,10 +13,6 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<Message>
  */
-
-/**
- * @extends ServiceEntityRepository<Message>
- */
 class MessageRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -54,20 +50,22 @@ class MessageRepository extends ServiceEntityRepository
     public function searchInChannel(Channel $channel, string $query, int $limit = 50): array
     {
         $conn = $this->getEntityManager()->getConnection();
-        $ids = $conn->fetchFirstColumn('SELECT m.id FROM "message" m
-             WHERE m.channel_id = :channelId
-               AND LOWER(m.content) LIKE :query
-             ORDER BY m.created_at DESC
-             LIMIT ' . max(1, min($limit, 100)), [
-            'channelId' => $channel->getId(),
-            'query' => '%' . strtolower($query) . '%',
-        ]);
+        $idQb = $conn
+            ->createQueryBuilder()
+            ->select('m.id')
+            ->from('"message"', 'm')
+            ->where('m.channel_id = :channelId')
+            ->andWhere('LOWER(m.content) LIKE :query')
+            ->orderBy('m.created_at', 'DESC')
+            ->setMaxResults(max(1, min($limit, 100)))
+            ->setParameter('channelId', $channel->getId())
+            ->setParameter('query', '%' . mb_strtolower($query, 'UTF-8') . '%');
+
+        $ids = array_map('intval', $idQb->fetchFirstColumn());
 
         if ($ids === []) {
             return [];
         }
-
-        $ids = array_map('intval', $ids);
 
         return $this
             ->createQueryBuilder('m')
@@ -173,58 +171,55 @@ class MessageRepository extends ServiceEntityRepository
         ?bool $hasFile = null,
         ?string $fileType = null,
         ?string $textQuery = null,
+        int $limit = 30,
     ): array {
         $conn = $this->getEntityManager()->getConnection();
+        $qb = $conn
+            ->createQueryBuilder()
+            ->select('m.id')
+            ->from('"message"', 'm')
+            ->join('m', '"user"', 'u', 'u.id = m.author_id')
+            ->join('m', '"channel"', 'ch', 'ch.id = m.channel_id')
+            ->leftJoin('ch', 'channel_user', 'cu', 'cu.channel_id = ch.id AND cu.user_id = :currentUserId')
+            ->where('(ch.is_private = false OR cu.user_id IS NOT NULL)')
+            ->setParameter('currentUserId', $currentUser->getId())
+            ->orderBy('m.created_at', 'DESC')
+            ->setMaxResults(max(1, min($limit, 100)));
 
-        $conditions = ['(ch.is_private = false OR cu.user_id IS NOT NULL)'];
-        $params = ['currentUserId' => $currentUser->getId()];
-
-        if ($authorUsername) {
-            $conditions[] = '(LOWER(u.username) = :authorUsername OR LOWER(u.display_name) = :authorUsername)';
-            $params['authorUsername'] = strtolower($authorUsername);
+        if ($authorUsername !== null && $authorUsername !== '') {
+            $qb->andWhere('(LOWER(u.username) = :authorUsername OR LOWER(u.display_name) = :authorUsername)')
+                ->setParameter('authorUsername', mb_strtolower($authorUsername, 'UTF-8'));
         }
 
-        if ($channelName) {
-            $conditions[] = '(LOWER(ch.name) = :channelName OR LOWER(ch.slug) = :channelName)';
-            $params['channelName'] = strtolower($channelName);
+        if ($channelName !== null && $channelName !== '') {
+            $qb->andWhere('(LOWER(ch.name) = :channelName OR LOWER(ch.slug) = :channelName)')
+                ->setParameter('channelName', mb_strtolower($channelName, 'UTF-8'));
         }
 
         if ($hasFile) {
-            $conditions[] = 'm.file_name IS NOT NULL';
+            $qb->andWhere('m.file_name IS NOT NULL');
         }
 
-        if ($fileType) {
+        if ($fileType !== null && $fileType !== '') {
             if ($fileType === 'pdf') {
-                $conditions[] = 'm.mime_type = :fileType';
-                $params['fileType'] = 'application/pdf';
+                $qb->andWhere('m.mime_type = :fileType')
+                    ->setParameter('fileType', 'application/pdf');
             } else {
-                $conditions[] = 'm.mime_type LIKE :fileType';
-                $params['fileType'] = $fileType . '/%';
+                $qb->andWhere('m.mime_type LIKE :fileType')
+                    ->setParameter('fileType', $fileType . '/%');
             }
         }
 
-        $orderBy = 'm.created_at DESC';
-        if ($textQuery && trim($textQuery) !== '') {
-            $conditions[] = 'LOWER(m.content) LIKE :textQuery';
-            $params['textQuery'] = '%' . strtolower($textQuery) . '%';
-            $orderBy = 'm.created_at DESC';
+        if ($textQuery !== null && trim($textQuery) !== '') {
+            $qb->andWhere('LOWER(m.content) LIKE :textQuery')
+                ->setParameter('textQuery', '%' . mb_strtolower(trim($textQuery), 'UTF-8') . '%');
         }
 
-        $where = implode(' AND ', $conditions);
-
-        $ids = $conn->fetchFirstColumn("SELECT m.id FROM \"message\" m
-             JOIN \"user\" u ON u.id = m.author_id
-             JOIN \"channel\" ch ON ch.id = m.channel_id
-             LEFT JOIN channel_user cu ON cu.channel_id = ch.id AND cu.user_id = :currentUserId
-             WHERE {$where}
-             ORDER BY {$orderBy}
-             LIMIT 30", $params);
+        $ids = array_map('intval', $qb->fetchFirstColumn());
 
         if ($ids === []) {
             return [];
         }
-
-        $ids = array_map('intval', $ids);
 
         return $this
             ->createQueryBuilder('m')

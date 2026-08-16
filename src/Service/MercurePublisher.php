@@ -7,7 +7,6 @@ namespace App\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
-use App\Repository\UserChannelReadRepository;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -22,9 +21,7 @@ class MercurePublisher
     public function __construct(
         private MessageBusInterface $bus,
         private string $mercureTopicPrefix,
-        private UserChannelReadRepository $ucrRepo,
         private TranslatorInterface $translator,
-        private \App\Repository\UserRepository $userRepository,
     ) {}
 
     // -------------------------------------------------------------------------

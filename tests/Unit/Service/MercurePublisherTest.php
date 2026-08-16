@@ -7,7 +7,6 @@ namespace App\Tests\Unit\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
-use App\Repository\UserChannelReadRepository;
 use App\Service\MercurePublisher;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -22,18 +21,14 @@ use Symfony\Component\Messenger\MessageBusInterface;
 class MercurePublisherTest extends TestCase
 {
     private MessageBusInterface&MockObject $bus;
-    private UserChannelReadRepository&MockObject $ucrRepo;
     private \Symfony\Contracts\Translation\TranslatorInterface&MockObject $translator;
-    private \App\Repository\UserRepository&MockObject $userRepo;
     private MercurePublisher $publisher;
 
     protected function setUp(): void
     {
         $this->bus = $this->createMock(MessageBusInterface::class);
-        $this->ucrRepo = $this->createMock(UserChannelReadRepository::class);
         $this->translator = $this->createMock(\Symfony\Contracts\Translation\TranslatorInterface::class);
-        $this->userRepo = $this->createMock(\App\Repository\UserRepository::class);
-        $this->publisher = new MercurePublisher($this->bus, 'http://test-mercure', $this->ucrRepo, $this->translator, $this->userRepo);
+        $this->publisher = new MercurePublisher($this->bus, 'http://test-mercure', $this->translator);
     }
 
     #[Test]

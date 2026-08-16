@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
-use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Channel;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
@@ -22,7 +21,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_USER')]
 final class ChannelMembershipController extends AbstractController
 {
-    use MessageRendererTrait;
     use ChannelAccessTrait;
 
     public function __construct(

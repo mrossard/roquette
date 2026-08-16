@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
-use App\Controller\Trait\MessageRendererTrait;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
@@ -30,7 +29,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_USER')]
 final class ChannelController extends AbstractController
 {
-    use MessageRendererTrait;
     use ChannelAccessTrait;
 
     public function __construct(
@@ -81,7 +79,7 @@ final class ChannelController extends AbstractController
             // Check workspace access
             $workspace = $existingChannel->getWorkspace();
             if ($workspace) {
-                if (!$workspaceManager->isUserMember($workspace, $currentUser)) {
+                if (!$this->isGranted('VIEW', $workspace)) {
                     $this->addFlash('error', $this->translator->trans('Vous n\'avez pas accès à ce canal.'));
 
                     return $this->redirectToRoute('app_dashboard');
@@ -93,7 +91,7 @@ final class ChannelController extends AbstractController
             }
             $activeChannel = $existingChannel;
             $isMember =
-                $workspace && $workspaceManager->isUserMember($workspace, $currentUser)
+                $workspace && $this->isGranted('VIEW', $workspace)
                     ? true
                     : $existingChannel->getMembers()->contains($currentUser);
         }

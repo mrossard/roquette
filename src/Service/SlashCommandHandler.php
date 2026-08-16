@@ -55,14 +55,11 @@ class SlashCommandHandler
     /**
      * Processes a slash command in the context of publishing a message.
      *
-     * @param string  $messageText the raw message text (may be mutated by reference for /shrug and /me)
+     * @param string  $messageText the raw message text
      * @param Channel $channel     the active channel
      * @param User    $user        the current user
-     *
-     * @return Response|null a Response when the command was handled and should abort normal message sending,
-     *                       null when the message should be sent normally (with $messageText possibly mutated)
      */
-    public function process(string &$messageText, Channel $channel, User $user, ?int $workspaceId = null): ?Response
+    public function process(string $messageText, Channel $channel, User $user, ?int $workspaceId = null): SlashCommandResult
     {
         $trimmedMsg = trim($messageText);
         $parts = explode(' ', $trimmedMsg, 2);
@@ -70,30 +67,26 @@ class SlashCommandHandler
         $args = ($parts[1] ?? null) !== null ? trim($parts[1]) : '';
 
         if ($command === 'color') {
-            return $this->handleColor($args, $user);
+            return SlashCommandResult::handled($this->handleColor($args, $user));
         }
 
         if ($command === 'help') {
-            return $this->handleHelp($args, $user, $channel, $workspaceId);
+            return SlashCommandResult::handled($this->handleHelp($args, $user, $channel, $workspaceId));
         }
 
         if ($command === 'poll') {
-            return $this->handlePoll($args, $user, $channel, $workspaceId);
+            return SlashCommandResult::handled($this->handlePoll($args, $user, $channel, $workspaceId));
         }
 
         if ($command === 'shrug') {
-            $messageText = ($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯';
-
-            return null;
+            return SlashCommandResult::transformed(($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯');
         }
 
         if ($command === 'me') {
-            $messageText = '/me' . ($args !== '' ? ' ' . $args : '');
-
-            return null;
+            return SlashCommandResult::transformed('/me' . ($args !== '' ? ' ' . $args : ''));
         }
 
-        return null;
+        return SlashCommandResult::unhandled($messageText);
     }
 
     private function handleColor(string $args, User $user): Response

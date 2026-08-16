@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Controller\Trait\RequestValidationTrait;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Repository\MessageRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -17,7 +15,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class MessageManager
 {
-    use RequestValidationTrait;
     public function __construct(
         private readonly MessageRepository $messageRepository,
         private readonly EntityManagerInterface $entityManager,
@@ -28,7 +25,7 @@ class MessageManager
         private readonly ChannelAccessService $channelAccessService,
     ) {}
 
-    public function editMessageForm(int $id, User $currentUser): array
+    public function editMessageForm(int $id, User $currentUser): Message
     {
         $message = $this->findMessage($id);
 
@@ -42,11 +39,20 @@ class MessageManager
             ));
         }
 
-        return ['message' => $message];
+        return $message;
     }
 
-    public function editMessage(int $id, Request $request, User $currentUser): array
-    {
+    /**
+     * @param list<string> $pollOptions
+     */
+    public function editMessage(
+        int $id,
+        User $currentUser,
+        string $newContent = '',
+        ?string $pollQuestion = null,
+        array $pollOptions = [],
+        bool $pollAllowMultiple = false,
+    ): string {
         $message = $this->findMessage($id);
 
         if ($message->getAuthor() !== $currentUser) {
@@ -55,16 +61,13 @@ class MessageManager
 
         if ($message->isPoll()) {
             if ($message->getPoll()->getTotalVotes() > 0) {
-                return [
-                    'error' => $this->translator->trans('Impossible de modifier un sondage qui a déjà des votes.'),
-                    'statusCode' => 400,
-                ];
+                throw new BadRequestHttpException($this->translator->trans('Impossible de modifier un sondage qui a déjà des votes.'));
             }
 
-            return $this->editPoll($message, $request, $currentUser);
+            return $this->editPoll($message, $pollQuestion, $pollOptions, $pollAllowMultiple);
         }
 
-        return $this->editText($message, $request, $currentUser);
+        return $this->editText($message, $newContent);
     }
 
     public function deleteMessage(int $id, User $currentUser): array
@@ -129,14 +132,10 @@ class MessageManager
         return $message;
     }
 
-    private function editText(Message $message, Request $request, User $currentUser): array
+    private function editText(Message $message, string $newContent): string
     {
-        $newContent = $request->request->get('content', '');
         if (trim($newContent) === '' && !$message->getFilePath()) {
-            return [
-                'error' => $this->translator->trans('Le message ne peut pas être vide.'),
-                'statusCode' => 400,
-            ];
+            throw new BadRequestHttpException($this->translator->trans('Le message ne peut pas être vide.'));
         }
 
         $message->setContent(trim($newContent) === '' ? null : $newContent);
@@ -153,31 +152,29 @@ class MessageManager
             'message_' . $message->getChannel()->getSlug(),
         );
 
-        return ['renderedHtml' => $renderedHtml];
+        return $renderedHtml;
     }
 
-    private function editPoll(Message $message, Request $request, User $currentUser): array
-    {
-        $pollQuestion = $request->request->get('poll_question');
-        $optionsData = $this->parsePollOptions($request);
-
+    /**
+     * @param list<string> $optionsData
+     */
+    private function editPoll(
+        Message $message,
+        ?string $pollQuestion,
+        array $optionsData,
+        bool $allowMultiple,
+    ): string {
         if ($pollQuestion === null || trim($pollQuestion) === '') {
-            return [
-                'error' => $this->translator->trans('La question du sondage ne peut pas être vide.'),
-                'statusCode' => 400,
-            ];
+            throw new BadRequestHttpException($this->translator->trans('La question du sondage ne peut pas être vide.'));
         }
 
         if (count($optionsData) < 2) {
-            return [
-                'error' => $this->translator->trans('Un sondage requiert au moins 2 options.'),
-                'statusCode' => 400,
-            ];
+            throw new BadRequestHttpException($this->translator->trans('Un sondage requiert au moins 2 options.'));
         }
 
         $poll = $message->getPoll();
         $poll->setQuestion(trim($pollQuestion));
-        $poll->setAllowMultiple((bool) $request->request->get('allow_multiple'));
+        $poll->setAllowMultiple($allowMultiple);
 
         $existingOptions = $poll->getOptions()->getValues();
         $position = 0;
@@ -213,6 +210,7 @@ class MessageManager
             'message_' . $message->getChannel()->getSlug(),
         );
 
-        return ['renderedHtml' => $renderedHtml];
+        return $renderedHtml;
     }
 }
+

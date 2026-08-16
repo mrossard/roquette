@@ -5,16 +5,12 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
-use App\Controller\Trait\MessageRendererTrait;
-use App\Controller\Trait\SidebarParametersTrait;
 use App\Entity\Reaction;
-use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Repository\ReactionRepository;
-use App\Repository\WorkspaceRepository;
-use App\Repository\InvitationRepository;
 use App\Service\MercurePublisher;
-use App\Service\ChannelManager;
+use App\Service\MessageRenderer;
+use App\Service\SidebarDataProvider;
 use App\Service\KanbanManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,12 +24,12 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class ReactionController extends AbstractController
 {
     use ChannelAccessTrait;
-    use MessageRendererTrait;
-    use SidebarParametersTrait;
 
     public function __construct(
         private TranslatorInterface $translator,
         private KanbanManager $kanbanManager,
+        private readonly MessageRenderer $messageRenderer,
+        private readonly SidebarDataProvider $sidebarDataProvider,
     ) {}
 
     #[Route('/messages/{id}/react/{emoji}', name: 'app_message_react', methods: ['POST'])]
@@ -94,12 +90,8 @@ $hasCheck = true;
             $this->kanbanManager->toggleCompletion($message, $hasCheck, $currentUser);
         }
 
-        $renderedHtml = $this->renderFeedItem($message, ['no_fade' => true]);
-
-        $renderedHtmlOob = $this->renderView('dashboard/_feed_item.html.twig', array_merge(
-            $this->feedItemParams($message),
-            ['oob' => true],
-        ));
+        $renderedHtml = $this->messageRenderer->renderFeedItem($message, ['no_fade' => true]);
+        $renderedHtmlOob = $this->messageRenderer->renderFeedItem($message, ['oob' => true]);
 
         $mercurePublisher->publishToChannel($channel, $renderedHtmlOob, 'message_' . $channel->getSlug());
 
@@ -111,12 +103,6 @@ $hasCheck = true;
     public function myReactions(
         Request $request,
         ReactionRepository $reactionRepository,
-        ChannelRepository $channelRepository,
-        WorkspaceRepository $workspaceRepository,
-        InvitationRepository $invitationRepository,
-        MessageRepository $messageRepository,
-        ChannelManager $channelManager,
-        EntityManagerInterface $entityManager,
         ?string $emoji = null,
     ): Response {
         /** @var \App\Entity\User $currentUser */
@@ -140,15 +126,7 @@ $hasCheck = true;
             ]);
         }
 
-        $sidebarParams = $this->getSidebarParameters(
-            $currentUser,
-            $channelRepository,
-            $workspaceRepository,
-            $invitationRepository,
-            $messageRepository,
-            $channelManager,
-            $entityManager
-        );
+        $sidebarParams = $this->sidebarDataProvider->getSidebarData($currentUser);
 
         $messages = $emoji
             ? $reactionRepository->findDistinctMessagesByUserAndEmoji($currentUser, $emoji, 50)

@@ -17,7 +17,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
-use Symfony\Component\String\Slugger\SluggerInterface;
+use App\Service\UniqueSlugGenerator;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ChannelManager
@@ -31,7 +31,7 @@ class ChannelManager
         private readonly LoggerInterface $logger,
         private readonly TranslatorInterface $translator,
         private readonly AuthorizationCheckerInterface $authorizationChecker,
-        private readonly SluggerInterface $slugger,
+        private readonly UniqueSlugGenerator $slugGenerator,
         private readonly KanbanManager $kanbanManager,
         private readonly WorkspaceManager $workspaceManager,
         private readonly GroupSubscriptionManager $groupSubscriptionManager,
@@ -39,20 +39,11 @@ class ChannelManager
 
     public function create(string $name, string $description, array $extra, User $currentUser): Channel
     {
-        $slug = strtolower($this->slugger->slug($name)->toString());
-        if ($slug === '') {
-            $slug = 'channel-' . uniqid();
-        }
-
-        $baseSlug = $slug;
-        $count = 1;
-        while ($this->channelRepository->findOneBy(['slug' => $slug])) {
-            $slug = $baseSlug . '-' . rand(100, 999);
-            if ($count++ > 20) {
-                $slug = $baseSlug . '-' . uniqid();
-                break;
-            }
-        }
+        $slug = $this->slugGenerator->generate(
+            $name,
+            'channel',
+            fn(string $s) => $this->channelRepository->findOneBy(['slug' => $s]) !== null,
+        );
 
         $channel = new Channel();
         $channel->setName($name);
@@ -133,27 +124,12 @@ class ChannelManager
         }
 
         if ($channel->getName() !== $name) {
-            $newSlug = strtolower($this->slugger->slug($name)->toString());
-            if ($newSlug === '') {
-                $newSlug = 'channel-' . uniqid();
-            }
-
-            if ($newSlug !== $channel->getSlug()) {
-                $baseSlug = $newSlug;
-                $count = 1;
-                while (true) {
-                    $existing = $this->channelRepository->findOneBy(['slug' => $newSlug]);
-                    if (!$existing || $existing->getId() === $channel->getId()) {
-                        break;
-                    }
-                    $newSlug = $baseSlug . '-' . rand(100, 999);
-                    if ($count++ > 20) {
-                        $newSlug = $baseSlug . '-' . uniqid();
-                        break;
-                    }
-                }
-                $channel->setSlug($newSlug);
-            }
+            $newSlug = $this->slugGenerator->generate(
+                $name,
+                'channel',
+                fn(string $s) => ($existing = $this->channelRepository->findOneBy(['slug' => $s])) !== null && $existing->getId() !== $channel->getId(),
+            );
+            $channel->setSlug($newSlug);
             $channel->setName($name);
         }
 

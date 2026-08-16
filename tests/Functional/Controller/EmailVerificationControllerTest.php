@@ -71,4 +71,17 @@ class EmailVerificationControllerTest extends WebTestCase
 
         $this->assertResponseRedirects('/account');
     }
+
+    #[Test]
+    public function testResendVerificationFromAccountPage(): void
+    {
+        $this->client->loginUser($this->user);
+        $crawler = $this->client->request('GET', '/account');
+        $this->assertResponseIsSuccessful();
+
+        $form = $crawler->selectButton('Renvoyer l\'email')->form();
+        $this->client->submit($form);
+
+        $this->assertResponseRedirects('/account');
+    }
 }

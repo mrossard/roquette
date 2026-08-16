@@ -95,6 +95,30 @@ class AccountControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function testSubmitProfileFormViaDomCrawler(): void
+    {
+        $crawler = $this->client->request('GET', '/account');
+        $this->assertResponseIsSuccessful();
+
+        $form = $crawler->selectButton('Sauvegarder le profil')->form([
+            'displayName' => 'Crawler Name',
+            'hue' => '200',
+            'statusOverride' => 'online',
+            'locale' => 'en',
+        ]);
+
+        $this->client->submit($form);
+        $this->assertResponseRedirects('/account');
+
+        $this->entityManager->clear();
+        $updatedUser = $this->entityManager->find(User::class, $this->testUser->getId());
+        static::assertSame('Crawler Name', $updatedUser->getDisplayName());
+        static::assertSame(200, $updatedUser->getCustomHue());
+        static::assertSame('online', $updatedUser->getStatusOverride());
+        static::assertSame('en', $updatedUser->getLocale());
+    }
+
+    #[Test]
     public function testPostProfileClearsDisplayName(): void
     {
         $this->testUser->setDisplayName('Old Name');

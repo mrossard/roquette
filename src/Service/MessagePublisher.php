@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Controller\Trait\RequestValidationTrait;
 use App\Entity\Channel;
 use App\Entity\User;
 use App\Repository\ChannelRepository;
@@ -20,8 +19,6 @@ use Twig\Environment;
 
 class MessagePublisher
 {
-    use RequestValidationTrait;
-
     public function __construct(
         private readonly ChannelRepository $channelRepository,
         private readonly ChannelAccessService $channelAccessService,
@@ -76,17 +73,17 @@ class MessagePublisher
 
         // Handle slash commands that return a direct Response
         if (($pollQuestion === null || $pollQuestion === '') && !$uploadedFile && str_starts_with(trim($messageText), '/')) {
-            $slashResponse = $this->slashCommandHandler->process(
+            $slashResult = $this->slashCommandHandler->process(
                 $messageText,
                 $channel,
                 $currentUser,
                 $this->getCurrentWorkspaceId($request),
             );
-            if ($slashResponse !== null) {
-                return $slashResponse;
+            if ($slashResult->response !== null) {
+                return $slashResult->response;
             }
 
-            // $messageText may have been mutated by /shrug or /me
+            $messageText = $slashResult->messageText;
         }
 
         $result = $this->publishService->publish(
@@ -154,5 +151,34 @@ class MessagePublisher
         if ($session !== null && $session->isStarted()) {
             $session->getFlashBag()->add($type, $message);
         }
+    }
+
+    /**
+     * Checks if a POST request exceeded the PHP post_max_size configuration.
+     * Symfony returns empty request and files parameters if post_max_size is exceeded.
+     */
+    private function isPostMaxSizeExceeded(Request $request): bool
+    {
+        return (
+            $request->isMethod('POST')
+            && count($request->request) === 0
+            && count($request->files) === 0
+            && (int) $request->headers->get('CONTENT_LENGTH', 0) > 0
+        );
+    }
+
+    /**
+     * Extracts non-empty poll options from a request.
+     *
+     * @return list<string>
+     */
+    private function parsePollOptions(Request $request): array
+    {
+        $optionsData = $request->request->all('poll_options');
+        if (!is_array($optionsData)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', $optionsData), static fn($val) => $val !== ''));
     }
 }

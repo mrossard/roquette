@@ -14,7 +14,7 @@ use App\Repository\WorkspaceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\String\Slugger\SluggerInterface;
+use App\Service\UniqueSlugGenerator;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class WorkspaceManager
@@ -27,7 +27,7 @@ class WorkspaceManager
         private readonly AuditLoggerService $auditLogger,
         private readonly LoggerInterface $logger,
         private readonly TranslatorInterface $translator,
-        private readonly SluggerInterface $slugger,
+        private readonly UniqueSlugGenerator $slugGenerator,
         private readonly \App\Service\Group\GroupProviderInterface $groupProvider,
     ) {}
 
@@ -63,20 +63,11 @@ class WorkspaceManager
 
     public function create(string $name, ?string $description, User $creator): Workspace
     {
-        $slug = strtolower($this->slugger->slug($name)->toString());
-        if ($slug === '') {
-            $slug = 'workspace-' . uniqid();
-        }
-
-        $baseSlug = $slug;
-        $count = 1;
-        while ($this->workspaceRepository->findOneBy(['slug' => $slug])) {
-            $slug = $baseSlug . '-' . rand(100, 999);
-            if ($count++ > 20) {
-                $slug = $baseSlug . '-' . uniqid();
-                break;
-            }
-        }
+        $slug = $this->slugGenerator->generate(
+            $name,
+            'workspace',
+            fn(string $s) => $this->workspaceRepository->findOneBy(['slug' => $s]) !== null,
+        );
 
         $workspace = new Workspace();
         $workspace->setName($name);
@@ -146,23 +137,12 @@ class WorkspaceManager
         $workspace->setName($name);
         $workspace->setDescription($description !== '' ? $description : null);
 
-        $newSlug = strtolower($this->slugger->slug($name)->toString());
-        if ($newSlug !== '' && $newSlug !== $workspace->getSlug()) {
-            $baseSlug = $newSlug;
-            $count = 1;
-            while (true) {
-                $existing = $this->workspaceRepository->findOneBy(['slug' => $newSlug]);
-                if (!$existing || $existing->getId() === $workspace->getId()) {
-                    break;
-                }
-                $newSlug = $baseSlug . '-' . rand(100, 999);
-                if ($count++ > 20) {
-                    $newSlug = $baseSlug . '-' . uniqid();
-                    break;
-                }
-            }
-            $workspace->setSlug($newSlug);
-        }
+        $newSlug = $this->slugGenerator->generate(
+            $name,
+            'workspace',
+            fn(string $s) => ($existing = $this->workspaceRepository->findOneBy(['slug' => $s])) !== null && $existing->getId() !== $workspace->getId(),
+        );
+        $workspace->setSlug($newSlug);
 
         $this->entityManager->flush();
     }

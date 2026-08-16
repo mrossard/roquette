@@ -4,15 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Controller\Trait\SidebarParametersTrait;
-use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
-use App\Repository\WorkspaceRepository;
-use App\Repository\InvitationRepository;
-use App\Service\ChannelManager;
 use App\Service\MessageManager;
 use App\Service\MessageRenderer;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\SidebarDataProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,7 +17,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 final class SavedMessageController extends AbstractController
 {
-    use SidebarParametersTrait;
+    public function __construct(
+        private readonly SidebarDataProvider $sidebarDataProvider,
+    ) {}
+
     #[Route('/messages/{id}/save', name: 'app_message_save_toggle', methods: ['POST'])]
     public function toggleSaveMessage(
         int $id,
@@ -45,12 +43,7 @@ final class SavedMessageController extends AbstractController
     #[Route('/saved-messages/more', name: 'app_saved_messages_more', methods: ['GET'])]
     public function savedMessages(
         Request $request,
-        ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
-        WorkspaceRepository $workspaceRepository,
-        InvitationRepository $invitationRepository,
-        ChannelManager $channelManager,
-        EntityManagerInterface $entityManager,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
@@ -70,15 +63,7 @@ final class SavedMessageController extends AbstractController
             ]);
         }
 
-        $sidebarParams = $this->getSidebarParameters(
-            $currentUser,
-            $channelRepository,
-            $workspaceRepository,
-            $invitationRepository,
-            $messageRepository,
-            $channelManager,
-            $entityManager
-        );
+        $sidebarParams = $this->sidebarDataProvider->getSidebarData($currentUser);
 
         return $this->render('dashboard/saved_messages.html.twig', array_merge([
             'savedMessages' => $savedMessages,

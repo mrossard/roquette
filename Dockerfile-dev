@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:1.12.6-builder-php8.5 AS builder
+FROM dunglas/frankenphp:1.12.7-builder-php8.5 AS builder
 COPY --from=caddy:builder /usr/bin/xcaddy /usr/bin/xcaddy
 
 RUN apt-get update && \
@@ -19,7 +19,7 @@ RUN CGO_ENABLED=1 \
     --with github.com/darkweak/souin/plugins/caddy \
     --with github.com/darkweak/storages/otter/caddy
 
-FROM dunglas/frankenphp:1.12.6-php8.5
+FROM dunglas/frankenphp:1.12.7-php8.5
 
 COPY --from=builder /usr/local/bin/frankenphp /usr/local/bin/frankenphp
 

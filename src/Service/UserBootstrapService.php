@@ -21,6 +21,7 @@ class UserBootstrapService
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly RequestStack $requestStack,
         private readonly TranslatorInterface $translator,
+        private readonly UniqueSlugGenerator $slugGenerator,
     ) {}
 
     public function bootstrap(User $user): void
@@ -90,16 +91,11 @@ class UserBootstrapService
                 'slug' => 'general',
             ]);
         if (!$general) {
-            $generalSlug = 'general';
-            $baseSlug = $generalSlug;
-            $count = 1;
-            while ($this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => $generalSlug])) {
-                $generalSlug = $baseSlug . '-' . rand(100, 999);
-                if ($count++ > 20) {
-                    $generalSlug = $baseSlug . '-' . uniqid();
-                    break;
-                }
-            }
+            $generalSlug = $this->slugGenerator->generate(
+                'general',
+                'general',
+                fn(string $s) => $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => $s]) !== null,
+            );
 
             $general = new Channel();
             $general->setName($generalName);

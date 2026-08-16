@@ -68,9 +68,7 @@ final class WorkspaceController extends AbstractController
             throw $this->createNotFoundException($this->translator->trans('Espace non trouvé.'));
         }
 
-        if (!$this->workspaceManager->isUserMember($workspace, $currentUser) && !$workspace->isPublic()) {
-            throw $this->createAccessDeniedException();
-        }
+        $this->denyAccessUnlessGranted('VIEW', $workspace);
 
         // If public workspace, ensure user is member
         if ($workspace->isPublic() && !$this->workspaceManager->isUserMember($workspace, $currentUser)) {
@@ -134,9 +132,7 @@ final class WorkspaceController extends AbstractController
             return new Response($this->translator->trans('Espace non trouvé.'), 404);
         }
 
-        if ($workspace->getCreator() !== $currentUser && !$this->isGranted('ROLE_ADMIN')) {
-            return new Response($this->translator->trans('Accès refusé.'), 403);
-        }
+        $this->denyAccessUnlessGranted('EDIT', $workspace);
 
         return $this->render('modals/_workspace_settings_modal.html.twig', [
             'workspace' => $workspace,
@@ -159,9 +155,7 @@ final class WorkspaceController extends AbstractController
             return $this->redirectToRoute('app_workspaces');
         }
 
-        if ($workspace->getCreator() !== $currentUser && !$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException();
-        }
+        $this->denyAccessUnlessGranted('EDIT', $workspace);
 
         $name = trim($request->request->get('name', ''));
         $description = trim($request->request->get('description', ''));
@@ -220,9 +214,7 @@ final class WorkspaceController extends AbstractController
             return $this->redirectToRoute('app_workspaces');
         }
 
-        if ($workspace->getCreator() !== $currentUser && !$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException();
-        }
+        $this->denyAccessUnlessGranted('DELETE', $workspace);
 
         if ($workspace->getAvatarPath()) {
             $fileUploadService->delete($workspace->getAvatarPath());
@@ -257,9 +249,7 @@ final class WorkspaceController extends AbstractController
             throw $this->createNotFoundException($this->translator->trans('Avatar non trouvé.'));
         }
 
-        if (!$this->workspaceManager->isUserMember($workspace, $currentUser) && !$workspace->isPublic()) {
-            throw $this->createAccessDeniedException();
-        }
+        $this->denyAccessUnlessGranted('VIEW', $workspace);
 
         if (!$fileUploadService->exists($workspace->getAvatarPath())) {
             throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
@@ -303,9 +293,7 @@ final class WorkspaceController extends AbstractController
             return new Response($this->translator->trans('Espace non trouvé.'), 404);
         }
 
-        if ($workspace->getCreator() !== $currentUser && !$this->isGranted('ROLE_ADMIN')) {
-            return new Response($this->translator->trans('Accès refusé.'), 403);
-        }
+        $this->denyAccessUnlessGranted('INVITE', $workspace);
 
         return $this->render('modals/_workspace_invite_modal.html.twig', [
             'workspace' => $workspace,
@@ -328,9 +316,7 @@ final class WorkspaceController extends AbstractController
             return new Response($this->translator->trans('Espace non trouvé.'), 404);
         }
 
-        if ($workspace->getCreator() !== $currentUser && !$this->isGranted('ROLE_ADMIN')) {
-            return new Response($this->translator->trans('Accès refusé.'), 403);
-        }
+        $this->denyAccessUnlessGranted('INVITE', $workspace);
 
         $userId = $request->request->get('userId');
         if (!$userId) {
@@ -373,6 +359,8 @@ final class WorkspaceController extends AbstractController
         if (!$workspace) {
             return new Response($this->translator->trans('Espace non trouvé.'), 404);
         }
+
+        $this->denyAccessUnlessGranted('INVITE', $workspace);
 
         $query = trim($request->query->get('q', ''));
 
@@ -426,9 +414,7 @@ final class WorkspaceController extends AbstractController
             return new Response($this->translator->trans('Espace non trouvé.'), 404);
         }
 
-        if (!$this->workspaceManager->isUserMember($workspace, $currentUser)) {
-            return new Response($this->translator->trans('Accès refusé.'), 403);
-        }
+        $this->denyAccessUnlessGranted('VIEW', $workspace);
 
         return $this->render('modals/_workspace_members_modal.html.twig', [
             'workspace' => $workspace,
