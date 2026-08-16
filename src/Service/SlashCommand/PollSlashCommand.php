@@ -7,11 +7,10 @@ namespace App\Service\SlashCommand;
 use App\Entity\Channel;
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
+use App\Service\LlmRateLimiter;
 use App\Service\SlashCommandResult;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -21,8 +20,8 @@ final readonly class PollSlashCommand implements SlashCommandInterface
         private MessageBusInterface $messageBus,
         private TranslatorInterface $translator,
         private Environment $twig,
-        #[Autowire(service: 'limiter.llm_api')]
-        private RateLimiterFactoryInterface $llmRateLimiter,
+        private LlmRateLimiter $llmRateLimiter,
+        private RateLimitedOobRenderer $rateLimitedRenderer,
     ) {}
 
     public function getName(): string
@@ -57,8 +56,8 @@ final readonly class PollSlashCommand implements SlashCommandInterface
             return SlashCommandResult::handled(new Response($formHtml . "\n" . $oobHtml));
         }
 
-        if (!$this->consumeLlmToken($user)) {
-            return SlashCommandResult::handled($this->renderRateLimited($helpMessageId, '/poll ' . $args, $channel));
+        if (!$this->llmRateLimiter->consume($user)) {
+            return SlashCommandResult::handled($this->rateLimitedRenderer->render($helpMessageId, '/poll ' . $args, $channel));
         }
 
         $prompt = sprintf(
@@ -79,27 +78,5 @@ final readonly class PollSlashCommand implements SlashCommandInterface
         ]);
 
         return SlashCommandResult::handled(new Response($formHtml . "\n" . $oobHtml));
-    }
-
-    private function consumeLlmToken(User $user): bool
-    {
-        return $this->llmRateLimiter->create('user_' . $user->getId())->consume(1)->isAccepted();
-    }
-
-    private function renderRateLimited(string $helpMessageId, string $question, Channel $channel): Response
-    {
-        $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
-            'answer' => $this->translator->trans('Trop de demandes pour l\'Assistant. Veuillez patienter un instant.'),
-            'question' => $question,
-            'helpMessageId' => $helpMessageId,
-            'activeChannel' => $channel,
-            'timestamp' => new \DateTime(),
-        ]);
-
-        $formHtml = $this->twig->render('dashboard/_input_form.html.twig', [
-            'activeChannel' => $channel,
-        ]);
-
-        return new Response($formHtml . "\n" . $oobHtml, Response::HTTP_TOO_MANY_REQUESTS);
     }
 }

@@ -11,6 +11,7 @@ use App\Message\LlmQueryMessage;
 use App\Message\ModerateMessageMessage;
 use App\Repository\MessageRepository;
 use App\Service\FileUploadService;
+use App\Service\LlmRateLimiter;
 use App\Service\MercurePublisher;
 use App\Service\MessagePublishService;
 use App\Service\MessageRenderer;
@@ -21,9 +22,6 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\RateLimiter\LimiterInterface;
-use Symfony\Component\RateLimiter\RateLimit;
-use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -38,7 +36,7 @@ class MessagePublishServiceTest extends TestCase
     private TranslatorInterface $translator;
     private MessageRenderer $messageRenderer;
     private Environment $twig;
-    private RateLimiterFactoryInterface $llmRateLimiter;
+    private LlmRateLimiter $llmRateLimiter;
     private RobotUserProvider $robotUserProvider;
     private MessagePublishService $publishService;
 
@@ -52,7 +50,7 @@ class MessagePublishServiceTest extends TestCase
         $this->translator = $this->createMock(TranslatorInterface::class);
         $this->messageRenderer = $this->createMock(MessageRenderer::class);
         $this->twig = $this->createMock(Environment::class);
-        $this->llmRateLimiter = $this->createMock(RateLimiterFactoryInterface::class);
+        $this->llmRateLimiter = $this->createMock(LlmRateLimiter::class);
         $this->robotUserProvider = $this->createMock(RobotUserProvider::class);
 
         $this->translator->method('trans')->willReturnArgument(0);
@@ -72,16 +70,6 @@ class MessagePublishServiceTest extends TestCase
             $this->llmRateLimiter,
             $this->robotUserProvider,
         );
-    }
-
-    private function createAcceptedLimiter(): LimiterInterface
-    {
-        $limit = $this->createMock(RateLimit::class);
-        $limit->method('isAccepted')->willReturn(true);
-        $limiter = $this->createMock(LimiterInterface::class);
-        $limiter->method('consume')->willReturn($limit);
-
-        return $limiter;
     }
 
     #[Test]
@@ -176,7 +164,7 @@ class MessagePublishServiceTest extends TestCase
         $robot = new User();
         $robot->setUsername(User::ROBOT_USERNAME);
         $this->robotUserProvider->method('getRobotUser')->willReturn($robot);
-        $this->llmRateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
+        $this->llmRateLimiter->method('consume')->willReturn(true);
 
         $this->entityManager->expects($this->never())->method('persist');
         $this->messageBus->expects($this->once())

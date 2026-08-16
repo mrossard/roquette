@@ -207,6 +207,7 @@ Voir: Voir
 'Contenu tronqué, téléchargez le fichier pour le lire en entier': 'Contenu tronqué, téléchargez le fichier pour le lire en entier'
 'Rien à prévisualiser': 'Rien à prévisualiser'
 'Trop de messages envoyés. Veuillez patienter.': 'Trop de messages envoyés. Veuillez patienter.'
+'rate_limit.assistant': "Trop de demandes pour l'Assistant. Veuillez patienter un instant."
 'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).': 'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).'
 'Un sondage requiert au moins 2 options.': 'Un sondage requiert au moins 2 options.'
 'Non autorisé à modifier ce message.': 'Non autorisé à modifier ce message.'

@@ -8,15 +8,14 @@ use App\Entity\Message;
 use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
+use App\Service\LlmRateLimiter;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
 use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\AI\Platform\Result\ToolCall;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
-use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Twig\Environment;
@@ -37,8 +36,7 @@ class PendingConfirmationService
         private readonly MessageFormatter $messageFormatter,
         private readonly RobotUserProvider $robotUserProvider,
         private readonly CacheInterface $cache,
-        #[Autowire(service: 'limiter.llm_api')]
-        private readonly RateLimiterFactoryInterface $llmApiLimiter,
+        private readonly LlmRateLimiter $llmRateLimiter,
         private readonly string $mercureTopicPrefix = 'roquette',
         private readonly ?LlmService $llmService = null,
         private readonly ?EntityManagerInterface $entityManager = null,
@@ -226,8 +224,8 @@ class PendingConfirmationService
             return false;
         }
 
-        $limiter = $this->llmApiLimiter->create('tool_confirm_' . $user->getId());
-        if (!$limiter->consume(1)->isAccepted()) {
+        $limiter = $this->llmRateLimiter->consumeConfirmation($user);
+        if (!$limiter) {
             return false;
         }
 

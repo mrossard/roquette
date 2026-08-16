@@ -207,6 +207,7 @@ Voir: View
 'Contenu tronqué, téléchargez le fichier pour le lire en entier': 'Content truncated, download the file to read it in full'
 'Rien à prévisualiser': 'Nothing to preview'
 'Trop de messages envoyés. Veuillez patienter.': 'Too many messages sent. Please wait.'
+'rate_limit.assistant': 'Too many assistant requests. Please wait a moment.'
 'Le fichier est trop volumineux pour être envoyé (limite post_max_size dépassée).': 'The file is too large to send (post_max_size limit exceeded).'
 'Un sondage requiert au moins 2 options.': 'A poll requires at least 2 options.'
 'Non autorisé à modifier ce message.': 'Not authorized to edit this message.'

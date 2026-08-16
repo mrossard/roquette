@@ -8,6 +8,7 @@ use App\Ai\PendingConfirmationService;
 use App\Ai\ToolActionSigner;
 use App\Ai\ToolRegistry;
 use App\Entity\User;
+use App\Service\LlmRateLimiter;
 use App\Service\MessageFormatter;
 use App\Service\RobotUserProvider;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -15,9 +16,6 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
-use Symfony\Component\RateLimiter\RateLimit;
-use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
-use Symfony\Component\RateLimiter\LimiterInterface;
 use Twig\Environment;
 
 #[AllowMockObjectsWithoutExpectations]
@@ -40,7 +38,7 @@ class PendingConfirmationServiceTest extends TestCase
             $this->createMock(MessageFormatter::class),
             $this->createMock(RobotUserProvider::class),
             new ArrayAdapter(),
-            $this->createMock(RateLimiterFactoryInterface::class),
+            $this->createMock(LlmRateLimiter::class),
         );
 
         $affirmative = [
@@ -79,7 +77,7 @@ class PendingConfirmationServiceTest extends TestCase
             $this->createMock(MessageFormatter::class),
             $this->createMock(RobotUserProvider::class),
             new ArrayAdapter(),
-            $this->createMock(RateLimiterFactoryInterface::class),
+            $this->createMock(LlmRateLimiter::class),
             'roquette',
             $llmService,
         );
@@ -108,7 +106,7 @@ class PendingConfirmationServiceTest extends TestCase
             $this->createMock(MessageFormatter::class),
             $this->createMock(RobotUserProvider::class),
             $cache,
-            $this->createMock(RateLimiterFactoryInterface::class),
+            $this->createMock(LlmRateLimiter::class),
         );
 
         $user = new User();
@@ -161,14 +159,8 @@ class PendingConfirmationServiceTest extends TestCase
         $formatter = $this->createMock(MessageFormatter::class);
         $formatter->method('format')->willReturn('<p>Sondage créé</p>');
 
-        $rateLimit = $this->createMock(RateLimit::class);
-        $rateLimit->method('isAccepted')->willReturn(true);
-
-        $limiter = $this->createMock(LimiterInterface::class);
-        $limiter->method('consume')->willReturn($rateLimit);
-
-        $rateLimiterFactory = $this->createMock(RateLimiterFactoryInterface::class);
-        $rateLimiterFactory->method('create')->willReturn($limiter);
+        $llmRateLimiter = $this->createMock(LlmRateLimiter::class);
+        $llmRateLimiter->method('consumeConfirmation')->willReturn(true);
 
         $cache = new ArrayAdapter();
         $service = new PendingConfirmationService(
@@ -179,7 +171,7 @@ class PendingConfirmationServiceTest extends TestCase
             $formatter,
             $this->createMock(RobotUserProvider::class),
             $cache,
-            $rateLimiterFactory,
+            $llmRateLimiter,
             'roquette',
         );
 
@@ -226,13 +218,8 @@ class PendingConfirmationServiceTest extends TestCase
         $twig = $this->createStub(Environment::class);
         $formatter = $this->createStub(MessageFormatter::class);
 
-        $limiter = $this->createStub(LimiterInterface::class);
-        $rateLimit = $this->createStub(RateLimit::class);
-        $rateLimit->method('isAccepted')->willReturn(true);
-        $limiter->method('consume')->willReturn($rateLimit);
-
-        $rateLimiterFactory = $this->createStub(RateLimiterFactoryInterface::class);
-        $rateLimiterFactory->method('create')->willReturn($limiter);
+        $llmRateLimiter = $this->createStub(LlmRateLimiter::class);
+        $llmRateLimiter->method('consumeConfirmation')->willReturn(true);
 
         $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
         $entityManager->expects($this->once())->method('flush');
@@ -255,7 +242,7 @@ class PendingConfirmationServiceTest extends TestCase
             $formatter,
             $robotUserProvider,
             new ArrayAdapter(),
-            $rateLimiterFactory,
+            $llmRateLimiter,
             'roquette',
             null,
             $entityManager,

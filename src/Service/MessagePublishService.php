@@ -15,11 +15,9 @@ use App\Message\ModerateMessageMessage;
 use App\Message\ScanFileMessage;
 use App\Repository\MessageRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -34,8 +32,7 @@ class MessagePublishService
         private readonly TranslatorInterface $translator,
         private readonly MessageRenderer $messageRenderer,
         private readonly Environment $twig,
-        #[Autowire(service: 'limiter.llm_api')]
-        private readonly RateLimiterFactoryInterface $llmRateLimiter,
+        private readonly LlmRateLimiter $llmRateLimiter,
         private readonly RobotUserProvider $robotUserProvider,
         private readonly ?PendingConfirmationService $pendingConfirmationService = null,
     ) {}
@@ -168,9 +165,9 @@ class MessagePublishService
         User $currentUser,
         Channel $channel,
     ): ?PublishResult {
-        if ($isDmWithRobot && !$isPoll && $file === null && !$this->consumeLlmToken($currentUser)) {
+        if ($isDmWithRobot && !$isPoll && $file === null && !$this->llmRateLimiter->consume($currentUser)) {
             return PublishResult::error(
-                error: $this->translator->trans('Trop de demandes pour l\'Assistant. Veuillez patienter un instant.'),
+                error: $this->translator->trans(LlmRateLimiter::MESSAGE_KEY),
                 channel: $channel,
                 statusCode: Response::HTTP_TOO_MANY_REQUESTS,
             );
@@ -201,9 +198,9 @@ class MessagePublishService
         string $messageText,
         ?int $workspaceId,
     ): PublishResult {
-        if (!$this->consumeLlmToken($currentUser)) {
+        if (!$this->llmRateLimiter->consume($currentUser)) {
             return PublishResult::error(
-                error: $this->translator->trans('Trop de demandes pour l\'Assistant. Veuillez patienter un instant.'),
+                error: $this->translator->trans(LlmRateLimiter::MESSAGE_KEY),
                 channel: $channel,
                 statusCode: Response::HTTP_TOO_MANY_REQUESTS,
             );
@@ -325,11 +322,6 @@ class MessagePublishService
             '/@(?:' . preg_quote($name, '/') . '|' . preg_quote($alias, '/') . ')(?![\p{L}\p{N}-])/iu',
             $messageText,
         ) === 1;
-    }
-
-    private function consumeLlmToken(User $user): bool
-    {
-        return $this->llmRateLimiter->create('user_' . $user->getId())->consume(1)->isAccepted();
     }
 
     /**
