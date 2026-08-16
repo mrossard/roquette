@@ -92,4 +92,42 @@ class UserChannelReadRepository extends ServiceEntityRepository
 
         return $indexed;
     }
+
+    /**
+     * Get aggregated unread message counts per workspace for a given user.
+     * Returns an array mapping workspaceId => total unread messages count.
+     *
+     * @return array<int, int>
+     */
+    public function getUnreadCountsByWorkspace(User $user): array
+    {
+        $qb = $this->getEntityManager()->createQueryBuilder();
+        $qb
+            ->select('IDENTITY(c.workspace) as workspaceId, COUNT(m.id) as unreadCount')
+            ->from(Channel::class, 'c')
+            ->innerJoin('c.members', 'mem', 'WITH', 'mem.id = :user')
+            ->leftJoin(UserChannelRead::class, 'ucr', 'WITH', 'ucr.channel = c AND ucr.user = :user')
+            ->leftJoin(
+                'c.messages',
+                'm',
+                'WITH',
+                'm.author != :user AND (ucr.lastReadMessage IS NULL OR m.id > IDENTITY(ucr.lastReadMessage))',
+            )
+            ->where('c.workspace IS NOT NULL')
+            ->groupBy('c.workspace')
+            ->setParameter('user', $user);
+
+        $results = $qb->getQuery()->getResult();
+
+        $counts = [];
+        foreach ($results as $row) {
+            if ($row['workspaceId'] === null) {
+                continue;
+            }
+
+            $counts[(int) $row['workspaceId']] = (int) $row['unreadCount'];
+        }
+
+        return $counts;
+    }
 }

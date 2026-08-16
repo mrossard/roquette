@@ -81,6 +81,36 @@ final class ContentModerationServiceTest extends TestCase
         static::assertSame('flagged', $result->getStatus());
         static::assertStringContainsString('toxique', $result->getReason() ?? '');
     }
+
+    public function testToxicityWithLlmServiceDisabled(): void
+    {
+        $llmService = $this->createMock(LlmService::class);
+        $llmService->expects($this->never())
+            ->method('generateText');
+
+        $service = new ContentModerationService($llmService, null, aiModerationEnabled: false);
+        $result = $service->moderate('Message agressif et insultant');
+
+        static::assertFalse($result->isFlagged());
+        static::assertFalse($result->isMasked());
+        static::assertSame('clean', $result->getStatus());
+    }
+
+    public function testSecretDetectionStillWorksWhenLlmModerationDisabled(): void
+    {
+        $llmService = $this->createMock(LlmService::class);
+        $llmService->expects($this->never())
+            ->method('generateText');
+
+        $service = new ContentModerationService($llmService, null, aiModerationEnabled: false);
+        $secretMessage = 'Mon accès AWS : AKIAIOSFODNN7EXAMPLE';
+        $result = $service->moderate($secretMessage);
+
+        static::assertTrue($result->isFlagged());
+        static::assertTrue($result->isMasked());
+        static::assertSame('masked', $result->getStatus());
+        static::assertStringContainsString('[SECRET MASQUÉ]', $result->getMaskedContent() ?? '');
+    }
 }
 
 

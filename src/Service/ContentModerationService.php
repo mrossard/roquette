@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 readonly class ContentModerationService
 {
@@ -24,6 +25,8 @@ readonly class ContentModerationService
     public function __construct(
         private ?LlmService $llmService = null,
         private ?LoggerInterface $logger = null,
+        #[Autowire(env: 'bool:LLM_MODERATION_ENABLED')]
+        private bool $aiModerationEnabled = true,
     ) {}
 
     public function moderate(string $content): ModerationResult
@@ -57,8 +60,8 @@ readonly class ContentModerationService
             );
         }
 
-        // 2. Détection de toxicité via LLM (si le service LLM est disponible)
-        if ($this->llmService !== null) {
+        // 2. Détection de toxicité via LLM (si activée et si le service LLM est disponible)
+        if ($this->aiModerationEnabled && $this->llmService !== null) {
             try {
                 $systemPrompt =
                     "Tu es un système d'analyse de modération de contenu. "

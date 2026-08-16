@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
+use App\Repository\UserChannelReadRepository;
 use App\Repository\WorkspaceRepository;
 use App\Service\WorkspaceManager;
 use App\Service\FileUploadService;
@@ -297,29 +298,13 @@ final class WorkspaceController extends AbstractController
         Request $request,
         ChannelRepository $channelRepository,
         WorkspaceRepository $workspaceRepository,
-        EntityManagerInterface $entityManager,
+        UserChannelReadRepository $userChannelReadRepository,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $workspaces = $workspaceRepository->findAllForUser($currentUser);
-        $channels = $channelRepository->findAllForUser($currentUser);
-
-        $ucrRepo = $entityManager->getRepository(\App\Entity\UserChannelRead::class);
-        $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);
-
-        $workspaceUnreadCounts = [];
-        foreach ($channels as $ch) {
-            $ws = $ch->getWorkspace();
-            if (!$ws) {
-                continue;
-            }
-            $wsId = $ws->getId();
-            if (!array_key_exists($wsId, $workspaceUnreadCounts)) {
-                $workspaceUnreadCounts[$wsId] = 0;
-            }
-            $workspaceUnreadCounts[$wsId] += $unreadCounts[$ch->getId()]['count'] ?? 0;
-        }
+        $workspaceUnreadCounts = $userChannelReadRepository->getUnreadCountsByWorkspace($currentUser);
 
         $activeChannel = null;
         $channelSlug = $request->query->get('channel');
