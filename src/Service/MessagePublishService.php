@@ -57,23 +57,22 @@ class MessagePublishService
         $isPoll = $pollQuestion !== null && $pollQuestion !== '';
 
         if (trim($messageText) === '' && !$file && !$isPoll) {
-            return new PublishResult(success: false, channel: $channel);
+            return PublishResult::empty($channel);
         }
 
         if (!$isPoll && $file === null && $messageText !== '' && $this->pendingConfirmationService !== null) {
             $pendingToken = $this->pendingConfirmationService->getPendingConfirmation($currentUser, $channel->getSlug());
             if ($pendingToken !== null && $this->pendingConfirmationService->isConfirmation($messageText, $pendingToken, $currentUser)) {
                 if ($this->pendingConfirmationService->executeConfirmation($pendingToken, $currentUser)) {
-                    return new PublishResult(success: true, channel: $channel, message: null, renderedHtml: '');
+                    return PublishResult::ok($channel, null, '');
                 }
             }
         }
 
         if ($isPoll && $pollOptions !== null && count($pollOptions) < 2) {
-            return new PublishResult(
-                success: false,
-                channel: $channel,
+            return PublishResult::error(
                 error: $this->translator->trans('Un sondage requiert au moins 2 options.'),
+                channel: $channel,
                 statusCode: 400,
             );
         }
@@ -99,7 +98,7 @@ class MessagePublishService
                     $this->fileUploadService->uploadAndAttachToMessage($file, $message);
                     $message->setVirusScanStatus('pending');
                 } catch (InvalidArgumentException $e) {
-                    return new PublishResult(success: false, channel: $channel, error: $e->getMessage());
+                    return PublishResult::error($e->getMessage(), $channel);
                 }
             }
         }
@@ -109,10 +108,9 @@ class MessagePublishService
 
         if ($isRobotMentioned && !$isDmWithRobot) {
             if (!$this->consumeLlmToken($currentUser)) {
-                return new PublishResult(
-                    success: false,
-                    channel: $channel,
+                return PublishResult::error(
                     error: $this->translator->trans('Trop de demandes pour l\'Assistant. Veuillez patienter un instant.'),
+                    channel: $channel,
                     statusCode: Response::HTTP_TOO_MANY_REQUESTS,
                 );
             }
@@ -124,7 +122,7 @@ class MessagePublishService
                 new LlmQueryMessage($messageText, $currentUser->getId(), $channel->getSlug(), $helpMessageId, workspaceId: $workspaceId),
             );
 
-            return new PublishResult(success: true, channel: $channel, message: $message, renderedHtml: '');
+            return PublishResult::ok($channel, $message, '');
         }
 
         $llmAllowed = $isDmWithRobot && !$isPoll && $file === null
@@ -132,10 +130,9 @@ class MessagePublishService
             : true;
 
         if (!$llmAllowed) {
-            return new PublishResult(
-                success: false,
-                channel: $channel,
+            return PublishResult::error(
                 error: $this->translator->trans('Trop de demandes pour l\'Assistant. Veuillez patienter un instant.'),
+                channel: $channel,
                 statusCode: Response::HTTP_TOO_MANY_REQUESTS,
             );
         }
@@ -150,8 +147,6 @@ class MessagePublishService
         if ($message->getContent() !== null && !$isPoll && !$channel->isDm()) {
             $this->messageBus->dispatch(new ModerateMessageMessage($message->getId()));
         }
-
-
 
         $renderedHtml = $this->messageRenderer->renderFeedItem($message);
 
@@ -174,7 +169,7 @@ class MessagePublishService
             );
         }
 
-        return new PublishResult(success: true, channel: $channel, message: $message, renderedHtml: $renderedHtml);
+        return PublishResult::ok($channel, $message, $renderedHtml);
     }
 
     private function isRobotMentioned(string $messageText): bool

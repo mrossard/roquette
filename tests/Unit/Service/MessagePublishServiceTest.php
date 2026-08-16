@@ -1,0 +1,194 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Unit\Service;
+
+use App\Entity\Channel;
+use App\Entity\Message;
+use App\Entity\User;
+use App\Message\LlmQueryMessage;
+use App\Message\ModerateMessageMessage;
+use App\Repository\MessageRepository;
+use App\Repository\UserRepository;
+use App\Service\FileUploadService;
+use App\Service\MercurePublisher;
+use App\Service\MessagePublishService;
+use App\Service\MessageRenderer;
+use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\RateLimiter\LimiterInterface;
+use Symfony\Component\RateLimiter\RateLimit;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
+
+#[AllowMockObjectsWithoutExpectations]
+class MessagePublishServiceTest extends TestCase
+{
+    private MessageRepository $messageRepository;
+    private UserRepository $userRepository;
+    private EntityManagerInterface $entityManager;
+    private MercurePublisher $mercurePublisher;
+    private FileUploadService $fileUploadService;
+    private MessageBusInterface $messageBus;
+    private TranslatorInterface $translator;
+    private MessageRenderer $messageRenderer;
+    private Environment $twig;
+    private RateLimiterFactoryInterface $llmRateLimiter;
+    private MessagePublishService $publishService;
+
+    protected function setUp(): void
+    {
+        $this->messageRepository = $this->createMock(MessageRepository::class);
+        $this->userRepository = $this->createMock(UserRepository::class);
+        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->mercurePublisher = $this->createMock(MercurePublisher::class);
+        $this->fileUploadService = $this->createMock(FileUploadService::class);
+        $this->messageBus = $this->createMock(MessageBusInterface::class);
+        $this->translator = $this->createMock(TranslatorInterface::class);
+        $this->messageRenderer = $this->createMock(MessageRenderer::class);
+        $this->twig = $this->createMock(Environment::class);
+        $this->llmRateLimiter = $this->createMock(RateLimiterFactoryInterface::class);
+
+        $this->translator->method('trans')->willReturnArgument(0);
+        $this->messageRenderer->method('renderFeedItem')->willReturn('<div class="feed-item">Message</div>');
+        $this->messageRepository->method('findLatestInChannel')->willReturn([]);
+
+        $this->publishService = new MessagePublishService(
+            $this->messageRepository,
+            $this->userRepository,
+            $this->entityManager,
+            $this->mercurePublisher,
+            $this->fileUploadService,
+            $this->messageBus,
+            $this->translator,
+            $this->messageRenderer,
+            $this->twig,
+            $this->llmRateLimiter,
+        );
+    }
+
+    private function createAcceptedLimiter(): LimiterInterface
+    {
+        $limit = $this->createMock(RateLimit::class);
+        $limit->method('isAccepted')->willReturn(true);
+        $limiter = $this->createMock(LimiterInterface::class);
+        $limiter->method('consume')->willReturn($limit);
+
+        return $limiter;
+    }
+
+    #[Test]
+    public function emptyMessageReturnsEmptyPublishResult(): void
+    {
+        $channel = new Channel();
+        $user = new User();
+
+        $result = $this->publishService->publish(
+            channel: $channel,
+            currentUser: $user,
+            messageText: '   ',
+        );
+
+        $this->assertFalse($result->success);
+        $this->assertSame($channel, $result->channel);
+        $this->assertNull($result->message);
+    }
+
+    #[Test]
+    public function pollWithLessThanTwoOptionsFails(): void
+    {
+        $channel = new Channel();
+        $user = new User();
+
+        $result = $this->publishService->publish(
+            channel: $channel,
+            currentUser: $user,
+            messageText: '',
+            pollQuestion: 'Which color?',
+            pollOptions: ['Blue only'],
+        );
+
+        $this->assertFalse($result->success);
+        $this->assertSame(400, $result->statusCode);
+        $this->assertSame('Un sondage requiert au moins 2 options.', $result->error);
+    }
+
+    #[Test]
+    public function publishValidTextMessagePersistsAndBroadcasts(): void
+    {
+        $channel = new Channel();
+        $channel->setSlug('general');
+        $user = new User();
+        $userRef = new \ReflectionProperty(User::class, 'id');
+        $userRef->setValue($user, 1);
+
+        $this->entityManager->expects($this->once())
+            ->method('persist')
+            ->willReturnCallback(static function (Message $m) {
+                $ref = new \ReflectionProperty(Message::class, 'id');
+                $ref->setValue($m, 42);
+            });
+        $this->entityManager->expects($this->once())->method('flush');
+
+        $this->messageBus->expects($this->once())
+            ->method('dispatch')
+            ->with($this->isInstanceOf(ModerateMessageMessage::class))
+            ->willReturn(new Envelope(new \stdClass()));
+
+        $this->mercurePublisher->expects($this->once())
+            ->method('publishNewMessage')
+            ->with(
+                $channel,
+                $this->isInstanceOf(Message::class),
+                $user,
+                'Hello world',
+                '<div class="feed-item">Message</div>',
+            );
+
+        $result = $this->publishService->publish(
+            channel: $channel,
+            currentUser: $user,
+            messageText: 'Hello world',
+        );
+
+        $this->assertTrue($result->success);
+        $this->assertNotNull($result->message);
+        $this->assertSame('Hello world', $result->message->getContent());
+        $this->assertSame('<div class="feed-item">Message</div>', $result->renderedHtml);
+    }
+
+    #[Test]
+    public function robotMentionInChannelDispatchesLlmMessageWithoutPersisting(): void
+    {
+        $channel = new Channel();
+        $channel->setSlug('general');
+        $user = new User();
+        $userRef = new \ReflectionProperty(User::class, 'id');
+        $userRef->setValue($user, 1);
+
+        $robot = new User();
+        $robot->setUsername(User::ROBOT_USERNAME);
+        $this->userRepository->method('findOneBy')->willReturn($robot);
+        $this->llmRateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
+
+        $this->entityManager->expects($this->never())->method('persist');
+        $this->messageBus->expects($this->once())
+            ->method('dispatch')
+            ->with($this->isInstanceOf(LlmQueryMessage::class))
+            ->willReturn(new Envelope(new \stdClass()));
+
+        $result = $this->publishService->publish(
+            channel: $channel,
+            currentUser: $user,
+            messageText: '@' . User::ROBOT_USERNAME . ' what is the weather?',
+        );
+
+        $this->assertTrue($result->success);
+    }
+}
