@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Dto\File\UploadedFileMetadata;
+use enshrined\svgSanitize\Sanitizer;
 use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -14,7 +15,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Handles file upload and deletion via Flysystem.
- *
  */
 class FileUploadService
 {
@@ -137,9 +137,9 @@ class FileUploadService
 
     public function __construct(
         #[Target('defaultStorage')]
-        private FilesystemOperator $defaultStorage,
-        private LoggerInterface $logger,
-        private TranslatorInterface $translator,
+        private readonly FilesystemOperator $defaultStorage,
+        private readonly LoggerInterface $logger,
+        private readonly TranslatorInterface $translator,
     ) {}
 
     /**
@@ -148,6 +148,52 @@ class FileUploadService
      * @throws \InvalidArgumentException if the file type or extension is not allowed
      */
     public function upload(UploadedFile $file): UploadedFileMetadata
+    {
+        $extension = $this->extractExtension($file);
+        $this->validateFile($file, $extension);
+        $mimeType = $this->resolveMimeType($file, $extension);
+
+        $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $safeFilename = preg_replace('/[^A-Za-z0-9_\-]/', '_', $originalFilename);
+        $newFilename = $safeFilename . '-' . uniqid() . '.' . $extension;
+
+        $fileSize = (int) $file->getSize();
+        $fileName = $file->getClientOriginalName();
+
+        $this->storeFile($file, $newFilename, $extension);
+
+        $this->logger->info(sprintf(
+            'File upload successful: "%s" saved as "%s" (%d bytes, MIME: %s).',
+            $fileName,
+            $newFilename,
+            $fileSize,
+            $mimeType,
+        ));
+
+        return new UploadedFileMetadata(
+            fileName: $fileName,
+            filePath: $newFilename,
+            fileSize: $fileSize,
+            mimeType: $mimeType,
+        );
+    }
+
+    private function extractExtension(UploadedFile $file): string
+    {
+        $origExt = $file->getClientOriginalExtension();
+        $guessedExt = $file->guessExtension();
+        if ($origExt !== null && $origExt !== '') {
+            $ext = $origExt;
+        } elseif ($guessedExt !== null && $guessedExt !== '') {
+            $ext = $guessedExt;
+        } else {
+            $ext = 'bin';
+        }
+
+        return strtolower($ext);
+    }
+
+    private function validateFile(UploadedFile $file, string $extension): void
     {
         if (!$file->isValid()) {
             $this->logger->warning(sprintf(
@@ -158,18 +204,6 @@ class FileUploadService
                 'Le fichier est invalide ou dépasse la taille autorisée par le serveur.',
             ));
         }
-
-        $origExt = $file->getClientOriginalExtension();
-        $guessedExt = $file->guessExtension();
-        if ($origExt !== null && $origExt !== '') {
-            $ext = $origExt;
-        } elseif ($guessedExt !== null && $guessedExt !== '') {
-            $ext = $guessedExt;
-        } else {
-            $ext = 'bin';
-        }
-        $extension = strtolower($ext);
-        $mimeType = $file->getMimeType() ?? $file->getClientMimeType();
 
         if ($file->getSize() > self::MAX_FILE_SIZE) {
             $this->logger->warning(sprintf(
@@ -193,6 +227,11 @@ class FileUploadService
                 '%extension%' => $extension,
             ]));
         }
+    }
+
+    private function resolveMimeType(UploadedFile $file, string $extension): string
+    {
+        $mimeType = $file->getMimeType() ?? $file->getClientMimeType();
 
         // Content-based MIME detection can misidentify text files (e.g.,
         // markdown with code blocks detected as JavaScript). When the
@@ -224,35 +263,15 @@ class FileUploadService
             ]));
         }
 
-        $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $safeFilename = preg_replace('/[^A-Za-z0-9_\-]/', '_', $originalFilename);
-        $newFilename = $safeFilename . '-' . uniqid() . '.' . $extension;
+        return (string) $mimeType;
+    }
 
-        $fileSize = $file->getSize();
-        $fileName = $file->getClientOriginalName();
-
+    private function storeFile(UploadedFile $file, string $newFilename, string $extension): void
+    {
         $stream = \fopen($file->getPathname(), 'r');
 
-        // SVG files are sanitized to strip scripts, event handlers and
-        // javascript: URLs before being stored.
         if ($extension === 'svg') {
-            $dirtySvg = \stream_get_contents($stream);
-            if (is_resource($stream)) {
-                \fclose($stream);
-            }
-
-            $cleanSvg = new \enshrined\svgSanitize\Sanitizer()->sanitize($dirtySvg);
-
-            if ($cleanSvg === false || $cleanSvg === null || $cleanSvg === '') {
-                $this->logger->warning(sprintf(
-                    'File upload rejected: SVG file "%s" could not be sanitized.',
-                    $fileName,
-                ));
-                throw new \InvalidArgumentException($this->translator->trans(
-                    'Le fichier SVG est invalide ou a été rejeté après analyse.',
-                ));
-            }
-
+            $cleanSvg = $this->sanitizeSvg($stream, $file->getClientOriginalName());
             $this->defaultStorage->write($newFilename, $cleanSvg);
         } else {
             $this->defaultStorage->writeStream($newFilename, $stream);
@@ -260,21 +279,28 @@ class FileUploadService
                 \fclose($stream);
             }
         }
+    }
 
-        $this->logger->info(sprintf(
-            'File upload successful: "%s" saved as "%s" (%d bytes, MIME: %s).',
-            $fileName,
-            $newFilename,
-            $fileSize,
-            $mimeType,
-        ));
+    private function sanitizeSvg(mixed $stream, string $fileName): string
+    {
+        $dirtySvg = \stream_get_contents($stream);
+        if (is_resource($stream)) {
+            \fclose($stream);
+        }
 
-        return new UploadedFileMetadata(
-            fileName: $fileName,
-            filePath: $newFilename,
-            fileSize: (int) $fileSize,
-            mimeType: (string) $mimeType,
-        );
+        $cleanSvg = new Sanitizer()->sanitize((string) $dirtySvg);
+
+        if ($cleanSvg === false || $cleanSvg === null || $cleanSvg === '') {
+            $this->logger->warning(sprintf(
+                'File upload rejected: SVG file "%s" could not be sanitized.',
+                $fileName,
+            ));
+            throw new \InvalidArgumentException($this->translator->trans(
+                'Le fichier SVG est invalide ou a été rejeté après analyse.',
+            ));
+        }
+
+        return $cleanSvg;
     }
 
     /**
