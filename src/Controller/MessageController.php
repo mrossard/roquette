@@ -9,8 +9,8 @@ use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Service\MessageFormatter;
 use App\Service\MessageManager;
-use App\Service\MessagePublisher;
 use App\Service\MessageRenderer;
+use App\Service\MessageSubmissionHandler;
 use App\Service\SlashCommandHandler;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -63,12 +63,12 @@ final class MessageController extends AbstractController
     }
 
     #[Route('/channels/{slug}/publish', name: 'app_publish', methods: ['POST'])]
-    public function publish(string $slug, Request $request, MessagePublisher $messagePublisher): Response
+    public function publish(string $slug, Request $request, MessageSubmissionHandler $submissionHandler): Response
     {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        return $messagePublisher->publish($slug, $request, $currentUser);
+        return $submissionHandler->handle($slug, $request, $currentUser);
     }
 
     #[Route('/messages/{id}/edit', name: 'app_message_edit_form', methods: ['GET'])]

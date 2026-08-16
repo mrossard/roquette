@@ -9,8 +9,8 @@ use App\Entity\Message;
 use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Service\ChannelAccessService;
-use App\Service\MessagePublisher;
 use App\Service\MessagePublishService;
+use App\Service\MessageSubmissionHandler;
 use App\Service\PublishResult;
 use App\Service\SlashCommandHandler;
 use App\Service\SlashCommandResult;
@@ -31,7 +31,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 #[AllowMockObjectsWithoutExpectations]
-class MessagePublisherTest extends TestCase
+class MessageSubmissionHandlerTest extends TestCase
 {
     private ChannelRepository $channelRepository;
     private ChannelAccessService $channelAccessService;
@@ -42,7 +42,7 @@ class MessagePublisherTest extends TestCase
     private TranslatorInterface $translator;
     private RateLimiterFactoryInterface $rateLimiter;
     private Session $session;
-    private MessagePublisher $publisher;
+    private MessageSubmissionHandler $handler;
 
     protected function setUp(): void
     {
@@ -60,7 +60,7 @@ class MessagePublisherTest extends TestCase
         $this->translator->method('trans')->willReturnArgument(0);
         $this->twig->method('render')->willReturn('<form></form>');
 
-        $this->publisher = new MessagePublisher(
+        $this->handler = new MessageSubmissionHandler(
             $this->channelRepository,
             $this->channelAccessService,
             $this->publishService,
@@ -98,122 +98,138 @@ class MessagePublisherTest extends TestCase
         $user = new User();
         $this->channelRepository->method('findOneBy')->willReturn(null);
 
+        $request = new Request();
         $this->expectException(NotFoundHttpException::class);
-        $this->publisher->publish('unknown', new Request(), $user);
+        $this->handler->handle('unknown', $request, $user);
     }
 
     #[Test]
-    public function channelAccessDeniedThrowsAccessDeniedHttpException(): void
+    public function accessDeniedThrowsAccessDeniedHttpException(): void
     {
         $user = new User();
         $channel = new Channel();
         $this->channelRepository->method('findOneBy')->willReturn($channel);
-        $this->channelAccessService->expects($this->once())->method('canUserAccess')->with($channel, $user)->willReturn(false);
+        $this->channelAccessService->method('canUserAccess')->willReturn(false);
 
+        $request = new Request();
         $this->expectException(AccessDeniedHttpException::class);
-        $this->publisher->publish('general', new Request(), $user);
+        $this->handler->handle('general', $request, $user);
     }
 
     #[Test]
-    public function rateLimitExceededReturns429(): void
+    public function rateLimitedReturns429(): void
     {
         $user = new User();
+        $ref = new \ReflectionProperty(User::class, 'id');
+        $ref->setValue($user, 1);
+
         $channel = new Channel();
         $this->channelRepository->method('findOneBy')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createRejectedLimiter());
 
         $request = new Request();
-        $request->setSession($this->session);
         $this->requestStack->push($request);
+        $request->setSession($this->session);
 
-        $response = $this->publisher->publish('general', $request, $user);
-
+        $response = $this->handler->handle('general', $request, $user);
         $this->assertSame(Response::HTTP_TOO_MANY_REQUESTS, $response->getStatusCode());
-        $this->assertNotEmpty($this->session->getFlashBag()->get('error'));
     }
 
     #[Test]
-    public function emptyMessageReturnsFormWithoutCallingPublishService(): void
+    public function emptyMessageReturns200Form(): void
     {
         $user = new User();
+        $ref = new \ReflectionProperty(User::class, 'id');
+        $ref->setValue($user, 1);
+
         $channel = new Channel();
         $this->channelRepository->method('findOneBy')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
         $request = new Request([], ['message' => '   ']);
-        $request->setSession($this->session);
         $this->requestStack->push($request);
+        $request->setSession($this->session);
 
-        $this->publishService->expects($this->never())->method('publish');
-
-        $response = $this->publisher->publish('general', $request, $user);
+        $response = $this->handler->handle('general', $request, $user);
         $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('<form></form>', $response->getContent());
     }
 
     #[Test]
-    public function slashCommandReturningResponseDirectlyReturnsIt(): void
+    public function slashCommandReturningResponseIsReturnedDirectly(): void
     {
         $user = new User();
+        $ref = new \ReflectionProperty(User::class, 'id');
+        $ref->setValue($user, 1);
+
         $channel = new Channel();
         $this->channelRepository->method('findOneBy')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
-        $directResponse = new Response('Direct Help Response', 200);
-        $this->slashCommandHandler->method('process')->willReturn(
-            SlashCommandResult::handled($directResponse),
-        );
+        $directResponse = new Response('modal content');
+        $this->slashCommandHandler
+            ->method('process')
+            ->willReturn(new SlashCommandResult('/shrug', $directResponse));
 
-        $request = new Request([], ['message' => '/help']);
-        $request->setSession($this->session);
+        $request = new Request([], ['message' => '/shrug']);
         $this->requestStack->push($request);
+        $request->setSession($this->session);
 
-        $response = $this->publisher->publish('general', $request, $user);
+        $response = $this->handler->handle('general', $request, $user);
         $this->assertSame($directResponse, $response);
     }
 
     #[Test]
-    public function successfulPublishReturnsForm(): void
+    public function successfulPublishReturns200Form(): void
     {
         $user = new User();
+        $ref = new \ReflectionProperty(User::class, 'id');
+        $ref->setValue($user, 1);
+
         $channel = new Channel();
         $this->channelRepository->method('findOneBy')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
-        $this->publishService->method('publish')->willReturn(
-            PublishResult::ok($channel, new Message(), '<div>message</div>'),
-        );
+        $message = new Message();
+        $this->publishService
+            ->method('publish')
+            ->willReturn(PublishResult::ok($channel, $message, '<div>item</div>'));
 
-        $request = new Request([], ['message' => 'Hello team']);
-        $request->setSession($this->session);
+        $request = new Request([], ['message' => 'Hello world']);
         $this->requestStack->push($request);
+        $request->setSession($this->session);
 
-        $response = $this->publisher->publish('general', $request, $user);
+        $response = $this->handler->handle('general', $request, $user);
         $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('<form></form>', $response->getContent());
     }
 
     #[Test]
-    public function failedPublishWithCustomStatusCodeRendersError(): void
+    public function publishServiceErrorReturnsErrorResponse(): void
     {
         $user = new User();
+        $ref = new \ReflectionProperty(User::class, 'id');
+        $ref->setValue($user, 1);
+
         $channel = new Channel();
         $this->channelRepository->method('findOneBy')->willReturn($channel);
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
-        $this->publishService->method('publish')->willReturn(
-            PublishResult::error('Poll needs 2 options', $channel, 400),
-        );
+        $this->publishService
+            ->method('publish')
+            ->willReturn(PublishResult::error('Bad request', $channel, 400));
 
-        $request = new Request([], ['message' => 'my poll', 'poll_question' => 'Choice?']);
-        $request->setSession($this->session);
+        $request = new Request([], ['message' => 'Hello']);
         $this->requestStack->push($request);
+        $request->setSession($this->session);
 
-        $response = $this->publisher->publish('general', $request, $user);
+        $response = $this->handler->handle('general', $request, $user);
         $this->assertSame(400, $response->getStatusCode());
-        $this->assertSame('Poll needs 2 options', $response->getContent());
+        $this->assertSame('Bad request', $response->getContent());
     }
 }

@@ -17,7 +17,12 @@ use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
-class MessagePublisher
+/**
+ * Handles the HTTP form submission workflow for publishing messages:
+ * validates permissions, rate limiting, request payload, slash commands,
+ * and renders HTMX response fragments.
+ */
+class MessageSubmissionHandler
 {
     public function __construct(
         private readonly ChannelRepository $channelRepository,
@@ -31,7 +36,7 @@ class MessagePublisher
         private readonly RateLimiterFactoryInterface $rateLimiter,
     ) {}
 
-    public function publish(string $slug, Request $request, User $currentUser): Response
+    public function handle(string $slug, Request $request, User $currentUser): Response
     {
         $channel = $this->findChannel($slug, $currentUser);
 
@@ -53,7 +58,7 @@ class MessagePublisher
             return $this->renderForm($channel);
         }
 
-        $messageText = $request->request->get('message', '');
+        $messageText = (string) $request->request->get('message', '');
         $uploadedFile = $request->files->get('file');
         $pollQuestion = $request->request->get('poll_question');
         $isPoll = $pollQuestion !== null && $pollQuestion !== '';
@@ -82,7 +87,7 @@ class MessagePublisher
             currentUser: $currentUser,
             messageText: $messageText,
             file: $uploadedFile,
-            pollQuestion: $pollQuestion,
+            pollQuestion: $pollQuestion !== null ? (string) $pollQuestion : null,
             pollOptions: $this->parsePollOptions($request),
             pollAllowMultiple: (bool) $request->request->get('allow_multiple'),
             replyToId: ($replyTo = $request->request->get('replyTo')) ? (int) $replyTo : null,
@@ -116,7 +121,8 @@ class MessagePublisher
         return is_int($workspaceId) ? $workspaceId : null;
     }
 
-    private function findChannel(string $slug, User $currentUser): Channel    {
+    private function findChannel(string $slug, User $currentUser): Channel
+    {
         $channel = $this->channelRepository->findOneBy(['slug' => $slug]);
         if (!$channel) {
             throw new NotFoundHttpException($this->translator->trans('Canal non trouvé.'));
