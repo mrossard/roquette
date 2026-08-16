@@ -3,22 +3,20 @@
 declare(strict_types=1);
 
 namespace App\Controller;
-
-
-
 use App\Entity\User;
 use App\Entity\UserGroup;
+use App\Entity\Workspace;
 use App\Enum\AuditAction;
 use App\Repository\UserGroupRepository;
 use App\Repository\UserRepository;
+use App\Security\Voter\UserGroupVoter;
 use App\Service\AuditLoggerService;
 use App\Service\Group\GroupProviderInterface;
+use App\Service\WorkspaceManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
-use App\Entity\Workspace;
-use App\Service\WorkspaceManager;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -187,7 +185,7 @@ final class AdminGroupController extends AbstractController
         EntityManagerInterface $entityManager,
         AuditLoggerService $auditLogger,
     ): Response {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        $this->denyAccessUnlessGranted(UserGroupVoter::DELETE, $userGroup);
 
         $name = $userGroup->getName();
         $groupId = $userGroup->getId();
@@ -221,7 +219,7 @@ final class AdminGroupController extends AbstractController
     #[Route('/admin/groups/{id}/members/autocomplete', name: 'app_admin_group_member_autocomplete', methods: ['GET'])]
     public function memberAutocomplete(UserGroup $userGroup, Request $request, UserRepository $userRepository): Response
     {
-        $this->checkAccessToGroup($userGroup);
+        $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $query = trim($request->query->get('search', ''));
         if ($query === '') {
@@ -257,7 +255,7 @@ final class AdminGroupController extends AbstractController
     #[Route('/admin/groups/{id}/members', name: 'app_admin_group_members', methods: ['GET'])]
     public function members(UserGroup $userGroup, EntityManagerInterface $entityManager): Response
     {
-        $this->checkAccessToGroup($userGroup);
+        $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $isExternal = !str_starts_with($userGroup->getGroupIdentifier(), 'local-group-');
         $externalMembers = [];
@@ -299,7 +297,7 @@ final class AdminGroupController extends AbstractController
         UserRepository $userRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        $this->checkAccessToGroup($userGroup);
+        $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $userId = $request->request->getInt('userId');
         $user = $userRepository->find($userId);
@@ -326,7 +324,7 @@ final class AdminGroupController extends AbstractController
         UserRepository $userRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        $this->checkAccessToGroup($userGroup);
+        $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $user = $userRepository->find($userId);
 
@@ -352,7 +350,7 @@ final class AdminGroupController extends AbstractController
         UserRepository $userRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        $this->checkAccessToGroup($userGroup);
+        $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $userId = $request->request->getInt('userId');
         $user = $userRepository->find($userId);
@@ -383,7 +381,7 @@ final class AdminGroupController extends AbstractController
         UserRepository $userRepository,
         EntityManagerInterface $entityManager,
     ): Response {
-        $this->checkAccessToGroup($userGroup);
+        $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $user = $userRepository->find($userId);
 
@@ -409,19 +407,6 @@ final class AdminGroupController extends AbstractController
         ]));
 
         return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
-    }
-
-    private function checkAccessToGroup(UserGroup $userGroup): void
-    {
-        if ($this->isGranted('ROLE_ADMIN')) {
-            return;
-        }
-
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-        if (!$userGroup->isAdministrator($currentUser)) {
-            throw $this->createAccessDeniedException('Vous n\'êtes pas administrateur de ce groupe.');
-        }
     }
 
     private function createOfficialWorkspaceForGroup(
