@@ -17,7 +17,7 @@ use App\Service\MessageRenderer;
 use Doctrine\ORM\EntityManagerInterface;
 use Twig\Environment;
 
-final readonly class CreatePollTool implements AiToolInterface
+final readonly class CreatePollTool extends AbstractAiTool
 {
     public function __construct(
         private EntityManagerInterface $em,
@@ -78,23 +78,24 @@ final readonly class CreatePollTool implements AiToolInterface
         ?int $authorUserId = null,
         ?int $workspaceId = null,
     ): string {
-        $channel = $this->channelResolver->resolve($channelSlug, $workspaceId);
+        $author = $this->resolveUser($this->userRepository, $authorUserId)
+            ?? $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME])
+            ?? $this->userRepository->findOneBy([]);
 
-        if (!$channel) {
+        $resolved = $this->resolveChannelAndCheckAccess(
+            $this->channelResolver,
+            $this->channelAccessService,
+            $channelSlug,
+            $author,
+            $workspaceId,
+        );
+        if ($resolved['error'] !== null) {
+            return sprintf('Impossible de créer le sondage : %s', $resolved['error']);
+        }
+
+        $channel = $resolved['channel'];
+        if ($channel === null) {
             return sprintf("Impossible de créer le sondage : le canal '%s' n'existe pas.", $channelSlug);
-        }
-
-        $author = null;
-        if ($authorUserId !== null) {
-            $author = $this->userRepository->find($authorUserId);
-        }
-        if (!$author) {
-            $author = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME])
-                ?? $this->userRepository->findOneBy([]);
-        }
-
-        if (!$this->channelAccessService->canUserAccess($channel, $author)) {
-            return sprintf("Impossible de créer le sondage : vous n'avez pas accès au canal '%s'.", $channelSlug);
         }
 
         // Fallback: If LLM failed to split options properly into an array, attempt regex extraction from question/prompt

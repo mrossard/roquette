@@ -9,7 +9,7 @@ use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use App\Service\ChannelAccessService;
 
-final readonly class SummarizeChannelTool implements AiToolInterface
+final readonly class SummarizeChannelTool extends AbstractAiTool
 {
     public function __construct(
         private UserRepository $userRepository,
@@ -85,31 +85,38 @@ final readonly class SummarizeChannelTool implements AiToolInterface
     }
     public function execute(array $arguments, int $userId, ?int $workspaceId = null): array
     {
-        $user = $this->userRepository->find($userId);
+        $user = $this->resolveUser($this->userRepository, $userId);
         if (!$user) {
-            return ['error' => 'Utilisateur non trouvé.'];
+            return $this->formatError('Utilisateur non trouvé.');
         }
 
         $channelSlug = trim((string) ($arguments['channelSlug'] ?? ''));
         if ($channelSlug === '') {
-            return ['error' => 'Veuillez fournir un canal valide.'];
+            return $this->formatError('Veuillez fournir un canal valide.');
         }
 
         $limit = \array_key_exists('limit', $arguments) && $arguments['limit'] !== null ? (int) $arguments['limit'] : 50;
         $limit = max(5, min(100, $limit));
 
-        $channel = $this->channelResolver->resolve($channelSlug, $workspaceId);
-        if (!$channel) {
-            return ['error' => sprintf("Canal '%s' non trouvé ou vous n'y avez pas accès.", $channelSlug)];
+        $resolved = $this->resolveChannelAndCheckAccess(
+            $this->channelResolver,
+            $this->channelAccessService,
+            $channelSlug,
+            $user,
+            $workspaceId,
+        );
+        if ($resolved['error'] !== null) {
+            return $this->formatError($resolved['error']);
         }
 
-        if (!$this->channelAccessService->canUserAccess($channel, $user)) {
-            return ['error' => sprintf("Vous n'avez pas accès au canal '%s'.", $channel->getName())];
+        $channel = $resolved['channel'];
+        if ($channel === null) {
+            return $this->formatError(sprintf("Canal '%s' non trouvé ou vous n'y avez pas accès.", $channelSlug));
         }
 
         $recentMessages = $this->messageRepository->findLatestInChannel($channel, $limit);
         if ([] === $recentMessages) {
-            return ['result' => sprintf("Le canal #%s ne contient aucun message récent à résumer.", $channel->getName())];
+            return $this->formatSuccess(sprintf("Le canal #%s ne contient aucun message récent à résumer.", $channel->getName()));
         }
 
         $recentMessages = array_reverse($recentMessages);
@@ -128,7 +135,7 @@ final readonly class SummarizeChannelTool implements AiToolInterface
         }
 
         if ([] === $extractedText) {
-            return ['result' => sprintf("Le canal #%s ne contient pas de texte exploitable à résumer.", $channel->getName())];
+            return $this->formatSuccess(sprintf("Le canal #%s ne contient pas de texte exploitable à résumer.", $channel->getName()));
         }
 
         return [

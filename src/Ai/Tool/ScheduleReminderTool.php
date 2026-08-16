@@ -14,7 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
 
-final readonly class ScheduleReminderTool implements AiToolInterface
+final readonly class ScheduleReminderTool extends AbstractAiTool
 {
     public function __construct(
         private EntityManagerInterface $em,
@@ -69,45 +69,49 @@ final readonly class ScheduleReminderTool implements AiToolInterface
         ?int $authorUserId = null,
         ?int $workspaceId = null,
     ): string {
-        $user = null;
-        if ($authorUserId !== null) {
-            $user = $this->userRepository->find($authorUserId);
-        }
+        $user = $this->resolveUser($this->userRepository, $authorUserId)
+            ?? $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME])
+            ?? $this->userRepository->findOneBy([]);
 
         // Si aucun canal valide n'est fourni ou s'il s'agit d'un rappel personnel, viser en priorité le DM avec l'assistant (User::ROBOT_USERNAME)
+        $dmSlug = $user !== null ? 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug() : null;
+        $preferDm = $channelSlug === 'assistant' || $channelSlug === 'dm' || str_contains($channelSlug, 'robot');
+
+        $candidates = [];
+        if ($preferDm && $dmSlug !== null) {
+            $candidates[] = $dmSlug;
+        }
+        $candidates[] = $channelSlug;
+        if (!$preferDm && $dmSlug !== null) {
+            $candidates[] = $dmSlug;
+        }
+
         $channel = null;
-        if ($user) {
-            $dmSlug = 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug();
-            if ($channelSlug === 'assistant' || $channelSlug === 'dm' || str_contains($channelSlug, 'robot')) {
-                $channel = $this->channelResolver->resolve($dmSlug, $workspaceId);
+        $requestedError = null;
+        foreach ($candidates as $candidate) {
+            $resolved = $this->resolveChannelAndCheckAccess(
+                $this->channelResolver,
+                $this->channelAccessService,
+                $candidate,
+                $user,
+                $workspaceId,
+            );
+            if ($resolved['error'] !== null) {
+                if ($candidate === $channelSlug) {
+                    $requestedError = $resolved['error'];
+                }
+                continue;
             }
+
+            $channel = $resolved['channel'];
+            break;
         }
 
-        if (!$channel) {
-            $channel = $this->channelResolver->resolve($channelSlug, $workspaceId);
-        }
-
-        if (!$channel && $user) {
-            // Fallback 1: Canal DM avec le robot roquette
-            $dmSlug = 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug();
-            $channel = $this->channelResolver->resolve($dmSlug, $workspaceId);
-        }
-
-        if (!$channel) {
-            return sprintf("Impossible de programmer le rappel : le canal '%s' n'existe pas.", $channelSlug);
-        }
-
-        $user = null;
-        if ($authorUserId !== null) {
-            $user = $this->userRepository->find($authorUserId);
-        }
-        if (!$user) {
-            $user = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME])
-                ?? $this->userRepository->findOneBy([]);
-        }
-
-        if ($user !== null && !$this->channelAccessService->canUserAccess($channel, $user)) {
-            return sprintf("Impossible de programmer le rappel : vous n'avez pas accès au canal '%s'.", $channel->getName());
+        if ($channel === null) {
+            return sprintf(
+                'Impossible de programmer le rappel : %s',
+                $requestedError ?? sprintf("le canal '%s' n'existe pas.", $channelSlug),
+            );
         }
 
         if ($delayMinutes < 1) {

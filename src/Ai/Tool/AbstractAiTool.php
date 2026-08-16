@@ -28,9 +28,9 @@ abstract readonly class AbstractAiTool implements AiToolInterface
         return ['result' => $message];
     }
 
-    protected function resolveUser(UserRepository $userRepository, int $userId): ?User
+    protected function resolveUser(UserRepository $userRepository, ?int $userId): ?User
     {
-        return $userRepository->find($userId);
+        return $userId !== null ? $userRepository->find($userId) : null;
     }
 
     /**
