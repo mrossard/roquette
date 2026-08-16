@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
-use App\Entity\User;
 use App\Message\GenerateExportMessage;
 use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
 use App\Service\ChannelExportService;
 use App\Service\MessagePublishService;
+use App\Service\RobotUserProvider;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -20,6 +20,7 @@ final readonly class GenerateExportMessageHandler
         private UserRepository $userRepository,
         private ChannelExportService $channelExportService,
         private MessagePublishService $messagePublishService,
+        private RobotUserProvider $robotUserProvider,
     ) {}
 
     public function __invoke(GenerateExportMessage $message): void
@@ -35,13 +36,13 @@ final readonly class GenerateExportMessageHandler
         $export = $this->channelExportService->generate($channel, $user);
 
         // Find the Robot Roquette user
-        $robotUser = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME]);
+        $robotUser = $this->robotUserProvider->getRobotUser();
         if (!$robotUser) {
             return;
         }
 
         // Find the DM channel for this user and robot-roquette
-        $dmChannelSlug = 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug();
+        $dmChannelSlug = $this->robotUserProvider->getDmChannelSlug($user);
         $dmChannel = $this->channelRepository->findOneBy(['slug' => $dmChannelSlug]);
 
         if (!$dmChannel) {

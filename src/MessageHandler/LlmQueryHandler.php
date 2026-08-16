@@ -24,6 +24,7 @@ use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
 use App\Repository\WorkspaceRepository;
 use App\Service\LlmService;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -48,6 +49,7 @@ final readonly class LlmQueryHandler
         private ToolRegistry $toolRegistry,
         private ToolRunner $toolRunner,
         private ToolActionSigner $toolActionSigner,
+        private RobotUserProvider $robotUserProvider,
         #[Autowire(env: 'bool:LLM_TOOLS_ENABLED')]
         private bool $toolsEnabled = true,
         private ?PendingConfirmationService $pendingConfirmationService = null,
@@ -139,7 +141,7 @@ final readonly class LlmQueryHandler
             return [$message->getIntent(), $channelSlug];
         }
 
-        if (!str_starts_with($channelSlug, 'dm-' . User::ROBOT_USERNAME . '-')) {
+        if (!$this->robotUserProvider->isRobotDmChannel($channelSlug)) {
             return ['help', $channelSlug];
         }
 
@@ -230,11 +232,11 @@ final readonly class LlmQueryHandler
 
     private function persistRobotDmMessage(string $channelSlug, string $content): void
     {
-        if (!str_starts_with($channelSlug, 'dm-' . User::ROBOT_USERNAME . '-')) {
+        if (!$this->robotUserProvider->isRobotDmChannel($channelSlug)) {
             return;
         }
 
-        $robotUser = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME]);
+        $robotUser = $this->robotUserProvider->getRobotUser();
         $channel = $this->channelRepository->findOneBy(['slug' => $channelSlug]);
         if (!$robotUser || !$channel) {
             return;

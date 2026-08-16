@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Ai;
 
 use App\Entity\Channel;
-use App\Entity\User;
 use App\Entity\Workspace;
+use App\Service\RobotUserProvider;
 
 /**
  * Classifies a user request into an assistant intent (help / resumer / sondage)
@@ -19,6 +19,7 @@ final readonly class IntentClassifier
 {
     public function __construct(
         private LlmIntentClassifier $llmClassifier,
+        private RobotUserProvider $robotUserProvider,
     ) {}
 
     /**
@@ -61,7 +62,7 @@ final readonly class IntentClassifier
     private function extractChannelSlug(string $question, array $channels, string $currentChannelSlug): ?string
     {
         if (
-            !str_starts_with($currentChannelSlug, 'dm-' . User::ROBOT_USERNAME . '-')
+            !$this->robotUserProvider->isRobotDmChannel($currentChannelSlug)
             && preg_match('/\b(?:ce\s+canal|mon\s+canal|ici)\b/iu', $question) === 1
         ) {
             return $currentChannelSlug;

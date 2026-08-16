@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Security;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Security\OAuth2Authenticator;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -55,6 +56,7 @@ class OAuth2AuthenticatorTest extends TestCase
             'http://redirect',
             'name',
             true,
+            $this->createMock(RobotUserProvider::class),
         );
     }
 

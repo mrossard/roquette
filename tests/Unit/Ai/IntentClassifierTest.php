@@ -7,7 +7,9 @@ namespace App\Tests\Unit\Ai;
 use App\Ai\IntentClassifier;
 use App\Ai\LlmIntentClassifier;
 use App\Entity\Channel;
+use App\Repository\UserRepository;
 use App\Service\LlmService;
+use App\Service\RobotUserProvider;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -32,7 +34,10 @@ final class IntentClassifierTest extends TestCase
         }
 
         return [
-            new IntentClassifier(new LlmIntentClassifier($llm, $this->createMock(LoggerInterface::class))),
+            new IntentClassifier(
+                new LlmIntentClassifier($llm, $this->createMock(LoggerInterface::class)),
+                new RobotUserProvider($this->createMock(UserRepository::class)),
+            ),
             $llm,
         ];
     }

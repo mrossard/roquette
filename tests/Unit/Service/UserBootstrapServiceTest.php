@@ -12,6 +12,7 @@ use App\Repository\UserRepository;
 use App\Repository\WorkspaceRepository;
 use App\Service\UniqueSlugGenerator;
 use App\Service\UserBootstrapService;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
@@ -62,6 +63,7 @@ class UserBootstrapServiceTest extends TestCase
             $this->requestStack,
             $this->translator,
             $this->slugGenerator,
+            $this->createMock(RobotUserProvider::class),
         );
 
         $service->bootstrap($user);
@@ -103,6 +105,7 @@ class UserBootstrapServiceTest extends TestCase
             $this->requestStack,
             $this->translator,
             $this->slugGenerator,
+            $this->createMock(RobotUserProvider::class),
         );
 
         $service->bootstrap($user);

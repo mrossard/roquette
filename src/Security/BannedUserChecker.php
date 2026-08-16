@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Entity\User;
+use App\Service\RobotUserProvider;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
 use Symfony\Component\Security\Core\User\UserCheckerInterface;
@@ -12,6 +13,10 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 class BannedUserChecker implements UserCheckerInterface
 {
+    public function __construct(
+        private RobotUserProvider $robotUserProvider,
+    ) {}
+
     public function checkPreAuth(UserInterface $user): void
     {
         if (!$user instanceof User) {
@@ -24,7 +29,7 @@ class BannedUserChecker implements UserCheckerInterface
             );
         }
 
-        if (strcasecmp($user->getUsername() ?? '', User::ROBOT_USERNAME) === 0) {
+        if ($this->robotUserProvider->isRobotUser($user)) {
             throw new CustomUserMessageAuthenticationException('Connexion impossible avec un compte système.');
         }
     }

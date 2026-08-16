@@ -13,6 +13,7 @@ use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
 use App\Repository\WorkspaceRepository;
 use App\Service\ChannelAccessService;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -121,6 +122,7 @@ class ScheduleReminderToolTest extends TestCase
         return new ScheduleReminderTool(
             $em,
             $userRepo,
+            new RobotUserProvider($userRepo),
             $bus,
             new ChannelResolver($channelRepo, $workspaceRepo),
             $accessService,
@@ -153,6 +155,7 @@ class ScheduleReminderToolTest extends TestCase
         $tool = new ScheduleReminderTool(
             $em,
             $userRepo,
+            new RobotUserProvider($userRepo),
             $bus,
             new ChannelResolver($channelRepo, $workspaceRepo),
             $accessService,

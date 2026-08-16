@@ -14,7 +14,6 @@ use App\Message\LlmQueryMessage;
 use App\Message\ModerateMessageMessage;
 use App\Message\ScanFileMessage;
 use App\Repository\MessageRepository;
-use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -28,7 +27,6 @@ class MessagePublishService
 {
     public function __construct(
         private readonly MessageRepository $messageRepository,
-        private readonly UserRepository $userRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly MercurePublisher $mercurePublisher,
         private readonly FileUploadService $fileUploadService,
@@ -38,6 +36,7 @@ class MessagePublishService
         private readonly Environment $twig,
         #[Autowire(service: 'limiter.llm_api')]
         private readonly RateLimiterFactoryInterface $llmRateLimiter,
+        private readonly RobotUserProvider $robotUserProvider,
         private readonly ?PendingConfirmationService $pendingConfirmationService = null,
     ) {}
 
@@ -73,7 +72,7 @@ class MessagePublishService
             return $pollValidation;
         }
 
-        $isDmWithRobot = $channel->getSlug() === 'dm-' . User::ROBOT_USERNAME . '-' . $currentUser->getSlug();
+        $isDmWithRobot = $channel->getSlug() === $this->robotUserProvider->getDmChannelSlug($currentUser);
 
         if ($this->isRobotMentioned($messageText) && !$isDmWithRobot) {
             return $this->handleRobotMentionInChannel($channel, $currentUser, $messageText, $workspaceId);
@@ -312,7 +311,7 @@ class MessagePublishService
 
     private function isRobotMentioned(string $messageText): bool
     {
-        $robot = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME]);
+        $robot = $this->robotUserProvider->getRobotUser();
         if ($robot === null) {
             return false;
         }

@@ -22,6 +22,7 @@ class UserBootstrapService
         private readonly RequestStack $requestStack,
         private readonly TranslatorInterface $translator,
         private readonly UniqueSlugGenerator $slugGenerator,
+        private readonly RobotUserProvider $robotUserProvider,
     ) {}
 
     public function bootstrap(User $user): void
@@ -132,7 +133,7 @@ class UserBootstrapService
 
     private function ensureRobotUser(string $assistantName, bool &$needsFlush): User
     {
-        $robotUser = $this->entityManager->getRepository(User::class)->findOneBy(['username' => User::ROBOT_USERNAME]);
+        $robotUser = $this->robotUserProvider->getRobotUser();
         if (!$robotUser) {
             $robotUser = new User();
             $robotUser->setUsername(User::ROBOT_USERNAME);
@@ -157,7 +158,7 @@ class UserBootstrapService
         string $assistantDesc,
         bool &$needsFlush,
     ): void {
-        $robotSlug = 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug();
+        $robotSlug = $this->robotUserProvider->getDmChannelSlug($user);
         $robotChannel = $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => $robotSlug]);
 
         if (!$robotChannel) {

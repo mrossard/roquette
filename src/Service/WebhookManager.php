@@ -5,15 +5,13 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Message;
-use App\Entity\User;
 use App\Entity\Webhook;
-use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 readonly class WebhookManager
 {
     public function __construct(
-        private UserRepository $userRepository,
+        private RobotUserProvider $robotUserProvider,
         private EntityManagerInterface $entityManager,
         private MessageRenderer $messageRenderer,
         private MercurePublisher $mercurePublisher,
@@ -25,7 +23,7 @@ readonly class WebhookManager
         ?string $customName = null,
         ?string $customAvatar = null,
     ): Message {
-        $robotUser = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME]);
+        $robotUser = $this->robotUserProvider->getRobotUser();
         if (!$robotUser) {
             $robotUser = $webhook->getCreator();
         }

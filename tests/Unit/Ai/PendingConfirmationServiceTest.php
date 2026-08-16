@@ -9,6 +9,7 @@ use App\Ai\ToolActionSigner;
 use App\Ai\ToolRegistry;
 use App\Entity\User;
 use App\Service\MessageFormatter;
+use App\Service\RobotUserProvider;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -37,6 +38,7 @@ class PendingConfirmationServiceTest extends TestCase
             $this->createMock(HubInterface::class),
             $this->createMock(Environment::class),
             $this->createMock(MessageFormatter::class),
+            $this->createMock(RobotUserProvider::class),
             new ArrayAdapter(),
             $this->createMock(RateLimiterFactoryInterface::class),
         );
@@ -75,6 +77,7 @@ class PendingConfirmationServiceTest extends TestCase
             $this->createMock(HubInterface::class),
             $this->createMock(Environment::class),
             $this->createMock(MessageFormatter::class),
+            $this->createMock(RobotUserProvider::class),
             new ArrayAdapter(),
             $this->createMock(RateLimiterFactoryInterface::class),
             'roquette',
@@ -103,6 +106,7 @@ class PendingConfirmationServiceTest extends TestCase
             $this->createMock(HubInterface::class),
             $this->createMock(Environment::class),
             $this->createMock(MessageFormatter::class),
+            $this->createMock(RobotUserProvider::class),
             $cache,
             $this->createMock(RateLimiterFactoryInterface::class),
         );
@@ -173,6 +177,7 @@ class PendingConfirmationServiceTest extends TestCase
             $hub,
             $twig,
             $formatter,
+            $this->createMock(RobotUserProvider::class),
             $cache,
             $rateLimiterFactory,
             'roquette',
@@ -232,13 +237,15 @@ class PendingConfirmationServiceTest extends TestCase
         $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
         $entityManager->expects($this->once())->method('flush');
 
+        $robotUserProvider = $this->createMock(RobotUserProvider::class);
+        $robotUserProvider->method('isRobotDmChannel')->willReturn(true);
+        $robotUserProvider->method('isRobotUser')->willReturn(true);
+
         $channelRepo = $this->createMock(\App\Repository\ChannelRepository::class);
         $channelRepo->expects($this->once())->method('findOneBy')->with(['slug' => $channel->getSlug()])->willReturn($channel);
 
         $messageRepo = $this->createMock(\App\Repository\MessageRepository::class);
         $messageRepo->expects($this->once())->method('findLatestInChannel')->with($channel, 5)->willReturn([$robotMsg]);
-
-        $userRepo = $this->createStub(\App\Repository\UserRepository::class);
 
         $service = new PendingConfirmationService(
             $this->signer,
@@ -246,6 +253,7 @@ class PendingConfirmationServiceTest extends TestCase
             $hub,
             $twig,
             $formatter,
+            $robotUserProvider,
             new ArrayAdapter(),
             $rateLimiterFactory,
             'roquette',
@@ -253,7 +261,6 @@ class PendingConfirmationServiceTest extends TestCase
             $entityManager,
             $channelRepo,
             $messageRepo,
-            $userRepo,
         );
 
         $result = $service->executeConfirmation($token, $user);

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
-use App\Entity\User;
 use App\Message\SendReminderMessage;
 use App\Repository\ReminderRepository;
 use App\Repository\UserRepository;
 use App\Service\MessagePublishService;
+use App\Service\RobotUserProvider;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -18,6 +18,7 @@ final readonly class SendReminderMessageHandler
         private ReminderRepository $reminderRepository,
         private UserRepository $userRepository,
         private MessagePublishService $messagePublishService,
+        private RobotUserProvider $robotUserProvider,
     ) {}
 
     public function __invoke(SendReminderMessage $message): void
@@ -31,7 +32,7 @@ final readonly class SendReminderMessageHandler
         $channel = $reminder->getChannel();
 
         // Récupérer le Robot Roquette comme auteur du message pour éviter qu'il soit ignoré
-        $robotUser = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME])
+        $robotUser = $this->robotUserProvider->getRobotUser()
             ?? $this->userRepository->findOneBy([]);
 
         $reminderText = sprintf("⏰ **Rappel pour @%s** : %s", $user->getUsername(), $reminder->getMessage());

@@ -26,10 +26,21 @@ class RobotUserProvider
 
     public function isRobotUser(?User $user): bool
     {
-        if ($user === null) {
-            return false;
-        }
+        return $user !== null && $this->isRobotUsername($user->getUsername() ?? '');
+    }
 
-        return strcasecmp($user->getUsername(), User::ROBOT_USERNAME) === 0;
+    public function isRobotUsername(string $username): bool
+    {
+        return strcasecmp($username, User::ROBOT_USERNAME) === 0;
+    }
+
+    public function getDmChannelSlug(User $user): string
+    {
+        return 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug();
+    }
+
+    public function isRobotDmChannel(string $channelSlug): bool
+    {
+        return str_starts_with($channelSlug, 'dm-' . User::ROBOT_USERNAME . '-');
     }
 }

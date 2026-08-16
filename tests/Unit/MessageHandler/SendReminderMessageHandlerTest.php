@@ -12,6 +12,7 @@ use App\MessageHandler\SendReminderMessageHandler;
 use App\Repository\ReminderRepository;
 use App\Repository\UserRepository;
 use App\Service\MessagePublishService;
+use App\Service\RobotUserProvider;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -42,11 +43,8 @@ final class SendReminderMessageHandlerTest extends TestCase
 
         $reminderRepository->expects(self::once())->method('find')->with(42)->willReturn($reminder);
 
-        $userRepository
-            ->expects(self::once())
-            ->method('findOneBy')
-            ->with(['username' => 'robot-roquette'])
-            ->willReturn($robotUser);
+        $robotUserProvider = $this->createMock(RobotUserProvider::class);
+        $robotUserProvider->method('getRobotUser')->willReturn($robotUser);
 
         $messagePublishService
             ->expects(self::once())
@@ -55,7 +53,7 @@ final class SendReminderMessageHandlerTest extends TestCase
 
         $reminderRepository->expects(self::once())->method('save')->with($reminder, true);
 
-        $handler = new SendReminderMessageHandler($reminderRepository, $userRepository, $messagePublishService);
+        $handler = new SendReminderMessageHandler($reminderRepository, $userRepository, $messagePublishService, $robotUserProvider);
 
         $handler(new SendReminderMessage(42));
 
@@ -75,7 +73,7 @@ final class SendReminderMessageHandlerTest extends TestCase
 
         $messagePublishService->expects(self::never())->method('publish');
 
-        $handler = new SendReminderMessageHandler($reminderRepository, $userRepository, $messagePublishService);
+        $handler = new SendReminderMessageHandler($reminderRepository, $userRepository, $messagePublishService, $this->createMock(RobotUserProvider::class));
 
         $handler(new SendReminderMessage(42));
     }

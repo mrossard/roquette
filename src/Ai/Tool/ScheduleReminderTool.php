@@ -6,10 +6,10 @@ namespace App\Ai\Tool;
 
 use App\Ai\ChannelResolver;
 use App\Entity\Reminder;
-use App\Entity\User;
 use App\Message\SendReminderMessage;
 use App\Repository\UserRepository;
 use App\Service\ChannelAccessService;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
@@ -19,6 +19,7 @@ final readonly class ScheduleReminderTool extends AbstractAiTool
     public function __construct(
         private EntityManagerInterface $em,
         private UserRepository $userRepository,
+        private RobotUserProvider $robotUserProvider,
         private MessageBusInterface $bus,
         private ChannelResolver $channelResolver,
         private ChannelAccessService $channelAccessService,
@@ -70,11 +71,11 @@ final readonly class ScheduleReminderTool extends AbstractAiTool
         ?int $workspaceId = null,
     ): string {
         $user = $this->resolveUser($this->userRepository, $authorUserId)
-            ?? $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME])
+            ?? $this->robotUserProvider->getRobotUser()
             ?? $this->userRepository->findOneBy([]);
 
         // Si aucun canal valide n'est fourni ou s'il s'agit d'un rappel personnel, viser en priorité le DM avec l'assistant (User::ROBOT_USERNAME)
-        $dmSlug = $user !== null ? 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug() : null;
+        $dmSlug = $user !== null ? $this->robotUserProvider->getDmChannelSlug($user) : null;
         $preferDm = $channelSlug === 'assistant' || $channelSlug === 'dm' || str_contains($channelSlug, 'robot');
 
         $candidates = [];

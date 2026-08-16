@@ -6,6 +6,7 @@ namespace App\Security;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -52,6 +53,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
         private string $displayNameField,
         #[Autowire(env: 'bool:AUTH_OAUTH_ENABLED')]
         private bool $authOauthEnabled,
+        private RobotUserProvider $robotUserProvider,
     ) {}
 
     public function supports(Request $request): ?bool
@@ -192,7 +194,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
             );
         }
 
-        if (strcasecmp($username, User::ROBOT_USERNAME) === 0) {
+        if ($this->robotUserProvider->isRobotUsername($username)) {
             throw new CustomUserMessageAuthenticationException('Connexion impossible avec un compte système.');
         }
 

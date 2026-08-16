@@ -72,13 +72,24 @@ class LlmQueryHandlerTest extends TestCase
             'memoryMessages' => 10,
             'maxSummaryMessages' => 10,
             'toolActionSigner' => new ToolActionSigner('test-secret'),
+            'robotUserProvider' => (function () {
+                $provider = $this->createMock(\App\Service\RobotUserProvider::class);
+                $provider->method('isRobotDmChannel')->willReturnCallback(
+                    static fn(string $slug): bool => str_starts_with($slug, 'dm-robot-roquette-'),
+                );
+
+                return $provider;
+            })(),
         ];
         $deps = array_merge($defaults, $overrides);
 
         $deps['twig']->method('render')->willReturn('<div>test</div>');
 
         $channelResolver = new ChannelResolver($deps['channelRepository'], $deps['workspaceRepository']);
-        $intentClassifier = new IntentClassifier(new LlmIntentClassifier($deps['llmService'], $deps['logger']));
+        $intentClassifier = new IntentClassifier(
+            new LlmIntentClassifier($deps['llmService'], $deps['logger']),
+            $deps['robotUserProvider'],
+        );
         $summaryBuilder = new ChannelSummaryBuilder(
             $deps['userChannelReadRepository'],
             $deps['messageRepository'],
@@ -126,6 +137,7 @@ class LlmQueryHandlerTest extends TestCase
             toolRunner: $toolRunner,
             toolActionSigner: $deps['toolActionSigner'],
             toolsEnabled: $deps['toolsEnabled'],
+            robotUserProvider: $deps['robotUserProvider'],
         );
 
         return [$handler, $deps];
@@ -192,7 +204,10 @@ class LlmQueryHandlerTest extends TestCase
 
         $userRepository = $this->createMock(UserRepository::class);
         $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
-        $userRepository->expects($this->once())->method('findOneBy')->with(['username' => User::ROBOT_USERNAME])->willReturn($robot);
+
+        $robotUserProvider = $this->createMock(\App\Service\RobotUserProvider::class);
+        $robotUserProvider->method('getRobotUser')->willReturn($robot);
+        $robotUserProvider->method('isRobotDmChannel')->willReturn(true);
 
         $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
         $channelRepository->expects($this->once())->method('findAllForUser')->willReturn([$dmChannel]);
@@ -210,6 +225,7 @@ class LlmQueryHandlerTest extends TestCase
             'channelRepository' => $channelRepository,
             'entityManager' => $entityManager,
             'llmService' => $llmService,
+            'robotUserProvider' => $robotUserProvider,
         ];
 
         [$handler] = $this->buildHandler($overrides);
@@ -417,6 +433,7 @@ class LlmQueryHandlerTest extends TestCase
         $tool = new ScheduleReminderTool(
             $entityManager,
             $userRepository,
+            $this->createMock(\App\Service\RobotUserProvider::class),
             $bus,
             new ChannelResolver($channelRepository, $this->createStub(\App\Repository\WorkspaceRepository::class)),
             $accessService,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Entity\User;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -23,6 +24,7 @@ class CreateAdminCommand extends Command
         private readonly EntityManagerInterface $em,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly TranslatorInterface $translator,
+        private readonly RobotUserProvider $robotUserProvider,
     ) {
         parent::__construct();
     }
@@ -54,7 +56,7 @@ class CreateAdminCommand extends Command
             });
         }
 
-        if (strcasecmp($username, User::ROBOT_USERNAME) === 0) {
+        if ($this->robotUserProvider->isRobotUsername((string) $username)) {
             $io->error($this->translator->trans(
                 'Impossible de modifier ou de promouvoir le compte système de l\'assistant.',
             ));

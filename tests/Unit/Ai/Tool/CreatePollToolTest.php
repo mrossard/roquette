@@ -16,6 +16,7 @@ use App\Service\ChannelAccessService;
 use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
 use App\Service\MessageRenderer;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -48,6 +49,7 @@ class CreatePollToolTest extends TestCase
         return new CreatePollTool(
             $em,
             $userRepo,
+            new RobotUserProvider($userRepo),
             $mercurePublisher,
             $messageFormatter,
             $twig,
@@ -163,6 +165,7 @@ class CreatePollToolTest extends TestCase
         $tool = new CreatePollTool(
             $em,
             $userRepo,
+            new RobotUserProvider($userRepo),
             $this->createMock(MercurePublisher::class),
             $this->createMock(MessageFormatter::class),
             $this->createMock(Environment::class),

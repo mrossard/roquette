@@ -8,9 +8,9 @@ use App\Entity\Message;
 use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
-use App\Repository\UserRepository;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\AI\Platform\Result\ToolCall;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -35,6 +35,7 @@ class PendingConfirmationService
         private readonly HubInterface $hub,
         private readonly Environment $twig,
         private readonly MessageFormatter $messageFormatter,
+        private readonly RobotUserProvider $robotUserProvider,
         private readonly CacheInterface $cache,
         #[Autowire(service: 'limiter.llm_api')]
         private readonly RateLimiterFactoryInterface $llmApiLimiter,
@@ -43,7 +44,6 @@ class PendingConfirmationService
         private readonly ?EntityManagerInterface $entityManager = null,
         private readonly ?ChannelRepository $channelRepository = null,
         private readonly ?MessageRepository $messageRepository = null,
-        private readonly ?UserRepository $userRepository = null,
     ) {}
 
     public function savePendingConfirmation(
@@ -269,7 +269,7 @@ class PendingConfirmationService
             return;
         }
 
-        if (!str_starts_with($channelSlug, 'dm-' . User::ROBOT_USERNAME . '-')) {
+        if (!$this->robotUserProvider->isRobotDmChannel($channelSlug)) {
             return;
         }
 
@@ -281,7 +281,7 @@ class PendingConfirmationService
         // Find the latest robot message in this DM channel (which requested confirmation)
         $latestMessages = $this->messageRepository->findLatestInChannel($channel, 5);
         foreach ($latestMessages as $msg) {
-            if ($msg->getAuthor()?->getUsername() !== User::ROBOT_USERNAME) {
+            if (!$this->robotUserProvider->isRobotUser($msg->getAuthor())) {
                 continue;
             }
 
@@ -292,7 +292,7 @@ class PendingConfirmationService
         }
 
         // If no prior message was found to update, persist a new robot message
-        $robotUser = $this->userRepository?->findOneBy(['username' => User::ROBOT_USERNAME]);
+        $robotUser = $this->robotUserProvider->getRobotUser();
         if ($robotUser !== null) {
             $msg = new Message();
             $msg->setAuthor($robotUser);

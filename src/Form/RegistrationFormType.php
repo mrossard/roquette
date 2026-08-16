@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Entity\User;
+use App\Service\RobotUserProvider;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
@@ -21,6 +22,10 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 class RegistrationFormType extends AbstractType
 {
+    public function __construct(
+        private readonly RobotUserProvider $robotUserProvider,
+    ) {}
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('username', TextType::class, [
@@ -31,8 +36,8 @@ class RegistrationFormType extends AbstractType
                     max: 180,
                     minMessage: 'Le nom d\'utilisateur doit faire au moins {{ limit }} caractères.',
                 ),
-                new Callback(static function (mixed $value, ExecutionContextInterface $context) {
-                    if (is_string($value) && strcasecmp($value, User::ROBOT_USERNAME) === 0) {
+                new Callback(function (mixed $value, ExecutionContextInterface $context) {
+                    if (is_string($value) && $this->robotUserProvider->isRobotUsername($value)) {
                         $context
                             ->buildViolation('Ce nom d\'utilisateur est réservé par le système.')
                             ->setTranslationDomain('messages')

@@ -10,11 +10,11 @@ use App\Entity\User;
 use App\Message\LlmQueryMessage;
 use App\Message\ModerateMessageMessage;
 use App\Repository\MessageRepository;
-use App\Repository\UserRepository;
 use App\Service\FileUploadService;
 use App\Service\MercurePublisher;
 use App\Service\MessagePublishService;
 use App\Service\MessageRenderer;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
@@ -31,7 +31,6 @@ use Twig\Environment;
 class MessagePublishServiceTest extends TestCase
 {
     private MessageRepository $messageRepository;
-    private UserRepository $userRepository;
     private EntityManagerInterface $entityManager;
     private MercurePublisher $mercurePublisher;
     private FileUploadService $fileUploadService;
@@ -40,12 +39,12 @@ class MessagePublishServiceTest extends TestCase
     private MessageRenderer $messageRenderer;
     private Environment $twig;
     private RateLimiterFactoryInterface $llmRateLimiter;
+    private RobotUserProvider $robotUserProvider;
     private MessagePublishService $publishService;
 
     protected function setUp(): void
     {
         $this->messageRepository = $this->createMock(MessageRepository::class);
-        $this->userRepository = $this->createMock(UserRepository::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->mercurePublisher = $this->createMock(MercurePublisher::class);
         $this->fileUploadService = $this->createMock(FileUploadService::class);
@@ -54,6 +53,7 @@ class MessagePublishServiceTest extends TestCase
         $this->messageRenderer = $this->createMock(MessageRenderer::class);
         $this->twig = $this->createMock(Environment::class);
         $this->llmRateLimiter = $this->createMock(RateLimiterFactoryInterface::class);
+        $this->robotUserProvider = $this->createMock(RobotUserProvider::class);
 
         $this->translator->method('trans')->willReturnArgument(0);
         $this->messageRenderer->method('renderFeedItem')->willReturn('<div class="feed-item">Message</div>');
@@ -62,7 +62,6 @@ class MessagePublishServiceTest extends TestCase
 
         $this->publishService = new MessagePublishService(
             $this->messageRepository,
-            $this->userRepository,
             $this->entityManager,
             $this->mercurePublisher,
             $this->fileUploadService,
@@ -71,6 +70,7 @@ class MessagePublishServiceTest extends TestCase
             $this->messageRenderer,
             $this->twig,
             $this->llmRateLimiter,
+            $this->robotUserProvider,
         );
     }
 
@@ -175,7 +175,7 @@ class MessagePublishServiceTest extends TestCase
 
         $robot = new User();
         $robot->setUsername(User::ROBOT_USERNAME);
-        $this->userRepository->method('findOneBy')->willReturn($robot);
+        $this->robotUserProvider->method('getRobotUser')->willReturn($robot);
         $this->llmRateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
         $this->entityManager->expects($this->never())->method('persist');

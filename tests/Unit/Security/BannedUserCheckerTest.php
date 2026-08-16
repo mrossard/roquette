@@ -6,16 +6,19 @@ namespace App\Tests\Unit\Security;
 
 use App\Entity\User;
 use App\Security\BannedUserChecker;
+use App\Service\RobotUserProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
 
 class BannedUserCheckerTest extends TestCase
 {
     private BannedUserChecker $checker;
+    private RobotUserProvider $robotUserProvider;
 
     protected function setUp(): void
     {
-        $this->checker = new BannedUserChecker();
+        $this->robotUserProvider = $this->createStub(RobotUserProvider::class);
+        $this->checker = new BannedUserChecker($this->robotUserProvider);
     }
 
     public function testCheckPreAuthAllowsNormalActiveUser(): void
@@ -45,6 +48,8 @@ class BannedUserCheckerTest extends TestCase
         $user = $this->createStub(User::class);
         $user->method('isBanned')->willReturn(false);
         $user->method('getUsername')->willReturn('robot-roquette');
+
+        $this->robotUserProvider->method('isRobotUser')->willReturn(true);
 
         $this->expectException(CustomUserMessageAuthenticationException::class);
         $this->expectExceptionMessage('Connexion impossible avec un compte système.');

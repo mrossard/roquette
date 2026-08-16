@@ -8,12 +8,12 @@ use App\Ai\ChannelResolver;
 use App\Entity\Message;
 use App\Entity\Poll;
 use App\Entity\PollOption;
-use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\ChannelAccessService;
 use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
 use App\Service\MessageRenderer;
+use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Twig\Environment;
 
@@ -22,6 +22,7 @@ final readonly class CreatePollTool extends AbstractAiTool
     public function __construct(
         private EntityManagerInterface $em,
         private UserRepository $userRepository,
+        private RobotUserProvider $robotUserProvider,
         private MercurePublisher $mercurePublisher,
         private MessageFormatter $messageFormatter,
         private Environment $twig,
@@ -79,7 +80,7 @@ final readonly class CreatePollTool extends AbstractAiTool
         ?int $workspaceId = null,
     ): string {
         $author = $this->resolveUser($this->userRepository, $authorUserId)
-            ?? $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME])
+            ?? $this->robotUserProvider->getRobotUser()
             ?? $this->userRepository->findOneBy([]);
 
         $resolved = $this->resolveChannelAndCheckAccess(
