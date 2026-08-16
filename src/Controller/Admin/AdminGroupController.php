@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace App\Controller\Admin;
+
 use App\Entity\User;
 use App\Entity\UserGroup;
 use App\Entity\Workspace;
