@@ -42,10 +42,16 @@ services:
     _instanceof:
         App\Ai\Tool\AiToolInterface:
             tags: ['ai.tool']
+        App\Service\SlashCommand\SlashCommandInterface:
+            tags: ['app.slash_command']
 
     App\Ai\ToolRegistry:
         arguments:
             $tools: !tagged_iterator ai.tool
+
+    App\Service\SlashCommandHandler:
+        arguments:
+            $commands: !tagged_iterator app.slash_command
 
     App\Service\Group\LdapGroupProvider:
         arguments:

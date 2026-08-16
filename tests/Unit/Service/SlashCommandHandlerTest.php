@@ -6,15 +6,12 @@ namespace App\Tests\Unit\Service;
 
 use App\Entity\Channel;
 use App\Entity\User;
+use App\Service\SlashCommand\MeSlashCommand;
+use App\Service\SlashCommand\ShrugSlashCommand;
 use App\Service\SlashCommandHandler;
-use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
 
 #[AllowMockObjectsWithoutExpectations]
 class SlashCommandHandlerTest extends TestCase
@@ -23,13 +20,20 @@ class SlashCommandHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        $bus = $this->createMock(MessageBusInterface::class);
-        $translator = $this->createMock(TranslatorInterface::class);
-        $twig = $this->createMock(Environment::class);
-        $em = $this->createMock(EntityManagerInterface::class);
-        $limiter = $this->createMock(RateLimiterFactoryInterface::class);
+        $this->handler = new SlashCommandHandler([
+            new ShrugSlashCommand(),
+            new MeSlashCommand(),
+        ]);
+    }
 
-        $this->handler = new SlashCommandHandler($bus, $translator, $twig, $em, $limiter);
+    #[Test]
+    public function processPreviewTransformsShrugAndMe(): void
+    {
+        $this->assertSame('hello ¯\_(ツ)_/¯', $this->handler->processPreview('/shrug hello'));
+        $this->assertSame('¯\_(ツ)_/¯', $this->handler->processPreview('/shrug'));
+        $this->assertSame('*hello*', $this->handler->processPreview('/me hello'));
+        $this->assertSame('', $this->handler->processPreview('/me'));
+        $this->assertSame('ordinary text', $this->handler->processPreview('ordinary text'));
     }
 
     #[Test]

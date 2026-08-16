@@ -6,47 +6,48 @@ namespace App\Service;
 
 use App\Entity\Channel;
 use App\Entity\User;
-use App\Message\LlmQueryMessage;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
+use App\Service\SlashCommand\SlashCommandInterface;
+use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
 class SlashCommandHandler
 {
-    public function __construct(
-        private readonly MessageBusInterface $messageBus,
-        private readonly TranslatorInterface $translator,
-        private readonly Environment $twig,
-        private readonly EntityManagerInterface $entityManager,
-        #[Autowire(service: 'limiter.llm_api')]
-        private readonly RateLimiterFactoryInterface $llmRateLimiter,
-        private readonly ?\App\Ai\PendingConfirmationService $pendingConfirmationService = null,
-    ) {}
+    /**
+     * @var array<string, SlashCommandInterface>
+     */
+    private array $commands = [];
 
     /**
-     * Transforms /shrug and /me commands for preview display.
+     * @param iterable<SlashCommandInterface> $commands
+     */
+    public function __construct(
+        #[AutowireIterator('app.slash_command')]
+        iterable $commands = [],
+    ) {
+        foreach ($commands as $command) {
+            $this->commands[strtolower($command->getName())] = $command;
+        }
+    }
+
+    /**
+     * Transforms preview text for commands supporting live preview.
      */
     public function processPreview(string $content): string
     {
-        if (str_starts_with(trim($content), '/shrug')) {
-            $parts = explode(' ', trim($content), 2);
-            $args = ($parts[1] ?? null) !== null ? trim($parts[1]) : '';
-
-            return ($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯';
+        $trimmed = trim($content);
+        if (!str_starts_with($trimmed, '/')) {
+            return $content;
         }
 
-        if (str_starts_with(trim($content), '/me ')) {
-            $parts = explode(' ', trim($content), 2);
+        $parts = explode(' ', $trimmed, 2);
+        $commandName = strtolower(substr($parts[0], 1));
+        $args = ($parts[1] ?? null) !== null ? trim($parts[1]) : '';
 
-            return '*' . trim($parts[1]) . '*';
-        }
-
-        if (trim($content) === '/me') {
-            return '';
+        $cmd = $this->commands[$commandName] ?? null;
+        if ($cmd !== null) {
+            $preview = $cmd->processPreview($args);
+            if ($preview !== null) {
+                return $preview;
+            }
         }
 
         return $content;
@@ -62,161 +63,19 @@ class SlashCommandHandler
     public function process(string $messageText, Channel $channel, User $user, ?int $workspaceId = null): SlashCommandResult
     {
         $trimmedMsg = trim($messageText);
+        if (!str_starts_with($trimmedMsg, '/')) {
+            return SlashCommandResult::unhandled($messageText);
+        }
+
         $parts = explode(' ', $trimmedMsg, 2);
-        $command = strtolower(substr($parts[0], 1));
+        $commandName = strtolower(substr($parts[0], 1));
         $args = ($parts[1] ?? null) !== null ? trim($parts[1]) : '';
 
-        if ($command === 'color') {
-            return SlashCommandResult::handled($this->handleColor($args, $user));
-        }
-
-        if ($command === 'help') {
-            return SlashCommandResult::handled($this->handleHelp($args, $user, $channel, $workspaceId));
-        }
-
-        if ($command === 'poll') {
-            return SlashCommandResult::handled($this->handlePoll($args, $user, $channel, $workspaceId));
-        }
-
-        if ($command === 'shrug') {
-            return SlashCommandResult::transformed(($args !== '' ? $args . ' ' : '') . '¯\_(ツ)_/¯');
-        }
-
-        if ($command === 'me') {
-            return SlashCommandResult::transformed('/me' . ($args !== '' ? ' ' . $args : ''));
+        $cmd = $this->commands[$commandName] ?? null;
+        if ($cmd !== null) {
+            return $cmd->execute($args, $channel, $user, $workspaceId);
         }
 
         return SlashCommandResult::unhandled($messageText);
-    }
-
-    private function handleColor(string $args, User $user): Response
-    {
-        $hueVal = $args !== '' && is_numeric($args) ? (int) $args : rand(0, 360);
-        if ($hueVal < 0 || $hueVal > 360) {
-            return new Response('', 400);
-        }
-
-        $user->setCustomHue($hueVal);
-        $this->entityManager->flush();
-
-        return new Response($this->twig->render('dashboard/_input_form.html.twig', ['activeChannel' => null]), 200, [
-            'HX-Refresh' => 'true',
-        ]);
-    }
-
-    private function handleHelp(string $args, User $user, Channel $channel, ?int $workspaceId = null): Response
-    {
-        $helpMessageId = 'help-' . uniqid();
-
-        if ($this->pendingConfirmationService !== null) {
-            $token = $this->pendingConfirmationService->getPendingConfirmation($user, $channel->getSlug());
-            if ($token !== null && $this->pendingConfirmationService->isConfirmation($args, $token, $user)) {
-                if ($this->pendingConfirmationService->executeConfirmation($token, $user)) {
-                    return new Response($this->twig->render('dashboard/_input_form.html.twig', [
-                        'activeChannel' => $channel,
-                    ]));
-                }
-            }
-        }
-
-        if ($args === '') {
-            $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
-                'answer' => $this->translator->trans(
-                    'Veuillez poser une question. Exemple : `/help Comment créer un sondage ?`',
-                ),
-                'question' => '',
-                'helpMessageId' => $helpMessageId,
-                'activeChannel' => $channel,
-                'timestamp' => new \DateTime(),
-            ]);
-        } else {
-            if (!$this->consumeLlmToken($user)) {
-                return $this->renderRateLimited($helpMessageId, $args, $channel);
-            }
-
-            $this->messageBus->dispatch(
-                new LlmQueryMessage($args, $user->getId(), $channel->getSlug(), $helpMessageId, 'help', workspaceId: $workspaceId),
-            );
-
-            $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
-                'answer' => null,
-                'question' => $args,
-                'helpMessageId' => $helpMessageId,
-                'activeChannel' => $channel,
-                'timestamp' => new \DateTime(),
-            ]);
-        }
-
-        $formHtml = $this->twig->render('dashboard/_input_form.html.twig', [
-            'activeChannel' => $channel,
-        ]);
-
-        return new Response($formHtml . "\n" . $oobHtml);
-    }
-
-    private function handlePoll(string $args, User $user, Channel $channel, ?int $workspaceId = null): Response
-    {
-        $helpMessageId = 'poll-' . uniqid();
-
-        if ($args === '') {
-            $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
-                'answer' => $this->translator->trans(
-                    'Veuillez indiquer le sondage à créer. Exemple : `/poll Quelle option préférez-vous entre A et B ?`',
-                ),
-                'question' => '',
-                'helpMessageId' => $helpMessageId,
-                'activeChannel' => $channel,
-                'timestamp' => new \DateTime(),
-            ]);
-        } else {
-            if (!$this->consumeLlmToken($user)) {
-                return $this->renderRateLimited($helpMessageId, '/poll ' . $args, $channel);
-            }
-
-            $prompt = sprintf(
-                'Appelle IMPÉRATIVEMENT l\'outil create_poll avec channelSlug="%s". Extrais la question et les options depuis la demande suivante : "%s"',
-                $channel->getSlug(),
-                $args
-            );
-            $this->messageBus->dispatch(
-                new LlmQueryMessage($prompt, $user->getId(), $channel->getSlug(), $helpMessageId, 'sondage', workspaceId: $workspaceId),
-            );
-
-            $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
-                'answer' => null,
-                'question' => '/poll ' . $args,
-                'helpMessageId' => $helpMessageId,
-                'activeChannel' => $channel,
-                'timestamp' => new \DateTime(),
-            ]);
-        }
-
-        $formHtml = $this->twig->render('dashboard/_input_form.html.twig', [
-            'activeChannel' => $channel,
-        ]);
-
-        return new Response($formHtml . "\n" . $oobHtml);
-    }
-
-    private function consumeLlmToken(User $user): bool
-    {
-        return $this->llmRateLimiter->create('user_' . $user->getId())->consume(1)->isAccepted();
-    }
-
-    private function renderRateLimited(string $helpMessageId, string $question, Channel $channel): Response
-    {
-        $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
-            'answer' => $this->translator->trans('Trop de demandes pour l\'Assistant. Veuillez patienter un instant.'),
-            'question' => $question,
-            'helpMessageId' => $helpMessageId,
-            'activeChannel' => $channel,
-            'timestamp' => new \DateTime(),
-        ]);
-
-        $formHtml = $this->twig->render('dashboard/_input_form.html.twig', [
-            'activeChannel' => $channel,
-        ]);
-
-        return new Response($formHtml . "\n" . $oobHtml, Response::HTTP_TOO_MANY_REQUESTS);
     }
 }
