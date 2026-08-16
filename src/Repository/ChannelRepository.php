@@ -42,71 +42,17 @@ class ChannelRepository extends ServiceEntityRepository
             ->leftJoin('pm.channel', 'pmc')
             ->addSelect('pmc');
 
-        $directWorkspaceDql = $this->getEntityManager()
-            ->createQueryBuilder()
-            ->select('w2.id')
-            ->from(\App\Entity\Workspace::class, 'w2')
-            ->join('w2.members', 'wm')
-            ->where('wm.id = :userId')
-            ->getDQL();
-
-        $localGroupWorkspaceDql = $this->getEntityManager()
-            ->createQueryBuilder()
-            ->select('w3.id')
-            ->from(\App\Entity\Workspace::class, 'w3')
-            ->join('w3.userGroup', 'ug3')
-            ->join('ug3.members', 'ugm3')
-            ->where('ugm3.id = :userId')
-            ->getDQL();
-
-        $workspaceConditions = $qb->expr()->orX(
-            $qb->expr()->in('w.id', $directWorkspaceDql),
-            $qb->expr()->in('w.id', $localGroupWorkspaceDql)
-        );
-
-        if ($providerGroupIdentifiers !== []) {
-            $externalGroupWorkspaceDql = $this->getEntityManager()
-                ->createQueryBuilder()
-                ->select('w4.id')
-                ->from(\App\Entity\Workspace::class, 'w4')
-                ->join('w4.userGroup', 'ug4')
-                ->where('ug4.groupIdentifier IN (:providerGroupIdentifiers)')
-                ->getDQL();
-
-            $workspaceConditions->add($qb->expr()->in('w.id', $externalGroupWorkspaceDql));
-        }
+        $workspaceConditions = $this->buildWorkspaceAccessConditions($qb, $providerGroupIdentifiers);
+        $groupConditions = $this->buildGroupAccessConditions($qb, $providerGroupIdentifiers, 'c');
 
         $conditions = $qb->expr()->orX(
             // Direct channel membership (private channels, DMs)
             $qb->expr()->isMemberOf(':userId', 'c.members'),
             // Channels in workspaces the user belongs to
-            $workspaceConditions
+            $workspaceConditions,
+            // Group-subscribed channels
+            $groupConditions
         );
-
-        $localGroupDql = $this
-            ->getEntityManager()
-            ->createQueryBuilder()
-            ->select('IDENTITY(gs_local.channel)')
-            ->from(GroupSubscription::class, 'gs_local')
-            ->join(UserGroup::class, 'ug_local', 'WITH', 'ug_local.groupIdentifier = gs_local.groupIdentifier')
-            ->join('ug_local.members', 'ugm_local')
-            ->where('ugm_local.id = :userId')
-            ->getDQL();
-
-        $conditions->add($qb->expr()->in('c.id', $localGroupDql));
-
-        if ($providerGroupIdentifiers !== []) {
-            $externalGroupDql = $this
-                ->getEntityManager()
-                ->createQueryBuilder()
-                ->select('IDENTITY(gs_ext.channel)')
-                ->from(GroupSubscription::class, 'gs_ext')
-                ->where('gs_ext.groupIdentifier IN (:providerGroupIdentifiers)')
-                ->getDQL();
-
-            $conditions->add($qb->expr()->in('c.id', $externalGroupDql));
-            $qb->setParameter('providerGroupIdentifiers', $providerGroupIdentifiers);
-        }
 
         $joinedChannels = $qb
             ->where($conditions)
@@ -212,32 +158,11 @@ class ChannelRepository extends ServiceEntityRepository
             ->andWhere('c.parentMessage IS NULL')
             ->andWhere('LOWER(c.name) LIKE :query OR LOWER(c.description) LIKE :query');
 
-        $accessConditions = $qb->expr()->orX('c.isPrivate = false', 'm.id = :userId');
-
-        $localGroupDql = $this
-            ->getEntityManager()
-            ->createQueryBuilder()
-            ->select('IDENTITY(gs_local.channel)')
-            ->from(GroupSubscription::class, 'gs_local')
-            ->join(UserGroup::class, 'ug_local', 'WITH', 'ug_local.groupIdentifier = gs_local.groupIdentifier')
-            ->join('ug_local.members', 'ugm_local')
-            ->where('ugm_local.id = :userId')
-            ->getDQL();
-
-        $accessConditions->add($qb->expr()->in('c.id', $localGroupDql));
-
-        if ($providerGroupIdentifiers !== []) {
-            $externalGroupDql = $this
-                ->getEntityManager()
-                ->createQueryBuilder()
-                ->select('IDENTITY(gs_ext.channel)')
-                ->from(GroupSubscription::class, 'gs_ext')
-                ->where('gs_ext.groupIdentifier IN (:providerGroupIdentifiers)')
-                ->getDQL();
-
-            $accessConditions->add($qb->expr()->in('c.id', $externalGroupDql));
-            $qb->setParameter('providerGroupIdentifiers', $providerGroupIdentifiers);
-        }
+        $accessConditions = $qb->expr()->orX(
+            'c.isPrivate = false',
+            'm.id = :userId',
+            $this->buildGroupAccessConditions($qb, $providerGroupIdentifiers, 'c')
+        );
 
         return $qb
             ->setParameter('query', '%' . strtolower($query) . '%')
@@ -327,10 +252,21 @@ class ChannelRepository extends ServiceEntityRepository
      */
     public function searchAccessibleChannelsForUser(User $user, string $query = '', int $limit = 20): array
     {
+        $providerGroups = $this->groupProvider->getGroupsForUser($user);
+        $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
+
         $qb = $this->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
             ->where('c.isDm = false')
-            ->andWhere('c.isPrivate = false OR m.id = :userId')
+            ->andWhere('c.parentMessage IS NULL');
+
+        $accessConditions = $qb->expr()->orX(
+            'c.isPrivate = false',
+            'm.id = :userId',
+            $this->buildGroupAccessConditions($qb, $providerGroupIdentifiers, 'c')
+        );
+
+        $qb->andWhere($accessConditions)
             ->setParameter('userId', $user->getId());
 
         if ($query !== '') {
@@ -342,5 +278,80 @@ class ChannelRepository extends ServiceEntityRepository
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @param list<string> $providerGroupIdentifiers
+     */
+    private function buildWorkspaceAccessConditions(\Doctrine\ORM\QueryBuilder $qb, array $providerGroupIdentifiers): \Doctrine\ORM\Query\Expr\Orx
+    {
+        $directWorkspaceDql = $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('w2.id')
+            ->from(\App\Entity\Workspace::class, 'w2')
+            ->join('w2.members', 'wm')
+            ->where('wm.id = :userId')
+            ->getDQL();
+
+        $localGroupWorkspaceDql = $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('w3.id')
+            ->from(\App\Entity\Workspace::class, 'w3')
+            ->join('w3.userGroup', 'ug3')
+            ->join('ug3.members', 'ugm3')
+            ->where('ugm3.id = :userId')
+            ->getDQL();
+
+        $conditions = $qb->expr()->orX(
+            $qb->expr()->in('w.id', $directWorkspaceDql),
+            $qb->expr()->in('w.id', $localGroupWorkspaceDql)
+        );
+
+        if ($providerGroupIdentifiers !== []) {
+            $externalGroupWorkspaceDql = $this->getEntityManager()
+                ->createQueryBuilder()
+                ->select('w4.id')
+                ->from(\App\Entity\Workspace::class, 'w4')
+                ->join('w4.userGroup', 'ug4')
+                ->where('ug4.groupIdentifier IN (:providerGroupIdentifiers)')
+                ->getDQL();
+
+            $conditions->add($qb->expr()->in('w.id', $externalGroupWorkspaceDql));
+        }
+
+        return $conditions;
+    }
+
+    /**
+     * @param list<string> $providerGroupIdentifiers
+     */
+    private function buildGroupAccessConditions(\Doctrine\ORM\QueryBuilder $qb, array $providerGroupIdentifiers, string $channelAlias = 'c'): \Doctrine\ORM\Query\Expr\Orx
+    {
+        $localGroupDql = $this
+            ->getEntityManager()
+            ->createQueryBuilder()
+            ->select('IDENTITY(gs_local.channel)')
+            ->from(GroupSubscription::class, 'gs_local')
+            ->join(UserGroup::class, 'ug_local', 'WITH', 'ug_local.groupIdentifier = gs_local.groupIdentifier')
+            ->join('ug_local.members', 'ugm_local')
+            ->where('ugm_local.id = :userId')
+            ->getDQL();
+
+        $conditions = $qb->expr()->orX($qb->expr()->in($channelAlias . '.id', $localGroupDql));
+
+        if ($providerGroupIdentifiers !== []) {
+            $externalGroupDql = $this
+                ->getEntityManager()
+                ->createQueryBuilder()
+                ->select('IDENTITY(gs_ext.channel)')
+                ->from(GroupSubscription::class, 'gs_ext')
+                ->where('gs_ext.groupIdentifier IN (:providerGroupIdentifiers)')
+                ->getDQL();
+
+            $conditions->add($qb->expr()->in($channelAlias . '.id', $externalGroupDql));
+            $qb->setParameter('providerGroupIdentifiers', $providerGroupIdentifiers);
+        }
+
+        return $conditions;
     }
 }

@@ -37,26 +37,8 @@ class ChannelManager
         private readonly GroupSubscriptionManager $groupSubscriptionManager,
     ) {}
 
-    public function create(CreateChannelDto|string $dtoOrName, string|User $descriptionOrUser = '', array $extra = [], ?User $currentUser = null): Channel
+    public function create(CreateChannelDto $dto, User $user): Channel
     {
-        if ($dtoOrName instanceof CreateChannelDto) {
-            $dto = $dtoOrName;
-            $user = $descriptionOrUser instanceof User ? $descriptionOrUser : $currentUser;
-            if (!$user) {
-                throw new \InvalidArgumentException('A User is required to create a channel.');
-            }
-        } else {
-            $user = $currentUser ?? ($descriptionOrUser instanceof User ? $descriptionOrUser : null);
-            if (!$user) {
-                throw new \InvalidArgumentException('A User is required to create a channel.');
-            }
-            $dto = CreateChannelDto::fromNameDescriptionAndExtra(
-                (string) $dtoOrName,
-                is_string($descriptionOrUser) ? $descriptionOrUser : '',
-                $extra,
-            );
-        }
-
         $slug = $this->slugGenerator->generate(
             $dto->name,
             'channel',
@@ -126,31 +108,8 @@ class ChannelManager
         return $channel;
     }
 
-    public function update(
-        Channel $channel,
-        UpdateChannelDto|string $dtoOrName,
-        string|User $descriptionOrUser = '',
-        array $extra = [],
-        ?User $currentUser = null,
-    ): void {
-        if ($dtoOrName instanceof UpdateChannelDto) {
-            $dto = $dtoOrName;
-            $user = $descriptionOrUser instanceof User ? $descriptionOrUser : $currentUser;
-            if (!$user) {
-                throw new \InvalidArgumentException('A User is required to update a channel.');
-            }
-        } else {
-            $user = $currentUser ?? ($descriptionOrUser instanceof User ? $descriptionOrUser : null);
-            if (!$user) {
-                throw new \InvalidArgumentException('A User is required to update a channel.');
-            }
-            $dto = UpdateChannelDto::fromNameDescriptionAndExtra(
-                (string) $dtoOrName,
-                is_string($descriptionOrUser) ? $descriptionOrUser : '',
-                $extra,
-            );
-        }
-
+    public function update(Channel $channel, UpdateChannelDto $dto, User $user): void
+    {
         $isAdmin = $this->isCurrentUserAdmin() || $channel->isAdministrator($user);
         if (!$isAdmin) {
             throw new AccessDeniedHttpException($this->translator->trans(
@@ -195,6 +154,13 @@ class ChannelManager
         }
 
         $this->entityManager->flush();
+
+        $this->logger->info(sprintf(
+            'Channel updated: "%s" (slug: "%s") by user "%s"',
+            $channel->getName(),
+            $channel->getSlug(),
+            $user->getUsername(),
+        ));
     }
 
     public function delete(Channel $channel, User $currentUser): string
@@ -280,21 +246,34 @@ class ChannelManager
 
     public function createSubChannel(Message $parentMessage, User $currentUser): Channel
     {
-        return $this->doCreateSubChannel($parentMessage, $currentUser, false);
+        $existingSubChannel = $this->channelRepository->findOneBy(['parentMessage' => $parentMessage]);
+        if ($existingSubChannel) {
+            return $existingSubChannel;
+        }
+
+        $channel = $this->buildSubChannel($parentMessage, $currentUser);
+        $this->saveSubChannel($channel, $parentMessage, $currentUser);
+
+        return $channel;
     }
 
     public function createTodoListSubChannel(Message $parentMessage, User $currentUser): Channel
-    {
-        return $this->doCreateSubChannel($parentMessage, $currentUser, true);
-    }
-
-    private function doCreateSubChannel(Message $parentMessage, User $currentUser, bool $isTodoList): Channel
     {
         $existingSubChannel = $this->channelRepository->findOneBy(['parentMessage' => $parentMessage]);
         if ($existingSubChannel) {
             return $existingSubChannel;
         }
 
+        $channel = $this->buildSubChannel($parentMessage, $currentUser);
+        $channel->setIsTodoList(true);
+        $this->saveSubChannel($channel, $parentMessage, $currentUser);
+        $this->kanbanManager->initializeDefaultColumns($channel);
+
+        return $channel;
+    }
+
+    private function buildSubChannel(Message $parentMessage, User $currentUser): Channel
+    {
         $parentChannel = $parentMessage->getChannel();
         if ($parentChannel->isSubChannel() && !$parentChannel->isTodoList()) {
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
@@ -305,7 +284,7 @@ class ChannelManager
         }
 
         $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Discussion';
-        $name = mb_substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 40);
+        $name = mb_substr(trim((string) preg_replace('/\s+/', ' ', $content)), 0, 40);
 
         $slug = $this->slugGenerator->generate(
             'sc-' . $name,
@@ -324,13 +303,17 @@ class ChannelManager
         if ($parentChannel->getWorkspace()) {
             $channel->setWorkspace($parentChannel->getWorkspace());
         }
-        if ($isTodoList) {
-            $channel->setIsTodoList(true);
-        }
 
         foreach ($parentChannel->getMembers() as $member) {
             $channel->addMember($member);
         }
+
+        return $channel;
+    }
+
+    private function saveSubChannel(Channel $channel, Message $parentMessage, User $currentUser): void
+    {
+        $parentChannel = $parentMessage->getChannel();
 
         $this->entityManager->persist($channel);
         $this->entityManager->flush();
@@ -348,12 +331,10 @@ class ChannelManager
             'Sub-channel created: "%s" (slug: "%s", todo: %s) from message #%d by user "%s"',
             $channel->getName(),
             $channel->getSlug(),
-            $isTodoList ? 'yes' : 'no',
+            $channel->isTodoList() ? 'yes' : 'no',
             $parentMessage->getId(),
             $currentUser->getUsername(),
         ));
-
-        return $channel;
     }
 
     private function isCurrentUserAdmin(): bool

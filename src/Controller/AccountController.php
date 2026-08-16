@@ -6,12 +6,11 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\ChannelRepository;
+use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mercure\Update;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -21,7 +20,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class AccountController extends AbstractController
 {
     public function __construct(
-        private readonly string $mercureTopicPrefix,
+        private readonly MercurePublisher $mercurePublisher,
         private readonly TranslatorInterface $translator,
     ) {}
 
@@ -44,7 +43,6 @@ final class AccountController extends AbstractController
     public function updateProfile(
         Request $request,
         EntityManagerInterface $entityManager,
-        MessageBusInterface $bus,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -75,22 +73,7 @@ final class AccountController extends AbstractController
 
         $entityManager->flush();
 
-        // Publish status change via Mercure
-        $update = new Update(
-            $this->mercureTopicPrefix . '/users/status',
-            json_encode([
-                'type' => 'user_status_changed',
-                'username' => $currentUser->getUsername(),
-                'status' => $currentUser->getStatus(),
-                'statusLabel' => $currentUser->getStatusLabel(),
-                'statusOverride' => $currentUser->getStatusOverride() ?? 'auto',
-                'lastActive' => $currentUser->getLastActiveAt()?->getTimestamp(),
-            ]),
-            true,
-            null,
-            'user_status_changed',
-        );
-        $bus->dispatch($update);
+        $this->mercurePublisher->publishUserStatus($currentUser);
 
         $this->addFlash('success', $this->translator->trans('Votre profil a été mis à jour avec succès !'));
 
@@ -136,27 +119,37 @@ final class AccountController extends AbstractController
                 'error',
                 $this->translator->trans('Tous les champs de mot de passe sont obligatoires.'),
             );
-        } elseif (!$passwordHasher->isPasswordValid($currentUser, $currentPassword)) {
+            return $this->redirectToRoute('app_account');
+        }
+
+        if (!$passwordHasher->isPasswordValid($currentUser, $currentPassword)) {
             $this->addFlash('error', $this->translator->trans('Le mot de passe actuel est incorrect.'));
-        } elseif (!hash_equals($newPassword, $confirmPassword)) {
+            return $this->redirectToRoute('app_account');
+        }
+
+        if (!hash_equals($newPassword, $confirmPassword)) {
             $this->addFlash(
                 'error',
                 $this->translator->trans('Le nouveau mot de passe et sa confirmation ne correspondent pas.'),
             );
-        } elseif (mb_strlen($newPassword) < 6) {
+            return $this->redirectToRoute('app_account');
+        }
+
+        if (mb_strlen($newPassword) < 6) {
             $this->addFlash(
                 'error',
                 $this->translator->trans('Le nouveau mot de passe doit faire au moins 6 caractères.'),
             );
-        } else {
-            $hashed = $passwordHasher->hashPassword($currentUser, $newPassword);
-            $currentUser->setPassword($hashed);
-            $entityManager->flush();
-            $this->addFlash(
-                'success',
-                $this->translator->trans('Votre mot de passe a été modifié avec succès !'),
-            );
+            return $this->redirectToRoute('app_account');
         }
+
+        $hashed = $passwordHasher->hashPassword($currentUser, $newPassword);
+        $currentUser->setPassword($hashed);
+        $entityManager->flush();
+        $this->addFlash(
+            'success',
+            $this->translator->trans('Votre mot de passe a été modifié avec succès !'),
+        );
 
         return $this->redirectToRoute('app_account');
     }
@@ -169,12 +162,11 @@ final class AccountController extends AbstractController
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $entityManager,
-        MessageBusInterface $bus,
     ): Response {
         $action = $request->request->get('action');
 
         return match ($action) {
-            'profile' => $this->updateProfile($request, $entityManager, $bus),
+            'profile' => $this->updateProfile($request, $entityManager),
             'notifications' => $this->updateNotifications($request, $entityManager),
             'password' => $this->updatePassword($request, $passwordHasher, $entityManager),
             default => $this->redirectToRoute('app_account'),

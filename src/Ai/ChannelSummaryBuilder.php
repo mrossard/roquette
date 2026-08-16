@@ -54,48 +54,15 @@ final readonly class ChannelSummaryBuilder
 
         if ($unreadMessages === []) {
             $isFallback = true;
-            $unreadMessages = $this->messageRepository
-                ->createQueryBuilder('m')
-                ->where('m.channel = :channel')
-                ->orderBy('m.createdAt', 'DESC')
-                ->setParameter('channel', $targetChannel)
-                ->setMaxResults($this->maxSummaryMessages)
-                ->getQuery()
-                ->getResult();
-            $unreadMessages = array_reverse($unreadMessages);
-            $finalMessages = $unreadMessages;
+            $finalMessages = $this->messageRepository->findRecentInChannel($targetChannel, $this->maxSummaryMessages);
         } else {
-            $readMessages = [];
-            if ($lastReadMessageId !== null) {
-                $readMessages = $this->messageRepository
-                    ->createQueryBuilder('m')
-                    ->where('m.channel = :channel')
-                    ->andWhere('m.parent IS NULL')
-                    ->andWhere('m.id <= :lastReadId')
-                    ->orderBy('m.id', 'DESC')
-                    ->setParameter('channel', $targetChannel)
-                    ->setParameter('lastReadId', $lastReadMessageId)
-                    ->setMaxResults(5)
-                    ->getQuery()
-                    ->getResult();
-                $readMessages = array_reverse($readMessages);
-            }
+            $readMessages = $lastReadMessageId !== null
+                ? $this->messageRepository->findRecentReadBefore($targetChannel, $lastReadMessageId, 5)
+                : [];
             $finalMessages = array_merge($readMessages, $unreadMessages);
         }
 
-        $structuredMessages = [];
-        foreach ($finalMessages as $msg) {
-            $authorName = $msg->getAuthor() ? $msg->getAuthor()->getUsername() : 'Robot';
-            $content = $msg->getContent() ?? '';
-            if ($msg->isPoll()) {
-                $content = '[Sondage] ' . $msg->getPoll()->getQuestion();
-            }
-            $structuredMessages[] = [
-                'date' => $msg->getCreatedAt()->format('Y-m-d H:i'),
-                'auteur' => $authorName,
-                'contenu' => $content,
-            ];
-        }
+        $structuredMessages = $this->structureMessages($finalMessages);
 
         $systemPrompt =
             "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette."
@@ -131,5 +98,28 @@ final readonly class ChannelSummaryBuilder
         $prompt = json_encode($structuredMessages, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
         return [$prompt, $systemPrompt, null];
+    }
+
+    /**
+     * @param list<\App\Entity\Message> $messages
+     * @return list<array{date: string, auteur: string, contenu: string}>
+     */
+    private function structureMessages(array $messages): array
+    {
+        $structured = [];
+        foreach ($messages as $msg) {
+            $authorName = $msg->getAuthor() ? $msg->getAuthor()->getUsername() : 'Robot';
+            $content = $msg->isPoll()
+                ? '[Sondage] ' . $msg->getPoll()?->getQuestion()
+                : ($msg->getContent() ?? '');
+
+            $structured[] = [
+                'date' => $msg->getCreatedAt()->format('Y-m-d H:i'),
+                'auteur' => $authorName,
+                'contenu' => $content,
+            ];
+        }
+
+        return $structured;
     }
 }

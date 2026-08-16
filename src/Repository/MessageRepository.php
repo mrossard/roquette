@@ -556,5 +556,40 @@ class MessageRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return Message[]
+     */
+    public function findRecentInChannel(Channel $channel, int $limit = 100): array
+    {
+        $messages = $this->createQueryBuilder('m')
+            ->where('m.channel = :channel')
+            ->orderBy('m.createdAt', 'DESC')
+            ->setParameter('channel', $channel)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return array_reverse($messages);
+    }
+
+    /**
+     * @return Message[]
+     */
+    public function findRecentReadBefore(Channel $channel, int $lastReadId, int $limit = 5): array
+    {
+        $messages = $this->createQueryBuilder('m')
+            ->where('m.channel = :channel')
+            ->andWhere('m.parent IS NULL')
+            ->andWhere('m.id <= :lastReadId')
+            ->orderBy('m.id', 'DESC')
+            ->setParameter('channel', $channel)
+            ->setParameter('lastReadId', $lastReadId)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return array_reverse($messages);
+    }
 }
 

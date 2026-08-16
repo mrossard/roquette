@@ -144,26 +144,11 @@ class KanbanManager
         $isCompleted = ($column !== null && in_array($column->getName(), ['Terminé', 'Done'], true));
         $message->setIsCompleted($isCompleted);
 
-        // Sync reaction ✅ to match completion state
-        $reactionRepo = $this->entityManager->getRepository(\App\Entity\Reaction::class);
-        $existingCheck = $reactionRepo->findOneBy([
-            'message' => $message,
-            'user' => $currentUser,
-            'emoji' => '✅',
-        ]);
-
-        if ($isCompleted && !$existingCheck) {
-            $reaction = new \App\Entity\Reaction();
-            $reaction->setMessage($message);
-            $reaction->setUser($currentUser);
-            $reaction->setEmoji('✅');
-            $this->entityManager->persist($reaction);
+        if ($isCompleted) {
+            $this->addCompletionReaction($message, $currentUser);
+        } else {
+            $this->removeCompletionReaction($message, $currentUser);
         }
-
-        if (!$isCompleted && $existingCheck) {
-            $this->entityManager->remove($existingCheck);
-        }
-
         $this->entityManager->flush();
 
         $this->publishKanbanCardMoved($message, $column);
@@ -219,9 +204,46 @@ class KanbanManager
         $this->assertCanAccessKanban($channel, $currentUser);
 
         $message->setIsCompleted($completed);
+        if ($completed) {
+            $this->addCompletionReaction($message, $currentUser);
+        } else {
+            $this->removeCompletionReaction($message, $currentUser);
+        }
         $this->entityManager->flush();
 
         $this->publishKanbanCardUpdated($message);
+    }
+
+    private function addCompletionReaction(Message $message, User $currentUser): void
+    {
+        $reactionRepo = $this->entityManager->getRepository(\App\Entity\Reaction::class);
+        $existingCheck = $reactionRepo->findOneBy([
+            'message' => $message,
+            'user' => $currentUser,
+            'emoji' => '✅',
+        ]);
+
+        if (!$existingCheck) {
+            $reaction = new \App\Entity\Reaction();
+            $reaction->setMessage($message);
+            $reaction->setUser($currentUser);
+            $reaction->setEmoji('✅');
+            $this->entityManager->persist($reaction);
+        }
+    }
+
+    private function removeCompletionReaction(Message $message, User $currentUser): void
+    {
+        $reactionRepo = $this->entityManager->getRepository(\App\Entity\Reaction::class);
+        $existingCheck = $reactionRepo->findOneBy([
+            'message' => $message,
+            'user' => $currentUser,
+            'emoji' => '✅',
+        ]);
+
+        if ($existingCheck !== null) {
+            $this->entityManager->remove($existingCheck);
+        }
     }
 
     private function assertCanManageKanban(Channel $channel, User $user): void

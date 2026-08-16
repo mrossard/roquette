@@ -270,16 +270,6 @@ class LlmQueryHandlerTest extends TestCase
         $readMsg->setAuthor($user);
         $readMsg->setCreatedAt(new \DateTimeImmutable());
 
-        $qb = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
-        $query = $this->createMock(\Doctrine\ORM\Query::class);
-        $qb->method('where')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('orderBy')->willReturnSelf();
-        $qb->method('setParameter')->willReturnSelf();
-        $qb->method('setMaxResults')->willReturnSelf();
-        $qb->method('getQuery')->willReturn($query);
-        $query->method('getResult')->willReturn([$readMsg]);
-
         $llmService = $this->createMock(LlmService::class);
         $llmService
             ->expects($this->once())
@@ -314,10 +304,10 @@ class LlmQueryHandlerTest extends TestCase
 
                 return $repo;
             })(),
-            'messageRepository' => (function () use ($unread, $qb) {
+            'messageRepository' => (function () use ($unread, $readMsg) {
                 $repo = $this->createMock(\App\Repository\MessageRepository::class);
                 $repo->expects($this->once())->method('findUnreadInChannel')->willReturn($unread);
-                $repo->expects($this->once())->method('createQueryBuilder')->willReturn($qb);
+                $repo->expects($this->once())->method('findRecentReadBefore')->willReturn([$readMsg]);
 
                 return $repo;
             })(),

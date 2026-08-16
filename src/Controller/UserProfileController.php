@@ -72,19 +72,7 @@ final class UserProfileController extends AbstractController
             $currentUser->setStatusOverride($status === 'auto' ? null : $status);
             $entityManager->flush();
 
-            $mercurePublisher->publishToTopic(
-                $mercurePublisher->getStatusTopic(),
-                [
-                    'type' => 'user_status_changed',
-                    'username' => $currentUser->getUsername(),
-                    'status' => $currentUser->getStatus(),
-                    'statusLabel' => $currentUser->getStatusLabel(),
-                    'statusOverride' => $currentUser->getStatusOverride() ?? 'auto',
-                    'lastActive' => $currentUser->getLastActiveAt()?->getTimestamp(),
-                ],
-                true,
-                'user_status_changed',
-            );
+            $mercurePublisher->publishUserStatus($currentUser);
 
             return new Response(null, 204);
         }

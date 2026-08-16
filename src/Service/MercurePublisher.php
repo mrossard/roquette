@@ -75,6 +75,23 @@ class MercurePublisher
         $this->bus->dispatch(new Update($topicUrl, $data, $private, null, $type));
     }
 
+    public function publishUserStatus(User $user): void
+    {
+        $this->publishToTopic(
+            $this->getStatusTopic(),
+            [
+                'type' => 'user_status_changed',
+                'username' => $user->getUsername(),
+                'status' => $user->getStatus(),
+                'statusLabel' => $user->getStatusLabel(),
+                'statusOverride' => $user->getStatusOverride() ?? 'auto',
+                'lastActive' => $user->getLastActiveAt()?->getTimestamp(),
+            ],
+            true,
+            'user_status_changed',
+        );
+    }
+
     // -------------------------------------------------------------------------
     // High-level operations
     // -------------------------------------------------------------------------

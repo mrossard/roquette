@@ -152,20 +152,9 @@ final class ChannelSummaryBuilderTest extends TestCase
     {
         $channel = $this->makeChannel('général', 'general');
 
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('andWhere')->willReturnSelf();
-        $queryBuilder->method('orderBy')->willReturnSelf();
-        $queryBuilder->method('setParameter')->willReturnSelf();
-        $queryBuilder->method('setMaxResults')->willReturnSelf();
-
-        $query = $this->createMock(\Doctrine\ORM\Query::class);
-        $query->method('getResult')->willReturn([$this->makeMessage('ancien message', 'alice')]);
-        $queryBuilder->method('getQuery')->willReturn($query);
-
         $messageRepo = $this->createMock(MessageRepository::class);
         $messageRepo->method('findUnreadInChannel')->willReturn([]);
-        $messageRepo->method('createQueryBuilder')->willReturn($queryBuilder);
+        $messageRepo->method('findRecentInChannel')->willReturn([$this->makeMessage('ancien message', 'alice')]);
 
         $builder = $this->buildBuilder($messageRepo);
         $user = new User();

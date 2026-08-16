@@ -81,16 +81,11 @@ class WorkspaceManager
         $generalName = $this->translator->trans('channel.general.name', [], 'messages');
         $generalDesc = $this->translator->trans('channel.general.description', [], 'messages');
 
-        $generalSlug = 'general-' . substr(bin2hex(random_bytes(3)), 0, 6);
-        $baseGeneralSlug = $generalSlug;
-        $gCount = 1;
-        while ($this->channelRepository->findOneBy(['slug' => $generalSlug])) {
-            $generalSlug = $baseGeneralSlug . '-' . rand(100, 999);
-            if ($gCount++ > 20) {
-                $generalSlug = $baseGeneralSlug . '-' . uniqid();
-                break;
-            }
-        }
+        $generalSlug = $this->slugGenerator->generate(
+            $generalName,
+            'general',
+            fn(string $s) => $this->channelRepository->findOneBy(['slug' => $s]) !== null,
+        );
 
         $generalChannel = new Channel();
         $generalChannel->setName($generalName);

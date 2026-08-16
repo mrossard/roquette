@@ -65,9 +65,25 @@ class OAuth2Authenticator extends AbstractAuthenticator
 
     public function authenticate(Request $request): Passport
     {
-        $code = $request->query->get('code');
-        $state = $request->query->get('state');
+        $code = (string) $request->query->get('code');
+        $codeVerifier = $this->validateCsrfStateAndGetCodeVerifier($request);
+        $accessToken = $this->fetchAccessToken($code, $codeVerifier);
+        $userData = $this->fetchUserInfo($accessToken);
+        $attributes = $this->extractUserAttributes($userData);
 
+        $user = $this->findOrCreateUser(
+            $attributes['oauthId'],
+            $attributes['username'],
+            $attributes['displayName'],
+            $attributes['email'],
+        );
+
+        return new SelfValidatingPassport(new UserBadge($user->getUserIdentifier(), static fn() => $user));
+    }
+
+    private function validateCsrfStateAndGetCodeVerifier(Request $request): ?string
+    {
+        $state = $request->query->get('state');
         $session = $request->getSession();
         $storedState = $session->get('oauth2state');
 
@@ -83,6 +99,11 @@ class OAuth2Authenticator extends AbstractAuthenticator
         $codeVerifier = $session->get('oauth2code_verifier');
         $session->remove('oauth2code_verifier');
 
+        return is_string($codeVerifier) ? $codeVerifier : null;
+    }
+
+    private function fetchAccessToken(string $code, ?string $codeVerifier): string
+    {
         $redirectUri =
             $this->redirectUri !== null && $this->redirectUri !== ''
                 ? $this->redirectUri
@@ -118,13 +139,21 @@ class OAuth2Authenticator extends AbstractAuthenticator
         }
 
         $accessToken = $data['access_token'] ?? null;
-        if (!$accessToken) {
+        if (!is_string($accessToken) || $accessToken === '') {
             $this->logger->error('OAuth2 server response did not contain an access token.');
             throw new CustomUserMessageAuthenticationException(
                 'Le serveur OAuth2 n\'a pas retourné de jeton d\'accès.',
             );
         }
 
+        return $accessToken;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function fetchUserInfo(#[\SensitiveParameter] string $accessToken): array
+    {
         try {
             $response = $this->httpClient->request('GET', $this->userInfoUrl, [
                 'headers' => [
@@ -132,7 +161,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
                     'Accept' => 'application/json',
                 ],
             ]);
-            $userData = $response->toArray();
+            return $response->toArray();
         } catch (\Exception $e) {
             $this->logger->error('Failed to retrieve user info from OAuth2 server: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -141,7 +170,14 @@ class OAuth2Authenticator extends AbstractAuthenticator
                 'Impossible de récupérer les informations de l\'utilisateur.',
             );
         }
+    }
 
+    /**
+     * @param array<string, mixed> $userData
+     * @return array{oauthId: string, username: string, displayName: string, email: ?string}
+     */
+    private function extractUserAttributes(array $userData): array
+    {
         $oauthId = (string) ($userData['id'] ?? $userData['sub'] ?? $userData[$this->usernameField] ?? null);
         $username = (string) (
             $userData[$this->usernameField] ?? $userData['username'] ?? $userData['email'] ?? $userData['login'] ?? null
@@ -149,7 +185,7 @@ class OAuth2Authenticator extends AbstractAuthenticator
         $displayName = is_string($userData[$this->displayNameField] ?? null) ? $userData[$this->displayNameField] : $username;
         $email = is_string($userData['mail'] ?? null) ? $userData['mail'] : null;
 
-        if (!$oauthId || !$username) {
+        if ($oauthId === '' || $username === '') {
             $this->logger->error('Incomplete user info returned by OAuth2 server.', ['userData' => $userData]);
             throw new CustomUserMessageAuthenticationException(
                 'Les informations utilisateur retournées par le serveur OAuth2 sont incomplètes.',
@@ -160,104 +196,140 @@ class OAuth2Authenticator extends AbstractAuthenticator
             throw new CustomUserMessageAuthenticationException('Connexion impossible avec un compte système.');
         }
 
+        return [
+            'oauthId' => $oauthId,
+            'username' => $username,
+            'displayName' => $displayName,
+            'email' => $email,
+        ];
+    }
+
+    private function findOrCreateUser(
+        string $oauthId,
+        string $username,
+        string $displayName,
+        ?string $email,
+    ): User {
         // 1. Search by OAuth ID and provider
         $user = $this->userRepository->findOneBy([
             'oauthId' => $oauthId,
             'oauthProvider' => 'generic',
         ]);
 
-        if (!$user) {
-            // 2. Search by username to link account
-            $existingUserByUsername = $this->userRepository->findOneBy(['username' => $username]);
-            if ($existingUserByUsername) {
-                if ($existingUserByUsername->getOauthId() !== null && $existingUserByUsername->getOauthId() !== $oauthId) {
-                    $this->logger->warning(sprintf(
-                        'Refused linking OAuth account for username "%s": existing OAuth ID "%s" does not match incoming "%s".',
-                        $username,
-                        $existingUserByUsername->getOauthId(),
-                        $oauthId,
-                    ));
-                    throw new CustomUserMessageAuthenticationException(
-                        'Ce nom d\'utilisateur est déjà lié à un autre compte OAuth.',
-                    );
-                }
-
-                $user = $existingUserByUsername;
-
-                if ($user->isBanned()) {
-                    throw new CustomUserMessageAuthenticationException(
-                        'Votre compte a été suspendu. Veuillez contacter un administrateur.',
-                    );
-                }
-
-                if ($email !== null && $user->getEmail() === null) {
-                    $user->setEmail($email);
-                }
-
-                $user->setOauthId($oauthId);
-                $user->setOauthProvider('generic');
-                $this->entityManager->flush();
-                $this->logger->info(sprintf(
-                    'Linked existing user "%s" (ID: %d) with OAuth2 ID "%s".',
-                    $username,
-                    $user->getId(),
-                    $oauthId,
-                ));
-            } else {
-                // 3. Create a brand new user
-                $user = new User();
-                $user->setUsername($username);
-                $user->setDisplayName($displayName ?? $username);
-                $user->setOauthId($oauthId);
-                $user->setOauthProvider('generic');
-
-                if ($email !== null) {
-                    $user->setEmail($email);
-                    $user->setEmailVerifiedAt(new \DateTimeImmutable());
-                }
-
-                // Set a random secure password
-                $randomPassword = bin2hex(random_bytes(16));
-                $user->setPassword($this->passwordHasher->hashPassword($user, $randomPassword));
-
-                $user->setRoles(['ROLE_USER']);
-
-                $this->entityManager->persist($user);
-                $this->entityManager->flush();
-                $this->logger->info(sprintf(
-                    'Created new user "%s" (ID: %d) via OAuth2 registration with OAuth2 ID "%s".',
-                    $username,
-                    $user->getId(),
-                    $oauthId,
-                ));
-            }
-        } else {
-            if ($user->isBanned()) {
-                throw new CustomUserMessageAuthenticationException(
-                    'Votre compte a été suspendu. Veuillez contacter un administrateur.',
-                );
-            }
-
-            if ($email !== null && $user->getEmail() === null) {
-                $user->setEmail($email);
-                $user->setEmailVerifiedAt(new \DateTimeImmutable());
-                $this->entityManager->flush();
-                $this->logger->info(sprintf(
-                    'Filled missing email "%s" for OAuth user "%s" (ID: %d).',
-                    $email,
-                    $user->getUsername(),
-                    $user->getId(),
-                ));
-            }
-
+        if ($user !== null) {
+            $this->assertUserNotBanned($user);
+            $this->syncUserEmailIfMissing($user, $email);
             $this->logger->debug(sprintf(
                 'User "%s" authenticated via OAuth2 with provider ID "%s".',
                 $user->getUsername(),
                 $oauthId,
             ));
+
+            return $user;
         }
 
-        return new SelfValidatingPassport(new UserBadge($user->getUserIdentifier(), static fn() => $user));
+        // 2. Search by username to link account
+        $existingUserByUsername = $this->userRepository->findOneBy(['username' => $username]);
+        if ($existingUserByUsername !== null) {
+            return $this->linkExistingUser($existingUserByUsername, $oauthId, $username, $email);
+        }
+
+        // 3. Create a brand new user
+        return $this->registerNewOAuthUser($oauthId, $username, $displayName, $email);
+    }
+
+    private function assertUserNotBanned(User $user): void
+    {
+        if ($user->isBanned()) {
+            throw new CustomUserMessageAuthenticationException(
+                'Votre compte a été suspendu. Veuillez contacter un administrateur.',
+            );
+        }
+    }
+
+    private function syncUserEmailIfMissing(User $user, ?string $email): void
+    {
+        if ($email !== null && $user->getEmail() === null) {
+            $user->setEmail($email);
+            $user->setEmailVerifiedAt(new \DateTimeImmutable());
+            $this->entityManager->flush();
+            $this->logger->info(sprintf(
+                'Filled missing email "%s" for OAuth user "%s" (ID: %d).',
+                $email,
+                $user->getUsername(),
+                $user->getId(),
+            ));
+        }
+    }
+
+    private function linkExistingUser(
+        User $existingUser,
+        string $oauthId,
+        string $username,
+        ?string $email,
+    ): User {
+        if ($existingUser->getOauthId() !== null && $existingUser->getOauthId() !== $oauthId) {
+            $this->logger->warning(sprintf(
+                'Refused linking OAuth account for username "%s": existing OAuth ID "%s" does not match incoming "%s".',
+                $username,
+                $existingUser->getOauthId(),
+                $oauthId,
+            ));
+            throw new CustomUserMessageAuthenticationException(
+                'Ce nom d\'utilisateur est déjà lié à un autre compte OAuth.',
+            );
+        }
+
+        $this->assertUserNotBanned($existingUser);
+
+        if ($email !== null && $existingUser->getEmail() === null) {
+            $existingUser->setEmail($email);
+        }
+
+        $existingUser->setOauthId($oauthId);
+        $existingUser->setOauthProvider('generic');
+        $this->entityManager->flush();
+        $this->logger->info(sprintf(
+            'Linked existing user "%s" (ID: %d) with OAuth2 ID "%s".',
+            $username,
+            $existingUser->getId(),
+            $oauthId,
+        ));
+
+        return $existingUser;
+    }
+
+    private function registerNewOAuthUser(
+        string $oauthId,
+        string $username,
+        string $displayName,
+        ?string $email,
+    ): User {
+        $user = new User();
+        $user->setUsername($username);
+        $user->setDisplayName($displayName);
+        $user->setOauthId($oauthId);
+        $user->setOauthProvider('generic');
+
+        if ($email !== null) {
+            $user->setEmail($email);
+            $user->setEmailVerifiedAt(new \DateTimeImmutable());
+        }
+
+        $randomPassword = bin2hex(random_bytes(16));
+        $user->setPassword($this->passwordHasher->hashPassword($user, $randomPassword));
+        $user->setRoles(['ROLE_USER']);
+
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+        $this->logger->info(sprintf(
+            'Created new user "%s" (ID: %d) via OAuth2 registration with OAuth2 ID "%s".',
+            $username,
+            $user->getId(),
+            $oauthId,
+        ));
+
+        return $user;
     }
 
     public function onAuthenticationSuccess(

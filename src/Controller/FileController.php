@@ -87,60 +87,12 @@ final class FileController extends AbstractController
         MessageRepository $messageRepository,
         FileUploadService $fileUploadService,
     ): Response {
-        $message = $messageRepository->find($id);
-        if (!$message || !$message->getFilePath()) {
-            throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
-        }
+        $message = $this->findAndAuthorizeFileMessage($id, $messageRepository);
+        $contentType = $message->getMimeType() !== null && $message->getMimeType() !== ''
+            ? $message->getMimeType()
+            : 'application/octet-stream';
 
-        $this->checkVirusScanStatus($message);
-
-        $this->authorizeMessageAccess($message);
-
-        $etag = md5(
-            $message->getFilePath()
-                . (
-                    $message->getUpdatedAt()
-                        ? $message->getUpdatedAt()->getTimestamp()
-                        : $message->getCreatedAt()->getTimestamp()
-                ),
-        );
-        $response = new StreamedResponse();
-        $response->setEtag($etag);
-        $response->setPrivate();
-        $response->setMaxAge(31_536_000);
-        $response->headers->addCacheControlDirective('immutable');
-
-        if ($response->isNotModified($request)) {
-            return $response;
-        }
-
-        if (!$fileUploadService->exists($message->getFilePath())) {
-            throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
-        }
-
-        $stream = $fileUploadService->readStream($message->getFilePath());
-
-        $response->setCallback(static function () use ($stream) {
-            fpassthru($stream);
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-        });
-
-        $response->setStatusCode(200);
-        $response->headers->set(
-            'Content-Type',
-            $message->getMimeType() !== null && $message->getMimeType() !== ''
-                ? $message->getMimeType()
-                : 'application/octet-stream',
-        );
-        $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
-            HeaderUtils::DISPOSITION_ATTACHMENT,
-            $message->getFileName(),
-            $this->getFallbackFileName($message->getFileName()),
-        ));
-
-        return $response;
+        return $this->serveStreamedFile($message, $request, $fileUploadService, HeaderUtils::DISPOSITION_ATTACHMENT, $contentType);
     }
 
     #[Route('/messages/{id}/preview', name: 'app_file_preview', methods: ['GET'])]
@@ -150,23 +102,38 @@ final class FileController extends AbstractController
         MessageRepository $messageRepository,
         FileUploadService $fileUploadService,
     ): Response {
+        $message = $this->findAndAuthorizeFileMessage($id, $messageRepository);
+        $disposition = self::isUnsafeForInlinePreview($message)
+            ? HeaderUtils::DISPOSITION_ATTACHMENT
+            : HeaderUtils::DISPOSITION_INLINE;
+
+        return $this->serveStreamedFile($message, $request, $fileUploadService, $disposition, self::previewContentType($message));
+    }
+
+    private function findAndAuthorizeFileMessage(int $id, MessageRepository $messageRepository): Message
+    {
         $message = $messageRepository->find($id);
         if (!$message || !$message->getFilePath()) {
             throw $this->createNotFoundException($this->translator->trans('Fichier non trouvé.'));
         }
 
         $this->checkVirusScanStatus($message);
-
         $this->authorizeMessageAccess($message);
 
-        $etag = md5(
-            $message->getFilePath()
-                . (
-                    $message->getUpdatedAt()
-                        ? $message->getUpdatedAt()->getTimestamp()
-                        : $message->getCreatedAt()->getTimestamp()
-                ),
-        );
+        return $message;
+    }
+
+    private function serveStreamedFile(
+        Message $message,
+        Request $request,
+        FileUploadService $fileUploadService,
+        string $dispositionType,
+        string $contentType,
+    ): Response {
+        $filePath = (string) $message->getFilePath();
+        $updatedAtTimestamp = $message->getUpdatedAt()?->getTimestamp() ?? $message->getCreatedAt()->getTimestamp();
+        $etag = md5($filePath . $updatedAtTimestamp);
+
         $response = new StreamedResponse();
         $response->setEtag($etag);
         $response->setPrivate();
@@ -177,11 +144,11 @@ final class FileController extends AbstractController
             return $response;
         }
 
-        if (!$fileUploadService->exists($message->getFilePath())) {
+        if (!$fileUploadService->exists($filePath)) {
             throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
         }
 
-        $stream = $fileUploadService->readStream($message->getFilePath());
+        $stream = $fileUploadService->readStream($filePath);
 
         $response->setCallback(static function () use ($stream) {
             fpassthru($stream);
@@ -191,11 +158,9 @@ final class FileController extends AbstractController
         });
 
         $response->setStatusCode(200);
-        $response->headers->set('Content-Type', self::previewContentType($message));
+        $response->headers->set('Content-Type', $contentType);
         $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
-            self::isUnsafeForInlinePreview($message)
-                ? HeaderUtils::DISPOSITION_ATTACHMENT
-                : HeaderUtils::DISPOSITION_INLINE,
+            $dispositionType,
             $message->getFileName(),
             $this->getFallbackFileName($message->getFileName()),
         ));

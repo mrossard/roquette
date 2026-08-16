@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\Channel;
+use App\Entity\Message;
 use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Repository\KanbanColumnRepository;
@@ -190,15 +191,10 @@ final class KanbanController extends AbstractController
     }
 
     #[Route('/messages/{id}/kanban-column', name: 'app_kanban_move_message', methods: ['POST'])]
-    public function moveMessage(int $id, Request $request): Response
+    public function moveMessage(Message $message, Request $request): Response
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-
-        $message = $this->messageRepository->find($id);
-        if (!$message) {
-            return new Response($this->translator->trans('Message non trouvé.'), 404);
-        }
 
         $columnId = $request->request->get('columnId');
         $column = null;
@@ -212,22 +208,14 @@ final class KanbanController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        return $this->render('dashboard/_kanban_card.html.twig', [
-            'message' => $message,
-            'channel' => $message->getChannel(),
-        ]);
+        return $this->renderKanbanCard($message);
     }
 
     #[Route('/messages/{id}/assign', name: 'app_kanban_assign', methods: ['POST'])]
-    public function assignMessage(int $id, Request $request): Response
+    public function assignMessage(Message $message, Request $request): Response
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-
-        $message = $this->messageRepository->find($id);
-        if (!$message) {
-            return new Response($this->translator->trans('Message non trouvé.'), 404);
-        }
 
         $userId = $request->request->get('userId');
         $user = null;
@@ -241,22 +229,14 @@ final class KanbanController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        return $this->render('dashboard/_kanban_card.html.twig', [
-            'message' => $message,
-            'channel' => $message->getChannel(),
-        ]);
+        return $this->renderKanbanCard($message);
     }
 
     #[Route('/messages/{id}/due-date', name: 'app_kanban_due_date', methods: ['POST'])]
-    public function setDueDate(int $id, Request $request): Response
+    public function setDueDate(Message $message, Request $request): Response
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-
-        $message = $this->messageRepository->find($id);
-        if (!$message) {
-            return new Response($this->translator->trans('Message non trouvé.'), 404);
-        }
 
         $dueAtStr = $request->request->get('dueAt');
         $dueAt = null;
@@ -271,22 +251,14 @@ final class KanbanController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        return $this->render('dashboard/_kanban_card.html.twig', [
-            'message' => $message,
-            'channel' => $message->getChannel(),
-        ]);
+        return $this->renderKanbanCard($message);
     }
 
     #[Route('/messages/{id}/priority', name: 'app_kanban_priority', methods: ['POST'])]
-    public function setPriority(int $id, Request $request): Response
+    public function setPriority(Message $message, Request $request): Response
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-
-        $message = $this->messageRepository->find($id);
-        if (!$message) {
-            return new Response($this->translator->trans('Message non trouvé.'), 404);
-        }
 
         $rawPriority = (string) $request->request->get('priority', '');
         $priority = $rawPriority !== '' ? $rawPriority : null;
@@ -297,31 +269,21 @@ final class KanbanController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        return $this->render('dashboard/_kanban_card.html.twig', [
-            'message' => $message,
-            'channel' => $message->getChannel(),
-        ]);
+        return $this->renderKanbanCard($message);
     }
 
     #[Route('/messages/{id}/labels', name: 'app_kanban_labels', methods: ['POST'])]
-    public function setLabels(int $id, Request $request): Response
+    public function setLabels(Message $message, Request $request): Response
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $message = $this->messageRepository->find($id);
-        if (!$message) {
-            return new Response($this->translator->trans('Message non trouvé.'), 404);
-        }
-
         $labelsReq = $request->request->get('labels');
-        if (is_array($labelsReq)) {
-            $labels = $labelsReq;
-        } elseif (is_string($labelsReq) && trim($labelsReq) !== '') {
-            $labels = explode(',', $labelsReq);
-        } else {
-            $labels = [];
-        }
+        $labels = match (true) {
+            is_array($labelsReq) => $labelsReq,
+            is_string($labelsReq) && trim($labelsReq) !== '' => explode(',', $labelsReq),
+            default => [],
+        };
         $labels = array_values(array_filter(array_map('trim', $labels)));
 
         try {
@@ -330,48 +292,26 @@ final class KanbanController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        return $this->render('dashboard/_kanban_card.html.twig', [
-            'message' => $message,
-            'channel' => $message->getChannel(),
-        ]);
+        return $this->renderKanbanCard($message);
     }
 
     #[Route('/messages/{id}/kanban-complete', name: 'app_kanban_toggle_complete', methods: ['POST'])]
-    public function toggleComplete(int $id): Response
+    public function toggleComplete(Message $message): Response
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $message = $this->messageRepository->find($id);
-        if (!$message) {
-            return new Response($this->translator->trans('Message non trouvé.'), 404);
+        try {
+            $this->kanbanManager->toggleCompletion($message, !$message->isCompleted(), $currentUser);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        $completed = !$message->isCompleted();
+        return $this->renderKanbanCard($message);
+    }
 
-        // Sync reaction ✅ to match completion state
-        $reactionRepo = $this->entityManager->getRepository(\App\Entity\Reaction::class);
-        $existingCheck = $reactionRepo->findOneBy([
-            'message' => $message,
-            'user' => $currentUser,
-            'emoji' => '✅',
-        ]);
-
-        if ($completed && !$existingCheck) {
-            $reaction = new \App\Entity\Reaction();
-            $reaction->setMessage($message);
-            $reaction->setUser($currentUser);
-            $reaction->setEmoji('✅');
-            $this->entityManager->persist($reaction);
-        } elseif (!$completed && $existingCheck) {
-            $this->entityManager->remove($existingCheck);
-        }
-
-        $message->setIsCompleted($completed);
-        $this->entityManager->flush();
-
-        $this->kanbanManager->toggleCompletion($message, $completed, $currentUser);
-
+    private function renderKanbanCard(Message $message): Response
+    {
         return $this->render('dashboard/_kanban_card.html.twig', [
             'message' => $message,
             'channel' => $message->getChannel(),
