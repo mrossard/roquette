@@ -135,6 +135,11 @@
                 <div hx-trigger="sse:channel_notification"></div>
                 <div hx-trigger="sse:invitation_received"></div>
                 <div hx-trigger="sse:channel_deleted"></div>
+                <div hx-trigger="sse:user_typing"></div>
+                <div hx-trigger="sse:help_stream_update"></div>
+                <div hx-trigger="sse:kanban_card_moved"></div>
+                <div hx-trigger="sse:kanban_card_updated"></div>
+                <div hx-trigger="sse:kanban_columns_changed"></div>
             </div>
             <div hx-post="{{ path('app_user_ping') }}"
                  hx-trigger="load delay:1s, every 60s"

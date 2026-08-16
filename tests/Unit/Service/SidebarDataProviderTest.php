@@ -138,4 +138,25 @@ class SidebarDataProviderTest extends TestCase
         $this->assertSame([], $data['subChannelsByParent']);
         $this->assertSame([10 => $lastMessage], $data['lastMessages']);
     }
+
+    #[Test]
+    public function computeWorkspaceUnreadCountsDoesNotCountDuplicateChannelsTwice(): void
+    {
+        $ws = $this->createMock(Workspace::class);
+        $ws->method('getId')->willReturn(1);
+
+        $channel = $this->createMock(Channel::class);
+        $channel->method('getId')->willReturn(10);
+        $channel->method('getWorkspace')->willReturn($ws);
+
+        // Same channel duplicated in the array
+        $channels = [$channel, $channel];
+        $unreadCounts = [
+            10 => ['count' => 5, 'hasMention' => false, 'notificationsEnabled' => true],
+        ];
+
+        $result = $this->provider->computeWorkspaceUnreadCounts($channels, $unreadCounts);
+
+        $this->assertSame([1 => 5], $result);
+    }
 }

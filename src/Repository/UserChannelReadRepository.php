@@ -32,20 +32,19 @@ class UserChannelReadRepository extends ServiceEntityRepository
     {
         $mentionPattern = '%@' . strtolower($user->getUsername()) . '%';
 
-        $qb = $this->getEntityManager()->createQueryBuilder();
+        $qb = $this->createQueryBuilder('ucr');
         $qb
             ->select(
                 'c.id as channelId, c.isDm as isDm, COUNT(m.id) as unreadCount, SUM(CASE WHEN LOWER(m.content) LIKE :mentionPattern THEN 1 ELSE 0 END) as mentionCount, ucr.notificationsEnabled as notificationsEnabled',
             )
-            ->from(Channel::class, 'c')
-            ->innerJoin('c.members', 'mem', 'WITH', 'mem.id = :user')
-            ->leftJoin(UserChannelRead::class, 'ucr', 'WITH', 'ucr.channel = c AND ucr.user = :user')
+            ->join('ucr.channel', 'c')
             ->leftJoin(
                 'c.messages',
                 'm',
                 'WITH',
                 'm.author != :user AND (ucr.lastReadMessage IS NULL OR m.id > IDENTITY(ucr.lastReadMessage))',
             )
+            ->where('ucr.user = :user')
             ->groupBy('c.id', 'c.isDm', 'ucr.notificationsEnabled')
             ->setParameter('user', $user)
             ->setParameter('mentionPattern', $mentionPattern);
@@ -101,19 +100,18 @@ class UserChannelReadRepository extends ServiceEntityRepository
      */
     public function getUnreadCountsByWorkspace(User $user): array
     {
-        $qb = $this->getEntityManager()->createQueryBuilder();
+        $qb = $this->createQueryBuilder('ucr');
         $qb
             ->select('IDENTITY(c.workspace) as workspaceId, COUNT(m.id) as unreadCount')
-            ->from(Channel::class, 'c')
-            ->innerJoin('c.members', 'mem', 'WITH', 'mem.id = :user')
-            ->leftJoin(UserChannelRead::class, 'ucr', 'WITH', 'ucr.channel = c AND ucr.user = :user')
+            ->join('ucr.channel', 'c')
             ->leftJoin(
                 'c.messages',
                 'm',
                 'WITH',
                 'm.author != :user AND (ucr.lastReadMessage IS NULL OR m.id > IDENTITY(ucr.lastReadMessage))',
             )
-            ->where('c.workspace IS NOT NULL')
+            ->where('ucr.user = :user')
+            ->andWhere('c.workspace IS NOT NULL')
             ->groupBy('c.workspace')
             ->setParameter('user', $user);
 

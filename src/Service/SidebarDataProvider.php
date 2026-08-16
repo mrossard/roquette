@@ -64,7 +64,16 @@ class SidebarDataProvider
     public function computeWorkspaceUnreadCounts(array $channels, array $unreadCounts): array
     {
         $workspaceUnreadCounts = [];
+        $processedChannelIds = [];
         foreach ($channels as $ch) {
+            $chId = $ch->getId();
+            if ($chId !== null && isset($processedChannelIds[$chId])) {
+                continue;
+            }
+            if ($chId !== null) {
+                $processedChannelIds[$chId] = true;
+            }
+
             $ws = $ch->getWorkspace();
             if (!$ws) {
                 continue;

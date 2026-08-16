@@ -438,6 +438,7 @@ export function updateSettingsPageUI() {
 
 export function handleGlobalNotification(data) {
     console.log('[Notification] Handling global notification payload:', data);
+    if (!data || !data.channelSlug) return;
     if (isCurrentUserBusy()) return;
     const statusBadge = document.getElementById('mercure-status');
     if (!statusBadge) return;
@@ -452,6 +453,22 @@ export function handleGlobalNotification(data) {
     if (data.author === currentUsername) {
         // Ignore messages authored by the current user
         return;
+    }
+
+    // Deduplicate by messageId to prevent counting the same message multiple times
+    if (data.messageId) {
+        if (!window.processedNotificationMessageIds) {
+            window.processedNotificationMessageIds = new Set();
+        }
+        if (window.processedNotificationMessageIds.has(data.messageId)) {
+            console.log(`[Notification] Skipping duplicate notification for messageId ${data.messageId}`);
+            return;
+        }
+        window.processedNotificationMessageIds.add(data.messageId);
+        if (window.processedNotificationMessageIds.size > 500) {
+            const oldest = window.processedNotificationMessageIds.values().next().value;
+            window.processedNotificationMessageIds.delete(oldest);
+        }
     }
 
     // Trigger desktop notification if not looking at the active channel, or if looking but the page is blurred
@@ -515,21 +532,25 @@ export function handleGlobalNotification(data) {
         fetchWithCsrf(`/channels/${data.channelSlug}/read`, {method: 'POST'}).catch(() => {});
     } else {
         // We are on another channel, show/increment the unread badge
-        if (channelLink) {
-            channelLink.classList.add('unread');
-            if (isMention) {
-                channelLink.classList.add('has-mention');
-            }
-            let badge = channelLink.querySelector('.unread-badge');
-            if (!badge) {
-                badge = document.createElement('span');
-                badge.className = 'unread-badge';
-                badge.textContent = '0';
-                channelLink.appendChild(badge);
-            }
-            const currentCount = parseInt(badge.textContent, 10) || 0;
-            badge.textContent = (currentCount + 1).toString();
-            badge.style.display = 'inline-flex';
+        const channelLinks = document.querySelectorAll(`.channel-link[data-channel-slug="${data.channelSlug}"]`);
+        if (channelLinks.length > 0) {
+            channelLinks.forEach(link => {
+                link.classList.add('unread');
+                if (isMention) {
+                    link.classList.add('has-mention');
+                }
+                let badge = link.querySelector('.unread-badge');
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'unread-badge';
+                    badge.textContent = '0';
+                    link.appendChild(badge);
+                }
+                const currentCount = parseInt(badge.textContent, 10) || 0;
+                badge.textContent = (currentCount + 1).toString();
+                badge.style.display = 'inline-flex';
+            });
+            updateFaviconUnreadCount();
         } else if (data.isSubChannel && data.parentChannelId) {
             const subChannelLink = document.querySelector(`.channel-link[data-channel-slug="${data.channelSlug}"]`);
             if (!subChannelLink) {
@@ -606,9 +627,13 @@ export function updateUnreadBadgeAndFavicon() {
     const activeChannelSlug = document.getElementById('mercure-status')?.getAttribute('data-active-channel-slug');
 
     let totalUnread = 0;
+    const countedSlugs = new Set();
 
     channelLinks.forEach(link => {
         const slug = link.getAttribute('data-channel-slug');
+        if (slug && countedSlugs.has(slug)) return;
+        if (slug) countedSlugs.add(slug);
+
         const badge = link.querySelector('.unread-badge');
 
         if (!badge) return;
@@ -640,13 +665,13 @@ export function updateUnreadBadgeAndFavicon() {
 
     let summaryBadge = summary.querySelector('.other-workspace-unread-badge');
 
-    if (total > 0) {
+    if (totalUnread > 0) {
         if (!summaryBadge) {
             summaryBadge = document.createElement('span');
             summaryBadge.className = 'other-workspace-unread-badge';
             summary.insertBefore(summaryBadge, summary.querySelector('.workspace-dropdown-arrow'));
         }
-        summaryBadge.textContent = total.toString();
+        summaryBadge.textContent = totalUnread.toString();
         summaryBadge.style.display = 'inline-flex';
         if (selector) {
             selector.classList.add('has-unread-elsewhere');
@@ -760,20 +785,26 @@ export function markActiveChannelAsReadIfFocused() {
     const activeChannelSlug = statusBadge.getAttribute('data-active-channel-slug');
     if (!activeChannelSlug) return;
 
-    const channelLink = document.querySelector(`.channel-link[data-channel-slug="${activeChannelSlug}"]`);
-    if (!channelLink) return;
+    const channelLinks = document.querySelectorAll(`.channel-link[data-channel-slug="${activeChannelSlug}"]`);
+    if (channelLinks.length === 0) return;
 
-    const badge = channelLink.querySelector('.unread-badge');
-    const isUnread = channelLink.classList.contains('unread') || (badge && badge.style.display !== 'none');
+    let wasUnread = false;
+    channelLinks.forEach(channelLink => {
+        const badge = channelLink.querySelector('.unread-badge');
+        const isUnread = channelLink.classList.contains('unread') || (badge && badge.style.display !== 'none');
 
-    if (isUnread) {
-        channelLink.classList.remove('unread');
-        channelLink.classList.remove('has-mention');
-        if (badge) {
-            badge.textContent = '0';
-            badge.style.display = 'none';
+        if (isUnread) {
+            wasUnread = true;
+            channelLink.classList.remove('unread');
+            channelLink.classList.remove('has-mention');
+            if (badge) {
+                badge.textContent = '0';
+                badge.style.display = 'none';
+            }
         }
+    });
 
+    if (wasUnread) {
         fetchWithCsrf(`/channels/${activeChannelSlug}/read`, {method: 'POST'}).catch(() => {});
         updateFaviconUnreadCount();
     }
@@ -788,10 +819,16 @@ export function updateFaviconUnreadCount() {
     }
 
     let totalUnread = 0;
+    const countedSlugs = new Set();
     document.querySelectorAll('.channel-link .unread-badge').forEach(badge => {
-        // Check if the badge is visible and its parent is not active (or active but the page doesn't have focus)
         const channelLink = badge.closest('.channel-link');
-        const isChannelActive = channelLink && channelLink.classList.contains('active');
+        if (!channelLink) return;
+
+        const slug = channelLink.getAttribute('data-channel-slug');
+        if (slug && countedSlugs.has(slug)) return;
+        if (slug) countedSlugs.add(slug);
+
+        const isChannelActive = channelLink.classList.contains('active');
         const isPageActive = (document.visibilityState === 'visible' && document.hasFocus());
 
         if (badge.style.display !== 'none' && (!isChannelActive || !isPageActive)) {

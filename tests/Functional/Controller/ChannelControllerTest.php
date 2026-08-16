@@ -485,4 +485,50 @@ class ChannelControllerTest extends WebTestCase
         static::assertStringContainsString('Ce message est temporairement masqué en attente de modération.', $content);
         static::assertStringNotContainsString('Ceci est un texte toxique secret', $content);
     }
+
+    #[Test]
+    public function testUnreadChannelWithMultipleMembersNotDuplicatedInSidebar(): void
+    {
+        $publicWorkspace = $this->entityManager->getRepository(\App\Entity\Workspace::class)->findOneBy(['isPublic' => true]);
+        if ($publicWorkspace) {
+            $this->channel->setWorkspace($publicWorkspace);
+            $publicWorkspace->addMember($this->testUser);
+        }
+
+        $otherUser = new User();
+        $otherUser->setUsername('test_channel_user_2');
+        $otherUser->setRoles(['ROLE_USER']);
+        $passwordHasher = $this->client->getContainer()->get('security.user_password_hasher');
+        $otherUser->setPassword($passwordHasher->hashPassword($otherUser, 'password123'));
+        $this->entityManager->persist($otherUser);
+
+        if ($publicWorkspace) {
+            $publicWorkspace->addMember($otherUser);
+        }
+
+        // Add second member to channel
+        $this->channel->addMember($otherUser);
+
+        // Create an unread message authored by otherUser
+        $msg = new \App\Entity\Message();
+        $msg->setAuthor($otherUser);
+        $msg->setChannel($this->channel);
+        $msg->setContent('Message non lu');
+        $this->entityManager->persist($msg);
+        $this->entityManager->flush();
+
+        // Check findAllForUser returns channel only once
+        $channelRepo = $this->entityManager->getRepository(Channel::class);
+        $userChannels = $channelRepo->findAllForUser($this->testUser);
+        $matching = array_filter($userChannels, fn(Channel $c) => $c->getId() === $this->channel->getId());
+        static::assertCount(1, $matching);
+
+        // Request dashboard / channel page
+        $crawler = $this->client->request('GET', sprintf('/channels/%s', $this->channel->getSlug()));
+        $this->assertResponseIsSuccessful();
+
+        // The channel should only be rendered once in the sidebar
+        $channelLinks = $crawler->filter(sprintf('.channel-link[data-channel-slug="%s"]', $this->channel->getSlug()));
+        static::assertCount(1, $channelLinks);
+    }
 }

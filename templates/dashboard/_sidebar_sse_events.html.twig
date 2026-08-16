@@ -1,4 +1,3 @@
-<div style="display:none;" hx-trigger="sse:personal_notification"></div>
 <div style="display:none;"
      hx-trigger="sse:channel_notification throttle:3s"
      hx-get="{{ path('app_sidebar_workspace_selector') }}"
@@ -6,12 +5,3 @@
      hx-swap="outerHTML"
      hx-vals='js:{channel: document.getElementById("mercure-status")?.getAttribute("data-active-channel-slug") || ""}'>
 </div>
-<div style="display:none;" hx-trigger="sse:user_typing"></div>
-<div style="display:none;" hx-trigger="sse:user_status_changed"></div>
-<div style="display:none;" hx-trigger="sse:help_stream_update"></div>
-<div style="display:none;" hx-trigger="sse:invitation_received"></div>
-<div style="display:none;" hx-trigger="sse:channel_deleted"></div>
-<div style="display:none;" hx-trigger="sse:kanban_card_moved"></div>
-<div style="display:none;" hx-trigger="sse:kanban_card_updated"></div>
-<div style="display:none;" hx-trigger="sse:kanban_columns_changed"></div>
-<div style="display:none;" hx-trigger="sse:moderation_count_changed"></div>

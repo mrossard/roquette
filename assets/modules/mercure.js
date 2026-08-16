@@ -364,9 +364,31 @@ document.body.addEventListener('htmx:sseError', () => {
     htmx.ajax('GET', '/user/ping', {target: el, swap: 'innerHTML'});
 });
 
+const recentSseEvents = new Map();
+
 document.body.addEventListener('htmx:sseMessage', (event) => {
-    const type = event.detail.type;
-    console.log(`[Mercure SSE] Event received: type="${type}"`, event.detail.data);
+    const type = event.detail?.type;
+    const data = event.detail?.data;
+    if (!type) return;
+
+    // Deduplicate identical SSE events that bubble up from multiple trigger elements in the DOM
+    const eventKey = `${type}:${data}`;
+    const now = Date.now();
+    const lastSeen = recentSseEvents.get(eventKey);
+    if (lastSeen && (now - lastSeen) < 1000) {
+        return;
+    }
+    recentSseEvents.set(eventKey, now);
+
+    if (recentSseEvents.size > 100) {
+        for (const [key, time] of recentSseEvents.entries()) {
+            if (now - time > 5000) {
+                recentSseEvents.delete(key);
+            }
+        }
+    }
+
+    console.log(`[Mercure SSE] Event received: type="${type}"`, data);
 
     if (type === 'help_stream_update') {
         try {

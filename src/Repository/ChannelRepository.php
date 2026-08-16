@@ -61,6 +61,13 @@ class ChannelRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
+        // Deduplicate channels (since joining c.members produces multiple rows per channel)
+        $uniqueChannels = [];
+        foreach ($joinedChannels as $channel) {
+            $uniqueChannels[$channel->getId()] = $channel;
+        }
+        $joinedChannels = array_values($uniqueChannels);
+
         // Apply custom channel ordering if it exists
         $order = $user->getChannelOrder();
         if ($order !== null && $order !== []) {
@@ -164,13 +171,20 @@ class ChannelRepository extends ServiceEntityRepository
             $this->buildGroupAccessConditions($qb, $providerGroupIdentifiers, 'c')
         );
 
-        return $qb
+        $results = $qb
             ->setParameter('query', '%' . strtolower($query) . '%')
             ->setParameter('userId', $user->getId())
             ->andWhere($accessConditions)
-            ->setMaxResults(5)
+            ->setMaxResults($limit ?? 5)
             ->getQuery()
             ->getResult();
+
+        $unique = [];
+        foreach ($results as $ch) {
+            $unique[$ch->getId()] = $ch;
+        }
+
+        return array_values($unique);
     }
 
     /** @return Channel[] */
@@ -274,10 +288,17 @@ class ChannelRepository extends ServiceEntityRepository
                 ->setParameter('q', '%' . mb_strtolower($query) . '%');
         }
 
-        return $qb->orderBy('LOWER(c.name)', 'ASC')
+        $results = $qb->orderBy('LOWER(c.name)', 'ASC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+
+        $unique = [];
+        foreach ($results as $ch) {
+            $unique[$ch->getId()] = $ch;
+        }
+
+        return array_values($unique);
     }
 
     /**
