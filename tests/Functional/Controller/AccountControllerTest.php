@@ -344,16 +344,57 @@ class AccountControllerTest extends WebTestCase
     }
 
     // -------------------------------------------------------------------------
-    // Unknown action
+    // Dedicated routes
     // -------------------------------------------------------------------------
 
     #[Test]
-    public function testPostUnknownAction(): void
+    public function testDedicatedProfileRoute(): void
     {
-        $this->client->request('POST', '/account', [
-            'action' => 'unknown_action',
+        $this->client->request('POST', '/account/profile', [
+            'displayName' => 'Direct Profile Name',
+            'hue' => '120',
+            'statusOverride' => 'busy',
+            'locale' => 'en',
         ]);
 
         $this->assertResponseRedirects('/account');
+
+        $this->entityManager->clear();
+        $updatedUser = $this->entityManager->find(User::class, $this->testUser->getId());
+        static::assertSame('Direct Profile Name', $updatedUser->getDisplayName());
+        static::assertSame(120, $updatedUser->getCustomHue());
+        static::assertSame('busy', $updatedUser->getStatusOverride());
+        static::assertSame('en', $updatedUser->getLocale());
+    }
+
+    #[Test]
+    public function testDedicatedNotificationsRoute(): void
+    {
+        $this->client->request('POST', '/account/notifications', [
+            'mentionNotificationsEnabled' => '1',
+        ]);
+
+        $this->assertResponseRedirects('/account');
+
+        $this->entityManager->clear();
+        $updatedUser = $this->entityManager->find(User::class, $this->testUser->getId());
+        static::assertTrue($updatedUser->isMentionNotificationsEnabled());
+    }
+
+    #[Test]
+    public function testDedicatedPasswordRoute(): void
+    {
+        $this->client->request('POST', '/account/password', [
+            'currentPassword' => 'currentPass1',
+            'newPassword' => 'newSecret999',
+            'confirmPassword' => 'newSecret999',
+        ]);
+
+        $this->assertResponseRedirects('/account');
+
+        $this->entityManager->clear();
+        $updatedUser = $this->entityManager->find(User::class, $this->testUser->getId());
+        $passwordHasher = $this->client->getContainer()->get('security.user_password_hasher');
+        static::assertTrue($passwordHasher->isPasswordValid($updatedUser, 'newSecret999'));
     }
 }

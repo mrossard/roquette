@@ -53,8 +53,7 @@
                     {% endif %}
 
                     <!-- Profile Settings Form -->
-                    <form action="{{ path('app_account') }}" method="POST" class="form-section">
-                        <input type="hidden" name="action" value="profile">
+                    <form action="{{ path('app_account_profile') }}" method="POST" class="form-section">
                         <h3>{{ 'Informations de profil'|trans }}</h3>
 
                         <div class="input-group">
@@ -151,8 +150,7 @@
                     </form>
 
                     <!-- Password Settings Form -->
-                    <form action="{{ path('app_account') }}" method="POST" class="form-section">
-                        <input type="hidden" name="action" value="password">
+                    <form action="{{ path('app_account_password') }}" method="POST" class="form-section">
                         <h3>{{ 'Changer le mot de passe'|trans }}</h3>
 
                         <div class="input-group">
@@ -176,8 +174,7 @@
                     </form>
 
                     <!-- Desktop Notifications Settings -->
-                    <form action="{{ path('app_account') }}" method="POST" class="form-section" id="desktop-notifications-section">
-                        <input type="hidden" name="action" value="notifications">
+                    <form action="{{ path('app_account_notifications') }}" method="POST" class="form-section" id="desktop-notifications-section">
                         <h3>{{ 'Notifications'|trans }}</h3>
                         <p class="card-description" style="margin-bottom: 1.25rem;">
                             {{ 'Recevez des notifications pour les nouveaux messages et invitations, même lorsque le navigateur est fermé.'|trans }}
