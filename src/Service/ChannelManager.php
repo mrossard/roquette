@@ -307,21 +307,11 @@ class ChannelManager
         $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Discussion';
         $name = mb_substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 40);
 
-        $sluggedName = strtolower($this->slugger->slug($name)->toString());
-        if ($sluggedName === '') {
-            $sluggedName = 'discussion';
-        }
-        $slug = 'sc-' . $sluggedName . '-' . substr(bin2hex(random_bytes(3)), 0, 6);
-
-        $baseSlug = $slug;
-        $count = 1;
-        while ($this->channelRepository->findOneBy(['slug' => $slug])) {
-            $slug = $baseSlug . '-' . rand(100, 999);
-            if ($count++ > 20) {
-                $slug = $baseSlug . '-' . uniqid();
-                break;
-            }
-        }
+        $slug = $this->slugGenerator->generate(
+            'sc-' . $name,
+            'sc-discussion',
+            fn(string $s) => $this->channelRepository->findOneBy(['slug' => $s]) !== null,
+        );
 
         $channel = new Channel();
         $channel->setName($name);

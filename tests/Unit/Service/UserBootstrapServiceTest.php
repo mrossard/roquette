@@ -1,0 +1,115 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Unit\Service;
+
+use App\Entity\Channel;
+use App\Entity\User;
+use App\Entity\Workspace;
+use App\Repository\ChannelRepository;
+use App\Repository\UserRepository;
+use App\Repository\WorkspaceRepository;
+use App\Service\UniqueSlugGenerator;
+use App\Service\UserBootstrapService;
+use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
+
+#[AllowMockObjectsWithoutExpectations]
+class UserBootstrapServiceTest extends TestCase
+{
+    private EntityManagerInterface $entityManager;
+    private UserPasswordHasherInterface $passwordHasher;
+    private RequestStack $requestStack;
+    private TranslatorInterface $translator;
+    private UniqueSlugGenerator $slugGenerator;
+    private Session $session;
+
+    protected function setUp(): void
+    {
+        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->passwordHasher = $this->createStub(UserPasswordHasherInterface::class);
+        $this->requestStack = new RequestStack();
+        $this->session = new Session(new MockArraySessionStorage());
+        $this->session->start();
+        $request = new Request();
+        $request->setSession($this->session);
+        $this->requestStack->push($request);
+
+        $this->translator = $this->createStub(TranslatorInterface::class);
+        $this->translator->method('trans')->willReturnArgument(0);
+        $this->slugGenerator = new UniqueSlugGenerator(new \Symfony\Component\String\Slugger\AsciiSlugger());
+    }
+
+    #[Test]
+    public function bootstrapDoesNothingIfUserIdIsNull(): void
+    {
+        $user = new User();
+        $this->entityManager->expects($this->never())->method('persist');
+        $this->entityManager->expects($this->never())->method('flush');
+
+        $service = new UserBootstrapService(
+            $this->entityManager,
+            $this->passwordHasher,
+            $this->requestStack,
+            $this->translator,
+            $this->slugGenerator,
+        );
+
+        $service->bootstrap($user);
+    }
+
+    #[Test]
+    public function bootstrapRunsWhenUserHasIdAndFlushes(): void
+    {
+        $user = new User();
+        $user->setUsername('john');
+        $ref = new \ReflectionProperty(User::class, 'id');
+        $ref->setValue($user, 10);
+
+        $workspaceRepo = $this->createMock(WorkspaceRepository::class);
+        $channelRepo = $this->createMock(ChannelRepository::class);
+        $userRepo = $this->createMock(UserRepository::class);
+
+        $publicWorkspace = new Workspace();
+        $publicWorkspace->setIsPublic(true);
+
+        $workspaceRepo->method('findOneBy')->willReturn($publicWorkspace);
+        $channelRepo->method('findOneBy')->willReturn(null);
+        $userRepo->method('findOneBy')->willReturn(null);
+
+        $this->entityManager
+            ->method('getRepository')
+            ->willReturnCallback(function (string $class) use ($workspaceRepo, $channelRepo, $userRepo) {
+                return match ($class) {
+                    Workspace::class => $workspaceRepo,
+                    Channel::class => $channelRepo,
+                    User::class => $userRepo,
+                };
+            });
+
+        $this->entityManager->expects($this->atLeastOnce())->method('persist');
+        $this->entityManager->expects($this->once())->method('flush');
+
+        $service = new UserBootstrapService(
+            $this->entityManager,
+            $this->passwordHasher,
+            $this->requestStack,
+            $this->translator,
+            $this->slugGenerator,
+        );
+
+        $service->bootstrap($user);
+
+        // Second run in same session should not flush again
+        $service->bootstrap($user);
+    }
+}

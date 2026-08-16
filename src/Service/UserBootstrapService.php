@@ -65,7 +65,18 @@ class UserBootstrapService
         $assistantName = $this->translator->trans('channel.assistant.name', [], 'messages');
         $assistantDesc = $this->translator->trans('channel.assistant.description', [], 'messages');
 
-        // 0. Ensure public workspace exists (already created by migration, but safety check)
+        $publicWorkspace = $this->ensurePublicWorkspace($user, $needsFlush);
+        $this->ensureGeneralChannel($publicWorkspace, $generalName, $generalDesc, $needsFlush);
+        $robotUser = $this->ensureRobotUser($assistantName, $needsFlush);
+        $this->ensureRobotDmChannel($user, $robotUser, $assistantName, $assistantDesc, $needsFlush);
+
+        if ($needsFlush) {
+            $this->entityManager->flush();
+        }
+    }
+
+    private function ensurePublicWorkspace(User $user, bool &$needsFlush): Workspace
+    {
         $publicWorkspace = $this->entityManager->getRepository(Workspace::class)->findOneBy(['isPublic' => true]);
         if (!$publicWorkspace) {
             $publicWorkspace = new Workspace();
@@ -77,19 +88,27 @@ class UserBootstrapService
             $needsFlush = true;
         }
 
-        // Ensure user is a member of the public workspace
         if (!$publicWorkspace->isMember($user)) {
             $publicWorkspace->addMember($user);
             $needsFlush = true;
         }
 
-        // 1. Ensure general channel exists in the public workspace
+        return $publicWorkspace;
+    }
+
+    private function ensureGeneralChannel(
+        Workspace $publicWorkspace,
+        string $generalName,
+        string $generalDesc,
+        bool &$needsFlush,
+    ): void {
         $general = $this->entityManager
             ->getRepository(Channel::class)
             ->findOneBy([
                 'workspace' => $publicWorkspace,
                 'slug' => 'general',
             ]);
+
         if (!$general) {
             $generalSlug = $this->slugGenerator->generate(
                 'general',
@@ -104,39 +123,43 @@ class UserBootstrapService
             $general->setWorkspace($publicWorkspace);
             $this->entityManager->persist($general);
             $needsFlush = true;
-        } else {
-            // Update translation if language changed and it needs sync
-            if ($general->getName() !== $generalName && $generalName !== 'channel.general.name') {
-                $general->setName($generalName);
-                $general->setDescription($generalDesc);
-                $needsFlush = true;
-            }
+        } elseif ($general->getName() !== $generalName && $generalName !== 'channel.general.name') {
+            $general->setName($generalName);
+            $general->setDescription($generalDesc);
+            $needsFlush = true;
         }
+    }
 
-        // No need to add user as member of workspace channels — workspace membership grants access
-
-        // 3. Ensure robot user
+    private function ensureRobotUser(string $assistantName, bool &$needsFlush): User
+    {
         $robotUser = $this->entityManager->getRepository(User::class)->findOneBy(['username' => User::ROBOT_USERNAME]);
         if (!$robotUser) {
             $robotUser = new User();
             $robotUser->setUsername(User::ROBOT_USERNAME);
             $robotUser->setDisplayName($assistantName);
             $robotUser->setRoles(['ROLE_USER']);
-            // Securely hash a dummy random password
             $hashedPassword = $this->passwordHasher->hashPassword($robotUser, bin2hex(random_bytes(16)));
             $robotUser->setPassword($hashedPassword);
             $this->entityManager->persist($robotUser);
             $needsFlush = true;
-        } else {
-            if ($robotUser->getDisplayName() !== $assistantName && $assistantName !== 'channel.assistant.name') {
-                $robotUser->setDisplayName($assistantName);
-                $needsFlush = true;
-            }
+        } elseif ($robotUser->getDisplayName() !== $assistantName && $assistantName !== 'channel.assistant.name') {
+            $robotUser->setDisplayName($assistantName);
+            $needsFlush = true;
         }
 
-        // 4. Ensure robot DM channel
+        return $robotUser;
+    }
+
+    private function ensureRobotDmChannel(
+        User $user,
+        User $robotUser,
+        string $assistantName,
+        string $assistantDesc,
+        bool &$needsFlush,
+    ): void {
         $robotSlug = 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug();
         $robotChannel = $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => $robotSlug]);
+
         if (!$robotChannel) {
             $robotChannel = new Channel();
             $robotChannel->setName($assistantName);
@@ -166,10 +189,6 @@ class UserBootstrapService
             if ($channelNeedsFlush) {
                 $needsFlush = true;
             }
-        }
-
-        if ($needsFlush) {
-            $this->entityManager->flush();
         }
     }
 }
