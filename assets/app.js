@@ -1,258 +1,78 @@
 import './styles/app.css';
 import './styles/admin.css';
 import htmx from 'htmx.org';
-window.htmx = htmx;
 import 'htmx-ext-sse';
-import {initializeChannelScroll, adjustScrollForLinkPreview} from './modules/scroll.js';
-import {getFreshCsrfToken} from './modules/csrf.js';
 
+// Morph extension via Idiomorph
+import { initMorphExtension } from './modules/morph-extension.js';
 
-import { Idiomorph } from 'idiomorph';
-window.Idiomorph = Idiomorph;
-
-// Register Idiomorph as a custom swap extension for HTMX
-if (window.htmx && window.Idiomorph) {
-    function createMorphConfig(swapStyle) {
-        if (swapStyle === "morph" || swapStyle === "morph:outerHTML") {
-            return { morphStyle: "outerHTML" };
-        } else if (swapStyle === "morph:innerHTML") {
-            return { morphStyle: "innerHTML" };
-        } else if (swapStyle.startsWith("morph:")) {
-            const params = swapStyle.slice(6);
-            const config = {};
-            for (const part of params.split(';')) {
-                const eqIdx = part.indexOf('=');
-                if (eqIdx === -1) continue;
-                const key = part.slice(0, eqIdx).trim();
-                let value = part.slice(eqIdx + 1).trim();
-                if (value === 'true') value = true;
-                else if (value === 'false') value = false;
-                else if (value === 'null') value = null;
-                config[key] = value;
-            }
-            return config;
-        }
-    }
-
-    window.htmx.defineExtension("morph", {
-        isInlineSwap: function (swapStyle) {
-            let config = createMorphConfig(swapStyle);
-            return config?.morphStyle === "outerHTML" || config?.morphStyle == null;
-        },
-        handleSwap: function (swapStyle, target, fragment) {
-            let config = createMorphConfig(swapStyle);
-            if (config) {
-                return window.Idiomorph.morph(target, fragment.children, config);
-            }
-        },
-    });
-}
-
-if (document.querySelector('meta[name="frankenphp-hot-reload:url"]')) {
-    import('frankenphp-hot-reload');
-}
-
-// Import our structured modules
+// Feature modules
 import './modules/ui.js';
 import './modules/mercure.js';
 import './modules/notifications.js';
 import './modules/editor.js';
 import './modules/autocomplete.js';
-import {getOrBuildSharedEmojiPickerDOM} from './modules/emoji.js';
 import './modules/offline.js';
 import './modules/search-builder.js';
 import './modules/kanban.js';
+import './modules/poll-options.js';
 
+import { initializeChannelScroll, adjustScrollForLinkPreview } from './modules/scroll.js';
+import { getFreshCsrfToken } from './modules/csrf.js';
+import { initDraftPersistence, restoreDraftForActiveChannel } from './modules/draft.js';
+import { initDialogHelpers } from './modules/dialog.js';
+import { initReactionPicker } from './modules/reaction-picker.js';
+import { initFileUploadUi } from './modules/file-upload-ui.js';
+
+// Expose htmx globally
+window.htmx = htmx;
+
+// Register Idiomorph extension for HTMX
+initMorphExtension(htmx);
+
+// Hot reload in dev environment
+if (document.querySelector('meta[name="frankenphp-hot-reload:url"]')) {
+    import('frankenphp-hot-reload');
+}
+
+// Service Worker for offline / PWA
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
 }
 
-// ── Draft persistence: save the textarea content on every keystroke ──────────
-function getActiveChannelSlug() {
-    const badge = document.getElementById('mercure-status');
-    return badge ? badge.getAttribute('data-active-channel-slug') : null;
-}
-
-document.addEventListener('input', (e) => {
-    if (e.target.id !== 'message') return;
-    const slug = getActiveChannelSlug();
-    if (!slug) return;
-    const text = e.target.value;
-    if (text.trim()) {
-        sessionStorage.setItem('draft:' + slug, text);
-    } else {
-        sessionStorage.removeItem('draft:' + slug);
-    }
-});
+// Initialize dedicated feature modules
+initDraftPersistence();
+initDialogHelpers();
+initReactionPicker();
+initFileUploadUi();
 
 function initAutoResizeTextarea() {
     // Managed natively by CSS field-sizing: content
 }
 
-window.getPollOptionCount = function (containerId) {
-    const container = document.getElementById(containerId);
-    return container ? container.querySelectorAll('input').length : 0;
-};
-
-window.removePollOption = function (btn) {
-    const parent = btn.closest('.poll-options-list');
-    btn.closest('div').remove();
-    if (parent) {
-        parent.querySelectorAll('input').forEach((inp, i) => inp.placeholder = 'Option ' + (i + 1));
+function checkJumpToMessage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const jumpTo = urlParams.get('jumpTo');
+    if (jumpTo && window.scrollToMessage) {
+        setTimeout(() => {
+            window.scrollToMessage(parseInt(jumpTo, 10));
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+        }, 300);
     }
-};
+}
 
-document.addEventListener('click', async (e) => {
-    const btn = e.target.closest('.btn-add-reaction');
-    if (!btn) return;
+// ── HTMX Global Event Listeners ──────────────────────────────────────────────
 
-    e.stopPropagation();
-    const feedItem = btn.closest('.feed-item');
-    if (!feedItem) return;
-    const messageId = feedItem.dataset.messageId;
-    if (!messageId) return;
-
-    const picker = document.getElementById(`reaction-picker-${messageId}`);
-    if (!picker) return;
-
-    document.querySelectorAll('.reaction-picker.show').forEach(p => {
-        if (p !== picker) {
-            p.classList.remove('show');
-        }
-    });
-
-    const isShowing = !picker.classList.contains('show');
-    picker.classList.toggle('show');
-
-    if (isShowing) {
-        let emojiPickerContainer = document.getElementById('shared-reaction-emoji-picker');
-        if (!emojiPickerContainer) {
-            const { element, focusSearch: focusSearchFn } = await getOrBuildSharedEmojiPickerDOM(emoji => {
-                const msgId = emojiPickerContainer.dataset.messageId;
-                if (emoji && msgId) {
-                    const targetFeedItem = document.querySelector(`.feed-item[data-message-id="${msgId}"]`);
-                    if (targetFeedItem) {
-                        htmx.ajax('POST', `/messages/${msgId}/react/${encodeURIComponent(emoji)}`, {
-                            target: targetFeedItem,
-                            swap: 'outerHTML'
-                        });
-                    }
-                }
-                const activePicker = emojiPickerContainer.closest('.reaction-picker');
-                if (activePicker) {
-                    activePicker.classList.remove('show');
-                }
-            });
-            emojiPickerContainer = element;
-            emojiPickerContainer.id = 'shared-reaction-emoji-picker';
-            emojiPickerContainer.focusSearch = focusSearchFn;
-        }
-
-        emojiPickerContainer.dataset.messageId = messageId;
-        picker.appendChild(emojiPickerContainer);
-
-        picker.style.left = '0';
-        picker.style.right = 'auto';
-        picker.style.top = '100%';
-        picker.style.bottom = 'auto';
-        picker.style.marginTop = '4px';
-        picker.style.marginBottom = '0';
-
-        let rect = picker.getBoundingClientRect();
-        const triggerRect = picker.parentElement.getBoundingClientRect();
-
-        if (rect.right > window.innerWidth) {
-            picker.style.left = 'auto';
-            picker.style.right = '0';
-            rect = picker.getBoundingClientRect();
-            
-            if (rect.left < 0) {
-                // If it overflows both sides, align it to have 12px margin/padding on the left
-                picker.style.left = `${-triggerRect.left + 12}px`;
-                picker.style.right = 'auto';
-                rect = picker.getBoundingClientRect();
-            }
-        } else if (rect.left < 0) {
-            picker.style.left = `${-triggerRect.left + 12}px`;
-            picker.style.right = 'auto';
-            rect = picker.getBoundingClientRect();
-        }
-
-        let bottomThreshold = window.innerHeight;
-        const container = picker.closest('#live-feed');
-        if (container) {
-            const chatInputArea = container.parentElement.querySelector('.chat-input-area');
-            if (chatInputArea) {
-                bottomThreshold = chatInputArea.getBoundingClientRect().top;
-            }
-        }
-
-        if (rect.bottom > bottomThreshold) {
-            picker.style.top = 'auto';
-            picker.style.bottom = '100%';
-            picker.style.marginTop = '0';
-            picker.style.marginBottom = '8px';
-            rect = picker.getBoundingClientRect();
-            
-            // If it now overflows the top of the viewport, position it 12px from top
-            if (rect.top < 0) {
-                picker.style.top = `${-triggerRect.top + 12}px`;
-                picker.style.bottom = 'auto';
-                picker.style.marginTop = '0';
-                picker.style.marginBottom = '0';
-            }
-        }
-
-        if (emojiPickerContainer.focusSearch) {
-            emojiPickerContainer.focusSearch();
-        }
+// Allow swapping for validation / rate limit error status codes
+document.body.addEventListener('htmx:beforeSwap', (evt) => {
+    if (evt.detail.xhr.status === 400 || evt.detail.xhr.status === 422 || evt.detail.xhr.status === 429) {
+        evt.detail.shouldSwap = true;
+        evt.detail.isError = false;
     }
 });
 
-// Global click/escape handlers to close picker
-document.addEventListener('click', (e) => {
-    // Close message reaction pickers when clicking outside
-    if (!e.target.closest('.reaction-picker') && !e.target.closest('.btn-add-reaction')) {
-        document.querySelectorAll('.reaction-picker.show').forEach(p => {
-            p.classList.remove('show');
-        });
-    }
-    // Close message actions list when clicking outside
-    if (!e.target.closest('.feed-item-actions')) {
-        document.querySelectorAll('.feed-item-actions-list.show').forEach(list => {
-            list.classList.remove('show');
-        });
-    }
-});
-
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        document.querySelectorAll('.reaction-picker.show').forEach(p => {
-            p.classList.remove('show');
-        });
-        document.querySelectorAll('.feed-item-actions-list.show').forEach(list => {
-            list.classList.remove('show');
-        });
-    }
-});
-
-document.addEventListener('click', (e) => {
-    const fileBtn = e.target.closest('.btn-file-toggle');
-    if (fileBtn) {
-        const inputId = fileBtn.dataset.fileInput;
-        if (inputId) document.getElementById(inputId)?.click();
-    }
-
-    const chipBtn = e.target.closest('.btn-remove-chip');
-    if (chipBtn) chipBtn.closest('.admin-chip')?.remove();
-
-    const dialogCloseBtn = e.target.closest('[data-dialog-close]');
-    if (dialogCloseBtn) dialogCloseBtn.closest('dialog')?.close();
-
-    const modalOpenBtn = e.target.closest('[data-open-modal]');
-    if (modalOpenBtn) document.getElementById(modalOpenBtn.dataset.openModal)?.showModal();
-});
-
+// Pass active channel slug in headers and inject CSRF token on non-GET requests
 document.addEventListener('htmx:configRequest', (evt) => {
     const statusBadge = document.getElementById('mercure-status');
     if (statusBadge) {
@@ -261,128 +81,68 @@ document.addEventListener('htmx:configRequest', (evt) => {
             evt.detail.headers['X-Previous-Channel'] = activeChannelSlug;
         }
     }
-});
 
-// Handle file upload loading indicator and progress updates
-document.body.addEventListener('htmx:beforeRequest', (evt) => {
-    // Show skeletons during page/channel navigation (when target is app-container or BODY)
-    const target = evt.detail.target;
-    if (target && (target.classList.contains('app-container') || target.tagName === 'BODY')) {
-        const chatPanel = document.querySelector('.chat-panel');
-        if (chatPanel) {
-            chatPanel.classList.add('channel-loading');
-        }
-        const settingsPanel = document.querySelector('.settings-panel');
-        if (settingsPanel) {
-            settingsPanel.classList.add('settings-loading');
-        }
-    }
-
-    const elt = evt.detail.elt;
-    if (!elt) return;
-
-    const isMainForm = elt.classList.contains('chat-message-form');
-
-    if (isMainForm) {
-        const fileInput = document.getElementById('file-upload');
-        if (fileInput && fileInput.files && fileInput.files.length > 0) {
-            const progressWrapper = document.getElementById('file-upload-progress');
-            const progressBar = document.getElementById('file-upload-progress-bar');
-            const progressPercent = document.getElementById('file-upload-progress-percent');
-            if (progressWrapper && progressBar && progressPercent) {
-                progressWrapper.style.display = 'block';
-                progressBar.style.width = '0%';
-                progressPercent.textContent = '0%';
-            }
-            const submitBtn = elt.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.disabled = true;
-            const clearBtn = document.getElementById('btn-clear-file');
-            if (clearBtn) clearBtn.style.display = 'none';
-        }
-    }
-});
-
-document.body.addEventListener('htmx:xhr:progress', (evt) => {
-    const elt = evt.detail.elt;
-    if (!elt) return;
-
-    const isMainForm = elt.classList.contains('chat-message-form');
-
-    if (isMainForm) {
-        const fileInput = document.getElementById('file-upload');
-        if (fileInput && fileInput.files && fileInput.files.length > 0) {
-            const progressBar = document.getElementById('file-upload-progress-bar');
-            const progressPercent = document.getElementById('file-upload-progress-percent');
-            if (progressBar && progressPercent && (evt.detail.lengthComputable || evt.detail.total > 0)) {
-                const percent = Math.round((evt.detail.loaded / evt.detail.total) * 100);
-                progressBar.style.width = percent + '%';
-                progressPercent.textContent = percent + '%';
+    if (evt.detail.elt && evt.detail.elt.id === 'channel-search-input') {
+        const query = evt.detail.elt.value.trim();
+        if (statusBadge) {
+            if (query !== '') {
+                statusBadge.setAttribute('data-search-active', 'true');
+            } else {
+                statusBadge.removeAttribute('data-search-active');
             }
         }
     }
-});
 
-document.body.addEventListener('htmx:afterRequest', (evt) => {
-    // Remove loading skeletons classes
-    const chatPanel = document.querySelector('.chat-panel');
-    if (chatPanel) {
-        chatPanel.classList.remove('channel-loading');
-    }
-    const settingsPanel = document.querySelector('.settings-panel');
-    if (settingsPanel) {
-        settingsPanel.classList.remove('settings-loading');
-    }
-
-    const progressWrapper = document.getElementById('file-upload-progress');
-    if (progressWrapper) progressWrapper.style.display = 'none';
-
-    // Restore buttons if request finished
-    const elt = evt.detail.elt;
-    if (elt) {
-        const submitBtn = elt.querySelector('button[type="submit"]');
-        if (submitBtn) submitBtn.disabled = false;
-
-        // Reset the file input if the form submission was successful
-        if (evt.detail.successful) {
-            const isMainForm = elt.classList.contains('chat-message-form');
-            if (isMainForm) {
-                // Clear draft after successful publish
-                const statusBadge = document.getElementById('mercure-status');
-                const slug = statusBadge ? statusBadge.getAttribute('data-active-channel-slug') : null;
-                if (slug) {
-                    sessionStorage.removeItem('draft:' + slug);
-                }
-
-                const fileInput = document.getElementById('file-upload');
-                if (fileInput) {
-                    fileInput.value = '';
-                    fileInput.dispatchEvent(new Event('change'));
-                }
-            }
+    if (evt.detail.method !== 'GET') {
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+        if (tokenMeta) {
+            evt.detail.headers['X-CSRF-Token'] = tokenMeta.content;
         }
     }
-    const clearBtn = document.getElementById('btn-clear-file');
-    if (clearBtn) clearBtn.style.display = '';
 });
 
-document.body.addEventListener('htmx:beforeSwap', (evt) => {
-    // Allow swapping for validation/rate limit errors (400, 422, 429)
-    if (evt.detail.xhr.status === 400 || evt.detail.xhr.status === 422 || evt.detail.xhr.status === 429) {
-        evt.detail.shouldSwap = true;
-        evt.detail.isError = false;
+// Prevent view transitions for non-boosted requests to avoid page flickering
+document.body.addEventListener('htmx:beforeTransition', (event) => {
+    if (!event.detail.boosted) {
+        event.preventDefault();
     }
 });
+
+// Run syntax highlighting and button visibility on code blocks swapped via OOB
+document.body.addEventListener('htmx:oobAfterSwap', (evt) => {
+    if (window.updateEditButtonsVisibility) {
+        window.updateEditButtonsVisibility();
+    }
+    if (window.highlightAllCodeBlocks && evt.detail.target) {
+        window.highlightAllCodeBlocks(evt.detail.target);
+    }
+});
+
+// Auto-refresh CSRF token on 403 response, then retry the request once
+document.body.addEventListener('htmx:responseError', async (evt) => {
+    const xhr = evt.detail.xhr;
+    const requestConfig = evt.detail.requestConfig;
+
+    if (xhr.status === 403 && requestConfig && requestConfig.verb !== 'GET' && !requestConfig._csrfRetried) {
+        requestConfig._csrfRetried = true;
+
+        const freshToken = await getFreshCsrfToken();
+        if (freshToken) {
+            requestConfig.headers = requestConfig.headers || {};
+            requestConfig.headers['X-CSRF-Token'] = freshToken;
+            window.htmx.ajax(requestConfig.verb, requestConfig.path, requestConfig);
+        }
+    }
+});
+
+// ── DOM Initialisation and Settle Handlers ────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Initial connection
+    // Initial global setup
     if (window.connectMercure) window.connectMercure();
     if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
-    if (window.highlightAllCodeBlocks) {
-        window.highlightAllCodeBlocks();
-    }
-    if (window.initCodeBlockCopyButtons) {
-        window.initCodeBlockCopyButtons();
-    }
+    if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
+    if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons();
     if (window.initEmojiPickers) window.initEmojiPickers();
     if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
     initAutoResizeTextarea();
@@ -404,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
     if (window.initKanbanBoard) window.initKanbanBoard();
 
-
     // Focus message input on load (unless on mobile)
     const messageInput = document.getElementById('message');
     const isMobile = window.matchMedia('(max-width: 1024px)').matches && window.matchMedia('(pointer: coarse)').matches;
@@ -414,26 +173,22 @@ document.addEventListener('DOMContentLoaded', () => {
     checkJumpToMessage();
     initializeChannelScroll();
 
-
     document.body.addEventListener('htmx:afterSettle', (evt) => {
         const target = evt.detail.target;
         const isChannelSwitch = target && (target.tagName === 'BODY' || target.classList.contains('app-container'));
 
-        // ── Skip / early-return cases ──────────────────────────────────────────
+        // Skip / early-return cases
         if (target && target.id === 'global-search-results') {
             return;
         }
         if (target && (target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
             return;
         }
-        // ── Typing indicator swap — avoid heavy init cascade on each keystroke ─
         if (target && target.id === 'typing-indicator') {
             return;
         }
 
-        // ── SSE message appended to #live-feed ────────────────────────────────
-        // Only run lightweight per-item initialisation; scrolling is already
-        // handled by the htmx:sseMessage listener in mercure.js (+50ms delay).
+        // SSE message appended to #live-feed
         if (target && target.id === 'live-feed') {
             if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
             if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
@@ -442,9 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ── Form morph after sending a message ───────────────────────────────
-        // The textarea was cleared by idiomorph. Only re-init the form itself;
-        // avoid expensive full-page operations that cause visible repaints.
+        // Form morph after sending a message
         if (target && target.classList.contains('chat-message-form')) {
             initAutoResizeTextarea();
             if (window.initFileUpload) window.initFileUpload();
@@ -457,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ── Single feed-item swap (edit/view/reaction) ───────────────────────
+        // Single feed-item swap (edit/view/reaction)
         if (target && target.classList.contains('feed-item')) {
             if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
             if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
@@ -466,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ── Text preview swap ─────────────────────────────────────────────────
+        // Text preview swap
         if (!isChannelSwitch && target && (target.classList.contains('text-preview-container') || target.querySelector('.text-preview-code'))) {
             const activeTarget = target.id ? (document.getElementById(target.id) || target) : target;
             if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks(activeTarget);
@@ -474,13 +227,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ── Link preview swap ──────────────────────────────────────────────────
+        // Link preview swap
         if (!isChannelSwitch && target && (target.classList.contains('link-preview-card') || target.querySelector('.link-preview-card'))) {
             const previewCard = target.classList.contains('link-preview-card') ? target : target.querySelector('.link-preview-card');
             adjustScrollForLinkPreview(previewCard);
             return;
         }
 
+        // General reinitialization
         if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
         if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
         if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons();
@@ -502,105 +256,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
         if (window.initKanbanBoard) window.initKanbanBoard();
 
-
-        // Refocus appropriate input and restore draft after channel switches
+        // Refocus input and restore draft after channel switches
         if (isChannelSwitch) {
             const messageInputAfterSettle = document.getElementById('message');
             if (messageInputAfterSettle && !isMobile) {
                 messageInputAfterSettle.focus();
             }
             if (messageInputAfterSettle) {
-                // Restore draft after all init functions have finished and DOM is stable
                 requestAnimationFrame(() => {
-                    const slug = getActiveChannelSlug();
-                    if (slug) {
-                        const draft = sessionStorage.getItem('draft:' + slug);
-                        const textarea = document.getElementById('message');
-                        if (draft && textarea) {
-                            textarea.value = draft;
-                            textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                        }
-                    }
+                    restoreDraftForActiveChannel();
                 });
             }
             initializeChannelScroll();
         }
         checkJumpToMessage();
     });
-
 });
-
-// Global HTMX listener to toggle data-search-active when searching and inject CSRF token
-document.body.addEventListener('htmx:configRequest', (evt) => {
-    if (evt.detail.elt && evt.detail.elt.id === 'channel-search-input') {
-        const query = evt.detail.elt.value.trim();
-        const statusBadge = document.getElementById('mercure-status');
-        if (statusBadge) {
-            if (query !== '') {
-                statusBadge.setAttribute('data-search-active', 'true');
-            } else {
-                statusBadge.removeAttribute('data-search-active');
-            }
-        }
-    }
-
-    if (evt.detail.method !== 'GET') {
-        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
-        if (tokenMeta) {
-            evt.detail.headers['X-CSRF-Token'] = tokenMeta.content;
-        }
-    }
-});
-
-function checkJumpToMessage() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const jumpTo = urlParams.get('jumpTo');
-    if (jumpTo && window.scrollToMessage) {
-        setTimeout(() => {
-            window.scrollToMessage(parseInt(jumpTo));
-            const cleanUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, cleanUrl);
-        }, 300);
-    }
-}
-
-// Prevent view transitions for non-boosted requests (like typing indicators, SSE messages, reactions, etc.)
-// to avoid page-wide flickering/blinking. Only allow them for boosted page/channel transitions.
-document.body.addEventListener('htmx:beforeTransition', (event) => {
-    if (!event.detail.boosted) {
-        event.preventDefault();
-    }
-});
-
-// Run syntax highlighting and button visibility on code blocks/feed items swapped via OOB
-document.body.addEventListener('htmx:oobAfterSwap', (evt) => {
-    if (window.updateEditButtonsVisibility) {
-        window.updateEditButtonsVisibility();
-    }
-    if (window.highlightAllCodeBlocks && evt.detail.target) {
-        window.highlightAllCodeBlocks(evt.detail.target);
-    }
-});
-
-// Global HTMX listener to handle CSRF token refresh on 403 response, then retry the request once
-document.body.addEventListener('htmx:responseError', async (evt) => {
-    const xhr = evt.detail.xhr;
-    const requestConfig = evt.detail.requestConfig;
-
-    if (xhr.status === 403 && requestConfig && requestConfig.verb !== 'GET' && !requestConfig._csrfRetried) {
-        requestConfig._csrfRetried = true;
-
-        const freshToken = await getFreshCsrfToken();
-        if (freshToken) {
-            // Update request headers with the new token
-            requestConfig.headers = requestConfig.headers || {};
-            requestConfig.headers['X-CSRF-Token'] = freshToken;
-
-            // Re-run the AJAX request via HTMX
-            window.htmx.ajax(requestConfig.verb, requestConfig.path, requestConfig);
-        }
-    }
-});
-
-
-
