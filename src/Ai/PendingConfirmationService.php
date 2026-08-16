@@ -46,8 +46,12 @@ class PendingConfirmationService
         private readonly ?UserRepository $userRepository = null,
     ) {}
 
-    public function savePendingConfirmation(User|int $user, #[\SensitiveParameter] string $token, ?string $channelSlug = null): void
-    {
+    public function savePendingConfirmation(
+        User|int $user,
+        #[\SensitiveParameter]
+        string $token,
+        ?string $channelSlug = null,
+    ): void {
         $userId = $user instanceof User ? $user->getId() : $user;
         if ($userId === null) {
             return;
@@ -145,14 +149,35 @@ class PendingConfirmationService
         }
 
         $exactPhrases = [
-            'ok', 'okay', 'k', 'oui', 'yes', 'yep', 'yo',
-            'd\'accord', 'daccord', 'dac', 'd\'ac',
-            'confirm', 'confirmer', 'confirme', 'confirmation', 'je confirme',
-            'valider', 'valide', 'je valide',
-            'go', 'ok go', 'on fait comme ça', 'on fait comme ca',
-            'c\'est bon', 'cest bon',
-            'ca marche', 'ça marche',
-            'super', 'parfait',
+            'ok',
+            'okay',
+            'k',
+            'oui',
+            'yes',
+            'yep',
+            'yo',
+            'd\'accord',
+            'daccord',
+            'dac',
+            'd\'ac',
+            'confirm',
+            'confirmer',
+            'confirme',
+            'confirmation',
+            'je confirme',
+            'valider',
+            'valide',
+            'je valide',
+            'go',
+            'ok go',
+            'on fait comme ça',
+            'on fait comme ca',
+            'c\'est bon',
+            'cest bon',
+            'ca marche',
+            'ça marche',
+            'super',
+            'parfait',
         ];
 
         if (\in_array($cleaned, $exactPhrases, true)) {
@@ -256,12 +281,14 @@ class PendingConfirmationService
         // Find the latest robot message in this DM channel (which requested confirmation)
         $latestMessages = $this->messageRepository->findLatestInChannel($channel, 5);
         foreach ($latestMessages as $msg) {
-            if ($msg->getAuthor()?->getUsername() === User::ROBOT_USERNAME) {
-                // Update the robot message with the result so the confirmation prompt is replaced
-                $msg->setContent($result);
-                $this->entityManager->flush();
-                return;
+            if ($msg->getAuthor()?->getUsername() !== User::ROBOT_USERNAME) {
+                continue;
             }
+
+            // Update the robot message with the result so the confirmation prompt is replaced
+            $msg->setContent($result);
+            $this->entityManager->flush();
+            return;
         }
 
         // If no prior message was found to update, persist a new robot message

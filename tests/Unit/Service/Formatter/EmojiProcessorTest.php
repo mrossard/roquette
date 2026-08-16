@@ -16,9 +16,9 @@ class EmojiProcessorTest extends TestCase
         $html = '<p>Hello :smile: and [:custom] and :o in text</p>';
         $processed = $processor->processHtml($html);
 
-        self::assertStringContainsString('class="unicode-emoji"', $processed);
-        self::assertStringContainsString('/emojis/custom.gif', $processed);
-        self::assertStringContainsString('/icones/redface.gif', $processed);
+        static::assertStringContainsString('class="unicode-emoji"', $processed);
+        static::assertStringContainsString('/emojis/custom.gif', $processed);
+        static::assertStringContainsString('/icones/redface.gif', $processed);
     }
 
     public function testProcessHtmlIgnoresCodeBlocks(): void
@@ -28,6 +28,6 @@ class EmojiProcessorTest extends TestCase
         $html = '<pre class="message-code-block"><code>[:custom] :smile:</code></pre>';
         $processed = $processor->processHtml($html);
 
-        self::assertSame($html, $processed);
+        static::assertSame($html, $processed);
     }
 }

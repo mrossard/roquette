@@ -14,7 +14,6 @@ use App\Repository\WorkspaceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use App\Service\UniqueSlugGenerator;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class WorkspaceManager
@@ -140,7 +139,10 @@ class WorkspaceManager
         $newSlug = $this->slugGenerator->generate(
             $name,
             'workspace',
-            fn(string $s) => ($existing = $this->workspaceRepository->findOneBy(['slug' => $s])) !== null && $existing->getId() !== $workspace->getId(),
+            fn(string $s) => (
+                ($existing = $this->workspaceRepository->findOneBy(['slug' => $s])) !== null
+                && $existing->getId() !== $workspace->getId()
+            ),
         );
         $workspace->setSlug($newSlug);
 

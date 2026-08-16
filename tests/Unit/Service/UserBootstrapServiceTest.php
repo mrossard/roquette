@@ -88,12 +88,10 @@ class UserBootstrapServiceTest extends TestCase
 
         $this->entityManager
             ->method('getRepository')
-            ->willReturnCallback(function (string $class) use ($workspaceRepo, $channelRepo, $userRepo) {
-                return match ($class) {
-                    Workspace::class => $workspaceRepo,
-                    Channel::class => $channelRepo,
-                    User::class => $userRepo,
-                };
+            ->willReturnCallback(static fn(string $class) => match ($class) {
+                Workspace::class => $workspaceRepo,
+                Channel::class => $channelRepo,
+                User::class => $userRepo,
             });
 
         $this->entityManager->expects($this->atLeastOnce())->method('persist');

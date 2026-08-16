@@ -4,30 +4,23 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\ChannelExport;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\Workspace;
 use App\Enum\AuditAction;
 use App\Repository\AuditLogRepository;
-use App\Repository\ChannelExportRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use App\Repository\WorkspaceRepository;
 use App\Service\AuditLoggerService;
-use App\Service\CustomEmojiService;
-use App\Service\FileUploadService;
 use App\Service\MercurePublisher;
 use App\Service\MessageRenderer;
 use App\Service\WorkspaceManager;
-
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -248,10 +241,16 @@ final class AdminController extends AbstractController
             $html = $messageRenderer->renderFeedItem($message, ['oob' => true]);
             $mercurePublisher->publishToChannel($channel, $html, 'message_' . $channel->getSlug());
         } catch (\Exception $e) {
-            $this->logger->error(sprintf('Failed to broadcast Mercure approval for message %d: %s', $message->getId(), $e->getMessage()));
+            $this->logger->error(sprintf(
+                'Failed to broadcast Mercure approval for message %d: %s',
+                $message->getId(),
+                $e->getMessage(),
+            ));
         }
 
-        $this->addFlash('success', $this->translator->trans('Le message #%id% a été approuvé et rétabli.', ['%id%' => $message->getId()]));
+        $this->addFlash('success', $this->translator->trans('Le message #%id% a été approuvé et rétabli.', [
+            '%id%' => $message->getId(),
+        ]));
 
         return $this->redirectToRoute('app_admin_moderation');
     }
@@ -282,12 +281,17 @@ final class AdminController extends AbstractController
             $deleteHtml = sprintf('<div id="feed-item-%d" hx-swap-oob="outerHTML"></div>', $messageId);
             $mercurePublisher->publishToChannel($channel, $deleteHtml, 'message_' . $channel->getSlug());
         } catch (\Exception $e) {
-            $this->logger->error(sprintf('Failed to broadcast Mercure deletion for message %d: %s', $messageId, $e->getMessage()));
+            $this->logger->error(sprintf(
+                'Failed to broadcast Mercure deletion for message %d: %s',
+                $messageId,
+                $e->getMessage(),
+            ));
         }
 
-        $this->addFlash('success', $this->translator->trans('Le message #%id% a été supprimé.', ['%id%' => $messageId]));
+        $this->addFlash('success', $this->translator->trans('Le message #%id% a été supprimé.', [
+            '%id%' => $messageId,
+        ]));
 
         return $this->redirectToRoute('app_admin_moderation');
     }
 }
-

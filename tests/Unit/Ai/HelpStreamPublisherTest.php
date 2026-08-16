@@ -25,33 +25,43 @@ class HelpStreamPublisherTest extends TestCase
         $user = new User();
         $user->setUsername('alice');
 
-        self::assertSame('roquette/users/alice', $publisher->getPersonalTopic($user));
+        static::assertSame('roquette/users/alice', $publisher->getPersonalTopic($user));
     }
 
     public function testPublishStatusFormatsMarkdownAndPublishesUpdate(): void
     {
         $hub = $this->createMock(HubInterface::class);
-        $hub->expects($this->once())
+        $hub
+            ->expects($this->once())
             ->method('publish')
-            ->with($this->callback(static function (Update $update): bool {
-                return $update->getTopics() === ['roquette/users/alice']
-                    && $update->getType() === 'help_stream_update';
-            }));
+            ->with(static::callback(
+                static fn(Update $update): bool => (
+                    $update->getTopics() === ['roquette/users/alice']
+                    && $update->getType() === 'help_stream_update'
+                ),
+            ));
 
         $formatter = $this->createMock(MessageFormatter::class);
-        $formatter->expects($this->once())
+        $formatter
+            ->expects($this->once())
             ->method('format')
             ->with('Traitement en cours... ⏳')
             ->willReturn('<p>Traitement en cours... ⏳</p>');
 
         $twig = $this->createMock(Environment::class);
-        $twig->expects($this->once())
+        $twig
+            ->expects($this->once())
             ->method('render')
-            ->with('dashboard/_help_message_update.html.twig', $this->callback(static function (array $context): bool {
-                return ($context['helpMessageId'] ?? null) === 'msg-123'
-                    && ($context['html'] ?? null) === '<p>Traitement en cours... ⏳</p>'
-                    && ($context['channelSlug'] ?? null) === 'general';
-            }))
+            ->with(
+                'dashboard/_help_message_update.html.twig',
+                static::callback(
+                    static fn(array $context): bool => (
+                        ($context['helpMessageId'] ?? null) === 'msg-123'
+                        && ($context['html'] ?? null) === '<p>Traitement en cours... ⏳</p>'
+                        && ($context['channelSlug'] ?? null) === 'general'
+                    ),
+                ),
+            )
             ->willReturn('<div>rendered</div>');
 
         $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');
@@ -67,7 +77,8 @@ class HelpStreamPublisherTest extends TestCase
         $formatter->method('format')->willReturn('<p>Voulez-vous confirmer ?</p>');
 
         $twig = $this->createMock(Environment::class);
-        $twig->expects($this->exactly(2))
+        $twig
+            ->expects($this->exactly(2))
             ->method('render')
             ->willReturnCallback(static function (string $template, array $context = []): string {
                 if ($template === 'dashboard/_tool_confirmation.html.twig') {
@@ -97,11 +108,13 @@ class HelpStreamPublisherTest extends TestCase
 
         $formatter = $this->createStub(MessageFormatter::class);
         $twig = $this->createMock(Environment::class);
-        $twig->expects($this->once())
+        $twig
+            ->expects($this->once())
             ->method('render')
-            ->with('dashboard/_help_message_update.html.twig', $this->callback(static function (array $context): bool {
-                return str_contains((string) ($context['html'] ?? ''), 'Désolé, une erreur est survenue');
-            }))
+            ->with('dashboard/_help_message_update.html.twig', static::callback(static fn(array $context): bool => str_contains(
+                (string) ($context['html'] ?? ''),
+                'Désolé, une erreur est survenue',
+            )))
             ->willReturn('<div>error rendered</div>');
 
         $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');

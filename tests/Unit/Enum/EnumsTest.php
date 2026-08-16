@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Enum;
 
-use App\Enum\AuditAction;
 use App\Enum\ModerationStatus;
 use App\Enum\TaskPriority;
 use App\Enum\UserLocale;

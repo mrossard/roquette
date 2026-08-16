@@ -282,8 +282,12 @@ final class ChannelController extends AbstractController
         return $this->mercurePublisher->getChannelTopic($channel);
     }
 
-    private function getTypingUsers(?Channel $channel, User $currentUser, bool $isMember, \App\Service\TypingIndicatorService $typingIndicatorService): array
-    {
+    private function getTypingUsers(
+        ?Channel $channel,
+        User $currentUser,
+        bool $isMember,
+        \App\Service\TypingIndicatorService $typingIndicatorService,
+    ): array {
         if (!$isMember || !$channel) {
             return [];
         }
@@ -351,10 +355,12 @@ final class ChannelController extends AbstractController
         $firstUnreadMessageId = null;
         if ($lastReadMessageId !== null) {
             foreach ($messages as $m) {
-                if ($m->getId() > $lastReadMessageId) {
-                    $firstUnreadMessageId = $m->getId();
-                    break;
+                if ($m->getId() <= $lastReadMessageId) {
+                    continue;
                 }
+
+                $firstUnreadMessageId = $m->getId();
+                break;
             }
         }
 

@@ -61,12 +61,14 @@ class OAuth2AuthenticatorTest extends TestCase
     private function createMockRequest(string $state = 'test_state'): Request
     {
         $session = $this->createMock(SessionInterface::class);
-        $session->method('get')->willReturnCallback(function (string $name) use ($state) {
-            if ($name === 'oauth2state') {
-                return $state;
-            }
-            return null;
-        });
+        $session
+            ->method('get')
+            ->willReturnCallback(static function (string $name) use ($state) {
+                if ($name === 'oauth2state') {
+                    return $state;
+                }
+                return null;
+            });
 
         $request = new Request(['code' => 'valid_code', 'state' => $state]);
         $request->setSession($session);
@@ -82,14 +84,14 @@ class OAuth2AuthenticatorTest extends TestCase
         $tokenResponse->method('toArray')->willReturn(['access_token' => 'token_123']);
 
         $userInfoResponse = $this->createMock(ResponseInterface::class);
-        $userInfoResponse->method('toArray')->willReturn([
-            'id' => 'new_oauth_id',
-            'username' => 'john_doe',
-        ]);
+        $userInfoResponse
+            ->method('toArray')
+            ->willReturn([
+                'id' => 'new_oauth_id',
+                'username' => 'john_doe',
+            ]);
 
-        $this->httpClient
-            ->method('request')
-            ->willReturnOnConsecutiveCalls($tokenResponse, $userInfoResponse);
+        $this->httpClient->method('request')->willReturnOnConsecutiveCalls($tokenResponse, $userInfoResponse);
 
         // 1. Search by OAuth ID -> not found
         // 2. Search by username -> found user with DIFFERENT oauthId
@@ -99,11 +101,11 @@ class OAuth2AuthenticatorTest extends TestCase
 
         $this->userRepository
             ->method('findOneBy')
-            ->willReturnCallback(function (array $criteria) use ($existingUser) {
-                if (isset($criteria['oauthId']) && $criteria['oauthId'] === 'new_oauth_id') {
+            ->willReturnCallback(static function (array $criteria) use ($existingUser) {
+                if (($criteria['oauthId'] ?? null) === 'new_oauth_id') {
                     return null;
                 }
-                if (isset($criteria['username']) && $criteria['username'] === 'john_doe') {
+                if (($criteria['username'] ?? null) === 'john_doe') {
                     return $existingUser;
                 }
                 return null;
@@ -123,14 +125,14 @@ class OAuth2AuthenticatorTest extends TestCase
         $tokenResponse->method('toArray')->willReturn(['access_token' => 'token_123']);
 
         $userInfoResponse = $this->createMock(ResponseInterface::class);
-        $userInfoResponse->method('toArray')->willReturn([
-            'id' => 'same_oauth_id',
-            'username' => 'john_doe',
-        ]);
+        $userInfoResponse
+            ->method('toArray')
+            ->willReturn([
+                'id' => 'same_oauth_id',
+                'username' => 'john_doe',
+            ]);
 
-        $this->httpClient
-            ->method('request')
-            ->willReturnOnConsecutiveCalls($tokenResponse, $userInfoResponse);
+        $this->httpClient->method('request')->willReturnOnConsecutiveCalls($tokenResponse, $userInfoResponse);
 
         $existingUser = new User();
         $existingUser->setUsername('john_doe');
@@ -138,8 +140,8 @@ class OAuth2AuthenticatorTest extends TestCase
 
         $this->userRepository
             ->method('findOneBy')
-            ->willReturnCallback(function (array $criteria) use ($existingUser) {
-                if (isset($criteria['oauthId']) && $criteria['oauthId'] === 'same_oauth_id') {
+            ->willReturnCallback(static function (array $criteria) use ($existingUser) {
+                if (($criteria['oauthId'] ?? null) === 'same_oauth_id') {
                     return $existingUser;
                 }
                 return null;
@@ -157,14 +159,14 @@ class OAuth2AuthenticatorTest extends TestCase
         $tokenResponse->method('toArray')->willReturn(['access_token' => 'token_123']);
 
         $userInfoResponse = $this->createMock(ResponseInterface::class);
-        $userInfoResponse->method('toArray')->willReturn([
-            'id' => 'new_oauth_id',
-            'username' => 'john_doe',
-        ]);
+        $userInfoResponse
+            ->method('toArray')
+            ->willReturn([
+                'id' => 'new_oauth_id',
+                'username' => 'john_doe',
+            ]);
 
-        $this->httpClient
-            ->method('request')
-            ->willReturnOnConsecutiveCalls($tokenResponse, $userInfoResponse);
+        $this->httpClient->method('request')->willReturnOnConsecutiveCalls($tokenResponse, $userInfoResponse);
 
         $existingUser = new User();
         $existingUser->setUsername('john_doe');
@@ -172,11 +174,11 @@ class OAuth2AuthenticatorTest extends TestCase
 
         $this->userRepository
             ->method('findOneBy')
-            ->willReturnCallback(function (array $criteria) use ($existingUser) {
-                if (isset($criteria['oauthId']) && $criteria['oauthId'] === 'new_oauth_id') {
+            ->willReturnCallback(static function (array $criteria) use ($existingUser) {
+                if (($criteria['oauthId'] ?? null) === 'new_oauth_id') {
                     return null;
                 }
-                if (isset($criteria['username']) && $criteria['username'] === 'john_doe') {
+                if (($criteria['username'] ?? null) === 'john_doe') {
                     return $existingUser;
                 }
                 return null;

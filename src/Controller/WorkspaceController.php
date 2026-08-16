@@ -184,7 +184,7 @@ final class WorkspaceController extends AbstractController
                     $fileUploadService->delete($workspace->getAvatarPath());
                 }
                 $meta = $fileUploadService->upload($avatarFile);
-                $workspace->setAvatarPath($meta['filePath']);
+                $workspace->setAvatarPath($meta->filePath);
             } catch (\InvalidArgumentException $e) {
                 $this->addFlash('error', $e->getMessage());
 

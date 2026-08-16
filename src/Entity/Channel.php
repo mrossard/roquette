@@ -381,7 +381,15 @@ class Channel
 
     public function getWorkspace(): ?Workspace
     {
-        return $this->workspace;
+        if ($this->workspace !== null) {
+            return $this->workspace;
+        }
+
+        if ($this->parentMessage !== null) {
+            return $this->parentMessage->getChannel()?->getWorkspace();
+        }
+
+        return null;
     }
 
     public function setWorkspace(?Workspace $workspace): static
@@ -393,7 +401,7 @@ class Channel
 
     public function isWorkspaceChannel(): bool
     {
-        return $this->workspace !== null;
+        return $this->getWorkspace() !== null;
     }
 
     /**

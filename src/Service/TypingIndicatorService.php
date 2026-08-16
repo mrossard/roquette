@@ -22,9 +22,10 @@ class TypingIndicatorService
         $typingUsers = $this->cache->get($cacheKey, static fn() => []);
 
         if ($isTyping) {
-            $displayName = ($user->getDisplayName() !== null && $user->getDisplayName() !== '')
-                ? $user->getDisplayName()
-                : $user->getUsername();
+            $displayName =
+                $user->getDisplayName() !== null && $user->getDisplayName() !== ''
+                    ? $user->getDisplayName()
+                    : $user->getUsername();
 
             $typingUsers[$user->getUsername()] = [
                 'name' => $displayName,
@@ -36,9 +37,11 @@ class TypingIndicatorService
 
         $now = time();
         foreach ($typingUsers as $username => $info) {
-            if (($info['expires_at'] ?? 0) < $now) {
-                unset($typingUsers[$username]);
+            if (($info['expires_at'] ?? 0) >= $now) {
+                continue;
             }
+
+            unset($typingUsers[$username]);
         }
 
         $this->cache->delete($cacheKey);
@@ -56,10 +59,12 @@ class TypingIndicatorService
         $now = time();
         $changed = false;
         foreach ($typingUsers as $username => $info) {
-            if (($info['expires_at'] ?? 0) < $now) {
-                unset($typingUsers[$username]);
-                $changed = true;
+            if (($info['expires_at'] ?? 0) >= $now) {
+                continue;
             }
+
+            unset($typingUsers[$username]);
+            $changed = true;
         }
 
         if ($changed) {

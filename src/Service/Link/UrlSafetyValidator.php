@@ -15,9 +15,9 @@ final class UrlSafetyValidator
      */
     private const array EXTRA_BLOCKED_RANGES = [
         ['100.64.0.0', '100.127.255.255'], // CGNAT
-        ['198.18.0.0', '198.19.255.255'],  // Benchmarking
-        ['192.0.0.0', '192.0.0.255'],      // IETF protocol assignments
-        ['0.0.0.0', '0.255.255.255'],      // "This network"
+        ['198.18.0.0', '198.19.255.255'], // Benchmarking
+        ['192.0.0.0',  '192.0.0.255'], // IETF protocol assignments
+        ['0.0.0.0',    '0.255.255.255'], // "This network"
     ];
 
     /**
@@ -110,9 +110,11 @@ final class UrlSafetyValidator
         $ipv4Records = dns_get_record($cleanHost, DNS_A);
         if (is_array($ipv4Records)) {
             foreach ($ipv4Records as $record) {
-                if (($record['ip'] ?? null) !== null) {
-                    $ips[] = (string) $record['ip'];
+                if (($record['ip'] ?? null) === null) {
+                    continue;
                 }
+
+                $ips[] = (string) $record['ip'];
             }
         }
 
@@ -120,9 +122,11 @@ final class UrlSafetyValidator
         $ipv6Records = dns_get_record($cleanHost, DNS_AAAA);
         if (is_array($ipv6Records)) {
             foreach ($ipv6Records as $record) {
-                if (($record['ipv6'] ?? null) !== null) {
-                    $ips[] = (string) $record['ipv6'];
+                if (($record['ipv6'] ?? null) === null) {
+                    continue;
                 }
+
+                $ips[] = (string) $record['ipv6'];
             }
         }
 
@@ -148,11 +152,10 @@ final class UrlSafetyValidator
         if (str_starts_with($lower, '::ffff:')) {
             $v4 = substr($lower, 7);
             if (filter_var($v4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-                return filter_var(
-                    $v4,
-                    FILTER_VALIDATE_IP,
-                    FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
-                ) !== false && !$this->isInExtraBlockedRange($v4);
+                return (
+                    filter_var($v4, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false
+                    && !$this->isInExtraBlockedRange($v4)
+                );
             }
 
             return false;

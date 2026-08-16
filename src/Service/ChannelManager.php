@@ -321,6 +321,9 @@ class ChannelManager
         $channel->setCreator($currentUser);
         $channel->setIsPrivate($parentChannel->isPrivate());
         $channel->setMessageRetentionMonths($parentChannel->getMessageRetentionMonths());
+        if ($parentChannel->getWorkspace()) {
+            $channel->setWorkspace($parentChannel->getWorkspace());
+        }
         if ($isTodoList) {
             $channel->setIsTodoList(true);
         }

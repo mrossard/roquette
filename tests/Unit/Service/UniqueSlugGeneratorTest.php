@@ -21,7 +21,7 @@ class UniqueSlugGeneratorTest extends TestCase
     #[Test]
     public function generateReturnsDirectSlugWhenNotTaken(): void
     {
-        $slug = $this->generator->generate('Mon Super Canal', 'channel', fn(string $s) => false);
+        $slug = $this->generator->generate('Mon Super Canal', 'channel', static fn(string $s) => false);
         $this->assertSame('mon-super-canal', $slug);
     }
 
@@ -29,7 +29,11 @@ class UniqueSlugGeneratorTest extends TestCase
     public function generateAppendsSuffixWhenSlugIsTaken(): void
     {
         $existing = ['mon-canal'];
-        $slug = $this->generator->generate('Mon Canal', 'channel', fn(string $s) => in_array($s, $existing, true));
+        $slug = $this->generator->generate('Mon Canal', 'channel', static fn(string $s) => in_array(
+            $s,
+            $existing,
+            true,
+        ));
 
         $this->assertNotSame('mon-canal', $slug);
         $this->assertStringStartsWith('mon-canal-', $slug);
@@ -38,7 +42,7 @@ class UniqueSlugGeneratorTest extends TestCase
     #[Test]
     public function generateUsesFallbackPrefixWhenNameIsEmpty(): void
     {
-        $slug = $this->generator->generate('???', 'fallback', fn(string $s) => false);
+        $slug = $this->generator->generate('???', 'fallback', static fn(string $s) => false);
         $this->assertStringStartsWith('fallback-', $slug);
     }
 }

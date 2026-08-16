@@ -40,37 +40,26 @@ final class SendReminderMessageHandlerTest extends TestCase
         $robotUser = new User();
         $robotUser->setUsername('robot-roquette');
 
-        $reminderRepository->expects(self::once())
-            ->method('find')
-            ->with(42)
-            ->willReturn($reminder);
+        $reminderRepository->expects(self::once())->method('find')->with(42)->willReturn($reminder);
 
-        $userRepository->expects(self::once())
+        $userRepository
+            ->expects(self::once())
             ->method('findOneBy')
             ->with(['username' => 'robot-roquette'])
             ->willReturn($robotUser);
 
-        $messagePublishService->expects(self::once())
+        $messagePublishService
+            ->expects(self::once())
             ->method('publish')
-            ->with(
-                $channel,
-                $robotUser,
-                '⏰ **Rappel pour @john** : Finir le rapport'
-            );
+            ->with($channel, $robotUser, '⏰ **Rappel pour @john** : Finir le rapport');
 
-        $reminderRepository->expects(self::once())
-            ->method('save')
-            ->with($reminder, true);
+        $reminderRepository->expects(self::once())->method('save')->with($reminder, true);
 
-        $handler = new SendReminderMessageHandler(
-            $reminderRepository,
-            $userRepository,
-            $messagePublishService
-        );
+        $handler = new SendReminderMessageHandler($reminderRepository, $userRepository, $messagePublishService);
 
         $handler(new SendReminderMessage(42));
 
-        self::assertSame('delivered', $reminder->getStatus());
+        static::assertSame('delivered', $reminder->getStatus());
     }
 
     public function testInvokeIgnoresNonPendingReminder(): void
@@ -82,19 +71,11 @@ final class SendReminderMessageHandlerTest extends TestCase
         $reminder = new Reminder();
         $reminder->setStatus('delivered');
 
-        $reminderRepository->expects(self::once())
-            ->method('find')
-            ->with(42)
-            ->willReturn($reminder);
+        $reminderRepository->expects(self::once())->method('find')->with(42)->willReturn($reminder);
 
-        $messagePublishService->expects(self::never())
-            ->method('publish');
+        $messagePublishService->expects(self::never())->method('publish');
 
-        $handler = new SendReminderMessageHandler(
-            $reminderRepository,
-            $userRepository,
-            $messagePublishService
-        );
+        $handler = new SendReminderMessageHandler($reminderRepository, $userRepository, $messagePublishService);
 
         $handler(new SendReminderMessage(42));
     }

@@ -30,12 +30,7 @@ class HelpPromptBuilderTest extends TestCase
         $parameterBag = $this->createStub(ParameterBagInterface::class);
         $parameterBag->method('get')->willReturn('/tmp');
 
-        return new DocumentContextBuilder(
-            $retriever,
-            new DocChunker(),
-            new NullLogger(),
-            $parameterBag,
-        );
+        return new DocumentContextBuilder($retriever, new DocChunker(), new NullLogger(), $parameterBag);
     }
 
     public function testBuildDefaultPrompts(): void
@@ -65,11 +60,14 @@ class HelpPromptBuilderTest extends TestCase
             $channel,
         );
 
-        self::assertSame('Comment créer un salon ?', $prompt);
-        self::assertStringContainsString('Mon Workspace', $systemPrompt);
-        self::assertStringContainsString('CANAL ACTUEL : L\'utilisateur est actuellement dans le canal "Général"', $systemPrompt);
-        self::assertStringContainsString('Doc: Allez dans le menu...', $systemPrompt);
-        self::assertStringContainsString('create_poll', $systemPrompt);
+        static::assertSame('Comment créer un salon ?', $prompt);
+        static::assertStringContainsString('Mon Workspace', $systemPrompt);
+        static::assertStringContainsString(
+            'CANAL ACTUEL : L\'utilisateur est actuellement dans le canal "Général"',
+            $systemPrompt,
+        );
+        static::assertStringContainsString('Doc: Allez dans le menu...', $systemPrompt);
+        static::assertStringContainsString('create_poll', $systemPrompt);
     }
 
     public function testAddConversationContext(): void
@@ -81,10 +79,7 @@ class HelpPromptBuilderTest extends TestCase
         $channel = new Channel();
         $channel->setSlug('general');
 
-        $channelRepo->expects($this->once())
-            ->method('findOneBy')
-            ->with(['slug' => 'general'])
-            ->willReturn($channel);
+        $channelRepo->expects($this->once())->method('findOneBy')->with(['slug' => 'general'])->willReturn($channel);
 
         $user = new User();
         $user->setUsername('alice');
@@ -97,7 +92,8 @@ class HelpPromptBuilderTest extends TestCase
         $msg2->setContent('Question actuelle');
         $msg2->setAuthor($user);
 
-        $messageRepo->expects($this->once())
+        $messageRepo
+            ->expects($this->once())
             ->method('findLatestInChannel')
             ->with($channel, 11)
             ->willReturn([$msg2, $msg1]); // findLatestInChannel returns DESC
@@ -106,10 +102,10 @@ class HelpPromptBuilderTest extends TestCase
 
         $result = $builder->addConversationContext('Prompt de base', 'general', 'Question actuelle');
 
-        self::assertStringContainsString('Historique de la conversation', $result);
-        self::assertStringContainsString('alice: Premier message', $result);
-        self::assertStringNotContainsString('Question actuelle', $result); // Current question is filtered
-        self::assertStringContainsString('Prompt de base', $result);
+        static::assertStringContainsString('Historique de la conversation', $result);
+        static::assertStringContainsString('alice: Premier message', $result);
+        static::assertStringNotContainsString('Question actuelle', $result); // Current question is filtered
+        static::assertStringContainsString('Prompt de base', $result);
     }
 
     public function testAddConversationContextExcludesConfirmationPrompts(): void
@@ -127,7 +123,9 @@ class HelpPromptBuilderTest extends TestCase
         $robotUser->setUsername(User::ROBOT_USERNAME);
 
         $msgConfirm = new Message();
-        $msgConfirm->setContent('Veuillez confirmer cette action en cliquant sur le bouton de confirmation affiché ci-dessus ou simplement en répondant ok.');
+        $msgConfirm->setContent(
+            'Veuillez confirmer cette action en cliquant sur le bouton de confirmation affiché ci-dessus ou simplement en répondant ok.',
+        );
         $msgConfirm->setAuthor($robotUser);
 
         $msgOk = new Message();
@@ -140,7 +138,7 @@ class HelpPromptBuilderTest extends TestCase
 
         $result = $builder->addConversationContext('Prompt', 'general', 'Autre question');
 
-        self::assertStringContainsString('Message utile précédent', $result);
-        self::assertStringNotContainsString('bouton de confirmation', $result);
+        static::assertStringContainsString('Message utile précédent', $result);
+        static::assertStringNotContainsString('bouton de confirmation', $result);
     }
 }

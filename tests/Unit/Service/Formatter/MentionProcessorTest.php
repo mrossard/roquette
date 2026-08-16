@@ -24,7 +24,11 @@ class MentionProcessorTest extends TestCase
         $alice->setDisplayName('Alice Wonder');
 
         $userRepo = $this->createMock(UserRepository::class);
-        $userRepo->expects($this->once())->method('findBy')->with(['username' => ['alice']])->willReturn([$alice]);
+        $userRepo
+            ->expects($this->once())
+            ->method('findBy')
+            ->with(['username' => ['alice']])
+            ->willReturn([$alice]);
 
         $general = new Channel();
         $general->setName('Général');
@@ -32,14 +36,24 @@ class MentionProcessorTest extends TestCase
         $general->setIsPrivate(false);
 
         $channelRepo = $this->createMock(ChannelRepository::class);
-        $channelRepo->expects($this->once())->method('findBy')->with(['slug' => ['general'], 'isDm' => false])->willReturn([$general]);
+        $channelRepo
+            ->expects($this->once())
+            ->method('findBy')
+            ->with(['slug' => ['general'], 'isDm' => false])
+            ->willReturn([$general]);
 
         $processor = new MentionProcessor($security, $userRepo, $channelRepo);
 
         $html = '<p>Bonjour @alice, rejoins #general !</p>';
         $processed = $processor->process($html);
 
-        self::assertStringContainsString('<a href="/dm/alice" class="mention" hx-boost="false">@Alice Wonder</a>', $processed);
-        self::assertStringContainsString('<a href="/channels/general" class="channel-ref" hx-boost="false">#Général</a>', $processed);
+        static::assertStringContainsString(
+            '<a href="/dm/alice" class="mention" hx-boost="false">@Alice Wonder</a>',
+            $processed,
+        );
+        static::assertStringContainsString(
+            '<a href="/channels/general" class="channel-ref" hx-boost="false">#Général</a>',
+            $processed,
+        );
     }
 }

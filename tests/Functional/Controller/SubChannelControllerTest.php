@@ -44,6 +44,11 @@ class SubChannelControllerTest extends WebTestCase
         $channel->setSlug('parent-channel-subch');
         $channel->setIsPrivate(false);
         $channel->setIsDm(false);
+        $publicWorkspace = $this->entityManager->getRepository(\App\Entity\Workspace::class)->findOneBy(['isPublic' => true]);
+        if ($publicWorkspace) {
+            $channel->setWorkspace($publicWorkspace);
+            $publicWorkspace->addMember($user);
+        }
         $channel->addMember($user);
         $this->entityManager->persist($channel);
 
@@ -87,6 +92,9 @@ class SubChannelControllerTest extends WebTestCase
         static::assertStringStartsWith('sc-', $createdSubChannel->getSlug());
         static::assertSame('Thread discussion message content', $createdSubChannel->getName());
         static::assertFalse($createdSubChannel->isTodoList());
+        if ($this->testChannel->getWorkspace()) {
+            static::assertSame($this->testChannel->getWorkspace()->getId(), $createdSubChannel->getWorkspace()?->getId());
+        }
     }
 
     #[Test]
@@ -101,5 +109,14 @@ class SubChannelControllerTest extends WebTestCase
         static::assertNotNull($createdSubChannel);
         static::assertStringStartsWith('sc-', $createdSubChannel->getSlug());
         static::assertTrue($createdSubChannel->isTodoList());
+        if ($this->testChannel->getWorkspace()) {
+            static::assertSame($this->testChannel->getWorkspace()->getId(), $createdSubChannel->getWorkspace()?->getId());
+        }
+
+        // Verify that the todo sub-channel appears in the sidebar when loading the channel page
+        $crawler = $this->client->followRedirect();
+        $this->assertResponseIsSuccessful();
+        $todoItem = $crawler->filter('#section-todos #sidebar-channel-' . $createdSubChannel->getSlug());
+        static::assertGreaterThan(0, $todoItem->count(), 'Todo subchannel should be visible in #section-todos in the sidebar');
     }
 }

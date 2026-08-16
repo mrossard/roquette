@@ -13,7 +13,8 @@ class BatchSummarizerTest extends TestCase
     public function testSummarizeCombinesBatchesAndReportsProgress(): void
     {
         $llmService = $this->createMock(LlmService::class);
-        $llmService->expects($this->exactly(2))
+        $llmService
+            ->expects($this->exactly(2))
             ->method('generateText')
             ->willReturnOnConsecutiveCalls('Synthèse lot 1', 'Synthèse lot 2');
 
@@ -37,12 +38,12 @@ class BatchSummarizerTest extends TestCase
             },
         );
 
-        self::assertSame([[1, 2], [2, 2]], $progressCalls);
-        self::assertTrue($finalProgressCalled);
-        self::assertStringContainsString('--- Résumé du Lot 1 ---', $prompt);
-        self::assertStringContainsString('Synthèse lot 1', $prompt);
-        self::assertStringContainsString('--- Résumé du Lot 2 ---', $prompt);
-        self::assertStringContainsString('Synthèse lot 2', $prompt);
-        self::assertStringContainsString("Tu es 'Assistant Roquette'", $systemPrompt);
+        static::assertSame([[1, 2], [2, 2]], $progressCalls);
+        static::assertTrue($finalProgressCalled);
+        static::assertStringContainsString('--- Résumé du Lot 1 ---', $prompt);
+        static::assertStringContainsString('Synthèse lot 1', $prompt);
+        static::assertStringContainsString('--- Résumé du Lot 2 ---', $prompt);
+        static::assertStringContainsString('Synthèse lot 2', $prompt);
+        static::assertStringContainsString("Tu es 'Assistant Roquette'", $systemPrompt);
     }
 }

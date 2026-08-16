@@ -55,7 +55,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     /** @return User[] */
     public function findMembersForWorkspace(\App\Entity\Workspace $workspace, User $exceptUser): array
     {
-        return $this->createQueryBuilder('u')
+        return $this
+            ->createQueryBuilder('u')
             ->join('u.workspaces', 'w')
             ->where('w.id = :workspaceId')
             ->andWhere('u.id != :exceptUserId')
@@ -133,7 +134,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
      */
     public function findPaginated(int $page, int $perPage = 25, bool $withRobot = false): array
     {
-        $page = max(1, min($page, 10000));
+        $page = max(1, min($page, 10_000));
         $perPage = max(1, min($perPage, 100));
 
         $qb = $this
@@ -159,7 +160,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         $workspace = $channel->getWorkspace();
         if ($workspace !== null && !$channel->isPrivate()) {
-            return $this->createQueryBuilder('u')
+            return $this
+                ->createQueryBuilder('u')
                 ->join('u.workspaces', 'w')
                 ->where('w.id = :workspaceId')
                 ->setParameter('workspaceId', $workspace->getId())
@@ -177,8 +179,10 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         $qb = $this->createQueryBuilder('u');
         if ($query !== '') {
-            $qb->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')
-                ->setParameter('q', '%' . mb_strtolower($query) . '%');
+            $qb->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')->setParameter(
+                'q',
+                '%' . mb_strtolower($query) . '%',
+            );
         }
 
         return $qb->setMaxResults($limit)->getQuery()->getResult();
