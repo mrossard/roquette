@@ -11,12 +11,14 @@ use App\Ai\HelpPromptBuilder;
 use App\Ai\HelpStreamPublisher;
 use App\Ai\IntentClassifier;
 use App\Ai\PendingConfirmationService;
+use App\Ai\StreamResponseCoordinator;
 use App\Ai\ToolActionSigner;
 use App\Ai\ToolRegistry;
 use App\Ai\ToolRunner;
 use App\Ai\ToolRunState;
 use App\Entity\Message;
 use App\Entity\User;
+use App\Entity\Workspace;
 use App\Message\LlmQueryMessage;
 use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
@@ -49,6 +51,7 @@ final readonly class LlmQueryHandler
         #[Autowire(env: 'bool:LLM_TOOLS_ENABLED')]
         private bool $toolsEnabled = true,
         private ?PendingConfirmationService $pendingConfirmationService = null,
+        private ?StreamResponseCoordinator $streamCoordinator = null,
     ) {}
 
     public function __invoke(LlmQueryMessage $message): void
@@ -63,7 +66,6 @@ final readonly class LlmQueryHandler
         $startedAt = microtime(true);
         $state = new ToolRunState();
 
-        // 1. Immediately upon receipt: show "Analyse de la demande... 🔍"
         $this->streamPublisher->publishStatus(
             $personalTopic,
             $message->getHelpMessageId(),
@@ -72,116 +74,35 @@ final readonly class LlmQueryHandler
         );
 
         $channels = $this->channelRepository->findAllForUser($user);
-
-        $workspace = null;
-        if ($message->getWorkspaceId() !== null) {
-            $workspace = $this->workspaceRepository->find($message->getWorkspaceId());
-        }
-
-        $currentChannel = $this->channelResolver->resolveFromList(
-            $channelSlug,
-            $channels,
-        ) ?? $this->channelRepository->findOneBy(['slug' => $channelSlug]);
-
-        [$prompt, $systemPrompt] = $this->helpPromptBuilder->buildDefaultPrompts(
-            $message->getQuestion(),
-            $channels,
-            $workspace,
-            $currentChannel,
-        );
-
-        $intent = $message->getIntent() ?? 'help';
-        $channelName = null;
-        $batches = null;
-        $targetChannelSlug = null;
+        $workspace = $message->getWorkspaceId() !== null ? $this->workspaceRepository->find($message->getWorkspaceId()) : null;
 
         try {
-            if ($message->getIntent() === null && str_starts_with($channelSlug, 'dm-' . User::ROBOT_USERNAME . '-')) {
-                $classification = $this->intentClassifier->classify(
-                    $message->getQuestion(),
-                    $channels,
-                    $channelSlug,
-                    $workspace,
-                );
-                $this->logger->info('Classification result:', ['classification' => $classification]);
-                $intent = $classification['intent'];
-                $targetChannelSlug = $classification['channelSlug'];
-            } else {
-                $targetChannelSlug = $channelSlug;
-            }
-
-            if ($intent === 'resumer' && $targetChannelSlug) {
-                $targetChannel = $this->channelResolver->resolveFromList($targetChannelSlug, $channels);
-                $channelName = $targetChannel ? $targetChannel->getName() : $targetChannelSlug;
-                [$prompt, $systemPrompt, $batches] = $this->summaryBuilder->build($user, $channels, $targetChannelSlug);
-            }
-
-            // 2. Once classification is done: reformulate the request based on intent
-            [$reformulation, $prefix] = match ($intent) {
-                'resumer' => [
-                    'Résumé du canal **#' . ($channelName ?? 'inconnu') . '**... ⏳',
-                    '**Résumé du canal #' . ($channelName ?? 'inconnu') . "** :\n\n",
-                ],
-                'sondage' => ['Création du sondage... ⏳', ''],
-                default => ['Traitement de la demande... ⏳', ''],
-            };
-
-            $this->streamPublisher->publishStatus(
-                $personalTopic,
-                $message->getHelpMessageId(),
-                $reformulation,
+            [$intent, $targetChannelSlug] = $this->resolveIntentAndTarget($message, $channelSlug, $channels, $workspace);
+            [$prompt, $systemPrompt, $prefix, $batches] = $this->buildPromptsForIntent(
+                $intent,
+                $targetChannelSlug,
+                $user,
+                $channels,
+                $workspace,
                 $channelSlug,
+                $message,
+                $personalTopic,
             );
 
-            if ($batches !== null && count($batches) > 1) {
-                [$prompt, $systemPrompt] = $this->batchSummarizer->summarize(
-                    $batches,
-                    onBatchProgress: fn(int $batchNum, int $total) => $this->streamPublisher->publishStatus(
-                        $personalTopic,
-                        $message->getHelpMessageId(),
-                        "Analyse et résumé du lot {$batchNum}/{$total}... ⏳",
-                        $channelSlug,
-                    ),
-                    onFinalProgress: fn() => $this->streamPublisher->publishStatus(
-                        $personalTopic,
-                        $message->getHelpMessageId(),
-                        'Génération du résumé final combiné... ⏳',
-                        $channelSlug,
-                    ),
-                );
-            }
-
-            if ($intent === 'help') {
-                $prompt = $this->helpPromptBuilder->addConversationContext($prompt, $channelSlug, $message->getQuestion());
-            }
-
-            $accumulatedText = '';
+            $streamCoordinator = $this->streamCoordinator ?? new StreamResponseCoordinator($this->streamPublisher);
             $generator = $this->createGenerator($prompt, $systemPrompt, $message, $personalTopic, $state);
 
-            $chunkCount = 0;
-            foreach ($generator as $chunk) {
-                $accumulatedText .= $chunk;
-                $chunkCount++;
-
-                if ($chunkCount <= 3 || ($chunkCount % 3) === 0) {
-                    $this->streamPublisher->publishStreamText(
-                        $personalTopic,
-                        $message->getHelpMessageId(),
-                        $prefix,
-                        $accumulatedText,
-                        $channelSlug,
-                    );
-                }
-            }
-
-            $this->streamPublisher->publishStreamText(
+            $streamResult = $streamCoordinator->streamAndPublish(
+                $generator,
                 $personalTopic,
                 $message->getHelpMessageId(),
                 $prefix,
-                $accumulatedText,
                 $channelSlug,
-                $state->pendingConfirmation,
+                static fn(): ?string => $state->pendingConfirmation,
             );
+
+            $accumulatedText = $streamResult['text'];
+            $chunkCount = $streamResult['chunkCount'];
 
             $this->logger->info('LlmQueryHandler completed', [
                 'intent' => $intent,
@@ -194,8 +115,7 @@ final readonly class LlmQueryHandler
                 'durationMs' => (int) ((microtime(true) - $startedAt) * 1000),
             ]);
 
-            // Persist the message in the database so it is saved only if it is a DM with the robot
-            $this->persistRobotDmMessage($message->getChannelSlug(), $prefix . $accumulatedText);
+            $this->persistRobotDmMessage($channelSlug, $prefix . $accumulatedText);
         } catch (\Exception $e) {
             $this->logger->error('LlmQueryHandler failed:', [
                 'exception' => $e,
@@ -203,6 +123,109 @@ final readonly class LlmQueryHandler
             ]);
             $this->streamPublisher->publishError($personalTopic, $message->getHelpMessageId(), $channelSlug);
         }
+    }
+
+    /**
+     * @param list<\App\Entity\Channel> $channels
+     * @return array{0: string, 1: ?string}
+     */
+    private function resolveIntentAndTarget(
+        LlmQueryMessage $message,
+        string $channelSlug,
+        array $channels,
+        ?Workspace $workspace,
+    ): array {
+        if ($message->getIntent() !== null) {
+            return [$message->getIntent(), $channelSlug];
+        }
+
+        if (!str_starts_with($channelSlug, 'dm-' . User::ROBOT_USERNAME . '-')) {
+            return ['help', $channelSlug];
+        }
+
+        $classification = $this->intentClassifier->classify(
+            $message->getQuestion(),
+            $channels,
+            $channelSlug,
+            $workspace,
+        );
+        $this->logger->info('Classification result:', ['classification' => $classification]);
+
+        return [$classification['intent'], $classification['channelSlug'] ?? null];
+    }
+
+    /**
+     * @param list<\App\Entity\Channel> $channels
+     * @return array{0: string, 1: string, 2: string, 3: ?list<array>}
+     */
+    private function buildPromptsForIntent(
+        string $intent,
+        ?string $targetChannelSlug,
+        User $user,
+        array $channels,
+        ?Workspace $workspace,
+        string $channelSlug,
+        LlmQueryMessage $message,
+        string $personalTopic,
+    ): array {
+        $currentChannel = $this->channelResolver->resolveFromList($channelSlug, $channels)
+            ?? $this->channelRepository->findOneBy(['slug' => $channelSlug]);
+
+        [$prompt, $systemPrompt] = $this->helpPromptBuilder->buildDefaultPrompts(
+            $message->getQuestion(),
+            $channels,
+            $workspace,
+            $currentChannel,
+        );
+
+        $channelName = null;
+        $batches = null;
+
+        if ($intent === 'resumer' && $targetChannelSlug !== null && $targetChannelSlug !== '') {
+            $targetChannel = $this->channelResolver->resolveFromList($targetChannelSlug, $channels);
+            $channelName = $targetChannel ? $targetChannel->getName() : $targetChannelSlug;
+            [$prompt, $systemPrompt, $batches] = $this->summaryBuilder->build($user, $channels, $targetChannelSlug);
+        }
+
+        [$reformulation, $prefix] = match ($intent) {
+            'resumer' => [
+                'Résumé du canal **#' . ($channelName ?? 'inconnu') . '**... ⏳',
+                '**Résumé du canal #' . ($channelName ?? 'inconnu') . "** :\n\n",
+            ],
+            'sondage' => ['Création du sondage... ⏳', ''],
+            default => ['Traitement de la demande... ⏳', ''],
+        };
+
+        $this->streamPublisher->publishStatus(
+            $personalTopic,
+            $message->getHelpMessageId(),
+            $reformulation,
+            $channelSlug,
+        );
+
+        if ($batches !== null && count($batches) > 1) {
+            [$prompt, $systemPrompt] = $this->batchSummarizer->summarize(
+                $batches,
+                onBatchProgress: fn(int $batchNum, int $total) => $this->streamPublisher->publishStatus(
+                    $personalTopic,
+                    $message->getHelpMessageId(),
+                    "Analyse et résumé du lot {$batchNum}/{$total}... ⏳",
+                    $channelSlug,
+                ),
+                onFinalProgress: fn() => $this->streamPublisher->publishStatus(
+                    $personalTopic,
+                    $message->getHelpMessageId(),
+                    'Génération du résumé final combiné... ⏳',
+                    $channelSlug,
+                ),
+            );
+        }
+
+        if ($intent === 'help') {
+            $prompt = $this->helpPromptBuilder->addConversationContext($prompt, $channelSlug, $message->getQuestion());
+        }
+
+        return [$prompt, $systemPrompt, $prefix, $batches];
     }
 
     private function persistRobotDmMessage(string $channelSlug, string $content): void

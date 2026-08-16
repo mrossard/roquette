@@ -140,4 +140,26 @@ class MercurePublisherTest extends TestCase
             '<p>Hello @member-user code check</p>',
         );
     }
+
+    #[Test]
+    public function publishToChannelDirectlyViaHubWhenProvided(): void
+    {
+        $hub = $this->createMock(\Symfony\Component\Mercure\HubInterface::class);
+        $publisher = new MercurePublisher($this->bus, 'http://test-mercure', $this->translator, $hub);
+
+        $channel = $this->createMock(Channel::class);
+        $channel->method('getSlug')->willReturn('general-channel');
+        $channel->method('isPrivate')->willReturn(false);
+        $channel->method('isWorkspaceChannel')->willReturn(false);
+
+        $hub->expects($this->once())->method('publish')->with($this->callback(
+            static fn(Update $update) => (
+                $update->getTopics() === ['http://test-mercure/channels/general-channel']
+                && $update->getData() === 'test-data'
+            ),
+        ));
+        $this->bus->expects($this->never())->method('dispatch');
+
+        $publisher->publishToChannel($channel, 'test-data');
+    }
 }

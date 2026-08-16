@@ -221,7 +221,15 @@ class MessagePublishService
         $tempMessage->setAuthor($currentUser);
         $tempMessage->setChannel($channel);
 
-        return PublishResult::ok($channel, $tempMessage, '');
+        $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
+            'answer' => null,
+            'question' => $messageText,
+            'helpMessageId' => $helpMessageId,
+            'activeChannel' => $channel,
+            'timestamp' => new \DateTime(),
+        ]);
+
+        return PublishResult::ok($channel, $tempMessage, $oobHtml);
     }
 
     private function buildMessage(

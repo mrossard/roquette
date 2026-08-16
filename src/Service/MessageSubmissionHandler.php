@@ -102,6 +102,14 @@ class MessageSubmissionHandler
             return $this->renderForm($channel, $result->statusCode ?? 422);
         }
 
+        if ($result->renderedHtml !== null && str_contains($result->renderedHtml, 'hx-swap-oob')) {
+            $formContent = $this->twig->render('dashboard/_input_form.html.twig', [
+                'activeChannel' => $channel,
+            ]);
+
+            return new Response($formContent . "\n" . $result->renderedHtml);
+        }
+
         return $this->renderForm($channel);
     }
 

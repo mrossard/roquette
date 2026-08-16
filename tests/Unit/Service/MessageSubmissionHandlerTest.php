@@ -234,4 +234,31 @@ class MessageSubmissionHandlerTest extends TestCase
         $this->assertTrue($this->session->getFlashBag()->has('error'));
         $this->assertSame(['Bad request'], $this->session->getFlashBag()->peek('error'));
     }
+
+    #[Test]
+    public function publishWithOobHtmlAppendsToFormResponse(): void
+    {
+        $user = new User();
+        $ref = new \ReflectionProperty(User::class, 'id');
+        $ref->setValue($user, 1);
+
+        $channel = new Channel();
+        $this->channelRepository->method('findOneBy')->willReturn($channel);
+        $this->channelAccessService->method('canUserAccess')->willReturn(true);
+        $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
+
+        $message = new Message();
+        $oob = '<div hx-swap-oob="beforeend:#live-feed"><div id="help-123">Loading...</div></div>';
+        $this->publishService
+            ->method('publish')
+            ->willReturn(PublishResult::ok($channel, $message, $oob));
+
+        $request = new Request([], ['message' => '@robot aide']);
+        $this->requestStack->push($request);
+        $request->setSession($this->session);
+
+        $response = $this->handler->handle('general', $request, $user);
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame("<form></form>\n" . $oob, $response->getContent());
+    }
 }

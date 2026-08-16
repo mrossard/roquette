@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
+use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -22,6 +23,7 @@ class MercurePublisher
         private MessageBusInterface $bus,
         private string $mercureTopicPrefix,
         private TranslatorInterface $translator,
+        private ?HubInterface $hub = null,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -56,13 +58,13 @@ class MercurePublisher
             $isPrivate = true;
         }
 
-        $this->bus->dispatch(new Update($this->getChannelTopic($channel), $data, $isPrivate, null, $type));
+        $this->sendUpdate(new Update($this->getChannelTopic($channel), $data, $isPrivate, null, $type));
     }
 
     public function publishToUser(User $user, array|string $payload, ?string $type = null): void
     {
         $data = is_array($payload) ? json_encode($payload) : $payload;
-        $this->bus->dispatch(new Update($this->getUserTopic($user), $data, true, null, $type));
+        $this->sendUpdate(new Update($this->getUserTopic($user), $data, true, null, $type));
     }
 
     public function publishToTopic(
@@ -72,7 +74,18 @@ class MercurePublisher
         ?string $type = null,
     ): void {
         $data = is_array($payload) ? json_encode($payload) : $payload;
-        $this->bus->dispatch(new Update($topicUrl, $data, $private, null, $type));
+        $this->sendUpdate(new Update($topicUrl, $data, $private, null, $type));
+    }
+
+    private function sendUpdate(Update $update): void
+    {
+        if ($this->hub !== null) {
+            $this->hub->publish($update);
+
+            return;
+        }
+
+        $this->bus->dispatch($update);
     }
 
     public function publishUserStatus(User $user): void

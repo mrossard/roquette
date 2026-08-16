@@ -58,6 +58,7 @@ class MessagePublishServiceTest extends TestCase
         $this->translator->method('trans')->willReturnArgument(0);
         $this->messageRenderer->method('renderFeedItem')->willReturn('<div class="feed-item">Message</div>');
         $this->messageRepository->method('findLatestInChannel')->willReturn([]);
+        $this->twig->method('render')->willReturn('<div hx-swap-oob="beforeend:#live-feed">...</div>');
 
         $this->publishService = new MessagePublishService(
             $this->messageRepository,

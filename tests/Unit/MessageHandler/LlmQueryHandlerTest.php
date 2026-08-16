@@ -174,6 +174,50 @@ class LlmQueryHandlerTest extends TestCase
         $handler($message);
     }
 
+    public function testDmRobotGeneralQuestionWithNullTargetChannel(): void
+    {
+        $user = new User();
+        $user->setUsername('test_user');
+
+        $robot = new User();
+        $robot->setUsername(User::ROBOT_USERNAME);
+
+        $dmChannel = new \App\Entity\Channel();
+        $dmChannel->setName('dm-robot-roquette-test_user');
+        $dmChannel->setSlug('dm-' . User::ROBOT_USERNAME . '-test_user');
+
+        $generator = (static function () {
+            yield 'Je suis là pour vous aider !';
+        })();
+
+        $userRepository = $this->createMock(UserRepository::class);
+        $userRepository->expects($this->once())->method('find')->with(42)->willReturn($user);
+        $userRepository->expects($this->once())->method('findOneBy')->with(['username' => User::ROBOT_USERNAME])->willReturn($robot);
+
+        $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
+        $channelRepository->expects($this->once())->method('findAllForUser')->willReturn([$dmChannel]);
+        $channelRepository->expects($this->exactly(2))->method('findOneBy')->with(['slug' => $dmChannel->getSlug()])->willReturn($dmChannel);
+
+        $llmService = $this->createMock(LlmService::class);
+        $llmService->expects($this->once())->method('generateTextStream')->willReturn($generator);
+
+        $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('persist')->with($this->isInstanceOf(\App\Entity\Message::class));
+        $entityManager->expects($this->once())->method('flush');
+
+        $overrides = [
+            'userRepository' => $userRepository,
+            'channelRepository' => $channelRepository,
+            'entityManager' => $entityManager,
+            'llmService' => $llmService,
+        ];
+
+        [$handler] = $this->buildHandler($overrides);
+
+        $message = new LlmQueryMessage('Bonjour, qui es-tu ?', 42, $dmChannel->getSlug(), 'help-456');
+        $handler($message);
+    }
+
     public function testSummaryLimitsMessages(): void
     {
         $user = new User();
