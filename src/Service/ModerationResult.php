@@ -4,26 +4,39 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Enum\ModerationStatus;
+
 final readonly class ModerationResult
 {
+    private ModerationStatus $status;
+
     public function __construct(
-        private string $status,
+        ModerationStatus|string $status,
         private ?string $reason = null,
         private ?string $maskedContent = null,
         private ?string $originalContent = null,
-    ) {}
+    ) {
+        $this->status = is_string($status)
+            ? (ModerationStatus::tryFrom($status) ?? ModerationStatus::CLEAN)
+            : $status;
+    }
 
     public function isFlagged(): bool
     {
-        return $this->status !== 'clean';
+        return $this->status !== ModerationStatus::CLEAN;
     }
 
     public function isMasked(): bool
     {
-        return $this->status === 'masked';
+        return $this->status === ModerationStatus::MASKED;
     }
 
     public function getStatus(): string
+    {
+        return $this->status->value;
+    }
+
+    public function getStatusEnum(): ModerationStatus
     {
         return $this->status;
     }
@@ -45,13 +58,13 @@ final readonly class ModerationResult
 
     public static function clean(): self
     {
-        return new self(status: 'clean');
+        return new self(status: ModerationStatus::CLEAN);
     }
 
     public static function masked(string $maskedContent, string $originalContent, string $reason = "Secret ou clé d'API détecté(e)"): self
     {
         return new self(
-            status: 'masked',
+            status: ModerationStatus::MASKED,
             reason: $reason,
             maskedContent: $maskedContent,
             originalContent: $originalContent,
@@ -61,7 +74,7 @@ final readonly class ModerationResult
     public static function flagged(string $reason): self
     {
         return new self(
-            status: 'flagged',
+            status: ModerationStatus::FLAGGED,
             reason: $reason,
         );
     }

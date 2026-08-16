@@ -6,6 +6,7 @@ namespace App\Ai\Tool;
 
 use App\Ai\ChannelResolver;
 use App\Entity\Reminder;
+use App\Entity\User;
 use App\Message\SendReminderMessage;
 use App\Repository\UserRepository;
 use App\Service\ChannelAccessService;
@@ -73,10 +74,10 @@ final readonly class ScheduleReminderTool implements AiToolInterface
             $user = $this->userRepository->find($authorUserId);
         }
 
-        // Si aucun canal valide n'est fourni ou s'il s'agit d'un rappel personnel, viser en priorité le DM avec l'assistant ("robot-roquette")
+        // Si aucun canal valide n'est fourni ou s'il s'agit d'un rappel personnel, viser en priorité le DM avec l'assistant (User::ROBOT_USERNAME)
         $channel = null;
         if ($user) {
-            $dmSlug = 'dm-robot-roquette-' . $user->getSlug();
+            $dmSlug = 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug();
             if ($channelSlug === 'assistant' || $channelSlug === 'dm' || str_contains($channelSlug, 'robot')) {
                 $channel = $this->channelResolver->resolve($dmSlug, $workspaceId);
             }
@@ -88,7 +89,7 @@ final readonly class ScheduleReminderTool implements AiToolInterface
 
         if (!$channel && $user) {
             // Fallback 1: Canal DM avec le robot roquette
-            $dmSlug = 'dm-robot-roquette-' . $user->getSlug();
+            $dmSlug = 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug();
             $channel = $this->channelResolver->resolve($dmSlug, $workspaceId);
         }
 
@@ -101,7 +102,7 @@ final readonly class ScheduleReminderTool implements AiToolInterface
             $user = $this->userRepository->find($authorUserId);
         }
         if (!$user) {
-            $user = $this->userRepository->findOneBy(['username' => 'robot-roquette'])
+            $user = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME])
                 ?? $this->userRepository->findOneBy([]);
         }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\MessageHandler;
 
 use App\Enum\AuditAction;
+use App\Enum\ModerationStatus;
 use App\Message\ModerateMessageMessage;
 use App\Repository\MessageRepository;
 use App\Service\AuditLoggerService;
@@ -69,8 +70,7 @@ class ModerateMessageMessageHandler
                 $this->em->flush();
                 $this->publishUpdate($dbMessage);
             } else {
-
-                $dbMessage->setModerationStatus('clean');
+                $dbMessage->setModerationStatus(ModerationStatus::CLEAN->value);
                 $this->em->flush();
             }
         } catch (\Exception $e) {

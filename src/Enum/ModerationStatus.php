@@ -8,5 +8,6 @@ enum ModerationStatus: string
 {
     case CLEAN = 'clean';
     case FLAGGED = 'flagged';
+    case MASKED = 'masked';
     case PENDING = 'pending';
 }

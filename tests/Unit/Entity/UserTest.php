@@ -297,4 +297,52 @@ class UserTest extends TestCase
         $this->assertSame([], $user->getFavoriteChannelIds());
         $this->assertFalse($user->isChannelFavorite($channel));
     }
+
+    #[Test]
+    public function themeCanBeSetAndRetrievedViaEnum(): void
+    {
+        $user = new User();
+        $this->assertSame('dark', $user->getTheme());
+        $this->assertSame(\App\Enum\UserTheme::DARK, $user->getThemeEnum());
+
+        $user->setTheme(\App\Enum\UserTheme::LIGHT);
+        $this->assertSame('light', $user->getTheme());
+        $this->assertSame(\App\Enum\UserTheme::LIGHT, $user->getThemeEnum());
+
+        $user->setTheme('dark');
+        $this->assertSame('dark', $user->getTheme());
+        $this->assertSame(\App\Enum\UserTheme::DARK, $user->getThemeEnum());
+    }
+
+    #[Test]
+    public function localeCanBeSetAndRetrievedViaEnum(): void
+    {
+        $user = new User();
+        $this->assertSame('fr', $user->getLocale());
+        $this->assertSame(\App\Enum\UserLocale::FR, $user->getLocaleEnum());
+
+        $user->setLocale(\App\Enum\UserLocale::EN);
+        $this->assertSame('en', $user->getLocale());
+        $this->assertSame(\App\Enum\UserLocale::EN, $user->getLocaleEnum());
+
+        $user->setLocale('fr');
+        $this->assertSame('fr', $user->getLocale());
+        $this->assertSame(\App\Enum\UserLocale::FR, $user->getLocaleEnum());
+    }
+
+    #[Test]
+    public function presenceStatusCanBeSetAndRetrievedViaEnum(): void
+    {
+        $user = new User();
+        $user->setStatusOverride(\App\Enum\UserPresenceStatus::BUSY);
+        $this->assertSame('busy', $user->getStatus());
+        $this->assertSame(\App\Enum\UserPresenceStatus::BUSY, $user->getPresenceStatus());
+        $this->assertSame(\App\Enum\UserPresenceStatus::BUSY, $user->getPresenceStatusOverride());
+    }
+
+    #[Test]
+    public function robotUsernameConstantIsCorrect(): void
+    {
+        $this->assertSame('robot-roquette', User::ROBOT_USERNAME);
+    }
 }

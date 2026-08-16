@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
+use App\Enum\ModerationStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -514,7 +515,7 @@ class MessageRepository extends ServiceEntityRepository
             ->join('m.channel', 'channel')
             ->where('m.moderationStatus IS NOT NULL')
             ->andWhere('m.moderationStatus != :cleanStatus')
-            ->setParameter('cleanStatus', 'clean')
+            ->setParameter('cleanStatus', ModerationStatus::CLEAN->value)
             ->orderBy('m.createdAt', 'DESC')
             ->setFirstResult(($page - 1) * $perPage)
             ->setMaxResults($perPage)
@@ -528,7 +529,7 @@ class MessageRepository extends ServiceEntityRepository
             ->select('COUNT(m.id)')
             ->where('m.moderationStatus IS NOT NULL')
             ->andWhere('m.moderationStatus != :cleanStatus')
-            ->setParameter('cleanStatus', 'clean')
+            ->setParameter('cleanStatus', ModerationStatus::CLEAN->value)
             ->getQuery()
             ->getSingleScalarResult();
     }

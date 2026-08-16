@@ -8,6 +8,7 @@ use App\Ai\ChannelResolver;
 use App\Entity\Message;
 use App\Entity\Poll;
 use App\Entity\PollOption;
+use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\ChannelAccessService;
 use App\Service\MercurePublisher;
@@ -88,7 +89,7 @@ final readonly class CreatePollTool implements AiToolInterface
             $author = $this->userRepository->find($authorUserId);
         }
         if (!$author) {
-            $author = $this->userRepository->findOneBy(['username' => 'robot-roquette'])
+            $author = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME])
                 ?? $this->userRepository->findOneBy([]);
         }
 

@@ -41,7 +41,7 @@ final readonly class GenerateExportMessageHandler
         }
 
         // Find the DM channel for this user and robot-roquette
-        $dmChannelSlug = 'dm-robot-roquette-' . $user->getSlug();
+        $dmChannelSlug = 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug();
         $dmChannel = $this->channelRepository->findOneBy(['slug' => $dmChannelSlug]);
 
         if (!$dmChannel) {

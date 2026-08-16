@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\ModerationStatus;
+use App\Enum\TaskPriority;
 use App\Repository\MessageRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -402,9 +404,14 @@ class Message
         return $this->priority;
     }
 
-    public function setPriority(?string $priority): static
+    public function getPriorityEnum(): ?TaskPriority
     {
-        $this->priority = $priority;
+        return $this->priority !== null ? TaskPriority::tryFrom($this->priority) : null;
+    }
+
+    public function setPriority(TaskPriority|string|null $priority): static
+    {
+        $this->priority = $priority instanceof TaskPriority ? $priority->value : $priority;
 
         return $this;
     }
@@ -439,9 +446,14 @@ class Message
         return $this->moderationStatus;
     }
 
-    public function setModerationStatus(?string $moderationStatus): static
+    public function getModerationStatusEnum(): ?ModerationStatus
     {
-        $this->moderationStatus = $moderationStatus;
+        return $this->moderationStatus !== null ? ModerationStatus::tryFrom($this->moderationStatus) : null;
+    }
+
+    public function setModerationStatus(ModerationStatus|string|null $moderationStatus): static
+    {
+        $this->moderationStatus = $moderationStatus instanceof ModerationStatus ? $moderationStatus->value : $moderationStatus;
 
         return $this;
     }

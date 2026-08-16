@@ -104,7 +104,7 @@ class MessagePublishService
             }
         }
 
-        $isDmWithRobot = $channel->getSlug() === 'dm-robot-roquette-' . $currentUser->getSlug();
+        $isDmWithRobot = $channel->getSlug() === 'dm-' . User::ROBOT_USERNAME . '-' . $currentUser->getSlug();
         $isRobotMentioned = $this->isRobotMentioned($messageText);
 
         if ($isRobotMentioned && !$isDmWithRobot) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Ai;
 
 use App\Entity\Channel;
+use App\Entity\User;
 use App\Entity\Workspace;
 
 /**
@@ -60,7 +61,7 @@ final readonly class IntentClassifier
     private function extractChannelSlug(string $question, array $channels, string $currentChannelSlug): ?string
     {
         if (
-            !str_starts_with($currentChannelSlug, 'dm-robot-roquette-')
+            !str_starts_with($currentChannelSlug, 'dm-' . User::ROBOT_USERNAME . '-')
             && preg_match('/\b(?:ce\s+canal|mon\s+canal|ici)\b/iu', $question) === 1
         ) {
             return $currentChannelSlug;

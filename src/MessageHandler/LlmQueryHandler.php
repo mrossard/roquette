@@ -96,7 +96,7 @@ final readonly class LlmQueryHandler
         $targetChannelSlug = null;
 
         try {
-            if ($message->getIntent() === null && str_starts_with($channelSlug, 'dm-robot-roquette-')) {
+            if ($message->getIntent() === null && str_starts_with($channelSlug, 'dm-' . User::ROBOT_USERNAME . '-')) {
                 $classification = $this->intentClassifier->classify(
                     $message->getQuestion(),
                     $channels,
@@ -188,7 +188,7 @@ final readonly class LlmQueryHandler
             // Persist the message in the database so it is saved only if it is a DM with the robot
             $robotUser = $this->userRepository->findOneBy(['username' => User::ROBOT_USERNAME]);
             $channel = $this->channelRepository->findOneBy(['slug' => $message->getChannelSlug()]);
-            if ($robotUser && $channel && str_starts_with($channel->getSlug(), 'dm-robot-roquette-')) {
+            if ($robotUser && $channel && str_starts_with($channel->getSlug(), 'dm-' . User::ROBOT_USERNAME . '-')) {
                 $dbMessage = new \App\Entity\Message();
                 $dbMessage->setAuthor($robotUser);
                 $dbMessage->setChannel($channel);
@@ -344,7 +344,7 @@ final readonly class LlmQueryHandler
                 continue;
             }
 
-            $author = $msg->getAuthor()?->getUsername() ?? 'robot-roquette';
+            $author = $msg->getAuthor()?->getUsername() ?? User::ROBOT_USERNAME;
             $history[] = sprintf('%s: %s', $author, mb_substr($content, 0, 500));
         }
 

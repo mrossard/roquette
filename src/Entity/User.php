@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Entity;
 
 
+use App\Enum\UserLocale;
+use App\Enum\UserPresenceStatus;
+use App\Enum\UserTheme;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -226,10 +229,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->theme;
     }
 
-    public function setTheme(string $theme): static
+    public function getThemeEnum(): UserTheme
     {
-        if (in_array($theme, ['light', 'dark'], true)) {
-            $this->theme = $theme;
+        return UserTheme::tryFrom($this->theme) ?? UserTheme::DARK;
+    }
+
+    public function setTheme(UserTheme|string $theme): static
+    {
+        $val = $theme instanceof UserTheme ? $theme->value : $theme;
+        if (UserTheme::tryFrom($val) !== null) {
+            $this->theme = $val;
         }
 
         return $this;
@@ -240,10 +249,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->locale;
     }
 
-    public function setLocale(string $locale): static
+    public function getLocaleEnum(): UserLocale
     {
-        if (in_array($locale, ['fr', 'en'], true)) {
-            $this->locale = $locale;
+        return UserLocale::tryFrom($this->locale) ?? UserLocale::FR;
+    }
+
+    public function setLocale(UserLocale|string $locale): static
+    {
+        $val = $locale instanceof UserLocale ? $locale->value : $locale;
+        if (UserLocale::tryFrom($val) !== null) {
+            $this->locale = $val;
         }
 
         return $this;
@@ -454,35 +469,45 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->statusOverride;
     }
 
-    public function setStatusOverride(?string $statusOverride): static
+    public function getPresenceStatusOverride(): ?UserPresenceStatus
     {
-        $this->statusOverride = $statusOverride;
+        return $this->statusOverride !== null ? UserPresenceStatus::tryFrom($this->statusOverride) : null;
+    }
+
+    public function setStatusOverride(UserPresenceStatus|string|null $statusOverride): static
+    {
+        $this->statusOverride = $statusOverride instanceof UserPresenceStatus ? $statusOverride->value : $statusOverride;
 
         return $this;
     }
 
     public function getStatus(): string
     {
-        if ($this->statusOverride !== null && $this->statusOverride !== 'auto') {
+        if ($this->statusOverride !== null && $this->statusOverride !== UserPresenceStatus::AUTO->value) {
             return $this->statusOverride;
         }
 
         if ($this->lastActiveAt !== null) {
             if ($this->lastActiveAt->getTimestamp() > (time() - 300)) {
-                return 'online';
+                return UserPresenceStatus::ONLINE->value;
             }
         }
 
-        return 'offline';
+        return UserPresenceStatus::OFFLINE->value;
+    }
+
+    public function getPresenceStatus(): UserPresenceStatus
+    {
+        return UserPresenceStatus::tryFrom($this->getStatus()) ?? UserPresenceStatus::OFFLINE;
     }
 
     public function getStatusLabel(): string
     {
         return match ($this->getStatus()) {
-            'online' => 'status.online',
-            'away' => 'status.away',
-            'busy' => 'status.busy',
-            'offline' => 'status.offline',
+            UserPresenceStatus::ONLINE->value => 'status.online',
+            UserPresenceStatus::AWAY->value => 'status.away',
+            UserPresenceStatus::BUSY->value => 'status.busy',
+            UserPresenceStatus::OFFLINE->value => 'status.offline',
             default => 'status.offline',
         };
     }

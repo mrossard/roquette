@@ -116,10 +116,10 @@ class UserBootstrapService
         // No need to add user as member of workspace channels — workspace membership grants access
 
         // 3. Ensure robot user
-        $robotUser = $this->entityManager->getRepository(User::class)->findOneBy(['username' => 'robot-roquette']);
+        $robotUser = $this->entityManager->getRepository(User::class)->findOneBy(['username' => User::ROBOT_USERNAME]);
         if (!$robotUser) {
             $robotUser = new User();
-            $robotUser->setUsername('robot-roquette');
+            $robotUser->setUsername(User::ROBOT_USERNAME);
             $robotUser->setDisplayName($assistantName);
             $robotUser->setRoles(['ROLE_USER']);
             // Securely hash a dummy random password
@@ -135,7 +135,7 @@ class UserBootstrapService
         }
 
         // 4. Ensure robot DM channel
-        $robotSlug = 'dm-robot-roquette-' . $user->getSlug();
+        $robotSlug = 'dm-' . User::ROBOT_USERNAME . '-' . $user->getSlug();
         $robotChannel = $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => $robotSlug]);
         if (!$robotChannel) {
             $robotChannel = new Channel();

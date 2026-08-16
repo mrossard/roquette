@@ -124,4 +124,44 @@ class MessageTest extends TestCase
         $message = new Message();
         $this->assertSame([], $message->getGroupedReactions());
     }
+
+    #[Test]
+    public function priorityCanBeSetWithEnumOrString(): void
+    {
+        $message = new Message();
+        $this->assertNull($message->getPriority());
+        $this->assertNull($message->getPriorityEnum());
+
+        $message->setPriority(\App\Enum\TaskPriority::HIGH);
+        $this->assertSame('high', $message->getPriority());
+        $this->assertSame(\App\Enum\TaskPriority::HIGH, $message->getPriorityEnum());
+
+        $message->setPriority('urgent');
+        $this->assertSame('urgent', $message->getPriority());
+        $this->assertSame(\App\Enum\TaskPriority::URGENT, $message->getPriorityEnum());
+
+        $message->setPriority(null);
+        $this->assertNull($message->getPriority());
+        $this->assertNull($message->getPriorityEnum());
+    }
+
+    #[Test]
+    public function moderationStatusCanBeSetWithEnumOrString(): void
+    {
+        $message = new Message();
+        $this->assertNull($message->getModerationStatus());
+        $this->assertNull($message->getModerationStatusEnum());
+
+        $message->setModerationStatus(\App\Enum\ModerationStatus::MASKED);
+        $this->assertSame('masked', $message->getModerationStatus());
+        $this->assertSame(\App\Enum\ModerationStatus::MASKED, $message->getModerationStatusEnum());
+
+        $message->setModerationStatus('flagged');
+        $this->assertSame('flagged', $message->getModerationStatus());
+        $this->assertSame(\App\Enum\ModerationStatus::FLAGGED, $message->getModerationStatusEnum());
+
+        $message->setModerationStatus(null);
+        $this->assertNull($message->getModerationStatus());
+        $this->assertNull($message->getModerationStatusEnum());
+    }
 }
