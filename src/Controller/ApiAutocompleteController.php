@@ -4,33 +4,30 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\Channel;
 use App\Entity\User;
+use App\Repository\ChannelRepository;
+use App\Repository\UserRepository;
 use App\Service\CustomEmojiService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Contracts\Cache\CacheInterface;
 
 #[IsGranted('ROLE_USER')]
 final class ApiAutocompleteController extends AbstractController
 {
+    public function __construct(
+        private readonly UserRepository $userRepository,
+        private readonly ChannelRepository $channelRepository,
+    ) {}
+
     #[Route('/api/users', name: 'app_api_users', methods: ['GET'])]
-    public function apiUsers(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    public function apiUsers(Request $request): JsonResponse
     {
-        $q = $request->query->get('q', '');
-        $qb = $entityManager->getRepository(User::class)->createQueryBuilder('u');
-        if ($q !== '') {
-            $qb->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')->setParameter(
-                'q',
-                '%' . mb_strtolower($q) . '%',
-            );
-        }
-        $users = $qb->setMaxResults(20)->getQuery()->getResult();
+        $q = (string) $request->query->get('q', '');
+        $users = $this->userRepository->searchAutocomplete($q, 20);
 
         $data = [];
         foreach ($users as $user) {
@@ -46,9 +43,9 @@ final class ApiAutocompleteController extends AbstractController
     }
 
     #[Route('/api/users-options', name: 'app_api_users_options', methods: ['GET'])]
-    public function apiUsersOptions(EntityManagerInterface $entityManager): Response
+    public function apiUsersOptions(): Response
     {
-        $users = $entityManager->getRepository(User::class)->findBy([], ['displayName' => 'ASC'], 20);
+        $users = $this->userRepository->findBy([], ['displayName' => 'ASC'], 20);
 
         return $this->render('api/_user_options.html.twig', [
             'users' => $users,
@@ -56,7 +53,7 @@ final class ApiAutocompleteController extends AbstractController
     }
 
     #[Route('/api/channels', name: 'app_api_channels', methods: ['GET'])]
-    public function apiChannels(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    public function apiChannels(Request $request): JsonResponse
     {
         /** @var User|null $currentUser */
         $currentUser = $this->getUser();
@@ -64,23 +61,8 @@ final class ApiAutocompleteController extends AbstractController
             return new JsonResponse([], Response::HTTP_UNAUTHORIZED);
         }
 
-        $q = $request->query->get('q', '');
-        $qb = $entityManager
-            ->getRepository(Channel::class)
-            ->createQueryBuilder('c')
-            ->leftJoin('c.members', 'm')
-            ->where('c.isDm = false')
-            ->andWhere('c.isPrivate = false OR m.id = :userId')
-            ->setParameter('userId', $currentUser->getId());
-
-        if ($q !== '') {
-            $qb->andWhere('LOWER(c.name) LIKE :q OR LOWER(c.slug) LIKE :q')->setParameter(
-                'q',
-                '%' . mb_strtolower($q) . '%',
-            );
-        }
-
-        $channels = $qb->orderBy('LOWER(c.name)', 'ASC')->setMaxResults(20)->getQuery()->getResult();
+        $q = (string) $request->query->get('q', '');
+        $channels = $this->channelRepository->searchAccessibleChannelsForUser($currentUser, $q, 20);
 
         $data = [];
         foreach ($channels as $channel) {
@@ -99,11 +81,9 @@ final class ApiAutocompleteController extends AbstractController
     public function apiAutocomplete(
         string $type,
         Request $request,
-        EntityManagerInterface $entityManager,
-        CacheInterface $cache,
         CustomEmojiService $emojiService,
     ): Response {
-        $q = $request->query->get('q', '');
+        $q = (string) $request->query->get('q', '');
 
         if ($type === 'custom-emojis') {
             $matchingEmojis = [];
@@ -129,40 +109,18 @@ final class ApiAutocompleteController extends AbstractController
         }
 
         if ($type === 'users') {
-            $qb = $entityManager->getRepository(User::class)->createQueryBuilder('u');
-            if ($q !== '') {
-                $qb->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')->setParameter(
-                    'q',
-                    '%' . mb_strtolower($q) . '%',
-                );
-            }
-
             return $this->render('api/_autocomplete_items.html.twig', [
                 'type' => 'users',
-                'users' => $qb->setMaxResults(20)->getQuery()->getResult(),
+                'users' => $this->userRepository->searchAutocomplete($q, 20),
             ]);
         }
 
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-        $qb = $entityManager
-            ->getRepository(Channel::class)
-            ->createQueryBuilder('c')
-            ->leftJoin('c.members', 'm')
-            ->where('c.isDm = false')
-            ->andWhere('c.isPrivate = false OR m.id = :userId')
-            ->setParameter('userId', $currentUser->getId());
-
-        if ($q !== '') {
-            $qb->andWhere('LOWER(c.name) LIKE :q OR LOWER(c.slug) LIKE :q')->setParameter(
-                'q',
-                '%' . mb_strtolower($q) . '%',
-            );
-        }
 
         return $this->render('api/_autocomplete_items.html.twig', [
             'type' => 'channels',
-            'channels' => $qb->orderBy('LOWER(c.name)', 'ASC')->setMaxResults(20)->getQuery()->getResult(),
+            'channels' => $this->channelRepository->searchAccessibleChannelsForUser($currentUser, $q, 20),
         ]);
     }
 }

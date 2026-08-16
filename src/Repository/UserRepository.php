@@ -169,4 +169,18 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         return $channel->getMembers()->toArray();
     }
+
+    /**
+     * @return User[]
+     */
+    public function searchAutocomplete(string $query = '', int $limit = 20): array
+    {
+        $qb = $this->createQueryBuilder('u');
+        if ($query !== '') {
+            $qb->where('LOWER(u.username) LIKE :q OR LOWER(u.displayName) LIKE :q')
+                ->setParameter('q', '%' . mb_strtolower($query) . '%');
+        }
+
+        return $qb->setMaxResults($limit)->getQuery()->getResult();
+    }
 }

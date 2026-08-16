@@ -321,4 +321,26 @@ class ChannelRepository extends ServiceEntityRepository
 
         return (int) $count > 0;
     }
+
+    /**
+     * @return Channel[]
+     */
+    public function searchAccessibleChannelsForUser(User $user, string $query = '', int $limit = 20): array
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->leftJoin('c.members', 'm')
+            ->where('c.isDm = false')
+            ->andWhere('c.isPrivate = false OR m.id = :userId')
+            ->setParameter('userId', $user->getId());
+
+        if ($query !== '') {
+            $qb->andWhere('LOWER(c.name) LIKE :q OR LOWER(c.slug) LIKE :q')
+                ->setParameter('q', '%' . mb_strtolower($query) . '%');
+        }
+
+        return $qb->orderBy('LOWER(c.name)', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }
