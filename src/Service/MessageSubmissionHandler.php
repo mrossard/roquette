@@ -95,15 +95,11 @@ class MessageSubmissionHandler
         );
 
         if (!$result->success) {
-            if ($result->error !== null && $result->statusCode === 400) {
-                return new Response($result->error, 400);
-            }
-
             if ($result->error !== null) {
                 $this->addFlash('error', $result->error);
             }
 
-            return $this->renderForm($channel, $result->statusCode ?? 200);
+            return $this->renderForm($channel, $result->statusCode ?? 422);
         }
 
         return $this->renderForm($channel);

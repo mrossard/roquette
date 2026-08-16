@@ -84,7 +84,12 @@ class MessagePublishService
             return $llmLimitCheck;
         }
 
-        $message = $this->buildMessage($channel, $currentUser, $messageText, $file, $replyToId);
+        $builtMessage = $this->tryBuildMessage($channel, $currentUser, $messageText, $file, $replyToId);
+        if ($builtMessage instanceof PublishResult) {
+            return $builtMessage;
+        }
+        $message = $builtMessage;
+
         if ($isPoll) {
             $this->attachPoll($message, (string) $pollQuestion, $pollOptions ?? [], $pollAllowMultiple);
         }
@@ -102,6 +107,24 @@ class MessagePublishService
         );
 
         return PublishResult::ok($channel, $message, $renderedHtml);
+    }
+
+    private function tryBuildMessage(
+        Channel $channel,
+        User $currentUser,
+        string $messageText,
+        ?UploadedFile $file,
+        ?int $replyToId,
+    ): Message|PublishResult {
+        try {
+            return $this->buildMessage($channel, $currentUser, $messageText, $file, $replyToId);
+        } catch (\InvalidArgumentException $e) {
+            return PublishResult::error(
+                error: $e->getMessage(),
+                channel: $channel,
+                statusCode: 422,
+            );
+        }
     }
 
     private function persistAndBroadcast(

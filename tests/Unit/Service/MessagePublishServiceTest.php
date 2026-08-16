@@ -191,4 +191,28 @@ class MessagePublishServiceTest extends TestCase
 
         $this->assertTrue($result->success);
     }
+
+    #[Test]
+    public function invalidFileUploadReturnsErrorPublishResult(): void
+    {
+        $channel = new Channel();
+        $channel->setSlug('general');
+        $user = new User();
+
+        $file = $this->createMock(\Symfony\Component\HttpFoundation\File\UploadedFile::class);
+        $this->fileUploadService
+            ->method('uploadAndAttachToMessage')
+            ->willThrowException(new \InvalidArgumentException('L\'extension de fichier ".3gp" n\'est pas autorisée.'));
+
+        $result = $this->publishService->publish(
+            channel: $channel,
+            currentUser: $user,
+            messageText: '',
+            file: $file,
+        );
+
+        $this->assertFalse($result->success);
+        $this->assertSame(422, $result->statusCode);
+        $this->assertSame('L\'extension de fichier ".3gp" n\'est pas autorisée.', $result->error);
+    }
 }

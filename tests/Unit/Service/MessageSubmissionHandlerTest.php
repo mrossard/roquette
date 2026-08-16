@@ -222,14 +222,16 @@ class MessageSubmissionHandlerTest extends TestCase
 
         $this->publishService
             ->method('publish')
-            ->willReturn(PublishResult::error('Bad request', $channel, 400));
+            ->willReturn(PublishResult::error('Bad request', $channel, 422));
 
         $request = new Request([], ['message' => 'Hello']);
         $this->requestStack->push($request);
         $request->setSession($this->session);
 
         $response = $this->handler->handle('general', $request, $user);
-        $this->assertSame(400, $response->getStatusCode());
-        $this->assertSame('Bad request', $response->getContent());
+        $this->assertSame(422, $response->getStatusCode());
+        $this->assertSame('<form></form>', $response->getContent());
+        $this->assertTrue($this->session->getFlashBag()->has('error'));
+        $this->assertSame(['Bad request'], $this->session->getFlashBag()->peek('error'));
     }
 }

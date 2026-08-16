@@ -306,4 +306,35 @@ class MessageControllerTest extends WebTestCase
         static::assertStringContainsString('Comment fonctionne roquette ?', $responseContent);
         static::assertStringContainsString('En attente de l\'Assistant Roquette... ⏳', $responseContent);
     }
+
+    #[Test]
+    public function testPublishWithUnallowedFileExtensionShowsFlashError(): void
+    {
+        $tempPath = tempnam(sys_get_temp_dir(), 'test_unallowed_file');
+        file_put_contents($tempPath, 'fake 3gp video content');
+
+        $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
+            $tempPath,
+            'video.3gp',
+            'video/3gpp',
+            null,
+            true,
+        );
+
+        $this->client->request(
+            'POST',
+            '/channels/test-msg-channel/publish',
+            ['message' => ''],
+            ['file' => $uploadedFile],
+        );
+
+        $this->assertResponseStatusCodeSame(422);
+        $content = (string) $this->client->getResponse()->getContent();
+        static::assertStringContainsString('alert-error', $content);
+        static::assertStringContainsString('3gp', $content);
+
+        if (file_exists($tempPath)) {
+            unlink($tempPath);
+        }
+    }
 }
