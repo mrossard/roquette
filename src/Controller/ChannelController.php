@@ -223,10 +223,13 @@ final class ChannelController extends AbstractController
         }
 
         $session = $request->getSession();
-        if ($currentWorkspace) {
+        if ($currentWorkspace !== null) {
             $session->set('current_workspace_id', $currentWorkspace->getId());
-        } elseif ($currentWorkspaceId = $session->get('current_workspace_id')) {
-            $currentWorkspace = $workspaceRepository->find($currentWorkspaceId);
+        } else {
+            $currentWorkspaceId = $session->get('current_workspace_id');
+            if ($currentWorkspaceId !== null) {
+                $currentWorkspace = $workspaceRepository->find($currentWorkspaceId);
+            }
         }
 
         if (!$currentWorkspace) {

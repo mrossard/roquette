@@ -13,10 +13,8 @@ use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -52,13 +50,8 @@ final class AdminExportController extends AbstractController
         ChannelExport $export,
         FileUploadService $fileUploadService,
         AuditLoggerService $auditLogger,
+        \App\Service\FileStreamResponseFactory $fileResponseFactory,
     ): Response {
-        if (!$fileUploadService->exists($export->getFilePath())) {
-            throw $this->createNotFoundException($this->translator->trans(
-                'Le fichier d\'export n\'existe pas dans le stockage.',
-            ));
-        }
-
         /** @var User $currentUser */
         $currentUser = $this->getUser();
         $auditLogger->log(AuditAction::EXPORT_DOWNLOAD, $currentUser, [
@@ -67,25 +60,7 @@ final class AdminExportController extends AbstractController
             'channel_name' => $export->getChannelName(),
         ]);
 
-        $contentType = str_ends_with($export->getFileName(), '.tar') ? 'application/x-tar' : 'application/zip';
-
-        return new StreamedResponse(
-            static function () use ($fileUploadService, $export) {
-                $fileStream = $fileUploadService->readStream($export->getFilePath());
-                if ($fileStream) {
-                    fpassthru($fileStream);
-                    fclose($fileStream);
-                }
-            },
-            Response::HTTP_OK,
-            [
-                'Content-Type' => $contentType,
-                'Content-Disposition' => HeaderUtils::makeDisposition(
-                    HeaderUtils::DISPOSITION_ATTACHMENT,
-                    $export->getFileName(),
-                ),
-            ],
-        );
+        return $fileResponseFactory->createExportDownloadResponse($export, $fileUploadService);
     }
 
     #[Route('/admin/exports/{id}/delete', name: 'app_admin_export_delete', methods: ['POST'])]

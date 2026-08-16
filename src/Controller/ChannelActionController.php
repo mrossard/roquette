@@ -21,10 +21,8 @@ use App\Service\SidebarDataProvider;
 use App\Service\WorkspaceManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -356,6 +354,7 @@ final class ChannelActionController extends AbstractController
         ChannelExport $export,
         FileUploadService $fileUploadService,
         AuditLoggerService $auditLogger,
+        \App\Service\FileStreamResponseFactory $fileResponseFactory,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -366,36 +365,12 @@ final class ChannelActionController extends AbstractController
             ));
         }
 
-        if (!$fileUploadService->exists($export->getFilePath())) {
-            throw $this->createNotFoundException($this->translator->trans(
-                'Le fichier d\'export n\'existe pas dans le stockage.',
-            ));
-        }
-
         $auditLogger->log(AuditAction::EXPORT_DOWNLOAD, $currentUser, [
             'export_id' => $export->getId(),
             'file_name' => $export->getFileName(),
             'channel_name' => $export->getChannelName(),
         ]);
 
-        $contentType = str_ends_with($export->getFileName(), '.tar') ? 'application/x-tar' : 'application/zip';
-
-        return new StreamedResponse(
-            static function () use ($fileUploadService, $export) {
-                $fileStream = $fileUploadService->readStream($export->getFilePath());
-                if ($fileStream) {
-                    fpassthru($fileStream);
-                    fclose($fileStream);
-                }
-            },
-            Response::HTTP_OK,
-            [
-                'Content-Type' => $contentType,
-                'Content-Disposition' => HeaderUtils::makeDisposition(
-                    HeaderUtils::DISPOSITION_ATTACHMENT,
-                    $export->getFileName(),
-                ),
-            ],
-        );
+        return $fileResponseFactory->createExportDownloadResponse($export, $fileUploadService);
     }
 }

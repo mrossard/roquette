@@ -15,7 +15,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -240,10 +239,8 @@ final class WorkspaceController extends AbstractController
         string $slug,
         WorkspaceRepository $workspaceRepository,
         FileUploadService $fileUploadService,
+        \App\Service\FileStreamResponseFactory $fileResponseFactory,
     ): Response {
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-
         $workspace = $workspaceRepository->findOneBy(['slug' => $slug]);
         if (!$workspace || !$workspace->getAvatarPath()) {
             throw $this->createNotFoundException($this->translator->trans('Avatar non trouvé.'));
@@ -251,35 +248,7 @@ final class WorkspaceController extends AbstractController
 
         $this->denyAccessUnlessGranted('VIEW', $workspace);
 
-        if (!$fileUploadService->exists($workspace->getAvatarPath())) {
-            throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
-        }
-
-        $stream = $fileUploadService->readStream($workspace->getAvatarPath());
-
-        $ext = strtolower(pathinfo($workspace->getAvatarPath(), PATHINFO_EXTENSION));
-        $mimeType = match ($ext) {
-            'jpg', 'jpeg' => 'image/jpeg',
-            'gif' => 'image/gif',
-            'webp' => 'image/webp',
-            'svg' => 'image/svg+xml',
-            default => 'image/png',
-        };
-
-        return new StreamedResponse(
-            static function () use ($stream) {
-                fpassthru($stream);
-                if (is_resource($stream)) {
-                    fclose($stream);
-                }
-            },
-            Response::HTTP_OK,
-            [
-                'Content-Type' => $mimeType,
-                'Cache-Control' => 'public, max-age=31536000, immutable',
-                'Content-Security-Policy' => 'sandbox',
-            ]
-        );
+        return $fileResponseFactory->createAvatarResponse($workspace->getAvatarPath(), $fileUploadService);
     }
 
 
