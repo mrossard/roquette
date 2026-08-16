@@ -90,7 +90,9 @@ class MessagePublishService
 
         if ($isPoll) {
             $this->attachPoll($message, $pollQuestion, $pollOptions ?? [], $pollAllowMultiple);
-        } else {
+        }
+
+        if (!$isPoll) {
             $message->setContent(trim($messageText) === '' ? null : $messageText);
 
             if ($file !== null) {

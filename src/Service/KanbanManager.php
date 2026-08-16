@@ -63,12 +63,7 @@ class KanbanManager
         $column->setChannel($channel);
         $column->setName($name);
         $column->setColor($color);
-
-        if ($position !== null) {
-            $column->setPosition($position);
-        } else {
-            $column->setPosition($this->kanbanColumnRepository->getNextPosition($channel));
-        }
+        $column->setPosition($position ?? $this->kanbanColumnRepository->getNextPosition($channel));
 
         $this->entityManager->persist($column);
         $this->entityManager->flush();
@@ -146,7 +141,7 @@ class KanbanManager
 
         $message->setKanbanColumn($column);
 
-        $isCompleted = ($column !== null && ($column->getName() === $this->translator->trans('Terminé') || $column->getName() === 'Terminé' || $column->getName() === 'Done'));
+        $isCompleted = ($column !== null && in_array($column->getName(), ['Terminé', 'Done'], true));
         $message->setIsCompleted($isCompleted);
 
         // Sync reaction ✅ to match completion state
@@ -163,7 +158,9 @@ class KanbanManager
             $reaction->setUser($currentUser);
             $reaction->setEmoji('✅');
             $this->entityManager->persist($reaction);
-        } elseif (!$isCompleted && $existingCheck) {
+        }
+
+        if (!$isCompleted && $existingCheck) {
             $this->entityManager->remove($existingCheck);
         }
 

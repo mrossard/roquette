@@ -69,7 +69,7 @@ class UserGroupRepository extends ServiceEntityRepository
      */
     public function findPaginatedAll(int $page, int $perPage = 25): array
     {
-        $page = max(1, min($page, 10000));
+        $page = max(1, min($page, 10_000));
         $perPage = max(1, min($perPage, 100));
 
         return $this
@@ -86,7 +86,7 @@ class UserGroupRepository extends ServiceEntityRepository
      */
     public function findPaginatedAdministeredGroupsForUser(User $user, int $page, int $perPage = 25): array
     {
-        $page = max(1, min($page, 10000));
+        $page = max(1, min($page, 10_000));
         $perPage = max(1, min($perPage, 100));
 
         return $this

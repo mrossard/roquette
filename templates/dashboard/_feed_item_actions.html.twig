@@ -103,7 +103,7 @@
             </button>
         {% endif %}
         {% if message_id|default(0) > 0 and app.user %}
-            {% set isSaved = message_id in savedMessageIds|default([]) %}
+            {% set isSaved = (messageObject and app.user.hasSavedMessage(messageObject)) or (message_id in savedMessageIds|default([])) %}
             <button class="btn-reply-subtle btn-save-subtle {{ isSaved ? 'is-saved' : '' }}"
                     hx-post="{{ path('app_message_save_toggle', {id: message_id}) }}"
                     hx-target="closest .feed-item"

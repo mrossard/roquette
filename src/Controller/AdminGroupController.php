@@ -46,13 +46,12 @@ final class AdminGroupController extends AbstractController
 
         $page = max(1, $request->query->getInt('page', 1));
 
-        if ($isGlobalAdmin) {
-            $localGroups = $this->userGroupRepository->findPaginatedAll($page);
-            $totalGroups = $this->userGroupRepository->countAll();
-        } else {
-            $localGroups = $this->userGroupRepository->findPaginatedAdministeredGroupsForUser($currentUser, $page);
-            $totalGroups = $this->userGroupRepository->countAdministeredGroupsForUser($currentUser);
-        }
+        $localGroups = $isGlobalAdmin
+            ? $this->userGroupRepository->findPaginatedAll($page)
+            : $this->userGroupRepository->findPaginatedAdministeredGroupsForUser($currentUser, $page);
+        $totalGroups = $isGlobalAdmin
+            ? $this->userGroupRepository->countAll()
+            : $this->userGroupRepository->countAdministeredGroupsForUser($currentUser);
 
         $totalPages = (int) ceil($totalGroups / 25);
         $importedIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);

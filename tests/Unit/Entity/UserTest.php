@@ -235,9 +235,11 @@ class UserTest extends TestCase
         $message = new \App\Entity\Message();
 
         $user->addSavedMessage($message);
-        $user->removeSavedMessage($message);
+        $this->assertTrue($user->hasSavedMessage($message));
 
+        $user->removeSavedMessage($message);
         $this->assertFalse($user->getSavedMessages()->contains($message));
+        $this->assertFalse($user->hasSavedMessage($message));
     }
 
     // -------------------------------------------------------------------------

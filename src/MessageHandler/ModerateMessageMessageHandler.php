@@ -44,35 +44,36 @@ class ModerateMessageMessageHandler
         try {
             $result = $this->moderationService->moderate($dbMessage->getContent());
 
-            if ($result->isFlagged()) {
-                $dbMessage->setOriginalContent($dbMessage->getContent());
-                $dbMessage->setModerationStatus($result->getStatus());
-                $dbMessage->setModerationReason($result->getReason());
-
-                if ($result->isMasked() && $result->getMaskedContent() !== null) {
-                    $dbMessage->setContent($result->getMaskedContent());
-                }
-
-                $this->logger->warning(sprintf(
-                    'Message %d moderated: status=%s, reason="%s".',
-                    $messageId,
-                    $result->getStatus(),
-                    $result->getReason() ?? ''
-                ));
-
-                $this->auditLogger?->log(AuditAction::MESSAGE_MODERATED, $dbMessage->getAuthor(), [
-                    'message_id' => $messageId,
-                    'channel_slug' => $dbMessage->getChannel()->getSlug(),
-                    'status' => $result->getStatus(),
-                    'reason' => $result->getReason(),
-                ]);
-
-                $this->em->flush();
-                $this->publishUpdate($dbMessage);
-            } else {
+            if (!$result->isFlagged()) {
                 $dbMessage->setModerationStatus(ModerationStatus::CLEAN->value);
                 $this->em->flush();
+                return;
             }
+
+            $dbMessage->setOriginalContent($dbMessage->getContent());
+            $dbMessage->setModerationStatus($result->getStatus());
+            $dbMessage->setModerationReason($result->getReason());
+
+            if ($result->isMasked() && $result->getMaskedContent() !== null) {
+                $dbMessage->setContent($result->getMaskedContent());
+            }
+
+            $this->logger->warning(sprintf(
+                'Message %d moderated: status=%s, reason="%s".',
+                $messageId,
+                $result->getStatus(),
+                $result->getReason() ?? ''
+            ));
+
+            $this->auditLogger?->log(AuditAction::MESSAGE_MODERATED, $dbMessage->getAuthor(), [
+                'message_id' => $messageId,
+                'channel_slug' => $dbMessage->getChannel()->getSlug(),
+                'status' => $result->getStatus(),
+                'reason' => $result->getReason(),
+            ]);
+
+            $this->em->flush();
+            $this->publishUpdate($dbMessage);
         } catch (\Exception $e) {
             $this->logger->error(sprintf('Moderation scan failed for message %d: %s', $messageId, $e->getMessage()));
         }

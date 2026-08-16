@@ -26,6 +26,7 @@
 {% set isMeMessage = message is not null and (message starts with '/me ' or message == '/me') %}
 {% set subchannelByParentMessageId = subchannelByParentMessageId|default({}) %}
 {% set pollHasVotes = messageObject and messageObject.poll and messageObject.poll.totalVotes > 0 %}
+{% set isSaved = (app.user and messageObject and app.user.hasSavedMessage(messageObject)) or (message_id in savedMessageIds|default([])) %}
 {% set isTodoCompleted = false %}
 {% if messageChannel and messageChannel.isTodoList() and messageObject %}
     {% for reaction in messageObject.reactions %}
@@ -35,7 +36,7 @@
     {% endfor %}
 {% endif %}
 <div
-    class="feed-item {{ (oob|default(false) or no_fade|default(false)) ? '' : 'fade-in' }} {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isMeMessage ? 'is-me-message' : '' }} {{ isTodoCompleted ? 'todo-completed' : '' }} {{ (messageChannel and messageChannel.isTodoList()) ? 'is-todo-channel-item' : '' }}"
+    class="feed-item {{ (oob|default(false) or no_fade|default(false)) ? '' : 'fade-in' }} {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isSaved ? 'is-saved-message' : '' }} {{ isMeMessage ? 'is-me-message' : '' }} {{ isTodoCompleted ? 'todo-completed' : '' }} {{ (messageChannel and messageChannel.isTodoList()) ? 'is-todo-channel-item' : '' }}"
      id="feed-item-{{ message_id|default('') }}" {% if oob|default(false) %}hx-swap-oob="morph"{% endif %}
      style="--user-hue: {{ user_hue }};" data-message-id="{{ message_id|default('') }}"
      data-author-username="{{ author ? author.username : '' }}" data-raw-content="{{ message|default('') }}"
@@ -101,6 +102,11 @@
                 {% if isThisMessagePinned %}
                     <span class="feed-item-pinned-indicator"
                           title="{{ 'Message épinglé dans ce canal'|trans }}">📌 {{ 'Épinglé'|trans }}</span>
+                {% endif %}
+                {% if isSaved %}
+                    <span class="feed-item-saved-indicator"
+                          style="display: inline-flex; align-items: center; font-size: 0.8rem; line-height: 1; margin-left: 0.25rem;"
+                          title="{{ 'Message enregistré dans vos favoris'|trans }}">⭐</span>
                 {% endif %}
                 {% set subChannel = messageObject ? (subchannelByParentMessageId[message_id] ?? get_subchannel(messageObject)) : null %}
                 {% set hasSubChannel = subChannel and (channel is not defined or channel is null or subChannel.id != channel.id) and (activeChannel is not defined or activeChannel is null or subChannel.id != activeChannel.id) %}

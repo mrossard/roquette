@@ -298,19 +298,18 @@ class MessageFormatter
             if ($part[0] === '<') {
                 $tagName = strtolower(preg_replace('/^<\/?([a-z0-9]+).*/is', '$1', $part));
                 if ($tagName === 'code' || $tagName === 'pre') {
-                    if (str_starts_with($part, '</')) {
-                        $inCodeOrPre = max(0, $inCodeOrPre - 1);
-                    } else {
-                        $inCodeOrPre++;
-                    }
+                    $inCodeOrPre = str_starts_with($part, '</')
+                        ? max(0, $inCodeOrPre - 1)
+                        : $inCodeOrPre + 1;
                 }
-            } else {
-                if ($inCodeOrPre === 0) {
-                    $part = $this->replaceShortcodes($part);
-                    $part = $this->wrapUnicodeEmojis($part);
-                    $part = $this->replaceCustomEmojis($part);
-                    $part = $this->replaceRedfaceEmoji($part);
-                }
+                continue;
+            }
+
+            if ($inCodeOrPre === 0) {
+                $part = $this->replaceShortcodes($part);
+                $part = $this->wrapUnicodeEmojis($part);
+                $part = $this->replaceCustomEmojis($part);
+                $part = $this->replaceRedfaceEmoji($part);
             }
         }
         unset($part);
@@ -390,15 +389,9 @@ class MessageFormatter
                 $code = $matches[1];
 
                 $pos = strrpos($code, ':');
-                if ($pos !== false) {
-                    $name = substr($code, 0, $pos);
-                    $dir = substr($code, $pos + 1);
-                    $filename = basename($name . '.gif');
-                    $webPath = '/emojis/' . rawurlencode($dir) . '/' . rawurlencode($filename);
-                } else {
-                    $filename = basename($code . '.gif');
-                    $webPath = '/emojis/' . rawurlencode($filename);
-                }
+                $webPath = $pos !== false
+                    ? '/emojis/' . rawurlencode(substr($code, $pos + 1)) . '/' . rawurlencode(basename(substr($code, 0, $pos) . '.gif'))
+                    : '/emojis/' . rawurlencode(basename($code . '.gif'));
 
                 $title = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
 

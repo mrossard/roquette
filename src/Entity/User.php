@@ -572,6 +572,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function hasSavedMessage(Message $message): bool
+    {
+        return $this->savedMessages->contains($message);
+    }
+
     /**
      * @return Collection<int, Reaction>
      */

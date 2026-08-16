@@ -32,7 +32,7 @@
     {% set channels = channels|filter(c => c.isDm or (c.workspace and c.workspace.id == currentWorkspace.id)) %}
 {% endif %}
 
-<section class="card glass-panel sidebar-panel" id="sidebar-panel">
+<section class="card glass-panel sidebar-panel" id="sidebar-panel"{% if oob|default(false) %} hx-swap-oob="true"{% endif %}>
     {% include 'dashboard/_sidebar_sse_events.html.twig' %}
 
     {% include 'dashboard/_sidebar_workspace_selector.html.twig' %}

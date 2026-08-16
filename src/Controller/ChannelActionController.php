@@ -7,7 +7,6 @@ namespace App\Controller;
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Dto\Channel\CreateChannelDto;
 use App\Dto\Channel\UpdateChannelDto;
-use App\Entity\Channel;
 use App\Entity\ChannelExport;
 use App\Entity\User;
 use App\Enum\AuditAction;
@@ -211,11 +210,9 @@ final class ChannelActionController extends AbstractController
             return new Response($this->translator->trans('Canal non trouvé.'), 404);
         }
 
-        if ($currentUser->isChannelFavorite($channel)) {
-            $currentUser->removeFavoriteChannel($channel);
-        } else {
-            $currentUser->addFavoriteChannel($channel);
-        }
+        $currentUser->isChannelFavorite($channel)
+            ? $currentUser->removeFavoriteChannel($channel)
+            : $currentUser->addFavoriteChannel($channel);
 
         $entityManager->flush();
 
@@ -234,14 +231,8 @@ final class ChannelActionController extends AbstractController
 
             $sidebarHtml = $this->renderView('dashboard/_sidebar.html.twig', array_merge([
                 'activeChannel' => $activeChannel,
+                'oob' => true,
             ], $sidebarData));
-
-            $sidebarHtml = preg_replace(
-                '/<section class="card glass-panel sidebar-panel" id="sidebar-panel">/',
-                '<section class="card glass-panel sidebar-panel" id="sidebar-panel" hx-swap-oob="true">',
-                $sidebarHtml,
-                1,
-            );
 
             $html = $sidebarHtml;
 

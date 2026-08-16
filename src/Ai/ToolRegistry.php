@@ -64,12 +64,14 @@ final readonly class ToolRegistry
         $reflection = new \ReflectionMethod($tool, '__invoke');
         foreach ($reflection->getParameters() as $parameter) {
             $name = $parameter->getName();
-            if ($name === 'authorUserId' && $authorUserId !== null) {
-                $invokeArgs[$name] = $authorUserId;
-            } elseif ($name === 'workspaceId' && $workspaceId !== null) {
-                $invokeArgs[$name] = $workspaceId;
-            } elseif (\array_key_exists($name, $args)) {
-                $invokeArgs[$name] = $args[$name];
+            $val = match (true) {
+                $name === 'authorUserId' && $authorUserId !== null => $authorUserId,
+                $name === 'workspaceId' && $workspaceId !== null => $workspaceId,
+                \array_key_exists($name, $args) => $args[$name],
+                default => null,
+            };
+            if ($val !== null) {
+                $invokeArgs[$name] = $val;
             }
         }
 
