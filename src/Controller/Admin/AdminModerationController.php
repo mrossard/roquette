@@ -54,6 +54,7 @@ final class AdminModerationController extends AbstractController
         MercurePublisher $mercurePublisher,
         MessageRenderer $messageRenderer,
         AuditLoggerService $auditLogger,
+        MessageRepository $messageRepository,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -84,6 +85,8 @@ final class AdminModerationController extends AbstractController
             ));
         }
 
+        $mercurePublisher->publishModerationCount($messageRepository->countPendingModeration());
+
         $this->addFlash('success', $this->translator->trans('Le message #%id% a été approuvé et rétabli.', [
             '%id%' => $message->getId(),
         ]));
@@ -97,6 +100,7 @@ final class AdminModerationController extends AbstractController
         EntityManagerInterface $em,
         MercurePublisher $mercurePublisher,
         AuditLoggerService $auditLogger,
+        MessageRepository $messageRepository,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -123,6 +127,8 @@ final class AdminModerationController extends AbstractController
                 $e->getMessage(),
             ));
         }
+
+        $mercurePublisher->publishModerationCount($messageRepository->countPendingModeration());
 
         $this->addFlash('success', $this->translator->trans('Le message #%id% a été supprimé.', [
             '%id%' => $messageId,

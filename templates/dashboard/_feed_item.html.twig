@@ -35,11 +35,12 @@
         {% endif %}
     {% endfor %}
 {% endif %}
+{% set isModerationFlagged = messageObject and messageObject.moderationStatus == 'flagged' %}
 <div
-    class="feed-item {{ (oob|default(false) or no_fade|default(false)) ? '' : 'fade-in' }} {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isSaved ? 'is-saved-message' : '' }} {{ isMeMessage ? 'is-me-message' : '' }} {{ isTodoCompleted ? 'todo-completed' : '' }} {{ (messageChannel and messageChannel.isTodoList()) ? 'is-todo-channel-item' : '' }}"
+    class="feed-item {{ (oob|default(false) or no_fade|default(false)) ? '' : 'fade-in' }} {{ isThisMessagePinned ? 'is-pinned' : '' }} {{ isSaved ? 'is-saved-message' : '' }} {{ isMeMessage ? 'is-me-message' : '' }} {{ isTodoCompleted ? 'todo-completed' : '' }} {{ (messageChannel and messageChannel.isTodoList()) ? 'is-todo-channel-item' : '' }} {{ isModerationFlagged ? 'is-flagged-moderation' : '' }}"
      id="feed-item-{{ message_id|default('') }}" {% if oob|default(false) %}hx-swap-oob="morph"{% endif %}
      style="--user-hue: {{ user_hue }};" data-message-id="{{ message_id|default('') }}"
-     data-author-username="{{ author ? author.username : '' }}" data-raw-content="{{ message|default('') }}"
+     data-author-username="{{ author ? author.username : '' }}" data-raw-content="{% if isModerationFlagged %}{% else %}{{ message|default('') }}{% endif %}"
      data-file-name="{{ fileName|default('') }}" data-file-size="{{ fileSize|default('') }}"
     data-poll-has-votes="{{ pollHasVotes ? '1' : '0' }}"
     data-is-author="{% if app.user and author and author.username == app.user.username %}true{% else %}false{% endif %}"
@@ -161,7 +162,9 @@
                             </div>
                         {% endif %}
                         <div class="feed-item-content-area">
-                            {% if is_html|default(false) %}
+                            {% if messageObject and messageObject.moderationStatus == 'flagged' %}
+                                <p class="moderation-hidden-text"><em>{{ 'Ce message est temporairement masqué en attente de modération.'|trans }}</em></p>
+                            {% elseif is_html|default(false) %}
                                 {{ message|raw }}
                             {% elseif messageObject and messageObject.formattedContent is not null %}
                                 {{ messageObject.formattedContent|raw }}
@@ -169,11 +172,13 @@
                                 <p>{{ message|format_message }}</p>
                             {% endif %}
                         </div>
-                        {% include 'dashboard/feed_item/_link_previews.html.twig' %}
+                        {% if not (messageObject and messageObject.moderationStatus == 'flagged') %}
+                            {% include 'dashboard/feed_item/_link_previews.html.twig' %}
+                        {% endif %}
                     {% endif %}
 
 
-                    {% if fileName is defined and fileName %}
+                    {% if fileName is defined and fileName and not (messageObject and messageObject.moderationStatus == 'flagged') %}
                         {% include 'dashboard/feed_item/_attachment.html.twig' with {isSubchannelParent: isSubchannelParent|default(false)} %}
                     {% endif %}
                 {% endcache %}

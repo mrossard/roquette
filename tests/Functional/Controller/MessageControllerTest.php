@@ -72,7 +72,11 @@ class MessageControllerTest extends WebTestCase
             $this->entityManager->remove($msg);
         }
 
-        $users = $userRepository->findBy(['username' => 'test_msg_user']);
+        $users = array_merge(
+            $userRepository->findBy(['username' => 'test_msg_user']),
+            $userRepository->findBy(['username' => 'test_other_user']),
+            $userRepository->findBy(['username' => 'test_admin_user']),
+        );
         foreach ($users as $u) {
             $this->entityManager->remove($u);
         }
@@ -336,5 +340,90 @@ class MessageControllerTest extends WebTestCase
         if (file_exists($tempPath)) {
             unlink($tempPath);
         }
+    }
+
+    #[Test]
+    public function testAdminCanDeleteAnotherUsersMessage(): void
+    {
+        $container = $this->client->getContainer();
+        $passwordHasher = $container->get('security.user_password_hasher');
+
+        // 1. Create message author
+        $authorUser = new User();
+        $authorUser->setUsername('test_other_user');
+        $authorUser->setRoles(['ROLE_USER']);
+        $authorUser->setPassword($passwordHasher->hashPassword($authorUser, 'password123'));
+        $this->entityManager->persist($authorUser);
+
+        // 2. Create admin user
+        $adminUser = new User();
+        $adminUser->setUsername('test_admin_user');
+        $adminUser->setRoles(['ROLE_ADMIN']);
+        $adminUser->setPassword($passwordHasher->hashPassword($adminUser, 'password123'));
+        $this->entityManager->persist($adminUser);
+
+        // 3. Create message in channel by author
+        $message = new Message();
+        $message->setContent('Message by author');
+        $message->setAuthor($authorUser);
+        $message->setChannel($this->channel);
+        $this->entityManager->persist($message);
+        $this->entityManager->flush();
+
+        $messageId = $message->getId();
+
+        // 4. Log in as admin and delete the message
+        $this->client->loginUser($adminUser);
+        $this->client->request('POST', sprintf('/messages/%d/delete', $messageId));
+
+        $this->assertResponseIsSuccessful();
+
+        $this->entityManager->clear();
+        $deletedMessage = $this->entityManager->getRepository(Message::class)->find($messageId);
+        static::assertNull($deletedMessage);
+    }
+
+    #[Test]
+    public function testNonAdminCannotDeleteAnotherUsersMessage(): void
+    {
+        $container = $this->client->getContainer();
+        $passwordHasher = $container->get('security.user_password_hasher');
+
+        // 1. Create message author
+        $authorUser = new User();
+        $authorUser->setUsername('test_other_user');
+        $authorUser->setRoles(['ROLE_USER']);
+        $authorUser->setPassword($passwordHasher->hashPassword($authorUser, 'password123'));
+        $this->entityManager->persist($authorUser);
+
+        // 2. Create another channel created by authorUser so testUser is NOT channel creator
+        $otherChannel = new Channel();
+        $otherChannel->setName('Other Channel');
+        $otherChannel->setSlug('other-channel-slug');
+        $otherChannel->setCreator($authorUser);
+        $otherChannel->addMember($authorUser);
+        $otherChannel->addMember($this->testUser);
+        $this->entityManager->persist($otherChannel);
+
+        // 3. Create message by author in otherChannel
+        $message = new Message();
+        $message->setContent('Message by author in other channel');
+        $message->setAuthor($authorUser);
+        $message->setChannel($otherChannel);
+        $this->entityManager->persist($message);
+        $this->entityManager->flush();
+
+        $messageId = $message->getId();
+
+        // 4. Try to delete as testUser (not author, not creator, not admin)
+        $this->client->loginUser($this->testUser);
+        $this->client->request('POST', sprintf('/messages/%d/delete', $messageId));
+
+        $this->assertResponseStatusCodeSame(403);
+
+        $this->entityManager->remove($message);
+        $this->entityManager->remove($otherChannel);
+        $this->entityManager->remove($authorUser);
+        $this->entityManager->flush();
     }
 }

@@ -120,7 +120,7 @@
         <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
         {% endif %}
     </head>
-    <body hx-ext="morph,sse" {% if app.user %}{% set userTopics = get_user_mercure_topics(app.user) %}sse-connect="{{ mercure(userTopics, { subscribe: userTopics }) }}"{% endif %}>
+    <body hx-ext="morph,sse" {% if app.user %}data-current-username="{{ app.user.username }}" data-is-admin="{{ is_granted('ROLE_ADMIN') ? 'true' : 'false' }}" {% set userTopics = get_user_mercure_topics(app.user) %}sse-connect="{{ mercure(userTopics, { subscribe: userTopics }) }}"{% endif %}>
         <a href="#main-content" class="skip-link">{{ 'Aller au contenu principal'|trans }}</a>
         {% block body %}{% endblock %}
 
@@ -128,7 +128,14 @@
             {% include 'modals/_global_search_modal.html.twig' %}
             {% include 'modals/_busy_status_modal.html.twig' %}
             {% include 'partials/_confirmation_dialogs.html.twig' %}
-            <div id="modal-container" hx-target="this" hx-swap="innerHTML"></div>
+            <div id="global-sse-triggers" style="display:none;">
+                <div hx-trigger="sse:moderation_count_changed"></div>
+                <div hx-trigger="sse:user_status_changed"></div>
+                <div hx-trigger="sse:personal_notification"></div>
+                <div hx-trigger="sse:channel_notification"></div>
+                <div hx-trigger="sse:invitation_received"></div>
+                <div hx-trigger="sse:channel_deleted"></div>
+            </div>
             <div hx-post="{{ path('app_user_ping') }}"
                  hx-trigger="load delay:1s, every 60s"
                  hx-swap="none"

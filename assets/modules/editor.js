@@ -215,7 +215,15 @@ export function updateReactionBadges(currentUsername) {
 }
 
 export function updateEditButtonsVisibility() {
-    // Handled via pure CSS selectors
+    const statusBadge = document.getElementById('mercure-status') || document.body;
+    const currentUsername = statusBadge?.getAttribute('data-current-username');
+    if (!currentUsername) return;
+
+    document.querySelectorAll('.feed-item[data-author-username]').forEach(item => {
+        const authorUsername = item.getAttribute('data-author-username');
+        const isAuthor = Boolean(authorUsername && authorUsername === currentUsername);
+        item.setAttribute('data-is-author', isAuthor ? 'true' : 'false');
+    });
 }
 
 export function updateUserLinks(currentUsername) {

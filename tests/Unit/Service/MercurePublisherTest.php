@@ -56,6 +56,31 @@ class MercurePublisherTest extends TestCase
     }
 
     #[Test]
+    public function getAdminModerationTopicReturnsCorrectTopic(): void
+    {
+        $this->assertSame('http://test-mercure/admin/moderation', $this->publisher->getAdminModerationTopic());
+    }
+
+    #[Test]
+    public function publishModerationCountDispatchesUpdate(): void
+    {
+        $this->bus
+            ->expects($this->once())
+            ->method('dispatch')
+            ->with($this->callback(
+                static fn(Update $update) => (
+                    $update->getTopics() === ['http://test-mercure/admin/moderation']
+                    && $update->getData() === json_encode(['type' => 'moderation_count_changed', 'count' => 3])
+                    && $update->isPrivate() === false
+                    && $update->getType() === 'moderation_count_changed'
+                ),
+            ))
+            ->willReturn(new Envelope(new \stdClass()));
+
+        $this->publisher->publishModerationCount(3);
+    }
+
+    #[Test]
     public function publishToChannelDispatchesUpdate(): void
     {
         $channel = $this->createMock(Channel::class);

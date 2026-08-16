@@ -23,6 +23,7 @@ class MessageManager
         private readonly TranslatorInterface $translator,
         private readonly MessageRenderer $messageRenderer,
         private readonly ChannelAccessService $channelAccessService,
+        private readonly ?\Symfony\Component\Messenger\MessageBusInterface $messageBus = null,
     ) {}
 
     public function editMessageForm(int $id, User $currentUser): Message
@@ -75,7 +76,11 @@ class MessageManager
         $message = $this->findMessage($id);
         $channel = $message->getChannel();
 
-        if ($message->getAuthor() !== $currentUser && $channel->getCreator() !== $currentUser) {
+        if (
+            $message->getAuthor() !== $currentUser
+            && $channel->getCreator() !== $currentUser
+            && !in_array('ROLE_ADMIN', $currentUser->getRoles(), true)
+        ) {
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé à supprimer ce message.'));
         }
 
@@ -90,8 +95,14 @@ class MessageManager
             $this->fileUploadService->delete($message->getFilePath());
         }
 
+        $wasPendingModeration = $message->getModerationStatus() !== null && $message->getModerationStatus() !== 'clean';
+
         $this->entityManager->remove($message);
         $this->entityManager->flush();
+
+        if ($wasPendingModeration) {
+            $this->mercurePublisher->publishModerationCount($this->messageRepository->countPendingModeration());
+        }
 
         $oobHtml .= '<div id="feed-item-' . $id . '" hx-swap-oob="delete"></div>';
         if ($channel->isTodoList()) {
@@ -151,6 +162,10 @@ class MessageManager
             $renderedHtmlOob,
             'message_' . $message->getChannel()->getSlug(),
         );
+
+        if ($message->getContent() !== null && !$message->isPoll() && !$message->getChannel()?->isDm()) {
+            $this->messageBus?->dispatch(new \App\Message\ModerateMessageMessage($message->getId()));
+        }
 
         return $renderedHtml;
     }

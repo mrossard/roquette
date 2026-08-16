@@ -771,6 +771,7 @@ Espaces: Workspaces
 "Résumé IA - #": "AI Summary - #"
 "Donnée sensible masquée par la modération IA": "Sensitive data masked by AI moderation"
 "Signalé par la modération": "Flagged by moderation"
+"Ce message est temporairement masqué en attente de modération.": "This message is temporarily hidden pending moderation."
 "Contenu inapproprié ou toxique détecté par la modération IA": "Inappropriate or toxic content detected by AI moderation"
 "Clé d'API OpenAI / Service AI": "OpenAI / AI Service API Key"
 "Clé AWS Access Key": "AWS Access Key"

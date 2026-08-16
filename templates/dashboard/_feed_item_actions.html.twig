@@ -75,13 +75,15 @@
                 </button>
             {% endif %}
         {% endif %}
-        {% if message_id|default(0) > 0 and app.user and author and author.username == app.user.username %}
-            <button class="btn-reply-subtle btn-edit-subtle"
-                    hx-get="{{ path('app_message_edit_form', {id: message_id}) }}"
-                    hx-target="closest .feed-item" hx-swap="morph transition:false" title="{{ 'Modifier'|trans }}">
-                {{ ux_icon('heroicons:pencil-square', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
-                <span>{{ 'Modifier'|trans }}</span>
-            </button>
+        {% if message_id|default(0) > 0 %}
+            {% if author and author.username != constant('App\\Entity\\User::ROBOT_USERNAME') %}
+                <button class="btn-reply-subtle btn-edit-subtle"
+                        hx-get="{{ path('app_message_edit_form', {id: message_id}) }}"
+                        hx-target="closest .feed-item" hx-swap="morph transition:false" title="{{ 'Modifier'|trans }}">
+                    {{ ux_icon('heroicons:pencil-square', {class: 'action-icon', style: 'width: 11px; height: 11px;'}) }}
+                    <span>{{ 'Modifier'|trans }}</span>
+                </button>
+            {% endif %}
             <button class="btn-reply-subtle btn-delete-subtle"
                     hx-post="{{ path('app_message_delete', {id: message_id}) }}"
                     hx-confirm="{{ 'Voulez-vous vraiment supprimer ce message ?'|trans }}"
@@ -102,8 +104,8 @@
                 <span>{{ isThisMessagePinned ? 'Désépingler'|trans : 'Épingler'|trans }}</span>
             </button>
         {% endif %}
-        {% if message_id|default(0) > 0 and app.user %}
-            {% set isSaved = (messageObject and app.user.hasSavedMessage(messageObject)) or (message_id in savedMessageIds|default([])) %}
+        {% if message_id|default(0) > 0 %}
+            {% set isSaved = (app.user and messageObject and app.user.hasSavedMessage(messageObject)) or (message_id in savedMessageIds|default([])) %}
             <button class="btn-reply-subtle btn-save-subtle {{ isSaved ? 'is-saved' : '' }}"
                     hx-post="{{ path('app_message_save_toggle', {id: message_id}) }}"
                     hx-target="closest .feed-item"

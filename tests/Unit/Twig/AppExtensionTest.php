@@ -97,4 +97,36 @@ class AppExtensionTest extends TestCase
         $result = $this->extension->formatReactionTooltip(['Alice'], '🚀');
         static::assertSame('Alice a réagi avec :rocket:', $result);
     }
+
+    #[Test]
+    public function getUserMercureTopicsIncludesAdminModerationTopicForAdmins(): void
+    {
+        $adminUser = $this->createMock(\App\Entity\User::class);
+        $adminUser->method('getUsername')->willReturn('admin');
+        $adminUser->method('getRoles')->willReturn(['ROLE_USER', 'ROLE_ADMIN']);
+
+        $this->channelRepository->method('findAllForUser')->willReturn([]);
+
+        $topics = $this->extension->getUserMercureTopics($adminUser);
+
+        static::assertContains('roquette/users/admin', $topics);
+        static::assertContains('roquette/users/status', $topics);
+        static::assertContains('roquette/admin/moderation', $topics);
+    }
+
+    #[Test]
+    public function getUserMercureTopicsExcludesAdminModerationTopicForStandardUsers(): void
+    {
+        $user = $this->createMock(\App\Entity\User::class);
+        $user->method('getUsername')->willReturn('regular');
+        $user->method('getRoles')->willReturn(['ROLE_USER']);
+
+        $this->channelRepository->method('findAllForUser')->willReturn([]);
+
+        $topics = $this->extension->getUserMercureTopics($user);
+
+        static::assertContains('roquette/users/regular', $topics);
+        static::assertContains('roquette/users/status', $topics);
+        static::assertNotContains('roquette/admin/moderation', $topics);
+    }
 }

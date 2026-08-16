@@ -2,6 +2,7 @@
     <div id="mercure-status"
          data-active-channel-slug="{{ activeChannel is defined and activeChannel ? activeChannel.slug : '' }}"
          data-current-username="{{ app.user.username }}"
+         data-is-admin="{{ is_granted('ROLE_ADMIN') ? 'true' : 'false' }}"
          data-mention-notifications-enabled="{{ app.user.isMentionNotificationsEnabled() ? 'true' : 'false' }}"></div>
 
     {% if show_back_button|default(false) %}
@@ -21,12 +22,14 @@
     </button>
 
     {% if is_granted('ROLE_ADMIN') %}
-        {% set pendingModCount = get_pending_moderation_count() %}
-        {% if pendingModCount > 0 %}
-            <a href="{{ path('app_admin_moderation') }}" class="btn-moderation-alert" title="{{ '%count% message(s) à modérer'|trans({'%count%': pendingModCount}) }}" hx-boost="false">
-                🛡️ <span class="badge-count">{{ pendingModCount }}</span>
-            </a>
-        {% endif %}
+        <span id="header-moderation-alert">
+            {% set pendingModCount = get_pending_moderation_count() %}
+            {% if pendingModCount > 0 %}
+                <a href="{{ path('app_admin_moderation') }}" class="btn-moderation-alert" title="{{ '%count% message(s) à modérer'|trans({'%count%': pendingModCount}) }}" hx-boost="false">
+                    🛡️ <span class="badge-count">{{ pendingModCount }}</span>
+                </a>
+            {% endif %}
+        </span>
     {% endif %}
 
     <button id="header-notification-btn" class="btn-account"

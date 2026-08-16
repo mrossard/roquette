@@ -23,6 +23,17 @@
         box-shadow: none;
     }
 
+    .feed-item.is-me-message.is-flagged-moderation {
+        opacity: 0.55;
+        background: rgba(239, 68, 68, 0.035);
+        border-left: 3px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .feed-item.is-me-message.is-flagged-moderation:hover {
+        opacity: 0.85;
+        background: rgba(239, 68, 68, 0.06);
+    }
+
     .feed-item-me-content {
         display: flex;
         align-items: center;

@@ -10,12 +10,28 @@
         {% else %}
             <span class="feed-item-user">{{ username|wrap_emojis }}</span>
         {% endif %}
+        {% if messageObject and messageObject.moderationStatus and messageObject.moderationStatus != 'clean' %}
+            <span class="moderation-badge moderation-{{ messageObject.moderationStatus }}" title="{{ messageObject.moderationReason|default('') }}" style="margin: 0 0.25rem;">
+                <span class="moderation-icon">🛡️</span>
+                <span class="moderation-label">
+                    {% if messageObject.moderationStatus == 'masked' %}
+                        {{ 'Donnée sensible masquée par la modération IA'|trans }}
+                    {% else %}
+                        {{ 'Signalé par la modération'|trans }}
+                    {% endif %}
+                </span>
+            </span>
+        {% endif %}
         <span class="feed-item-me-text">
-            {% set me_content = message|slice(4) %}
-            {% if messageObject and messageObject.formattedContent is not null %}
-                {{ messageObject.formattedContent|raw }}
+            {% if messageObject and messageObject.moderationStatus == 'flagged' %}
+                <span class="moderation-hidden-text"><em>{{ 'Ce message est temporairement masqué en attente de modération.'|trans }}</em></span>
             {% else %}
-                {{ me_content|format_message }}
+                {% set me_content = message|slice(4) %}
+                {% if messageObject and messageObject.formattedContent is not null %}
+                    {{ messageObject.formattedContent|raw }}
+                {% else %}
+                    {{ me_content|format_message }}
+                {% endif %}
             {% endif %}
         </span>
         {% if updated_at is defined and updated_at %}

@@ -64,6 +64,14 @@ final class ModerateMessageMessageHandlerTest extends TestCase
             ->method('publishToChannel')
             ->with($channel, '<div>Rendered HTML</div>', 'message_general');
 
+        $messageRepository->expects($this->once())
+            ->method('countPendingModeration')
+            ->willReturn(1);
+
+        $mercurePublisher->expects($this->once())
+            ->method('publishModerationCount')
+            ->with(1);
+
         $handler = new ModerateMessageMessageHandler(
             $messageRepository,
             $moderationService,

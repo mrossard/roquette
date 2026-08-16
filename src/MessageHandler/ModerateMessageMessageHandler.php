@@ -42,11 +42,16 @@ class ModerateMessageMessageHandler
         $this->logger->info(sprintf('Starting content moderation scan for message %d.', $messageId));
 
         try {
+            $wasFlagged = $dbMessage->getModerationStatus() !== null && $dbMessage->getModerationStatus() !== ModerationStatus::CLEAN->value;
             $result = $this->moderationService->moderate($dbMessage->getContent());
 
             if (!$result->isFlagged()) {
                 $dbMessage->setModerationStatus(ModerationStatus::CLEAN->value);
                 $this->em->flush();
+                if ($wasFlagged) {
+                    $pendingCount = $this->messageRepository->countPendingModeration();
+                    $this->mercurePublisher->publishModerationCount($pendingCount);
+                }
                 return;
             }
 
@@ -74,6 +79,9 @@ class ModerateMessageMessageHandler
 
             $this->em->flush();
             $this->publishUpdate($dbMessage);
+
+            $pendingCount = $this->messageRepository->countPendingModeration();
+            $this->mercurePublisher->publishModerationCount($pendingCount);
         } catch (\Exception $e) {
             $this->logger->error(sprintf('Moderation scan failed for message %d: %s', $messageId, $e->getMessage()));
         }

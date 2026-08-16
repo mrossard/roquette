@@ -108,6 +108,47 @@ export function handleUserStatusChanged(data) {
     }
 }
 
+export function handleModerationCountChanged(data) {
+    const count = typeof data.count === 'number' ? data.count : parseInt(data.count, 10) || 0;
+
+    // 1. Header moderation alert button
+    const headerAlertContainer = document.getElementById('header-moderation-alert');
+    if (headerAlertContainer) {
+        if (count > 0) {
+            const titleText = window.trans ? window.trans('%count% message(s) à modérer', {'%count%': count}) : `${count} message(s) à modérer`;
+            headerAlertContainer.innerHTML = `
+                <a href="/admin/moderation" class="btn-moderation-alert" title="${titleText}" hx-boost="false">
+                    🛡️ <span class="badge-count">${count}</span>
+                </a>
+            `;
+        } else {
+            headerAlertContainer.innerHTML = '';
+        }
+    }
+
+    // 2. User dropdown menu badge
+    const userMenuBadge = document.getElementById('user-menu-mod-badge');
+    if (userMenuBadge) {
+        if (count > 0) {
+            userMenuBadge.textContent = count.toString();
+            userMenuBadge.style.display = 'inline-flex';
+        } else {
+            userMenuBadge.style.display = 'none';
+        }
+    }
+
+    // 3. Admin navigation badge (if on /admin pages)
+    const adminNavBadge = document.getElementById('admin-nav-mod-badge');
+    if (adminNavBadge) {
+        if (count > 0) {
+            adminNavBadge.textContent = count.toString();
+            adminNavBadge.style.display = 'inline-flex';
+        } else {
+            adminNavBadge.style.display = 'none';
+        }
+    }
+}
+
 export function initTypingIndicator() {
     const messageInput = document.getElementById('message');
     if (!messageInput || messageInput.dataset.typingInitialized === 'true') return;
@@ -422,6 +463,8 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
         const data = JSON.parse(event.detail.data);
         if (type === 'user_status_changed') {
             handleUserStatusChanged(data);
+        } else if (type === 'moderation_count_changed') {
+            handleModerationCountChanged(data);
         } else if (type === 'personal_notification' || type === 'channel_notification') {
             if (window.handleGlobalNotification) {
                 window.handleGlobalNotification(data);

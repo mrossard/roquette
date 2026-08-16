@@ -184,6 +184,10 @@ class AppExtension extends AbstractExtension
             $this->mercureTopicPrefix . '/users/status',
         ];
 
+        if (in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+            $topics[] = $this->mercureTopicPrefix . '/admin/moderation';
+        }
+
         $channels = $this->channelRepository->findAllForUser($user);
         foreach ($channels as $ch) {
             $topics[] = $this->mercureTopicPrefix . '/channels/' . $ch->getSlug();

@@ -40,9 +40,7 @@
         <a href="{{ path('app_admin_moderation') }}"
            class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
             🛡️ {{ 'Modération'|trans }}
-            {% if pendingModCount > 0 %}
-                <span class="unread-badge nav-badge" style="background: #ef4444; margin-left: 0.35rem; color: #fff; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 10px; font-weight: 700;">{{ pendingModCount }}</span>
-            {% endif %}
+            <span id="admin-nav-mod-badge" class="unread-badge nav-badge" style="background: #ef4444; margin-left: 0.35rem; color: #fff; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 10px; font-weight: 700; {% if pendingModCount == 0 %}display: none;{% endif %}">{{ pendingModCount }}</span>
         </a>
 
 

@@ -45,6 +45,24 @@ class MercurePublisher
         return $this->mercureTopicPrefix . '/users/status';
     }
 
+    public function getAdminModerationTopic(): string
+    {
+        return $this->mercureTopicPrefix . '/admin/moderation';
+    }
+
+    public function publishModerationCount(int $pendingCount): void
+    {
+        $this->publishToTopic(
+            $this->getAdminModerationTopic(),
+            [
+                'type' => 'moderation_count_changed',
+                'count' => $pendingCount,
+            ],
+            false,
+            'moderation_count_changed',
+        );
+    }
+
     // -------------------------------------------------------------------------
     // Generic publish helpers
     // -------------------------------------------------------------------------

@@ -76,6 +76,12 @@ class ChannelControllerTest extends WebTestCase
             $channelRepository->findBy(['slug' => 'unique-edit-channel-name']),
         );
 
+        $ucrRepo = $this->entityManager->getRepository(\App\Entity\UserChannelRead::class);
+        foreach ($ucrRepo->findAll() as $ucr) {
+            $this->entityManager->remove($ucr);
+        }
+        $this->entityManager->flush();
+
         $messageRepository = $this->entityManager->getRepository(\App\Entity\Message::class);
         foreach ($channels as $channel) {
             $messages = $messageRepository->findBy(['channel' => $channel]);
@@ -456,5 +462,27 @@ class ChannelControllerTest extends WebTestCase
             $this->entityManager->remove($auditLog);
             $this->entityManager->flush();
         }
+    }
+
+    #[Test]
+    public function testFlaggedModerationMessageIsMaskedInFeed(): void
+    {
+        $message = new \App\Entity\Message();
+        $message->setAuthor($this->testUser);
+        $message->setChannel($this->channel);
+        $message->setContent('Ceci est un texte toxique secret');
+        $message->setModerationStatus('flagged');
+        $message->setModerationReason('Contenu toxique détecté');
+        $this->entityManager->persist($message);
+        $this->entityManager->flush();
+
+        $crawler = $this->client->request('GET', sprintf('/channels/%s', $this->channel->getSlug()));
+        $this->assertResponseIsSuccessful();
+
+        $content = $this->client->getResponse()->getContent();
+        static::assertStringContainsString('is-flagged-moderation', $content);
+        static::assertStringContainsString('moderation-flagged', $content);
+        static::assertStringContainsString('Ce message est temporairement masqué en attente de modération.', $content);
+        static::assertStringNotContainsString('Ceci est un texte toxique secret', $content);
     }
 }
