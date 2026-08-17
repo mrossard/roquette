@@ -105,7 +105,7 @@ final class WorkspaceSelectorTest extends WebTestCase
         $this->client->loginUser($user);
         $this->client->request('GET', '/sidebar/workspace-selector?channel=selector-channel');
 
-        self::assertResponseIsSuccessful();
-        self::assertStringContainsString('selector-workspace', (string) $this->client->getResponse()->getContent());
+        static::assertResponseIsSuccessful();
+        static::assertStringContainsString('selector-workspace', (string) $this->client->getResponse()->getContent());
     }
 }

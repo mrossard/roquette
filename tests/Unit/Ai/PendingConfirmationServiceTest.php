@@ -27,38 +27,6 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Twig\Environment;
 
-final class ConfirmationFakeTool implements AiToolInterface
-{
-    public bool $executed = false;
-
-    public function getName(): string
-    {
-        return 'confirm_tool';
-    }
-
-    public function getDescription(): string
-    {
-        return 'Fake tool requiring confirmation';
-    }
-
-    public function getParametersSchema(): array
-    {
-        return ['type' => 'object', 'properties' => []];
-    }
-
-    public function requiresConfirmation(): bool
-    {
-        return true;
-    }
-
-    public function __invoke(string $channelSlug = 'general', ?int $authorUserId = null, ?int $workspaceId = null): string
-    {
-        $this->executed = true;
-
-        return 'Side-effect done';
-    }
-}
-
 #[AllowMockObjectsWithoutExpectations]
 class PendingConfirmationServiceTest extends TestCase
 {
@@ -67,6 +35,40 @@ class PendingConfirmationServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->signer = new ToolActionSigner('secret-key-123');
+    }
+
+    private function createFakeTool(): AiToolInterface
+    {
+        return new class implements AiToolInterface {
+            public bool $executed = false;
+
+            public function getName(): string
+            {
+                return 'confirm_tool';
+            }
+
+            public function getDescription(): string
+            {
+                return 'Fake tool requiring confirmation';
+            }
+
+            public function getParametersSchema(): array
+            {
+                return ['type' => 'object', 'properties' => []];
+            }
+
+            public function requiresConfirmation(): bool
+            {
+                return true;
+            }
+
+            public function __invoke(string $channelSlug = 'general', ?int $authorUserId = null, ?int $workspaceId = null): string
+            {
+                $this->executed = true;
+
+                return 'Side-effect done';
+            }
+        };
     }
 
     private function createService(
@@ -184,7 +186,7 @@ class PendingConfirmationServiceTest extends TestCase
 
         $token = $this->signer->sign($payload);
 
-        $fakeTool = new ConfirmationFakeTool();
+        $fakeTool = $this->createFakeTool();
         $toolRegistry = new ToolRegistry([$fakeTool]);
 
         $hub = $this->createMock(HubInterface::class);
@@ -249,7 +251,7 @@ class PendingConfirmationServiceTest extends TestCase
         ];
         $token = $this->signer->sign($payload);
 
-        $fakeTool = new ConfirmationFakeTool();
+        $fakeTool = $this->createFakeTool();
         $toolRegistry = new ToolRegistry([$fakeTool]);
 
         $hub = $this->createStub(HubInterface::class);

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Service;
 
 use App\Entity\Message;
-use App\Entity\Poll;
 use App\Entity\PollVote;
 use App\Entity\User;
 use App\Service\PollFactory;

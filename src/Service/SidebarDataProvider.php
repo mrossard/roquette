@@ -67,7 +67,7 @@ class SidebarDataProvider
         $processedChannelIds = [];
         foreach ($channels as $ch) {
             $chId = $ch->getId();
-            if ($chId !== null && isset($processedChannelIds[$chId])) {
+            if ($chId !== null && array_key_exists($chId, $processedChannelIds)) {
                 continue;
             }
             if ($chId !== null) {
