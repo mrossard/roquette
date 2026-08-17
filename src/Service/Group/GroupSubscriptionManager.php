@@ -48,4 +48,62 @@ readonly class GroupSubscriptionManager
 
         return $groupSubscription;
     }
+
+    public function subscribe(Channel $channel, string $groupIdentifier, bool $isOfficial): ?GroupSubscription
+    {
+        $groupIdentifier = trim($groupIdentifier);
+        if ($groupIdentifier === '') {
+            return null;
+        }
+
+        $existingSub = $this->entityManager
+            ->getRepository(GroupSubscription::class)
+            ->findOneBy([
+                'channel' => $channel,
+                'groupIdentifier' => $groupIdentifier,
+            ]);
+
+        if ($existingSub !== null) {
+            return $existingSub;
+        }
+
+        $sub = $this->attachGroupSubscription($channel, $groupIdentifier, $isOfficial);
+        $this->entityManager->persist($sub);
+        $this->entityManager->flush();
+
+        return $sub;
+    }
+
+    public function unsubscribe(Channel $channel, int $subscriptionId): bool
+    {
+        $subscription = $this->entityManager->getRepository(GroupSubscription::class)->find($subscriptionId);
+        if (!$subscription || $subscription->getChannel() !== $channel) {
+            return false;
+        }
+
+        $channel->removeGroupSubscription($subscription);
+        $this->entityManager->remove($subscription);
+        $this->entityManager->flush();
+
+        return true;
+    }
+
+    /**
+     * @return list<array{id: int|null, identifier: string, name: string, isGroupChannel: bool}>
+     */
+    public function getResolvedSubscriptions(Channel $channel, GroupProviderInterface $groupProvider): array
+    {
+        $resolved = [];
+        foreach ($channel->getGroupSubscriptions() as $sub) {
+            $grp = $groupProvider->getGroupByIdentifier($sub->getGroupIdentifier());
+            $resolved[] = [
+                'id' => $sub->getId(),
+                'identifier' => $sub->getGroupIdentifier(),
+                'name' => $grp ? $grp->name : $sub->getGroupIdentifier(),
+                'isGroupChannel' => $sub->isGroupChannel(),
+            ];
+        }
+
+        return $resolved;
+    }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
-use App\Repository\WebhookRepository;
 use App\Repository\WorkspaceRepository;
 use App\Service\ChannelManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,32 +25,13 @@ final class ModalController extends AbstractController
     public function editModal(
         string $slug,
         ChannelManager $channelManager,
-        WebhookRepository $webhookRepository,
+        \App\Service\ChannelEditModalDataProvider $modalDataProvider,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
         $channel = $this->findAuthorizedChannel($slug, $channelManager, 'EDIT');
 
-        $webhooks = $webhookRepository->findBy(['channel' => $channel], ['createdAt' => 'ASC']);
-
-        $groups = $this->groupProvider->getGroups();
-        $resolvedSubscriptions = [];
-        foreach ($channel->getGroupSubscriptions() as $sub) {
-            $grp = $this->groupProvider->getGroupByIdentifier($sub->getGroupIdentifier());
-            $resolvedSubscriptions[] = [
-                'id' => $sub->getId(),
-                'identifier' => $sub->getGroupIdentifier(),
-                'name' => $grp ? $grp->name : $sub->getGroupIdentifier(),
-                'isGroupChannel' => $sub->isGroupChannel(),
-            ];
-        }
-
-        return $this->render('modals/_edit_channel_modal.html.twig', [
-            'activeChannel' => $channel,
-            'webhooks' => $webhooks,
-            'groups' => $groups,
-            'resolvedSubscriptions' => $resolvedSubscriptions,
-        ]);
+        return $this->render('modals/_edit_channel_modal.html.twig', $modalDataProvider->getEditModalData($channel));
     }
 
     #[Route('/channels/{slug}/invite-modal', name: 'app_channel_invite_modal', methods: ['GET'])]

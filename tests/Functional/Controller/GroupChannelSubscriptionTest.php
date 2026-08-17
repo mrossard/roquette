@@ -115,7 +115,46 @@ class GroupChannelSubscriptionTest extends WebTestCase
         $this->client->loginUser($this->nonMemberUser);
         $this->client->followRedirects(true);
         $this->client->request('GET', '/channels/dev-channel');
-
         $this->assertSelectorTextContains('.alert-error', "Vous n'avez pas accès à ce canal privé.");
+    }
+
+    #[Test]
+    public function testSubscribeAndUnsubscribeGroup(): void
+    {
+        $channel = new Channel();
+        $channel->setName('Dev Channel 2');
+        $channel->setSlug('dev-channel-2');
+        $channel->setIsPrivate(true);
+        $channel->setCreator($this->memberUser);
+        $channel->addMember($this->memberUser);
+        $this->entityManager->persist($channel);
+        $this->entityManager->flush();
+
+        $this->client->loginUser($this->memberUser);
+
+        // 1. Subscribe group
+        $this->client->request('POST', '/channels/dev-channel-2/subscribe-group', [
+            'newGroupIdentifier' => 'group-dev',
+            'newGroupIsOfficial' => '1',
+        ]);
+        $this->assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        static::assertStringContainsString('group-dev', $content);
+
+        // Verify DB
+        $sub = $this->entityManager->getRepository(GroupSubscription::class)->findOneBy([
+            'channel' => $channel,
+            'groupIdentifier' => 'group-dev',
+        ]);
+        static::assertNotNull($sub);
+        static::assertTrue($sub->isGroupChannel());
+
+        // 2. Unsubscribe group
+        $this->client->request('POST', sprintf('/channels/dev-channel-2/unsubscribe-group/%d', $sub->getId()));
+        $this->assertResponseIsSuccessful();
+
+        $this->entityManager->clear();
+        $deletedSub = $this->entityManager->getRepository(GroupSubscription::class)->find($sub->getId());
+        static::assertNull($deletedSub);
     }
 }

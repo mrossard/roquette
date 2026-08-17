@@ -4,21 +4,22 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\GroupSubscription;
+use App\Service\ChannelEditModalDataProvider;
 use App\Service\ChannelManager;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\Group\GroupSubscriptionManager;
+use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_USER')]
 final class ChannelGroupController extends AbstractController
 {
     public function __construct(
-        private readonly TranslatorInterface $translator,
+        private readonly GroupSubscriptionManager $groupSubscriptionManager,
+        private readonly ChannelEditModalDataProvider $modalDataProvider,
     ) {}
 
     #[Route('/channels/{slug}/subscribe-group', name: 'app_channel_subscribe_group', methods: ['POST'])]
@@ -26,49 +27,25 @@ final class ChannelGroupController extends AbstractController
         string $slug,
         Request $request,
         ChannelManager $channelManager,
-        EntityManagerInterface $entityManager,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
         $channel = $channelManager->findChannelBySlug($slug);
-
         $this->denyAccessUnlessGranted('MANAGE', $channel);
 
-        $newGroupIdentifier = $request->request->get('newGroupIdentifier');
-        if ($newGroupIdentifier !== null && $newGroupIdentifier !== '') {
+        $newGroupIdentifier = $request->request->getString('newGroupIdentifier');
+        if ($newGroupIdentifier !== '') {
             $isOfficial = $request->request->getBoolean('newGroupIsOfficial', false);
 
-            if ($isOfficial) {
-                $existingGroupSub = $entityManager
-                    ->getRepository(GroupSubscription::class)
-                    ->findOneBy([
-                        'groupIdentifier' => $newGroupIdentifier,
-                        'isGroupChannel' => true,
-                    ]);
-                if ($existingGroupSub) {
-                    $this->addFlash('error', $this->translator->trans('Ce groupe possède déjà un canal officiel.'));
-                    return $this->forward(ModalController::class . '::editModal', ['slug' => $slug]);
-                }
-            }
-
-            $existingSub = $entityManager
-                ->getRepository(GroupSubscription::class)
-                ->findOneBy([
-                    'channel' => $channel,
-                    'groupIdentifier' => $newGroupIdentifier,
-                ]);
-
-            if (!$existingSub) {
-                $sub = new GroupSubscription();
-                $sub->setGroupIdentifier($newGroupIdentifier);
-                $sub->setIsGroupChannel($isOfficial);
-                $channel->addGroupSubscription($sub);
-                $entityManager->persist($sub);
-                $entityManager->flush();
+            try {
+                $this->groupSubscriptionManager->subscribe($channel, $newGroupIdentifier, $isOfficial);
+            } catch (InvalidArgumentException $e) {
+                $this->addFlash('error', $e->getMessage());
             }
         }
 
-        return $this->forward(ModalController::class . '::editModal', ['slug' => $slug]);
+        return $this->render(
+            'modals/_edit_channel_modal.html.twig',
+            $this->modalDataProvider->getEditModalData($channel),
+        );
     }
 
     #[Route(
@@ -80,21 +57,15 @@ final class ChannelGroupController extends AbstractController
         string $slug,
         int $subscriptionId,
         ChannelManager $channelManager,
-        EntityManagerInterface $entityManager,
     ): Response {
-        /** @var \App\Entity\User $currentUser */
-        $currentUser = $this->getUser();
         $channel = $channelManager->findChannelBySlug($slug);
-
         $this->denyAccessUnlessGranted('MANAGE', $channel);
 
-        $subscription = $entityManager->getRepository(GroupSubscription::class)->find($subscriptionId);
-        if ($subscription && $subscription->getChannel() === $channel) {
-            $channel->removeGroupSubscription($subscription);
-            $entityManager->remove($subscription);
-            $entityManager->flush();
-        }
+        $this->groupSubscriptionManager->unsubscribe($channel, $subscriptionId);
 
-        return $this->forward(ModalController::class . '::editModal', ['slug' => $slug]);
+        return $this->render(
+            'modals/_edit_channel_modal.html.twig',
+            $this->modalDataProvider->getEditModalData($channel),
+        );
     }
 }
