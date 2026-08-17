@@ -69,20 +69,17 @@ class MercurePublisher
 
     public function publishToChannel(Channel $channel, array|string $payload, ?string $type = null): void
     {
-        $data = is_array($payload) ? json_encode($payload) : $payload;
-
         $isPrivate = $channel->isDm() || $channel->isPrivate();
         if (!$isPrivate && $channel->isWorkspaceChannel() && !$channel->getWorkspace()->isPublic()) {
             $isPrivate = true;
         }
 
-        $this->sendUpdate(new Update($this->getChannelTopic($channel), $data, $isPrivate, null, $type));
+        $this->publishToTopic($this->getChannelTopic($channel), $payload, $isPrivate, $type);
     }
 
     public function publishToUser(User $user, array|string $payload, ?string $type = null): void
     {
-        $data = is_array($payload) ? json_encode($payload) : $payload;
-        $this->sendUpdate(new Update($this->getUserTopic($user), $data, true, null, $type));
+        $this->publishToTopic($this->getUserTopic($user), $payload, true, $type);
     }
 
     public function publishToTopic(
@@ -91,8 +88,13 @@ class MercurePublisher
         bool $private = false,
         ?string $type = null,
     ): void {
-        $data = is_array($payload) ? json_encode($payload) : $payload;
+        $data = $this->encodePayload($payload);
         $this->sendUpdate(new Update($topicUrl, $data, $private, null, $type));
+    }
+
+    private function encodePayload(array|string $payload): string
+    {
+        return is_array($payload) ? json_encode($payload, JSON_THROW_ON_ERROR) : $payload;
     }
 
     private function sendUpdate(Update $update): void

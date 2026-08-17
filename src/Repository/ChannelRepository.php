@@ -375,4 +375,32 @@ class ChannelRepository extends ServiceEntityRepository
 
         return $conditions;
     }
+
+    public function findOneByNameOrSlugFuzzy(string $query): ?Channel
+    {
+        $normalized = strtolower(trim($query));
+        if ($normalized === '') {
+            return null;
+        }
+
+        // 1. Exact match by slug or name (case-insensitive)
+        $exact = $this->createQueryBuilder('c')
+            ->where('LOWER(c.slug) = :query OR LOWER(c.name) = :query')
+            ->setParameter('query', $normalized)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($exact !== null) {
+            return $exact;
+        }
+
+        // 2. Partial match by name or slug
+        return $this->createQueryBuilder('c')
+            ->where('LOWER(c.name) LIKE :like OR LOWER(c.slug) LIKE :like')
+            ->setParameter('like', '%' . addcslashes($normalized, '%_') . '%')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

@@ -49,17 +49,7 @@ final readonly class ChannelResolver
             return $channel;
         }
 
-        foreach ($this->channelRepository->findAll() as $channel) {
-            if (
-                strtolower((string) $channel->getSlug()) === $query
-                || strtolower((string) $channel->getName()) === $query
-                || str_contains(strtolower((string) $channel->getName()), $query)
-            ) {
-                return $channel;
-            }
-        }
-
-        return null;
+        return $this->channelRepository->findOneByNameOrSlugFuzzy($query);
     }
 
     /**

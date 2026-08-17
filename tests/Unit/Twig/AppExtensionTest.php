@@ -39,7 +39,10 @@ class AppExtensionTest extends TestCase
                 return strtr($id, $parameters);
             });
 
-        $this->extension = new AppExtension($formatter, $translator, $this->channelRepository, $ucrRepository, $entityManager, 'roquette');
+        $bus = $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class);
+        $mercurePublisher = new \App\Service\MercurePublisher($bus, 'roquette', $translator);
+
+        $this->extension = new AppExtension($formatter, $translator, $this->channelRepository, $ucrRepository, $entityManager, $mercurePublisher);
     }
 
     #[Test]
@@ -62,13 +65,17 @@ class AppExtensionTest extends TestCase
         $queryBuilder->method('getQuery')->willReturn($query);
         $this->channelRepository->method('createQueryBuilder')->willReturn($queryBuilder);
 
+        $bus = $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class);
+        $translator = $this->createMock(TranslatorInterface::class);
+        $mercurePublisher = new \App\Service\MercurePublisher($bus, 'roquette', $translator);
+
         $extension = new AppExtension(
             $this->createMock(MessageFormatter::class),
-            $this->createMock(TranslatorInterface::class),
+            $translator,
             $this->channelRepository,
             $this->createMock(UserChannelReadRepository::class),
             $entityManager,
-            'roquette',
+            $mercurePublisher,
         );
 
         static::assertNull($extension->getSubchannel($message));

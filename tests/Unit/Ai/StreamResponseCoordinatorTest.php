@@ -24,7 +24,12 @@ final class StreamResponseCoordinatorTest extends TestCase
         $twig = $this->createMock(Environment::class);
         $twig->method('render')->willReturn('<div>rendered</div>');
 
-        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');
+        $mercurePublisher = new \App\Service\MercurePublisher(
+            $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class),
+            'roquette',
+            $this->createStub(\Symfony\Contracts\Translation\TranslatorInterface::class),
+        );
+        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, $mercurePublisher);
         $coordinator = new StreamResponseCoordinator($publisher);
 
         $chunks = ['One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six '];

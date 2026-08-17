@@ -16,12 +16,12 @@ final readonly class HelpStreamPublisher
         private HubInterface $hub,
         private MessageFormatter $messageFormatter,
         private Environment $twig,
-        private string $mercureTopicPrefix,
+        private \App\Service\MercurePublisher $mercurePublisher,
     ) {}
 
     public function getPersonalTopic(User $user): string
     {
-        return $this->mercureTopicPrefix . '/users/' . $user->getUsername();
+        return $this->mercurePublisher->getUserTopic($user);
     }
 
     /**
@@ -38,7 +38,21 @@ final readonly class HelpStreamPublisher
     }
 
     /**
-     * Publishes a streaming chunk with optional tool confirmation button.
+     * Publishes an intermediate streaming chunk using lightweight fast rendering.
+     */
+    public function publishStreamChunk(
+        string $topic,
+        string $helpMessageId,
+        string $prefix,
+        string $accumulatedText,
+        string $channelSlug,
+    ): void {
+        $html = $this->renderStreamingChunk($prefix . $accumulatedText);
+        $this->publishHtml($topic, $helpMessageId, $html, $channelSlug);
+    }
+
+    /**
+     * Publishes the final stream message with full markdown formatting and optional tool confirmation button.
      */
     public function publishStreamText(
         string $topic,
@@ -87,5 +101,10 @@ final readonly class HelpStreamPublisher
         $update = new Update($topic, $renderedHtml, true, null, 'help_stream_update');
 
         $this->hub->publish($update);
+    }
+
+    private function renderStreamingChunk(string $text): string
+    {
+        return nl2br(htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
     }
 }

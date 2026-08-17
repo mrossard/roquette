@@ -15,6 +15,7 @@ use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Service\LlmRateLimiter;
 use App\Service\LlmService;
+use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
 use App\Service\RobotDmMessageService;
 use App\Service\RobotUserProvider;
@@ -77,19 +78,23 @@ class PendingConfirmationServiceTest extends TestCase
         ?LlmRateLimiter $llmRateLimiter = null,
         ?LlmService $llmService = null,
         ?RobotDmMessageService $robotDmMessageService = null,
-        string $mercureTopicPrefix = 'roquette',
+        ?MercurePublisher $mercurePublisher = null,
     ): PendingConfirmationService {
+        $bus = $this->createStub(\Symfony\Component\Messenger\MessageBusInterface::class);
+        $translator = $this->createStub(\Symfony\Contracts\Translation\TranslatorInterface::class);
+        $hubMock = $hub ?? $this->createStub(HubInterface::class);
+
         return new PendingConfirmationService(
             $this->signer,
             $toolRegistry ?? new ToolRegistry([]),
-            $hub ?? $this->createStub(HubInterface::class),
+            $hubMock,
             $twig ?? $this->createStub(Environment::class),
             $messageFormatter ?? $this->createStub(MessageFormatter::class),
             $cache ?? new ArrayAdapter(),
             $llmRateLimiter ?? $this->createStub(LlmRateLimiter::class),
             $llmService ?? $this->createStub(LlmService::class),
             $robotDmMessageService ?? $this->createStub(RobotDmMessageService::class),
-            $mercureTopicPrefix,
+            $mercurePublisher ?? new MercurePublisher($bus, 'roquette', $translator, $hubMock),
         );
     }
 

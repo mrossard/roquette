@@ -113,11 +113,16 @@ class LlmQueryHandlerTest extends TestCase
             $deps['memoryMessages'],
         );
         $batchSummarizer = new \App\Ai\BatchSummarizer($deps['llmService']);
+        $mercurePublisher = new \App\Service\MercurePublisher(
+            $this->createStub(\Symfony\Component\Messenger\MessageBusInterface::class),
+            'roquette',
+            $this->createStub(\Symfony\Contracts\Translation\TranslatorInterface::class),
+        );
         $streamPublisher = new \App\Ai\HelpStreamPublisher(
             $deps['hub'],
             $deps['messageFormatter'],
             $deps['twig'],
-            'roquette',
+            $mercurePublisher,
         );
 
         $robotDmMessageService = new \App\Service\RobotDmMessageService(

@@ -28,7 +28,7 @@ class AppExtension extends AbstractExtension
         private readonly ChannelRepository $channelRepository,
         private readonly UserChannelReadRepository $ucrRepository,
         private readonly EntityManagerInterface $entityManager,
-        private readonly string $mercureTopicPrefix,
+        private readonly \App\Service\MercurePublisher $mercurePublisher,
         private readonly ?MessageRepository $messageRepository = null,
     ) {}
 
@@ -180,17 +180,17 @@ class AppExtension extends AbstractExtension
     public function getUserMercureTopics(\App\Entity\User $user): array
     {
         $topics = [
-            $this->mercureTopicPrefix . '/users/' . $user->getUsername(),
-            $this->mercureTopicPrefix . '/users/status',
+            $this->mercurePublisher->getUserTopic($user),
+            $this->mercurePublisher->getStatusTopic(),
         ];
 
         if (in_array('ROLE_ADMIN', $user->getRoles(), true)) {
-            $topics[] = $this->mercureTopicPrefix . '/admin/moderation';
+            $topics[] = $this->mercurePublisher->getAdminModerationTopic();
         }
 
         $channels = $this->channelRepository->findAllForUser($user);
         foreach ($channels as $ch) {
-            $topics[] = $this->mercureTopicPrefix . '/channels/' . $ch->getSlug();
+            $topics[] = $this->mercurePublisher->getChannelTopic($ch);
         }
 
         return $topics;

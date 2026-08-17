@@ -10,9 +10,7 @@ use App\Service\LlmService;
 use App\Service\MessageFormatter;
 use App\Service\RobotDmMessageService;
 use Symfony\AI\Platform\Result\ToolCall;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Mercure\HubInterface;
-use Symfony\Component\Mercure\Update;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Twig\Environment;
@@ -35,8 +33,7 @@ class PendingConfirmationService
         private readonly LlmRateLimiter $llmRateLimiter,
         private readonly LlmService $llmService,
         private readonly RobotDmMessageService $robotDmMessageService,
-        #[Autowire(env: 'MERCURE_TOPIC_PREFIX')]
-        private readonly string $mercureTopicPrefix = 'roquette',
+        private readonly \App\Service\MercurePublisher $mercurePublisher,
     ) {}
 
     public function savePendingConfirmation(
@@ -241,7 +238,6 @@ class PendingConfirmationService
         // Update or replace robot DM message in database so the obsolete "Veuillez confirmer..." is replaced by the actual result
         $this->robotDmMessageService->updateOrPersistRobotDmMessage($channelSlug, $result);
 
-        $topic = $this->mercureTopicPrefix . '/users/' . $user->getUsername();
         $renderedHtml = $this->twig->render('dashboard/_help_message_update.html.twig', [
             'helpMessageId' => (string) ($payload['helpMessageId'] ?? ''),
             'html' => $this->messageFormatter->format($result),
@@ -249,7 +245,7 @@ class PendingConfirmationService
             'channelSlug' => $channelSlug,
         ]);
 
-        $this->hub->publish(new Update($topic, $renderedHtml, true, null, 'help_stream_update'));
+        $this->mercurePublisher->publishToUser($user, $renderedHtml, 'help_stream_update');
 
         $this->clearPendingConfirmation($user, $channelSlug);
 

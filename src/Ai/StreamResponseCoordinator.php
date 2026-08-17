@@ -36,7 +36,7 @@ final readonly class StreamResponseCoordinator
             $chunkCount++;
 
             if ($chunkCount <= $burstInitialChunks || ($chunkCount % $throttleModulus) === 0) {
-                $this->streamPublisher->publishStreamText(
+                $this->streamPublisher->publishStreamChunk(
                     $personalTopic,
                     $helpMessageId,
                     $prefix,

@@ -6,21 +6,33 @@ namespace App\Tests\Unit\Ai;
 
 use App\Ai\HelpStreamPublisher;
 use App\Entity\User;
+use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 class HelpStreamPublisherTest extends TestCase
 {
+    private function createMercurePublisher(): MercurePublisher
+    {
+        return new MercurePublisher(
+            $this->createStub(MessageBusInterface::class),
+            'roquette',
+            $this->createStub(TranslatorInterface::class),
+        );
+    }
+
     public function testGetPersonalTopic(): void
     {
         $hub = $this->createStub(HubInterface::class);
         $formatter = $this->createStub(MessageFormatter::class);
         $twig = $this->createStub(Environment::class);
 
-        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');
+        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, $this->createMercurePublisher());
 
         $user = new User();
         $user->setUsername('alice');
@@ -64,7 +76,7 @@ class HelpStreamPublisherTest extends TestCase
             )
             ->willReturn('<div>rendered</div>');
 
-        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');
+        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, $this->createMercurePublisher());
         $publisher->publishStatus('roquette/users/alice', 'msg-123', 'Traitement en cours... ⏳', 'general');
     }
 
@@ -90,7 +102,7 @@ class HelpStreamPublisherTest extends TestCase
                 return '';
             });
 
-        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');
+        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, $this->createMercurePublisher());
         $publisher->publishStreamText(
             'roquette/users/alice',
             'msg-123',
@@ -117,7 +129,7 @@ class HelpStreamPublisherTest extends TestCase
             )))
             ->willReturn('<div>error rendered</div>');
 
-        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, 'roquette');
+        $publisher = new HelpStreamPublisher($hub, $formatter, $twig, $this->createMercurePublisher());
         $publisher->publishError('roquette/users/alice', 'msg-123', 'general');
     }
 }

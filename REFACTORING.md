@@ -62,21 +62,46 @@
   - Remplacement des tuples positionnels par les Value Objects `SummaryPromptResult` et `LlmPromptBundle`.
   - Correction du bug latent de prompt vide quand un seul batch résultait du plafonnement.
 
-- [ ] **3.4 `PendingConfirmationService` (5 deps nullable, cycle non cassé)**
-  - Casser le cycle structurellement (tool execution par événement, ou split `ToolRegistry`), pas par nullabilité → **retirer les 5 `?`** ; supprimer le `mercureTopicPrefix` en dur (dérive de l'env).
+- [x] **3.4 `PendingConfirmationService` (5 deps nullable, cycle non cassé)**
+  - Suppression de la dépendance inutilisée `RobotUserProvider`.
+  - Retrait des 5 `?` nullables dans `PendingConfirmationService`, `LlmQueryHandler`, `RobotInteractionService` et `HelpSlashCommand`.
+  - Injection autowirée de `MERCURE_TOPIC_PREFIX`.
 
 ---
 
 ## Phase 4 — Dettes architecturales (au fil de l'eau)
 
-- [ ] **4.1** `AssistantIntent` enum + constantes de noms d'outils (strings magiques `'help'|'resumer'|'sondage'`).
-- [ ] **4.2** Scinder `ChannelActionController` (9 actions) / `ChannelController::channel()` / parseur de DSL de recherche.
-- [ ] **4.3** DM : déplacer la création `openDm()` du controller vers `ChannelManager` + unifier les 2 conventions de slug (`dm-{id}-{id}` vs `dm-robot-{slug}`).
-- [ ] **4.4** `ChannelGroupController` : supprimer `$this->forward('ModalController::editModal')`, logique dans `GroupSubscriptionManager`.
-- [ ] **4.5** Réconcilier les 2 conventions d'erreur (`PublishResult` vs catch `HttpExceptionInterface`) entre MessageSubmissionHandler et MessageController.
-- [ ] **4.6** `MessageFormatter` : rendre les 4 processors requis (les `new` fallback sont du code mort en prod).
-- [ ] **4.7** Perf : `HelpStreamPublisher` O(n²) (reformat complet à chaque chunk), `ChannelResolver::findAll()` fallback.
-- [ ] **4.8** `MercurePublisher` : `encodePayload()` privé (3× dupliqué), dédupliquer topic construction via HelpStreamPublisher/AppExtension.
+- [x] **4.1** `AssistantIntent` enum + constantes de noms d'outils (strings magiques `'help'|'resumer'|'sondage'`).
+  - Création de l'enum typé `AssistantIntent`.
+  - Définition des constantes `NAME` sur chaque outil IA.
+  - Typage de `LlmQueryMessage`, `IntentClassifier`, `LlmIntentClassifier`, `LlmQueryHandler`, `ChannelActionController`, `HelpSlashCommand`, `PollSlashCommand`.
+- [x] **4.2** Scinder `ChannelActionController` (9 actions) / `ChannelController::channel()` / parseur de DSL de recherche.
+  - Extraction de `MessageSearchParser` et du Value Object `ParsedSearchQuery` avec tests unitaires complets.
+  - Extraction de `ChannelExportController` (`/channels/{slug}/export` et `/exports/{id}/download`).
+- [x] **4.3** DM : déplacer la création `openDm()` du controller vers `ChannelManager` + unifier les 2 conventions de slug (`dm-{id}-{id}` vs `dm-robot-{slug}`).
+  - Méthodes `getOrCreateDm` et `generateDmSlug` ajoutées à `ChannelManager`.
+  - Allègement de `ChannelMembershipController::openDm`.
+- [x] **4.4** `ChannelGroupController` : supprimer `$this->forward('ModalController::editModal')`, logique dans `GroupSubscriptionManager`.
+  - Logique `subscribe()`, `unsubscribe()` et `getResolvedSubscriptions()` centralisée dans `GroupSubscriptionManager`.
+  - Service `ChannelEditModalDataProvider` créé pour découpler le rendu de la modale d'édition.
+  - Suppression de tout `$this->forward()` dans `ChannelGroupController`.
+- [x] **4.5** Réconcilier les 2 conventions d'erreur (`PublishResult` vs catch `HttpExceptionInterface`) entre MessageSubmissionHandler et MessageController.
+  - Création du Value Object `EditResult` symétrique à `PublishResult`.
+  - Harmonisation de `MessageEditor` et `MessageManager` pour retourner `EditResult` avec message chargé et statut d'erreur.
+  - Élimination des `try/catch` avec double requête SQL de rattrapage dans `MessageController::editMessage`.
+  - Tests unitaires et fonctionnels complets.
+- [x] **4.6** `MessageFormatter` : rendre les 4 processors requis (les `new` fallback sont du code mort en prod).
+  - Rendre `EmoticonProcessor`, `EmojiProcessor`, `MentionProcessor` et `HtmlDecorator` obligatoires et typés dans le constructeur de `MessageFormatter`.
+  - Suppression des dépendances transitives inutiles (`Security`, `$emojiBaseUrl`, `ChannelRepository`, `UserRepository`).
+  - Nettoyage des tests unitaires dans `MessageFormatterTest`.
+- [x] **4.7** Perf : `HelpStreamPublisher` O(n²) (reformat complet à chaque chunk), `ChannelResolver::findAll()` fallback.
+  - Ajout de `ChannelRepository::findOneByNameOrSlugFuzzy()` et suppression du `findAll()` en boucle dans `ChannelResolver`.
+  - Scission en `HelpStreamPublisher::publishStreamChunk()` (rendu léger instantané sans DB) et `publishStreamText()` (rendu riche final).
+  - Tests unitaires complets dans `ChannelResolverTest` et `StreamResponseCoordinatorTest`.
+- [x] **4.8** `MercurePublisher` : `encodePayload()` privé (3× dupliqué), dédupliquer topic construction via HelpStreamPublisher/AppExtension.
+  - Centralisation de l'encodage JSON dans `MercurePublisher::encodePayload()` et délégation de `publishToChannel` / `publishToUser` à `publishToTopic`.
+  - Utilisation systématique des méthodes `getUserTopic()`, `getStatusTopic()`, `getAdminModerationTopic()`, `getChannelTopic()` et `publishUserStatus()` dans `AppExtension`, `ActivitySubscriber`, `HelpStreamPublisher`, `PendingConfirmationService` et `ChannelActionController`.
+  - Tests unitaires et fonctionnels complets (`ActivitySubscriberTest`, `AppExtensionTest`, `HelpStreamPublisherTest`, `MessageControllerTest`).
 
 ---
 

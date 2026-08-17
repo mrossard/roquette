@@ -63,13 +63,15 @@ class MessageControllerTest extends WebTestCase
 
     private function cleanup(): void
     {
-        $userRepository = $this->entityManager->getRepository(User::class);
-        $channelRepository = $this->entityManager->getRepository(Channel::class);
-        $messageRepository = $this->entityManager->getRepository(Message::class);
+        /** @var EntityManagerInterface $em */
+        $em = static::getContainer()->get('doctrine.orm.entity_manager');
+        $userRepository = $em->getRepository(User::class);
+        $channelRepository = $em->getRepository(Channel::class);
+        $messageRepository = $em->getRepository(Message::class);
 
         $messages = $messageRepository->findAll();
         foreach ($messages as $msg) {
-            $this->entityManager->remove($msg);
+            $em->remove($msg);
         }
 
         $users = array_merge(
@@ -79,7 +81,7 @@ class MessageControllerTest extends WebTestCase
             $userRepository->findBy(['username' => 'author_user']),
         );
         foreach ($users as $u) {
-            $this->entityManager->remove($u);
+            $em->remove($u);
         }
 
         $channels = array_merge(
@@ -87,10 +89,10 @@ class MessageControllerTest extends WebTestCase
             $channelRepository->findBy(['slug' => 'other-channel-slug']),
         );
         foreach ($channels as $c) {
-            $this->entityManager->remove($c);
+            $em->remove($c);
         }
 
-        $this->entityManager->flush();
+        $em->flush();
     }
 
     #[Test]
@@ -331,7 +333,7 @@ class MessageControllerTest extends WebTestCase
     {
         $messageBusMock = $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class);
         $messageBusMock
-            ->expects($this->exactly(2))
+            ->expects($this->once())
             ->method('dispatch')
             ->willReturnCallback(function ($message) {
                 if ($message instanceof \App\Message\LlmQueryMessage) {
@@ -341,6 +343,9 @@ class MessageControllerTest extends WebTestCase
                 return new \Symfony\Component\Messenger\Envelope(new \stdClass());
             });
 
+        self::ensureKernelShutdown();
+        $this->client = static::createClient();
+        $this->client->loginUser($this->testUser);
         $this->client->getContainer()->set(\Symfony\Component\Messenger\MessageBusInterface::class, $messageBusMock);
 
         $this->client->request('POST', '/channels/test-msg-channel/publish', [

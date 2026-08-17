@@ -43,7 +43,7 @@ final class ChannelActionController extends AbstractController
         string $slug,
         Request $request,
         MessageBusInterface $messageBus,
-        string $mercureTopicPrefix,
+        \App\Service\MercurePublisher $mercurePublisher,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -67,7 +67,7 @@ final class ChannelActionController extends AbstractController
             workspaceId: $workspaceId,
         ));
 
-        $topic = $mercureTopicPrefix . '/users/' . $currentUser->getUsername();
+        $topic = $mercurePublisher->getUserTopic($currentUser);
 
         return $this->render('dashboard/_channel_summary_modal.html.twig', [
             'channel' => $channel,
