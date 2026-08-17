@@ -10,9 +10,9 @@ use App\Entity\Workspace;
 use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
 use App\Repository\WorkspaceRepository;
+use App\Service\RobotUserProvider;
 use App\Service\UniqueSlugGenerator;
 use App\Service\UserBootstrapService;
-use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
@@ -54,8 +54,8 @@ class UserBootstrapServiceTest extends TestCase
     public function bootstrapDoesNothingIfUserIdIsNull(): void
     {
         $user = new User();
-        $this->entityManager->expects($this->never())->method('persist');
-        $this->entityManager->expects($this->never())->method('flush');
+        $this->entityManager->expects(self::never())->method('persist');
+        $this->entityManager->expects(self::never())->method('flush');
 
         $service = new UserBootstrapService(
             $this->entityManager,
@@ -96,8 +96,8 @@ class UserBootstrapServiceTest extends TestCase
                 User::class => $userRepo,
             });
 
-        $this->entityManager->expects($this->atLeastOnce())->method('persist');
-        $this->entityManager->expects($this->once())->method('flush');
+        $this->entityManager->expects(self::atLeastOnce())->method('persist');
+        $this->entityManager->expects(self::once())->method('flush');
 
         $service = new UserBootstrapService(
             $this->entityManager,
@@ -111,6 +111,71 @@ class UserBootstrapServiceTest extends TestCase
         $service->bootstrap($user);
 
         // Second run in same session should not flush again
+        $service->bootstrap($user);
+    }
+
+    #[Test]
+    public function bootstrapDoesNotFlushWhenAllEntitiesAlreadyConfigured(): void
+    {
+        $user = new User();
+        $user->setUsername('jane');
+        $ref = new \ReflectionProperty(User::class, 'id');
+        $ref->setValue($user, 20);
+
+        $robotUser = new User();
+        $robotUser->setUsername(User::ROBOT_USERNAME);
+        $robotUser->setDisplayName('channel.assistant.name');
+
+        $publicWorkspace = new Workspace();
+        $publicWorkspace->setIsPublic(true);
+        $publicWorkspace->addMember($user);
+
+        $generalChannel = new Channel();
+        $generalChannel->setName('channel.general.name');
+        $generalChannel->setDescription('channel.general.description');
+        $generalChannel->setWorkspace($publicWorkspace);
+
+        $robotChannel = new Channel();
+        $robotChannel->setName('channel.assistant.name');
+        $robotChannel->setDescription('channel.assistant.description');
+        $robotChannel->addMember($user);
+        $robotChannel->addMember($robotUser);
+
+        $workspaceRepo = $this->createMock(WorkspaceRepository::class);
+        $workspaceRepo->method('findOneBy')->willReturn($publicWorkspace);
+
+        $channelRepo = $this->createMock(ChannelRepository::class);
+        $channelRepo->method('findOneBy')->willReturnCallback(static function (array $criteria) use ($generalChannel, $robotChannel) {
+            if (($criteria['workspace'] ?? null) !== null) {
+                return $generalChannel;
+            }
+            return $robotChannel;
+        });
+
+        $robotUserProvider = $this->createMock(RobotUserProvider::class);
+        $robotUserProvider->method('getRobotUser')->willReturn($robotUser);
+        $robotUserProvider->method('getDmChannelSlug')->willReturn('dm-robot-20');
+
+        $this->entityManager
+            ->method('getRepository')
+            ->willReturnCallback(static fn(string $class) => match ($class) {
+                Workspace::class => $workspaceRepo,
+                Channel::class => $channelRepo,
+                User::class => $this->createMock(UserRepository::class),
+            });
+
+        $this->entityManager->expects(self::never())->method('persist');
+        $this->entityManager->expects(self::never())->method('flush');
+
+        $service = new UserBootstrapService(
+            $this->entityManager,
+            $this->passwordHasher,
+            $this->requestStack,
+            $this->translator,
+            $this->slugGenerator,
+            $robotUserProvider,
+        );
+
         $service->bootstrap($user);
     }
 }

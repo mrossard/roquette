@@ -59,25 +59,27 @@ class UserBootstrapService
 
     private function doBootstrap(User $user): void
     {
-        $needsFlush = false;
-
         $generalName = $this->translator->trans('channel.general.name', [], 'messages');
         $generalDesc = $this->translator->trans('channel.general.description', [], 'messages');
         $assistantName = $this->translator->trans('channel.assistant.name', [], 'messages');
         $assistantDesc = $this->translator->trans('channel.assistant.description', [], 'messages');
 
-        $publicWorkspace = $this->ensurePublicWorkspace($user, $needsFlush);
-        $this->ensureGeneralChannel($publicWorkspace, $generalName, $generalDesc, $needsFlush);
-        $robotUser = $this->ensureRobotUser($assistantName, $needsFlush);
-        $this->ensureRobotDmChannel($user, $robotUser, $assistantName, $assistantDesc, $needsFlush);
+        [$publicWorkspace, $wsChanged] = $this->ensurePublicWorkspace($user);
+        $generalChanged = $this->ensureGeneralChannel($publicWorkspace, $generalName, $generalDesc);
+        [$robotUser, $robotChanged] = $this->ensureRobotUser($assistantName);
+        $dmChanged = $this->ensureRobotDmChannel($user, $robotUser, $assistantName, $assistantDesc);
 
-        if ($needsFlush) {
+        if ($wsChanged || $generalChanged || $robotChanged || $dmChanged) {
             $this->entityManager->flush();
         }
     }
 
-    private function ensurePublicWorkspace(User $user, bool &$needsFlush): Workspace
+    /**
+     * @return array{0: Workspace, 1: bool}
+     */
+    private function ensurePublicWorkspace(User $user): array
     {
+        $needsFlush = false;
         $publicWorkspace = $this->entityManager->getRepository(Workspace::class)->findOneBy(['isPublic' => true]);
         if (!$publicWorkspace) {
             $publicWorkspace = new Workspace();
@@ -94,15 +96,14 @@ class UserBootstrapService
             $needsFlush = true;
         }
 
-        return $publicWorkspace;
+        return [$publicWorkspace, $needsFlush];
     }
 
     private function ensureGeneralChannel(
         Workspace $publicWorkspace,
         string $generalName,
         string $generalDesc,
-        bool &$needsFlush,
-    ): void {
+    ): bool {
         $general = $this->entityManager
             ->getRepository(Channel::class)
             ->findOneBy([
@@ -123,15 +124,24 @@ class UserBootstrapService
             $general->setDescription($generalDesc);
             $general->setWorkspace($publicWorkspace);
             $this->entityManager->persist($general);
-            $needsFlush = true;
-        } elseif ($general->getName() !== $generalName && $generalName !== 'channel.general.name') {
+
+            return true;
+        }
+
+        if ($general->getName() !== $generalName && $generalName !== 'channel.general.name') {
             $general->setName($generalName);
             $general->setDescription($generalDesc);
-            $needsFlush = true;
+
+            return true;
         }
+
+        return false;
     }
 
-    private function ensureRobotUser(string $assistantName, bool &$needsFlush): User
+    /**
+     * @return array{0: User, 1: bool}
+     */
+    private function ensureRobotUser(string $assistantName): array
     {
         $robotUser = $this->robotUserProvider->getRobotUser();
         if (!$robotUser) {
@@ -142,13 +152,17 @@ class UserBootstrapService
             $hashedPassword = $this->passwordHasher->hashPassword($robotUser, bin2hex(random_bytes(16)));
             $robotUser->setPassword($hashedPassword);
             $this->entityManager->persist($robotUser);
-            $needsFlush = true;
-        } elseif ($robotUser->getDisplayName() !== $assistantName && $assistantName !== 'channel.assistant.name') {
-            $robotUser->setDisplayName($assistantName);
-            $needsFlush = true;
+
+            return [$robotUser, true];
         }
 
-        return $robotUser;
+        if ($robotUser->getDisplayName() !== $assistantName && $assistantName !== 'channel.assistant.name') {
+            $robotUser->setDisplayName($assistantName);
+
+            return [$robotUser, true];
+        }
+
+        return [$robotUser, false];
     }
 
     private function ensureRobotDmChannel(
@@ -156,8 +170,7 @@ class UserBootstrapService
         User $robotUser,
         string $assistantName,
         string $assistantDesc,
-        bool &$needsFlush,
-    ): void {
+    ): bool {
         $robotSlug = $this->robotUserProvider->getDmChannelSlug($user);
         $robotChannel = $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => $robotSlug]);
 
@@ -171,25 +184,25 @@ class UserBootstrapService
             $robotChannel->addMember($user);
             $robotChannel->addMember($robotUser);
             $this->entityManager->persist($robotChannel);
-            $needsFlush = true;
-        } else {
-            $channelNeedsFlush = false;
-            if ($robotChannel->getName() !== $assistantName && $assistantName !== 'channel.assistant.name') {
-                $robotChannel->setName($assistantName);
-                $robotChannel->setDescription($assistantDesc);
-                $channelNeedsFlush = true;
-            }
-            if (!$robotChannel->getMembers()->contains($user)) {
-                $robotChannel->addMember($user);
-                $channelNeedsFlush = true;
-            }
-            if (!$robotChannel->getMembers()->contains($robotUser)) {
-                $robotChannel->addMember($robotUser);
-                $channelNeedsFlush = true;
-            }
-            if ($channelNeedsFlush) {
-                $needsFlush = true;
-            }
+
+            return true;
         }
+
+        $needsFlush = false;
+        if ($robotChannel->getName() !== $assistantName && $assistantName !== 'channel.assistant.name') {
+            $robotChannel->setName($assistantName);
+            $robotChannel->setDescription($assistantDesc);
+            $needsFlush = true;
+        }
+        if (!$robotChannel->getMembers()->contains($user)) {
+            $robotChannel->addMember($user);
+            $needsFlush = true;
+        }
+        if (!$robotChannel->getMembers()->contains($robotUser)) {
+            $robotChannel->addMember($robotUser);
+            $needsFlush = true;
+        }
+
+        return $needsFlush;
     }
 }
