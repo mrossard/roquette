@@ -1,34 +1,30 @@
-{% extends 'base.html.twig' %}
+{% embed 'partials/_modal_layout.html.twig' with {
+    id: 'export-requested-modal',
+    content_style: 'max-width: 520px;'
+} %}
+    {% block modal_title %}
+        <span style="display: flex; align-items: center; gap: 0.5rem;">
+            📤 {{ 'Export demandé'|trans }}
+        </span>
+    {% endblock %}
 
-{% block title %}{{ 'Export en cours - Roquette'|trans }}{% endblock %}
-
-{% block stylesheets %}
-    {{ parent() }}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('styles/pages/auth.css') }}">
-{% endblock %}
-
-{% block body %}
-<div class="auth-wrapper" id="main-content">
-    <div class="card glass-panel auth-card fade-in" style="max-width: 500px; text-align: center;">
-        <div class="auth-header">
-            <span class="auth-logo" style="font-size: 3rem; display: block; margin-bottom: 1rem;">📤</span>
-            <h1>{{ 'Export demandé'|trans }}</h1>
-            <p style="margin-top: 1rem; line-height: 1.6;">
+    {% block modal_body %}
+        <div class="modal-body" style="color: var(--text-primary); font-size: 0.95rem; line-height: 1.6; padding: 1rem 0;">
+            <p style="margin: 0 0 1rem 0;">
                 {{ "L'exportation du canal"|trans }} <strong>#{{ channel.name }}</strong> {{ "a commencé en arrière-plan."|trans }}
             </p>
-            <p style="margin-top: 1rem; line-height: 1.6; color: var(--text-muted);">
-                {{ "Cette opération peut prendre quelques instants selon le volume de messages et de fichiers joints. Vous pouvez fermer cet onglet en toute sécurité. Le Robot Roquette vous enverra un message privé contenant le lien de téléchargement dès que l'archive sera prête."|trans }}
+            <p style="margin: 0 0 1.5rem 0; color: var(--text-muted); font-size: 0.9rem;">
+                {{ "Cette opération peut prendre quelques instants selon le volume de messages et de fichiers joints. Le Robot Roquette vous enverra un message privé contenant le lien de téléchargement dès que l'archive sera prête."|trans }}
             </p>
         </div>
 
-        <div class="form-actions" style="margin-top: 2rem; display: flex; justify-content: center;">
-            <button onclick="window.close();" class="btn-publish" style="padding: 0.75rem 2rem;">
-                <span>{{ 'Fermer la page'|trans }}</span>
-            </button>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+            <form method="dialog">
+                <button type="submit" class="btn-cancel"
+                        style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-primary); padding: 0.5rem 1.25rem; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s;">
+                    {{ 'Fermer'|trans }}
+                </button>
+            </form>
         </div>
-    </div>
-</div>
-{% endblock %}
+    {% endblock %}
+{% endembed %}

@@ -7,16 +7,11 @@ namespace App\Controller;
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Dto\Channel\CreateChannelDto;
 use App\Dto\Channel\UpdateChannelDto;
-use App\Entity\ChannelExport;
 use App\Entity\User;
-use App\Enum\AuditAction;
-use App\Message\GenerateExportMessage;
 use App\Message\LlmQueryMessage;
 use App\Repository\ChannelRepository;
 use App\Repository\WorkspaceRepository;
-use App\Service\AuditLoggerService;
 use App\Service\ChannelManager;
-use App\Service\FileUploadService;
 use App\Service\SidebarDataProvider;
 use App\Service\WorkspaceManager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -313,51 +308,5 @@ final class ChannelActionController extends AbstractController
         $this->addFlash('success', $this->translator->trans('Les paramètres du canal ont été modifiés.'));
 
         return $this->redirectToRoute('app_channel', ['slug' => $channel->getSlug()]);
-    }
-
-    #[Route('/channels/{slug}/export', name: 'app_channel_export', methods: ['POST'])]
-    public function exportChannel(
-        string $slug,
-        MessageBusInterface $messageBus,
-    ): Response {
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-
-        try {
-            $channel = $this->findAuthorizedChannel($slug, $this->channelManager, 'MANAGE');
-        } catch (HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
-
-        $messageBus->dispatch(new GenerateExportMessage($channel->getId(), $currentUser->getId()));
-
-        return $this->render('dashboard/export_requested.html.twig', [
-            'channel' => $channel,
-        ]);
-    }
-
-    #[Route('/exports/{id}/download', name: 'app_export_download', methods: ['GET'])]
-    public function downloadExport(
-        ChannelExport $export,
-        FileUploadService $fileUploadService,
-        AuditLoggerService $auditLogger,
-        \App\Service\FileStreamResponseFactory $fileResponseFactory,
-    ): Response {
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-
-        if (!$this->isGranted('ROLE_ADMIN') && $export->getExportedBy() !== $currentUser) {
-            throw $this->createAccessDeniedException($this->translator->trans(
-                'Non autorisé à télécharger cet export.',
-            ));
-        }
-
-        $auditLogger->log(AuditAction::EXPORT_DOWNLOAD, $currentUser, [
-            'export_id' => $export->getId(),
-            'file_name' => $export->getFileName(),
-            'channel_name' => $export->getChannelName(),
-        ]);
-
-        return $fileResponseFactory->createExportDownloadResponse($export, $fileUploadService);
     }
 }

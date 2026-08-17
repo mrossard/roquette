@@ -69,13 +69,7 @@ final class ChannelController extends AbstractController
             $request->getSession()->set('current_workspace_id', $activeChannel->getWorkspace()->getId());
         }
 
-        $previousChannelSlug = $request->headers->get('X-Previous-Channel');
-        if ($previousChannelSlug && $previousChannelSlug !== $slug) {
-            $previousChannel = $channelRepository->findOneBy(['slug' => $previousChannelSlug]);
-            if ($previousChannel) {
-                $this->readTrackingService->markChannelAsRead($currentUser, $previousChannel);
-            }
-        }
+        $this->trackPreviousChannel($request, $slug, $currentUser, $channelRepository);
 
         $messages = [];
         $firstUnreadMessageId = null;
@@ -89,18 +83,8 @@ final class ChannelController extends AbstractController
             );
         }
 
-        $unreadCounts = $sidebarData['unreadCounts'];
-        $notificationsEnabled = null;
-        if ($isMember) {
-            $activeUnread = $unreadCounts[$activeChannel->getId()] ?? null;
-            $notificationsEnabled = $activeUnread['notificationsEnabled'] ?? null;
-        }
-        if ($notificationsEnabled === null) {
-            $notificationsEnabled = $activeChannel->isDm();
-        }
-
+        $notificationsEnabled = $this->resolveNotificationSetting($activeChannel, $isMember, $sidebarData['unreadCounts']);
         $typingUsers = $this->getTypingUsers($activeChannel, $currentUser, $isMember, $typingIndicatorService);
-
         $feedContext = $this->feedContextService->buildFeedContext($activeChannel, $messages, $currentUser);
 
         return $this->render('dashboard/index.html.twig', array_merge([
@@ -340,5 +324,36 @@ final class ChannelController extends AbstractController
         $this->readTrackingService->markChannelAsRead($currentUser, $channel);
 
         return [$messages, $firstUnreadMessageId];
+    }
+
+    private function trackPreviousChannel(
+        Request $request,
+        string $currentSlug,
+        User $currentUser,
+        ChannelRepository $channelRepository,
+    ): void {
+        $previousChannelSlug = $request->headers->get('X-Previous-Channel');
+        if ($previousChannelSlug && $previousChannelSlug !== $currentSlug) {
+            $previousChannel = $channelRepository->findOneBy(['slug' => $previousChannelSlug]);
+            if ($previousChannel) {
+                $this->readTrackingService->markChannelAsRead($currentUser, $previousChannel);
+            }
+        }
+    }
+
+    /**
+     * @param array<int, array{notificationsEnabled?: ?bool}> $unreadCounts
+     */
+    private function resolveNotificationSetting(Channel $activeChannel, bool $isMember, array $unreadCounts): bool
+    {
+        if ($isMember) {
+            $activeUnread = $unreadCounts[$activeChannel->getId()] ?? null;
+            $notificationsEnabled = $activeUnread['notificationsEnabled'] ?? null;
+            if ($notificationsEnabled !== null) {
+                return (bool) $notificationsEnabled;
+            }
+        }
+
+        return $activeChannel->isDm();
     }
 }

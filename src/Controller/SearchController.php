@@ -12,6 +12,7 @@ use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use App\Service\ChannelManager;
 use App\Service\MessageFeedContextService;
+use App\Service\MessageSearchParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,6 +32,7 @@ final class SearchController extends AbstractController
         private readonly UserRepository $userRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly MessageFeedContextService $feedContextService,
+        private readonly MessageSearchParser $searchParser,
     ) {}
 
     #[Route('/channels/{slug}/search', name: 'app_channel_search', methods: ['GET'])]
@@ -84,7 +86,8 @@ final class SearchController extends AbstractController
         $currentUser = $this->getUser();
         $rawQuery = trim($request->query->get('q', ''));
 
-        if ($rawQuery === '') {
+        $parsed = $this->searchParser->parse($rawQuery);
+        if ($parsed->isEmpty()) {
             return $this->render('dashboard/_global_search_results.html.twig', [
                 'channels' => [],
                 'users' => [],
@@ -93,52 +96,22 @@ final class SearchController extends AbstractController
             ]);
         }
 
-        $authorUsername = null;
-        $channelName = null;
-        $hasFile = null;
-        $fileType = null;
-        $textQuery = $rawQuery;
-
-        // Parse from:filter
-        if (preg_match('/from:([^\s"]+|"[^"]+")/', $textQuery, $matches)) {
-            $authorUsername = trim($matches[1], '"@');
-            $textQuery = str_replace($matches[0], '', $textQuery);
-        }
-
-        // Parse in:filter
-        if (preg_match('/in:([^\s"]+|"[^"]+")/', $textQuery, $matches)) {
-            $channelName = trim($matches[1], '"#');
-            $textQuery = str_replace($matches[0], '', $textQuery);
-        }
-
-        // Parse has:filter
-        if (preg_match('/has:([^\s]+)/', $textQuery, $matches)) {
-            $hasValue = strtolower($matches[1]);
-            $hasFile = true;
-            if (in_array($hasValue, ['image', 'video', 'audio', 'pdf'], strict: true)) {
-                $fileType = $hasValue;
-            }
-            $textQuery = str_replace($matches[0], '', $textQuery);
-        }
-
-        $textQuery = trim($textQuery);
-
         // Fetch matches
         $channels = [];
         $users = [];
         // Only return channels and users matches if searching with a simple query (no filters)
-        if (!$authorUsername && !$channelName && !$hasFile) {
-            $channels = $this->channelRepository->searchByName($textQuery, $currentUser);
-            $users = $this->userRepository->searchByName($textQuery);
+        if (!$parsed->hasFilters()) {
+            $channels = $this->channelRepository->searchByName($parsed->textQuery, $currentUser);
+            $users = $this->userRepository->searchByName($parsed->textQuery);
         }
 
         $messages = $this->messageRepository->searchGlobal(
             $currentUser,
-            $authorUsername,
-            $channelName,
-            $hasFile,
-            $fileType,
-            $textQuery,
+            $parsed->authorUsername,
+            $parsed->channelName,
+            $parsed->hasFile,
+            $parsed->fileType,
+            $parsed->textQuery,
         );
 
         return $this->render('dashboard/_global_search_results.html.twig', [
