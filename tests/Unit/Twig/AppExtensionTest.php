@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Twig;
 
-use App\Entity\Message;
-use App\Repository\ChannelRepository;
-use App\Repository\UserChannelReadRepository;
 use App\Service\MessageFormatter;
 use App\Twig\AppExtension;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\UnitOfWork;
+use App\Twig\AppExtensionRuntime;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -20,15 +16,11 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class AppExtensionTest extends TestCase
 {
     private AppExtension $extension;
-    private ChannelRepository $channelRepository;
 
     protected function setUp(): void
     {
         $formatter = $this->createMock(MessageFormatter::class);
         $translator = $this->createMock(TranslatorInterface::class);
-        $this->channelRepository = $this->createMock(ChannelRepository::class);
-        $ucrRepository = $this->createMock(UserChannelReadRepository::class);
-        $entityManager = $this->createMock(EntityManagerInterface::class);
         $translator
             ->method('trans')
             ->willReturnCallback(static function (string $id, array $parameters = []) {
@@ -39,46 +31,40 @@ class AppExtensionTest extends TestCase
                 return strtr($id, $parameters);
             });
 
-        $bus = $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class);
-        $mercurePublisher = new \App\Service\MercurePublisher($bus, 'roquette', $translator);
-
-        $this->extension = new AppExtension($formatter, $translator, $this->channelRepository, $ucrRepository, $entityManager, $mercurePublisher);
+        $this->extension = new AppExtension($formatter, $translator);
     }
 
     #[Test]
-    public function getSubchannelDoesNotCrashWithoutManagedMessages(): void
+    public function getFunctionsRegistersRuntimeCallables(): void
     {
-        $message = $this->createMock(Message::class);
-        $message->method('getId')->willReturn(1);
+        $functions = $this->extension->getFunctions();
+        $names = array_map(static fn($f) => $f->getName(), $functions);
 
-        $uow = $this->createMock(UnitOfWork::class);
-        $uow->method('getIdentityMap')->willReturn([Message::class => [$message]]);
+        static::assertContains('get_cached_link_preview', $names);
+        static::assertContains('get_subchannel', $names);
+        static::assertContains('get_user_mercure_topics', $names);
+        static::assertContains('get_user_channel_notifications_map', $names);
+        static::assertContains('get_pending_moderation_count', $names);
 
-        $entityManager = $this->createMock(EntityManagerInterface::class);
-        $entityManager->method('getUnitOfWork')->willReturn($uow);
+        foreach ($functions as $function) {
+            $callable = $function->getCallable();
+            static::assertIsArray($callable);
+            static::assertSame(AppExtensionRuntime::class, $callable[0]);
+        }
+    }
 
-        $query = $this->createMock(\Doctrine\ORM\Query::class);
-        $query->method('getResult')->willReturn([]);
-        $queryBuilder = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('setParameter')->willReturnSelf();
-        $queryBuilder->method('getQuery')->willReturn($query);
-        $this->channelRepository->method('createQueryBuilder')->willReturn($queryBuilder);
+    #[Test]
+    public function getFiltersRegistersExpectedFilters(): void
+    {
+        $filters = $this->extension->getFilters();
+        $names = array_map(static fn($f) => $f->getName(), $filters);
 
-        $bus = $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class);
-        $translator = $this->createMock(TranslatorInterface::class);
-        $mercurePublisher = new \App\Service\MercurePublisher($bus, 'roquette', $translator);
-
-        $extension = new AppExtension(
-            $this->createMock(MessageFormatter::class),
-            $translator,
-            $this->channelRepository,
-            $this->createMock(UserChannelReadRepository::class),
-            $entityManager,
-            $mercurePublisher,
-        );
-
-        static::assertNull($extension->getSubchannel($message));
+        static::assertContains('format_message', $names);
+        static::assertContains('wrap_emojis', $names);
+        static::assertContains('format_bytes', $names);
+        static::assertContains('reaction_tooltip', $names);
+        static::assertContains('extract_external_links', $names);
+        static::assertContains('is_image_url', $names);
     }
 
     public function testFormatReactionTooltipWithSingleUser(): void
@@ -105,35 +91,29 @@ class AppExtensionTest extends TestCase
         static::assertSame('Alice a réagi avec :rocket:', $result);
     }
 
-    #[Test]
-    public function getUserMercureTopicsIncludesAdminModerationTopicForAdmins(): void
+    public function testFormatBytes(): void
     {
-        $adminUser = $this->createMock(\App\Entity\User::class);
-        $adminUser->method('getUsername')->willReturn('admin');
-        $adminUser->method('getRoles')->willReturn(['ROLE_USER', 'ROLE_ADMIN']);
-
-        $this->channelRepository->method('findAllForUser')->willReturn([]);
-
-        $topics = $this->extension->getUserMercureTopics($adminUser);
-
-        static::assertContains('roquette/users/admin', $topics);
-        static::assertContains('roquette/users/status', $topics);
-        static::assertContains('roquette/admin/moderation', $topics);
+        static::assertSame('500 B', $this->extension->formatBytes(500));
+        static::assertSame('1 KB', $this->extension->formatBytes(1024));
+        static::assertSame('1.5 MB', $this->extension->formatBytes((int) (1.5 * 1024 * 1024)));
     }
 
-    #[Test]
-    public function getUserMercureTopicsExcludesAdminModerationTopicForStandardUsers(): void
+    public function testExtractExternalLinks(): void
     {
-        $user = $this->createMock(\App\Entity\User::class);
-        $user->method('getUsername')->willReturn('regular');
-        $user->method('getRoles')->willReturn(['ROLE_USER']);
+        $content = 'Check https://example.com and http://test.org/path and ![image](https://example.com/img.png)';
+        $links = $this->extension->extractExternalLinks($content);
 
-        $this->channelRepository->method('findAllForUser')->willReturn([]);
+        static::assertContains('https://example.com', $links);
+        static::assertContains('http://test.org/path', $links);
+        static::assertNotContains('https://example.com/img.png', $links);
+    }
 
-        $topics = $this->extension->getUserMercureTopics($user);
-
-        static::assertContains('roquette/users/regular', $topics);
-        static::assertContains('roquette/users/status', $topics);
-        static::assertNotContains('roquette/admin/moderation', $topics);
+    public function testIsImageUrl(): void
+    {
+        static::assertTrue($this->extension->isImageUrl('https://example.com/image.png'));
+        static::assertTrue($this->extension->isImageUrl('https://example.com/photo.jpeg'));
+        static::assertFalse($this->extension->isImageUrl('https://example.com/document.pdf'));
+        static::assertFalse($this->extension->isImageUrl(''));
+        static::assertFalse($this->extension->isImageUrl(null));
     }
 }

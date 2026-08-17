@@ -4,45 +4,34 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
-use App\Entity\Channel;
-use App\Repository\ChannelRepository;
-use App\Repository\MessageRepository;
-use App\Repository\UserChannelReadRepository;
+use App\Service\EmojiMapping;
 use App\Service\MessageFormatter;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
+use Twig\TwigFunction;
 
 /**
- * Extension Twig exposant les filtres `format_message` et `format_bytes`.
+ * Extension Twig exposant les filtres de formatage et les fonctions déléguées aux runtimes.
  *
- * La logique de formatage des messages est entièrement déléguée à
- * {@see MessageFormatter}, un service PHP pur testable unitairement.
+ * La logique lourde (requêtes Doctrine, sous-canaux, Mercure) est déléguée à
+ * {@see AppExtensionRuntime} pour bénéficier du lazy loading Twig.
  */
 class AppExtension extends AbstractExtension
 {
     public function __construct(
         private readonly MessageFormatter $formatter,
         private readonly TranslatorInterface $translator,
-        private readonly ChannelRepository $channelRepository,
-        private readonly UserChannelReadRepository $ucrRepository,
-        private readonly EntityManagerInterface $entityManager,
-        private readonly \App\Service\MercurePublisher $mercurePublisher,
-        private readonly ?MessageRepository $messageRepository = null,
     ) {}
 
     public function getFunctions(): array
     {
         return [
-            new \Twig\TwigFunction('get_cached_link_preview', [
-                \App\Twig\AppExtensionRuntime::class,
-                'getCachedLinkPreview',
-            ]),
-            new \Twig\TwigFunction('get_subchannel', [$this, 'getSubchannel']),
-            new \Twig\TwigFunction('get_user_mercure_topics', [$this, 'getUserMercureTopics']),
-            new \Twig\TwigFunction('get_user_channel_notifications_map', [$this, 'getUserChannelNotificationsMap']),
-            new \Twig\TwigFunction('get_pending_moderation_count', [$this, 'getPendingModerationCount']),
+            new TwigFunction('get_cached_link_preview', [AppExtensionRuntime::class, 'getCachedLinkPreview']),
+            new TwigFunction('get_subchannel', [AppExtensionRuntime::class, 'getSubchannel']),
+            new TwigFunction('get_user_mercure_topics', [AppExtensionRuntime::class, 'getUserMercureTopics']),
+            new TwigFunction('get_user_channel_notifications_map', [AppExtensionRuntime::class, 'getUserChannelNotificationsMap']),
+            new TwigFunction('get_pending_moderation_count', [AppExtensionRuntime::class, 'getPendingModerationCount']),
         ];
     }
 
@@ -107,7 +96,7 @@ class AppExtension extends AbstractExtension
 
     public function formatReactionTooltip(array $usernames, string $emoji): string
     {
-        $shortcode = \App\Service\EmojiMapping::getShortcode($emoji);
+        $shortcode = EmojiMapping::getShortcode($emoji);
         $reactionName = $shortcode ? ':' . $shortcode . ':' : $emoji;
 
         if ($usernames === []) {
@@ -130,90 +119,5 @@ class AppExtension extends AbstractExtension
             '%users%' => $usersString,
             '%reaction%' => $reactionName,
         ]);
-    }
-
-    private ?array $subchannelCache = null;
-
-    public function resetSubchannelCache(): void
-    {
-        $this->subchannelCache = null;
-    }
-
-    public function getSubchannel(\App\Entity\Message $message): ?Channel
-    {
-        $messageId = $message->getId();
-        if ($messageId === null) {
-            return null;
-        }
-
-        if ($this->subchannelCache === null) {
-            $this->subchannelCache = [];
-            $em = $this->entityManager;
-            $messages = $em->getUnitOfWork()->getIdentityMap()[\App\Entity\Message::class] ?? [];
-            $messageIds = array_keys($messages);
-
-            if ($messageIds !== []) {
-                $channels = $this->channelRepository
-                    ->createQueryBuilder('c')
-                    ->where('c.parentMessage IN (:messageIds)')
-                    ->setParameter('messageIds', $messageIds)
-                    ->getQuery()
-                    ->getResult();
-
-                foreach ($messageIds as $id) {
-                    $this->subchannelCache[$id] = null;
-                }
-
-                foreach ($channels as $channel) {
-                    if ($channel->getParentMessage() === null) {
-                        continue;
-                    }
-
-                    $this->subchannelCache[$channel->getParentMessage()->getId()] = $channel;
-                }
-            }
-        }
-
-        return $this->subchannelCache[$messageId] ?? null;
-    }
-
-    public function getUserMercureTopics(\App\Entity\User $user): array
-    {
-        $topics = [
-            $this->mercurePublisher->getUserTopic($user),
-            $this->mercurePublisher->getStatusTopic(),
-        ];
-
-        if (in_array('ROLE_ADMIN', $user->getRoles(), true)) {
-            $topics[] = $this->mercurePublisher->getAdminModerationTopic();
-        }
-
-        $channels = $this->channelRepository->findAllForUser($user);
-        foreach ($channels as $ch) {
-            $topics[] = $this->mercurePublisher->getChannelTopic($ch);
-        }
-
-        return $topics;
-    }
-
-    public function getUserChannelNotificationsMap(\App\Entity\User $user): array
-    {
-        $channels = $this->channelRepository->findAllForUser($user);
-        $unreadCounts = $this->ucrRepository->getUnreadCounts($user);
-
-        $map = [];
-        foreach ($channels as $channel) {
-            $slug = $channel->getSlug();
-            $unread = $unreadCounts[$channel->getId()] ?? null;
-            $enabled = $unread ? $unread['notificationsEnabled'] : $channel->isDm();
-            $map[$slug] = $enabled;
-        }
-
-        return $map;
-    }
-
-    public function getPendingModerationCount(): int
-    {
-        return $this->messageRepository?->countPendingModeration() ?? 0;
     }
 }

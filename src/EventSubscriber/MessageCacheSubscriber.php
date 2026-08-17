@@ -7,7 +7,7 @@ namespace App\EventSubscriber;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\PollVote;
-use App\Twig\AppExtension;
+use App\Twig\AppExtensionRuntime;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\PostPersistEventArgs;
 use Doctrine\ORM\Event\PostRemoveEventArgs;
@@ -24,7 +24,7 @@ final readonly class MessageCacheSubscriber
     public function __construct(
         #[Target('twigCache')]
         private CacheItemPoolInterface $twigCache,
-        private AppExtension $appExtension,
+        private AppExtensionRuntime $appExtensionRuntime,
     ) {}
 
     public function postPersist(PostPersistEventArgs $args): void
@@ -80,6 +80,6 @@ final readonly class MessageCacheSubscriber
 
         $this->twigCache->deleteItem('feed_item_body_' . $id);
         $this->twigCache->deleteItem('feed_item_todo_' . $id);
-        $this->appExtension->resetSubchannelCache();
+        $this->appExtensionRuntime->resetSubchannelCache();
     }
 }
