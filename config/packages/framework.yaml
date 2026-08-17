@@ -9,6 +9,9 @@ framework:
         gc_maxlifetime: 86400
 
     http_client:
+        default_options:
+            timeout: 120.0
+            max_duration: 300.0
         scoped_clients:
             llm.client:
                 base_uri: '%env(resolve:LLM_ENDPOINT)%'

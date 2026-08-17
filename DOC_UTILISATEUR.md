@@ -13,7 +13,7 @@ Bienvenue dans le guide de l'utilisateur de **Roquette**, plateforme de messager
 5. [Interface utilisateur](#5-interface-utilisateur)
 6. [Canaux de discussion](#6-canaux-de-discussion)
 7. [Discussions (sous-canaux)](#7-discussions-sous-canaux)
-8. [Todo lists (listes de tâches)](#8-todo-lists-listes-de-tâches)
+8. [Todo lists et Tableaux Kanban](#8-todo-lists-et-tableaux-kanban)
 9. [Messagerie](#9-messagerie)
 10. [Formatage des messages (Markdown)](#10-formatage-des-messages-markdown)
 11. [Mentions et références](#11-mentions-et-références)
@@ -29,7 +29,7 @@ Bienvenue dans le guide de l'utilisateur de **Roquette**, plateforme de messager
 21. [Notifications et mise en sourdine](#21-notifications-et-mise-en-sourdine)
 22. [Messages enregistrés](#22-messages-enregistrés)
 23. [Mes réactions](#23-mes-réactions)
-24. [Assistant virtuel et synthèse IA](#24-assistant-virtuel-et-synthèse-ia)
+24. [Assistant virtuel et outils IA](#24-assistant-virtuel-et-outils-ia)
 25. [Administration](#25-administration)
 26. [Export de l'historique](#26-export-de-lhistorique)
 27. [Limitations et contraintes techniques](#27-limitations-et-contraintes-techniques)
@@ -179,6 +179,7 @@ Accédez à **Mon compte** via le menu utilisateur (en haut à droite).
 | Champ | Contrainte | Description |
 |---|---|---|
 | **Nom d'utilisateur** | Lecture seule, défini à la création | Identifiant unique, utilisé pour les mentions `@username`. |
+| **Adresse email** | Lecture seule | Adresse email du compte. Indique si l'adresse est vérifiée (✓ Vérifié) ou non vérifiée, avec un bouton pour **Renvoyer l'email** de validation le cas échéant. |
 | **Nom d'affichage** | 30 caractères max | Nom visible par les autres utilisateurs. Si vide, le nom d'utilisateur est utilisé. |
 | **Couleur du profil (teinte)** | 0-360 (HSL Hue) | Couleur de l'avatar et du pseudo. Se met à jour en temps réel. Curseur interactif. |
 | **Langue** | `fr` ou `en` | Langue de l'interface. |
@@ -208,14 +209,14 @@ Le statut est visible via un point de couleur sur l'avatar dans la barre latéra
 
 | Option | Description |
 |---|---|
-| **Notifications des notifications** | Active/désactive globalement les notifications de bureau. |
+| **Notifications de bureau** | Active/désactive globalement les notifications du navigateur (push web). |
 | **Notifications pour les mentions uniquement** | Si activé, les notifications de bureau ne sont émises que lorsque vous êtes mentionné (`@username`). |
 
 La souscription aux notifications push est gérée dynamiquement côté navigateur (API Notification + Service Worker).
 
 ### 4.5 Thème clair / sombre
 
-Baspullez entre les thèmes depuis le menu utilisateur (icône soleil/lune) ou depuis le bouton dédié dans l'en-tête. Le choix est persistant et appliqué instantanément sans rechargement de page.
+Basculez entre les thèmes depuis le menu utilisateur (icône soleil/lune) ou depuis le bouton dédié dans l'en-tête. Le choix est persistant et appliqué instantanément sans rechargement de page.
 
 ---
 
@@ -262,7 +263,9 @@ Affiché en haut de la fenêtre de discussion, il contient :
 - **Bouton favori** : ★ / ☆ pour ajouter/retirer des favoris.
 - **Description du canal** (si définie).
 - **Recherche dans le canal** : champ de recherche avec debounce 400ms et case à cocher "Non lus uniquement".
-- **Masquer les tâches terminées** (canaux todo uniquement).
+- **Bascule de vue Kanban / Liste** (`📋 Kanban` / `📝 Liste`, canaux todo uniquement) : permet de basculer instantanément entre la vue classique de messages et le tableau Kanban interactif.
+- **Masquer les tâches terminées** (canaux todo en vue liste uniquement).
+- **Bouton Résumé IA** (`✨ Résumer`, canaux publics/privés hors DM) : ouvre une modale affichant une synthèse générée en streaming par l'Assistant IA.
 - **Filtre non lus** : bascule pour n'afficher que les messages non lus, avec compteur.
 - **Notifications** : 🔔 (actif) / 🔕 (muet).
 - **Médiathèque** : ouvre le panneau latéral des fichiers.
@@ -429,40 +432,79 @@ Depuis le panneau des discussions, le créateur peut supprimer le sous-canal via
 
 ---
 
-## 8. Todo lists (listes de tâches)
+## 8. Todo lists et Tableaux Kanban
 
-### 8.1 Créer un canal todo
+### 8.1 Présentation des canaux Todo et modes d'affichage
 
-Deux méthodes :
+Un **canal Todo** est un canal de gestion de tâches collaboratif. Chaque message posté dans le canal représente une tâche qui peut être suivie, qualifiée, assignée et complétée.
 
-1. **Lors de la création** : cochez **Canal todo list** dans le formulaire de création.
-2. **Depuis un canal existant** : cochez **Transformer en todo list** dans les paramètres du canal.
+Roquette propose deux modes d'affichage interchangeables à tout moment via l'en-tête du canal :
+- **Vue Liste (📝 Liste)** : affichage chronologique sous forme de flux de messages interactifs.
+- **Vue Tableau Kanban (📋 Kanban)** : organisation visuelle par colonnes thématiques ou étapes d'avancement avec cartes déplaçables par glisser-déposer.
 
-Depuis la sidebar, un bouton "+" dans la section **Todo** permet de créer directement un nouveau canal todo.
+### 8.2 Créer et configurer un canal todo
 
-### 8.2 Gérer les tâches
+Vous pouvez créer ou convertir un canal Todo selon deux méthodes :
+1. **À la création d'un canal** : cochez l'option **Canal todo list** dans la boîte de dialogue de création (ou utilisez le bouton `+` dans la section "Todo" de la barre latérale).
+2. **Depuis un canal existant** : dans les **Paramètres** du canal, cochez **Transformer en todo list**.
 
-- Chaque message envoyé dans un canal todo devient une **tâche**.
-- La tâche s'affiche comme un message normal mais avec une case à cocher visuelle.
+### 8.3 Gestion des tâches en Vue Liste
 
-### 8.3 Marquer une tâche comme terminée
+- **Création de tâche** : tapez votre texte dans le champ de saisie et envoyez-le. Le message apparaît avec une mise en forme spécifique à la todo list.
+- **Valider une tâche** :
+  - Survolez la tâche et réagissez avec l'émoji ✅ (coche verte) dans le sélecteur rapide.
+  - La tâche s'affiche immédiatement **barrée** pour indiquer son achèvement.
+  - Réagir à nouveau avec ✅ retire la complétion.
+- **Masquer les tâches terminées** : cliquez sur le bouton **Masquer les tâches terminées** dans l'en-tête pour épurer la vue et ne conserver que les tâches en cours.
+- **Discussion liée** : ouvrez le menu d'actions (•••) de la tâche → **Discussion Todo** pour créer un sous-canal dédié aux échanges sur cette tâche spécifique.
 
-1. Survolez la tâche.
-2. Ouvrez le menu d'actions (•••) ou le sélecteur rapide d'émojis.
-3. Sélectionnez l'émoji ✅ (coche verte).
-4. Le message s'affiche alors **barré** (rayé) pour indiquer qu'il est terminé.
+### 8.4 Vue Tableau Kanban (`/channels/{slug}/kanban`)
 
-### 8.4 Masquer les tâches terminées
+En cliquant sur le bouton **📋 Kanban** dans l'en-tête du canal, vous accédez au tableau Kanban complet.
 
-Utilisez le bouton **Masquer les tâches terminées** dans l'en-tête du canal pour n'afficher que les tâches en cours.
+Le tableau est composé de :
+- **Colonnes personnalisées** : créées par les administrateurs du canal.
+- **Zone "Non trié"** : colonne par défaut regroupant toutes les tâches qui n'ont pas encore été assignées à une colonne spécifique.
+- **Bouton d'ajout de colonne** : disponible pour les administrateurs et le créateur du canal.
 
-### 8.5 Discussion associée à une tâche
+### 8.5 Gestion des colonnes Kanban
 
-Chaque tâche peut avoir une discussion dédiée pour échanger sur son avancement :
+Les administrateurs du canal ou administrateurs système peuvent gérer la structure du tableau :
+- **Créer une colonne** : cliquez sur **+ Colonne** à droite du tableau, renseignez le nom et choisissez une couleur d'accentuation via le sélecteur chromatique, puis validez.
+- **Renommer une colonne** : double-cliquez ou éditez le nom dans l'en-tête de colonne.
+- **Supprimer une colonne** : cliquez sur l'icône de corbeille dans l'en-tête de colonne. Les cartes contenues sont automatiquement replacées dans la colonne "Non trié".
+- **Réorganiser les colonnes** : l'ordre des colonnes est conservé et peut être réordonné.
 
-1. Survolez la tâche.
-2. Menu d'actions → **Discussion Todo**.
-3. Un sous-canal est créé, rattaché à cette tâche.
+### 8.6 Cartes Kanban et glisser-déposer
+
+- **Déplacement libre** : glissez-déposez n'importe quelle carte d'une colonne à une autre (y compris vers ou depuis la zone "Non trié"). La mise à jour est enregistrée instantanément côté serveur.
+- **Affichage synthétique de la carte** :
+  - **Titre** : extrait du texte de la tâche (ou nom de fichier joint si aucun texte).
+  - **Lien contextuel** : cliquez sur le titre de la carte pour ouvrir directement le message dans le flux du canal (`jumpTo`).
+  - **Pièce jointe** : mention `📎 nom-du-fichier` si une pièce jointe est liée.
+  - **Auteur et Assigné** : avatars miniatures avec initiales et couleur HSL de l'auteur et de la personne assignée.
+  - **Nombre de réponses** : badge `💬 N` indiquant le nombre de commentaires dans le fil.
+  - **Badge d'achèvement** : pastille verte `✅` lorsque la tâche est terminée.
+
+### 8.7 Propriétés avancées d'une tâche (Menu Actions •••)
+
+Sur chaque carte Kanban, cliquez sur le bouton de menu (•••) pour ouvrir le panneau d'édition rapide :
+
+| Propriété | Description |
+|---|---|
+| **Assigner à** | Menu déroulant listant tous les membres du canal. Permet de confier la tâche à un membre spécifique (son avatar s'affiche sur la carte). |
+| **Échéance (Due date)** | Sélecteur de date calendaire. Un badge `📅 jj/mm` s'affiche sur la carte : en orange si l'échéance approche (< 24h), en rouge si la date est dépassée. |
+| **Priorité** | Définissez l'urgence parmi 4 niveaux : **Basse** (low), **Moyenne** (medium), **Haute** (high), **Urgente** (urgent). Une barre de couleur distinctive s'affiche sur la carte. |
+| **Étiquettes (Labels)** | Saisissez une ou plusieurs étiquettes séparées par des virgules (ex: `frontend, bug, v2`). Elles s'affichent sous forme de pastilles colorées sur la carte. |
+| **Bascule d'achèvement** | Bouton interactif pour marquer la tâche comme terminée ou non terminée. |
+
+Toutes les modifications apportées depuis le menu d'une carte sont enregistrées à la volée sans rechargement de page.
+
+### 8.8 Discussion dédiée à une tâche
+
+Chaque carte ou tâche peut disposer d'un sous-canal de discussion :
+- Cliquez sur le lien du fil ou le menu d'actions → **Discussion Todo**.
+- Ce sous-canal hérite des membres et de la visibilité du canal parent et permet de débattre des détails de mise en œuvre de la tâche.
 
 ---
 
@@ -912,7 +954,20 @@ Pose une question à l'Assistant IA sur l'utilisation de Roquette.
 /help Comment créer un sondage ?
 ```
 
-Voir aussi la [section 24](#24-assistant-virtuel-et-synthèse-ia) pour plus d'options.
+### 19.5 `/poll [question et options]`
+
+Demande à l'Assistant IA de générer automatiquement un sondage interactif dans le canal actif à partir d'une formulation en langage naturel.
+
+- L'IA extrait la question et la liste des choix proposés.
+- Une confirmation interactive est demandée avant publication effective.
+
+**Exemples** :
+```
+/poll Quel créneau préférez-vous pour la réunion : 10h, 14h ou 16h ?
+/poll Êtes-vous favorable au passage en semaine de 4 jours ?
+```
+
+Voir aussi la [section 24](#24-assistant-virtuel-et-outils-ia) pour plus de détails sur les interactions avec l'Assistant.
 
 ---
 
@@ -1075,7 +1130,24 @@ Ce canal vous permet d'échanger en continu avec l'IA pour :
 - Lancer des recherches dans l'historique.
 - Obtenir des résumés de canaux.
 
-### 24.5 Retour en temps réel (streaming)
+### 24.5 Validation interactive des actions sensibles (Human-in-the-Loop)
+
+Pour toute action ayant un impact réel dans l'application (création d'un sondage dans un canal, programmation d'un rappel), l'Assistant applique un mécanisme de sécurité demandant une **confirmation explicite** :
+
+- **Bouton d'action interactif** : un bouton de validation ("Confirmer l'action") s'affiche directement sous la réponse de l'Assistant. Un simple clic déclenche l'exécution sécurisée.
+- **Confirmation en langage naturel** : vous pouvez également valider simplement en envoyant une phrase affirmative dans le chat (ex: `"oui"`, `"ok"`, `"confirme"`, `"je valide"`, `"vas-y"`, `"go"`, `"d'accord"`, `"parfait"`). L'Assistant reconnaît automatiquement votre confirmation et exécute l'action demandée.
+- **Sécurité** : chaque demande d'action génère un jeton signé temporaire d'une durée de validité de 15 minutes.
+
+### 24.6 Synthèse de canal en temps réel (Bouton ✨ Résumer)
+
+Depuis n'importe quel canal (hors DM), un bouton **✨ Résumer** est disponible dans l'en-tête :
+
+1. Cliquez sur **✨ Résumer** dans la barre supérieure du canal.
+2. Une fenêtre modale s'ouvre et commence immédiatement à diffuser la synthèse en direct (streaming SSE).
+3. L'Assistant analyse prioritairement vos **messages non lus**, ou se rabat sur l'historique récent (jusqu'aux 100 derniers messages, traités par lots pour les échanges volumineux).
+4. Le résultat met en exergue les sujets clés, les décisions prises et les questions en suspens sans paraphraser les messages un par un.
+
+### 24.7 Retour en temps réel (streaming)
 
 Lors d'une requête complexe ou comportant des appels d'outils, l'Assistant affiche des étapes de progression :
 
@@ -1084,7 +1156,7 @@ Lors d'une requête complexe ou comportant des appels d'outils, l'Assistant affi
 3. `Génération de la réponse... ⏳`
 4. La réponse définitive ou le résultat de l'action s'affiche.
 
-### 24.6 Navigation pendant la génération
+### 24.8 Navigation pendant la génération
 
 Si vous changez de canal pendant que l'Assistant génère une réponse :
 
@@ -1092,7 +1164,7 @@ Si vous changez de canal pendant que l'Assistant génère une réponse :
 - Un badge de message non lu apparaît sur le lien `🤖 Assistant` dans la barre latérale.
 - La réponse est disponible dès votre retour dans le canal Assistant.
 
-### 24.7 Configuration (administrateur)
+### 24.9 Configuration (administrateur)
 
 Le modèle LLM est configurable dans `.env.local` :
 
@@ -1100,6 +1172,9 @@ Le modèle LLM est configurable dans `.env.local` :
 LLM_MODEL=qwen2.5:3b
 LLM_ENDPOINT=http://ollama:11434
 LLM_SYSTEM_PROMPT="Tu es l'Assistant Roquette, un assistant virtuel d'aide pour l'application Roquette."
+LLM_MODERATION_ENABLED=true
+LLM_MAX_SUMMARY_MESSAGES=100
+LLM_MAX_SUMMARY_BATCHES=5
 ```
 
 ---
@@ -1196,6 +1271,24 @@ Permet aux administrateurs globaux de visualiser l'ensemble des espaces de trava
 - Une liste répertorie tous les espaces, leur type (public/privé), leur créateur et leurs statistiques.
 - Les administrateurs peuvent forcer la suppression d'un espace de travail (à l'exception de l'espace public par défaut).
 
+### 25.8 Modération du contenu et alertes de sécurité
+
+**URL** : `/admin/moderation`
+
+Roquette intègre un double dispositif de protection et de modération automatique :
+
+1. **Masquage préventif des secrets et identifiants** :
+   Lorsqu'un utilisateur poste un message contenant des clés ou secrets sensibles (clés d'API OpenAI/Anthropic, clés AWS, Personal Access Tokens GitHub, jetons Slack, tokens JWT, identifiants de bases de données, clés privées SSH/RSA), ces données sont automatiquement masquées sous la forme `[SECRET MASQUÉ]` avant enregistrement et diffusion.
+
+2. **Modération de toxicité par IA** :
+   Les messages identifiés comme inappropriés, haineux ou insultants par l'analyse LLM sont placés en file de modération administrative.
+
+3. **Interface de modération (`/admin/moderation`)** :
+   - Présente tous les messages modérés avec le texte original, l'auteur, le canal et le motif de détection.
+   - **Approuver** : rétablit le message dans son intégralité et actualise le canal en temps réel.
+   - **Supprimer** : supprime définitivement le message litigieux.
+   - Toutes les décisions sont automatiquement consignées dans les journaux d'audit (`MESSAGE_MODERATED`).
+
 ---
 
 ## 26. Export de l'historique
@@ -1235,8 +1328,10 @@ Les administrateurs système peuvent consulter, télécharger et supprimer tous 
 | **Teinte HSL du profil** | 0–360 |
 | **Rétention des messages** | 1, 3, 6, 12 mois ou illimitée |
 | **Options d'un sondage** | Minimum 2 |
+| **Niveaux de priorité Kanban** | 4 (Basse, Moyenne, Haute, Urgente) |
 | **Taille de pagination (administration)** | 25 éléments par page |
-| **Nombre de messages pour résumé IA** | 100 derniers messages maximum |
+| **Nombre de messages pour résumé IA** | 100 derniers messages par lot (jusqu'à 5 lots) |
+| **Validité d'une confirmation d'action IA** | 15 minutes |
 | **Ping de session** | Toutes les 60 secondes |
 | **Notification de bureau** | Nécessite une permission navigateur (API Notification) |
 | **Connexion temps réel** | Nécessite Mercure (SSE). Un indicateur de connexion est affiché dans l'en-tête. |
@@ -1304,6 +1399,22 @@ Vous devez y être invité par le créateur du workspace ou par un administrateu
 
 L'espace de travail public est l'espace communautaire permanent par défaut de Roquette. Aucun utilisateur ne peut le quitter, et il ne peut pas être supprimé par les administrateurs afin de garantir une base de discussion commune permanente.
 
+### 28.13 Comment basculer entre la vue Liste et la vue Tableau Kanban ?
+
+Dans tout canal configuré en **Todo list**, cliquez simplement sur le bouton **📋 Kanban** situé dans l'en-tête du canal. Pour revenir au flux de discussion traditionnel, cliquez sur **📝 Liste**.
+
+### 28.14 Pourquoi certains secrets ou clés d'API apparaissent comme `[SECRET MASQUÉ]` ?
+
+Roquette intègre un mécanisme automatique de détection et protection contre la fuite d'identifiants sensibles (clés OpenAI, tokens GitHub/Slack, identifiants de bases de données, clés SSH, etc.). Tout secret détecté dans un message est masqué de manière irréversible avant sa diffusion.
+
+### 28.15 Comment confirmer une action proposée par l'Assistant IA ?
+
+Lorsque l'Assistant s'apprête à créer un sondage ou programmer un rappel, il vous demande confirmation. Vous pouvez valider soit en cliquant sur le bouton de confirmation sous son message, soit en lui répondant naturellement dans le chat par *"oui"*, *"ok"*, *"confirme"*, *"je valide"* ou *"go"*.
+
+### 28.16 Comment générer une synthèse rapide d'un canal ?
+
+Cliquez sur le bouton **✨ Résumer** dans l'en-tête du canal souhaité. Une fenêtre s'ouvre et affiche en streaming le résumé généré par l'IA des messages non lus ou des discussions récentes.
+
 ---
 
-*Document généré le 4 juillet 2026. Pour toute question, contactez l'équipe technique.*
+*Document mis à jour le 17 août 2026. Pour toute question, contactez l'équipe technique.*

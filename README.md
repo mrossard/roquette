@@ -18,18 +18,18 @@ Application de messagerie et de collaboration en temps réel.
 - **Épinglage** de messages (un par canal)
 - **Markdown** (GFM) avec coloration syntaxique, aperçu en direct
 - **Mentions** `@user`, **références** `#canal`, autocomplétion avancée
-- **Commandes slash** : `/me`, `/color`, `/shrug`, `/help`
+- **Commandes slash** : `/me`, `/color`, `/shrug`, `/help`, `/poll`
 - **Fichiers** — glisser-déposer, scan ClamAV, prévisualisations (image, audio, vidéo, PDF, texte)
 - **Médiathèque** par canal (images, documents, médias)
 - **Aperçus de liens** (Open Graph) asynchrones
 - **Webhooks entrants** — publication automatisée par des services externes
-- **Assistant IA** — LLM via Ollama (`/help`, résumés de canaux, canal dédié 🤖, outils autonomes : création de sondages, programmation de rappels, recherche intelligente de messages)
+- **Assistant IA** — LLM via Ollama (`/help`, `/poll`, résumés de canaux, canal dédié 🤖, validation interactive des actions, outils autonomes : création de sondages, programmation de rappels, recherche intelligente de messages)
 - **Recherche globale** (`Ctrl+K`) avec filtres avancés + recherche par canal
 - **Notifications** de bureau, mise en sourdine des canaux, mode "Occupé"
 - **Statut de présence** : en ligne, absent, occupé, hors ligne (détection d'inactivité)
 - **Thème clair/sombre** persistant
 - **Personnalisation** : couleur de profil (teinte HSL), nom d'affichage, langue (FR/EN)
-- **Administration** : utilisateurs, groupes (LDAP), exports, journaux d'audit, émojis custom, espaces de travail
+- **Administration** : utilisateurs, modération et protection contre fuite de secrets, groupes (LDAP), exports, journaux d'audit, émojis custom, espaces de travail
 - **Export** de l'historique d'un canal en HTML standalone
 - **OAuth2** (connexion externe) avec PKCE, mock OAuth2 en dev
 - **i18n** français et anglais
