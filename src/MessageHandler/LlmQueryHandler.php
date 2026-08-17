@@ -10,6 +10,7 @@ use App\Ai\ChannelSummaryBuilder;
 use App\Ai\HelpPromptBuilder;
 use App\Ai\HelpStreamPublisher;
 use App\Ai\IntentClassifier;
+use App\Ai\LlmPromptBundle;
 use App\Ai\PendingConfirmationService;
 use App\Ai\StreamResponseCoordinator;
 use App\Ai\ToolActionSigner;
@@ -79,7 +80,7 @@ final readonly class LlmQueryHandler
 
         try {
             [$intent, $targetChannelSlug] = $this->resolveIntentAndTarget($message, $channelSlug, $channels, $workspace);
-            [$prompt, $systemPrompt, $prefix, $batches] = $this->buildPromptsForIntent(
+            $promptBundle = $this->buildPromptsForIntent(
                 $intent,
                 $targetChannelSlug,
                 $user,
@@ -91,13 +92,13 @@ final readonly class LlmQueryHandler
             );
 
             $streamCoordinator = $this->streamCoordinator ?? new StreamResponseCoordinator($this->streamPublisher);
-            $generator = $this->createGenerator($prompt, $systemPrompt, $message, $personalTopic, $state);
+            $generator = $this->createGenerator($promptBundle->prompt, $promptBundle->systemPrompt, $message, $personalTopic, $state);
 
             $streamResult = $streamCoordinator->streamAndPublish(
                 $generator,
                 $personalTopic,
                 $message->getHelpMessageId(),
-                $prefix,
+                $promptBundle->prefix,
                 $channelSlug,
                 static fn(): ?string => $state->pendingConfirmation,
             );
@@ -109,14 +110,14 @@ final readonly class LlmQueryHandler
                 'intent' => $intent,
                 'channelSlug' => $channelSlug,
                 'targetChannelSlug' => $targetChannelSlug,
-                'batchCount' => $batches !== null ? count($batches) : 0,
+                'batchCount' => $promptBundle->batchCount,
                 'chunkCount' => $chunkCount,
                 'toolsExecuted' => $state->toolsExecuted,
                 'confirmationRequested' => $state->pendingConfirmation !== null,
                 'durationMs' => (int) ((microtime(true) - $startedAt) * 1000),
             ]);
 
-            $this->robotDmMessageService->persistRobotDmMessage($channelSlug, $prefix . $accumulatedText);
+            $this->robotDmMessageService->persistRobotDmMessage($channelSlug, $promptBundle->prefix . $accumulatedText);
         } catch (\Exception $e) {
             $this->logger->error('LlmQueryHandler failed:', [
                 'exception' => $e,
@@ -157,7 +158,6 @@ final readonly class LlmQueryHandler
 
     /**
      * @param list<\App\Entity\Channel> $channels
-     * @return array{0: string, 1: string, 2: string, 3: ?list<array>}
      */
     private function buildPromptsForIntent(
         string $intent,
@@ -168,7 +168,7 @@ final readonly class LlmQueryHandler
         string $channelSlug,
         LlmQueryMessage $message,
         string $personalTopic,
-    ): array {
+    ): LlmPromptBundle {
         $currentChannel = $this->channelResolver->resolveFromList($channelSlug, $channels)
             ?? $this->channelRepository->findOneBy(['slug' => $channelSlug]);
 
@@ -180,12 +180,34 @@ final readonly class LlmQueryHandler
         );
 
         $channelName = null;
-        $batches = null;
+        $batchCount = 0;
 
         if ($intent === 'resumer' && $targetChannelSlug !== null && $targetChannelSlug !== '') {
             $targetChannel = $this->channelResolver->resolveFromList($targetChannelSlug, $channels);
             $channelName = $targetChannel ? $targetChannel->getName() : $targetChannelSlug;
-            [$prompt, $systemPrompt, $batches] = $this->summaryBuilder->build($user, $channels, $targetChannelSlug);
+            $summaryResult = $this->summaryBuilder->build($user, $channels, $targetChannelSlug);
+
+            $prompt = $summaryResult->prompt;
+            $systemPrompt = $summaryResult->systemPrompt;
+
+            if ($summaryResult->requiresBatching()) {
+                $batchCount = count($summaryResult->batches);
+                [$prompt, $systemPrompt] = $this->batchSummarizer->summarize(
+                    $summaryResult->batches,
+                    onBatchProgress: fn(int $batchNum, int $total) => $this->streamPublisher->publishStatus(
+                        $personalTopic,
+                        $message->getHelpMessageId(),
+                        "Analyse et résumé du lot {$batchNum}/{$total}... ⏳",
+                        $channelSlug,
+                    ),
+                    onFinalProgress: fn() => $this->streamPublisher->publishStatus(
+                        $personalTopic,
+                        $message->getHelpMessageId(),
+                        'Génération du résumé final combiné... ⏳',
+                        $channelSlug,
+                    ),
+                );
+            }
         }
 
         [$reformulation, $prefix] = match ($intent) {
@@ -204,29 +226,11 @@ final readonly class LlmQueryHandler
             $channelSlug,
         );
 
-        if ($batches !== null && count($batches) > 1) {
-            [$prompt, $systemPrompt] = $this->batchSummarizer->summarize(
-                $batches,
-                onBatchProgress: fn(int $batchNum, int $total) => $this->streamPublisher->publishStatus(
-                    $personalTopic,
-                    $message->getHelpMessageId(),
-                    "Analyse et résumé du lot {$batchNum}/{$total}... ⏳",
-                    $channelSlug,
-                ),
-                onFinalProgress: fn() => $this->streamPublisher->publishStatus(
-                    $personalTopic,
-                    $message->getHelpMessageId(),
-                    'Génération du résumé final combiné... ⏳',
-                    $channelSlug,
-                ),
-            );
-        }
-
         if ($intent === 'help') {
             $prompt = $this->helpPromptBuilder->addConversationContext($prompt, $channelSlug, $message->getQuestion());
         }
 
-        return [$prompt, $systemPrompt, $prefix, $batches];
+        return new LlmPromptBundle($prompt, $systemPrompt, $prefix, $batchCount);
     }
 
     private function createGenerator(

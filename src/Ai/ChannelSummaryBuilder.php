@@ -33,9 +33,8 @@ final readonly class ChannelSummaryBuilder
 
     /**
      * @param list<Channel> $channels
-     * @return array{0: string, 1: string, 2: array|null}
      */
-    public function build(User $user, array $channels, string $targetChannelSlug): array
+    public function build(User $user, array $channels, string $targetChannelSlug): SummaryPromptResult
     {
         $targetChannel = $this->channelResolver->resolveFromList($targetChannelSlug, $channels);
 
@@ -46,7 +45,7 @@ final readonly class ChannelSummaryBuilder
                 . "' ou que l'utilisateur n'y est pas inscrit.";
             $systemPrompt = "Tu es 'Assistant Roquette', un assistant virtuel d'aide pour l'application Roquette. Réponds en français.";
 
-            return [$prompt, $systemPrompt, null];
+            return new SummaryPromptResult($prompt, $systemPrompt, null);
         }
 
         $activeRead = $this->userChannelReadRepository->findOneBy([
@@ -85,7 +84,7 @@ final readonly class ChannelSummaryBuilder
                 . $targetChannel->getName()
                 . ". Indique poliment qu'il n'y a rien à résumer.";
 
-            return [$prompt, $systemPrompt, null];
+            return new SummaryPromptResult($prompt, $systemPrompt, null);
         }
 
         if (!$isFallback && count($structuredMessages) > $this->maxSummaryMessages) {
@@ -96,13 +95,14 @@ final readonly class ChannelSummaryBuilder
             }
 
             $batches = array_chunk($structuredMessages, $this->maxSummaryMessages);
-
-            return ['', $systemPrompt, $batches];
+            if (count($batches) > 1) {
+                return new SummaryPromptResult('', $systemPrompt, $batches);
+            }
         }
 
         $prompt = json_encode($structuredMessages, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-        return [$prompt, $systemPrompt, null];
+        return new SummaryPromptResult((string) $prompt, $systemPrompt, null);
     }
 
     /**

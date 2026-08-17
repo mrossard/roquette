@@ -13,7 +13,6 @@ use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserChannelReadRepository;
 use App\Repository\WorkspaceRepository;
-
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -66,9 +65,11 @@ final class ChannelSummaryBuilderTest extends TestCase
         $builder = $this->buildBuilder($messageRepo);
         $user = new User();
 
-        [$prompt] = $builder->build($user, [], 'general');
+        $result = $builder->build($user, [], 'general');
 
-        static::assertStringContainsString('n\'as pas trouvé le canal', $prompt);
+        static::assertStringContainsString('n\'as pas trouvé le canal', $result->prompt);
+        static::assertNull($result->batches);
+        static::assertFalse($result->requiresBatching());
     }
 
     public function testBuildsStructuredMessagesPrompt(): void
@@ -85,11 +86,12 @@ final class ChannelSummaryBuilderTest extends TestCase
         $builder = $this->buildBuilder($messageRepo);
         $user = new User();
 
-        [$prompt, $systemPrompt] = $builder->build($user, [$channel], 'general');
+        $result = $builder->build($user, [$channel], 'general');
 
-        static::assertStringContainsString('Bonjour tout le monde', $prompt);
-        static::assertStringContainsString('auteur', $prompt);
-        static::assertStringContainsString('Roquette', $systemPrompt);
+        static::assertStringContainsString('Bonjour tout le monde', $result->prompt);
+        static::assertStringContainsString('auteur', $result->prompt);
+        static::assertStringContainsString('Roquette', $result->systemPrompt);
+        static::assertNull($result->batches);
     }
 
     public function testBatchesWhenMessagesExceedLimit(): void
@@ -112,12 +114,14 @@ final class ChannelSummaryBuilderTest extends TestCase
         $builder = $this->buildBuilder($messageRepo, maxSummaryMessages: 2);
         $user = new User();
 
-        [$prompt, , $batches] = $builder->build($user, [$channel], 'general');
+        $result = $builder->build($user, [$channel], 'general');
 
-        static::assertSame('', $prompt);
-        static::assertCount(2, $batches);
-        static::assertCount(2, $batches[0]);
-        static::assertCount(1, $batches[1]);
+        static::assertSame('', $result->prompt);
+        static::assertNotNull($result->batches);
+        static::assertCount(2, $result->batches);
+        static::assertCount(2, $result->batches[0]);
+        static::assertCount(1, $result->batches[1]);
+        static::assertTrue($result->requiresBatching());
     }
 
     public function testBatchesAreCappedByMaxSummaryBatches(): void
@@ -139,13 +143,42 @@ final class ChannelSummaryBuilderTest extends TestCase
         $builder = $this->buildBuilder($messageRepo, maxSummaryMessages: 10, maxSummaryBatches: 2);
         $user = new User();
 
-        [$prompt, , $batches] = $builder->build($user, [$channel], 'general');
+        $result = $builder->build($user, [$channel], 'general');
 
-        static::assertSame('', $prompt);
-        static::assertCount(2, $batches);
-        static::assertCount(10, $batches[0]);
-        static::assertCount(10, $batches[1]);
-        static::assertStringContainsString('message 29', $batches[1][9]['contenu']);
+        static::assertSame('', $result->prompt);
+        static::assertNotNull($result->batches);
+        static::assertCount(2, $result->batches);
+        static::assertCount(10, $result->batches[0]);
+        static::assertCount(10, $result->batches[1]);
+        static::assertStringContainsString('message 29', $result->batches[1][9]['contenu']);
+    }
+
+    public function testSingleBatchAfterCappingDoesNotReturnEmptyPrompt(): void
+    {
+        $channel = $this->makeChannel('général', 'general');
+
+        $messages = [];
+        for ($i = 0; $i < 15; $i++) {
+            $messages[] = $this->makeMessage('message ' . $i, 'alice');
+        }
+
+        $messageRepo = $this->createMock(MessageRepository::class);
+        $messageRepo
+            ->expects($this->once())
+            ->method('findUnreadInChannel')
+            ->with($channel, static::isInstanceOf(User::class), null)
+            ->willReturn($messages);
+
+        // maxSummaryMessages = 10, maxSummaryBatches = 1 -> capped to 10 messages -> 1 batch
+        $builder = $this->buildBuilder($messageRepo, maxSummaryMessages: 10, maxSummaryBatches: 1);
+        $user = new User();
+
+        $result = $builder->build($user, [$channel], 'general');
+
+        static::assertNotSame('', $result->prompt);
+        static::assertStringContainsString('message 14', $result->prompt);
+        static::assertNull($result->batches);
+        static::assertFalse($result->requiresBatching());
     }
 
     public function testFallbackToLastMessagesWhenNoUnread(): void
@@ -159,8 +192,8 @@ final class ChannelSummaryBuilderTest extends TestCase
         $builder = $this->buildBuilder($messageRepo);
         $user = new User();
 
-        [$prompt] = $builder->build($user, [$channel], 'general');
+        $result = $builder->build($user, [$channel], 'general');
 
-        static::assertStringContainsString('ancien message', $prompt);
+        static::assertStringContainsString('ancien message', $result->prompt);
     }
 }

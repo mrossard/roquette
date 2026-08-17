@@ -49,17 +49,18 @@
 
 ## Phase 3 — God classes (risque moyen/élevé)
 
-- [ ] **3.1 `MessagePublishService` (380 L, `publish()` = 63 L, 6 early-returns)**
-  - Extraire `RobotInteractionService` (mention robot, rate-limit, dispatch `LlmQueryMessage`, rendu OOB — incluant l'entité `Message` transitoire utilisée comme DTO) + `MessageFactory` (build + attachPoll).
-  - Remplacer la requête lourde `findLatestInChannel` sur chaque publish par une requête légère.
+- [x] **3.1 `MessagePublishService` (380 L, `publish()` = 63 L, 6 early-returns)**
+  - Extraction de `RobotInteractionService` (détection mention robot, rate limiting, confirmations, dispatch `LlmQueryMessage`, rendu OOB) et `MessageFactory` (instanciation du `Message` et attachement de fichiers).
+  - Remplacement de la requête lourde `findLatestInChannel` par `findPreviousMessage` sur chaque publication.
 
-- [ ] **3.2 `MessageManager` (9 deps, 4 responsabilités)**
-  - Scinder en edit/delete/save + extraire le broadcast dupliqué `editText`/`editPoll`.
+- [x] **3.2 `MessageManager` (9 deps, 4 responsabilités)**
+  - Scission en `MessageEditor` (édition unifiée texte + sondage et broadcast), `MessageDeletionService` (suppression sécurisée, nettoyage fichiers, dé-épinglage et broadcast) et `SavedMessageService` (sauvegarde/favoris).
+  - `MessageManager` refactorisé en façade légère.
 
-- [ ] **3.3 `LlmQueryHandler` (18 deps) — avec bug latent**
-  - `StreamResponseCoordinator` déjà extrait (commit `34f9013`).
-  - Remplacer les tuples positionnels `[prompt, systemPrompt, prefix, batches]` par des value objects (le batching peut envoyer un **prompt vide** si 1 seul batch).
-  - Extraire `persistRobotDmMessage`.
+- [x] **3.3 `LlmQueryHandler` (18 deps) — avec bug latent**
+  - `StreamResponseCoordinator` et `RobotDmMessageService` extraits.
+  - Remplacement des tuples positionnels par les Value Objects `SummaryPromptResult` et `LlmPromptBundle`.
+  - Correction du bug latent de prompt vide quand un seul batch résultait du plafonnement.
 
 - [ ] **3.4 `PendingConfirmationService` (5 deps nullable, cycle non cassé)**
   - Casser le cycle structurellement (tool execution par événement, ou split `ToolRegistry`), pas par nullabilité → **retirer les 5 `?`** ; supprimer le `mercureTopicPrefix` en dur (dérive de l'env).
