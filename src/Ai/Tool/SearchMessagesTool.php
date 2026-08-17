@@ -12,6 +12,8 @@ final readonly class SearchMessagesTool implements AiToolInterface
 {
     private MessagePromptFormatter $messagePromptFormatter;
 
+    public const string NAME = 'search_messages';
+
     public function __construct(
         private UserRepository $userRepository,
         private MessageRepository $messageRepository,
@@ -22,7 +24,7 @@ final readonly class SearchMessagesTool implements AiToolInterface
 
     public function getName(): string
     {
-        return 'search_messages';
+        return self::NAME;
     }
 
     public function getDescription(): string

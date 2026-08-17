@@ -18,8 +18,6 @@ use Psr\Log\LoggerInterface;
  */
 final readonly class LlmIntentClassifier
 {
-    private const array VALID_INTENTS = ['help', 'resumer', 'sondage'];
-
     public function __construct(
         private LlmService $llmService,
         private LoggerInterface $logger,
@@ -27,7 +25,7 @@ final readonly class LlmIntentClassifier
 
     /**
      * @param list<Channel> $channels
-     * @return array{intent: string, channelSlug: string|null}|null
+     * @return array{intent: AssistantIntent, channelSlug: string|null}|null
      */
     public function classify(string $question, array $channels, string $currentChannelSlug, ?Workspace $currentWorkspace = null): ?array
     {
@@ -92,6 +90,9 @@ final readonly class LlmIntentClassifier
             . '}';
     }
 
+    /**
+     * @return array{intent: AssistantIntent, channelSlug: string|null}|null
+     */
     private function parseClassification(string $output): ?array
     {
         $data = JsonExtractor::extractArray($output);
@@ -101,9 +102,16 @@ final readonly class LlmIntentClassifier
             return null;
         }
 
-        $intent = $data['intent'] ?? null;
-        if (!\is_string($intent) || !\in_array($intent, self::VALID_INTENTS, true)) {
-            $this->logger->warning('Intent classification returned invalid intent', ['intent' => $intent]);
+        $intentString = $data['intent'] ?? null;
+        if (!\is_string($intentString)) {
+            $this->logger->warning('Intent classification returned invalid intent', ['intent' => $intentString]);
+
+            return null;
+        }
+
+        $intent = AssistantIntent::tryFrom($intentString);
+        if ($intent === null) {
+            $this->logger->warning('Intent classification returned unknown intent', ['intent' => $intentString]);
 
             return null;
         }

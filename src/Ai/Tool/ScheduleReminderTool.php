@@ -16,6 +16,8 @@ use Symfony\Component\Messenger\Stamp\DelayStamp;
 
 final readonly class ScheduleReminderTool extends AbstractAiTool
 {
+    public const string NAME = 'schedule_reminder';
+
     public function __construct(
         private EntityManagerInterface $em,
         private UserRepository $userRepository,
@@ -27,7 +29,7 @@ final readonly class ScheduleReminderTool extends AbstractAiTool
 
     public function getName(): string
     {
-        return 'schedule_reminder';
+        return self::NAME;
     }
 
     public function getDescription(): string

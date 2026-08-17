@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Ai;
 
+use App\Ai\AssistantIntent;
 use App\Ai\IntentClassifier;
 use App\Ai\LlmIntentClassifier;
 use App\Entity\Channel;
@@ -49,7 +50,7 @@ final class IntentClassifierTest extends TestCase
 
         $result = $classifier->classify('Résume le canal général', $channels, 'dm-robot-roquette-mrossard');
 
-        static::assertSame('resumer', $result['intent']);
+        static::assertSame(AssistantIntent::Summarize, $result['intent']);
         static::assertSame('general', $result['channelSlug']);
         $llm->expects($this->never())->method('generateText');
     }
@@ -60,7 +61,7 @@ final class IntentClassifierTest extends TestCase
 
         $result = $classifier->classify('Fais-moi une synthèse', [], 'dm-robot-roquette-mrossard');
 
-        static::assertSame('resumer', $result['intent']);
+        static::assertSame(AssistantIntent::Summarize, $result['intent']);
         static::assertNull($result['channelSlug']);
     }
 
@@ -70,7 +71,7 @@ final class IntentClassifierTest extends TestCase
 
         $result = $classifier->classify('Crée un sondage pour le déjeuner', [], 'general');
 
-        static::assertSame('sondage', $result['intent']);
+        static::assertSame(AssistantIntent::Poll, $result['intent']);
         static::assertNull($result['channelSlug']);
         $llm->expects($this->never())->method('generateText');
     }
@@ -81,7 +82,7 @@ final class IntentClassifierTest extends TestCase
 
         $result = $classifier->classify('Comment changer mon avatar ?', [], 'general');
 
-        static::assertSame('help', $result['intent']);
+        static::assertSame(AssistantIntent::Help, $result['intent']);
         static::assertNull($result['channelSlug']);
     }
 
@@ -91,7 +92,7 @@ final class IntentClassifierTest extends TestCase
 
         $result = $classifier->classify('Que penses-tu de mon projet ?', [], 'dm-robot-roquette-mrossard');
 
-        static::assertSame('sondage', $result['intent']);
+        static::assertSame(AssistantIntent::Poll, $result['intent']);
         static::assertSame('general', $result['channelSlug']);
     }
 
@@ -101,7 +102,7 @@ final class IntentClassifierTest extends TestCase
 
         $result = $classifier->classify('nimporte quoi', [], 'general');
 
-        static::assertSame('help', $result['intent']);
+        static::assertSame(AssistantIntent::Help, $result['intent']);
         static::assertNull($result['channelSlug']);
     }
 
@@ -111,6 +112,6 @@ final class IntentClassifierTest extends TestCase
 
         $result = $classifier->classify('Question bizarre', [], 'general');
 
-        static::assertSame('help', $result['intent']);
+        static::assertSame(AssistantIntent::Help, $result['intent']);
     }
 }

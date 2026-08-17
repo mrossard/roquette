@@ -66,7 +66,7 @@ final readonly class PollSlashCommand implements SlashCommandInterface
             $args,
         );
         $this->messageBus->dispatch(
-            new LlmQueryMessage($prompt, $user->getId(), $channel->getSlug(), $helpMessageId, 'sondage', workspaceId: $workspaceId),
+            new LlmQueryMessage($prompt, $user->getId(), $channel->getSlug(), $helpMessageId, \App\Ai\AssistantIntent::Poll, workspaceId: $workspaceId),
         );
 
         $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [

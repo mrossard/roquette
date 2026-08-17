@@ -68,7 +68,7 @@ final class ChannelActionController extends AbstractController
             userId: $currentUser->getId(),
             channelSlug: $channel->getSlug(),
             helpMessageId: $helpMessageId,
-            intent: 'resumer',
+            intent: \App\Ai\AssistantIntent::Summarize,
             workspaceId: $workspaceId,
         ));
 

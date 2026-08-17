@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Ai\AssistantIntent;
 use App\Ai\BatchSummarizer;
 use App\Ai\ChannelResolver;
 use App\Ai\ChannelSummaryBuilder;
@@ -107,7 +108,7 @@ final readonly class LlmQueryHandler
             $chunkCount = $streamResult['chunkCount'];
 
             $this->logger->info('LlmQueryHandler completed', [
-                'intent' => $intent,
+                'intent' => $intent->value,
                 'channelSlug' => $channelSlug,
                 'targetChannelSlug' => $targetChannelSlug,
                 'batchCount' => $promptBundle->batchCount,
@@ -129,7 +130,7 @@ final readonly class LlmQueryHandler
 
     /**
      * @param list<\App\Entity\Channel> $channels
-     * @return array{0: string, 1: ?string}
+     * @return array{0: AssistantIntent, 1: ?string}
      */
     private function resolveIntentAndTarget(
         LlmQueryMessage $message,
@@ -142,7 +143,7 @@ final readonly class LlmQueryHandler
         }
 
         if (!$this->robotUserProvider->isRobotDmChannel($channelSlug)) {
-            return ['help', $channelSlug];
+            return [AssistantIntent::Help, $channelSlug];
         }
 
         $classification = $this->intentClassifier->classify(
@@ -160,7 +161,7 @@ final readonly class LlmQueryHandler
      * @param list<\App\Entity\Channel> $channels
      */
     private function buildPromptsForIntent(
-        string $intent,
+        AssistantIntent $intent,
         ?string $targetChannelSlug,
         User $user,
         array $channels,
@@ -182,7 +183,7 @@ final readonly class LlmQueryHandler
         $channelName = null;
         $batchCount = 0;
 
-        if ($intent === 'resumer' && $targetChannelSlug !== null && $targetChannelSlug !== '') {
+        if ($intent === AssistantIntent::Summarize && $targetChannelSlug !== null && $targetChannelSlug !== '') {
             $targetChannel = $this->channelResolver->resolveFromList($targetChannelSlug, $channels);
             $channelName = $targetChannel ? $targetChannel->getName() : $targetChannelSlug;
             $summaryResult = $this->summaryBuilder->build($user, $channels, $targetChannelSlug);
@@ -211,12 +212,12 @@ final readonly class LlmQueryHandler
         }
 
         [$reformulation, $prefix] = match ($intent) {
-            'resumer' => [
+            AssistantIntent::Summarize => [
                 'Résumé du canal **#' . ($channelName ?? 'inconnu') . '**... ⏳',
                 '**Résumé du canal #' . ($channelName ?? 'inconnu') . "** :\n\n",
             ],
-            'sondage' => ['Création du sondage... ⏳', ''],
-            default => ['Traitement de la demande... ⏳', ''],
+            AssistantIntent::Poll => ['Création du sondage... ⏳', ''],
+            AssistantIntent::Help => ['Traitement de la demande... ⏳', ''],
         };
 
         $this->streamPublisher->publishStatus(
@@ -226,7 +227,7 @@ final readonly class LlmQueryHandler
             $channelSlug,
         );
 
-        if ($intent === 'help') {
+        if ($intent === AssistantIntent::Help) {
             $prompt = $this->helpPromptBuilder->addConversationContext($prompt, $channelSlug, $message->getQuestion());
         }
 

@@ -18,6 +18,8 @@ use Twig\Environment;
 
 final readonly class CreatePollTool extends AbstractAiTool
 {
+    public const string NAME = 'create_poll';
+
     public function __construct(
         private EntityManagerInterface $em,
         private UserRepository $userRepository,
@@ -33,7 +35,7 @@ final readonly class CreatePollTool extends AbstractAiTool
 
     public function getName(): string
     {
-        return 'create_poll';
+        return self::NAME;
     }
 
     public function getDescription(): string

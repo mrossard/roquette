@@ -4,16 +4,22 @@ declare(strict_types=1);
 
 namespace App\Message;
 
+use App\Ai\AssistantIntent;
+
 final class LlmQueryMessage
 {
+    private readonly ?AssistantIntent $intent;
+
     public function __construct(
         private readonly string $question,
         private readonly int $userId,
         private readonly string $channelSlug,
         private readonly string $helpMessageId,
-        private readonly ?string $intent = null,
+        AssistantIntent|string|null $intent = null,
         private readonly ?int $workspaceId = null,
-    ) {}
+    ) {
+        $this->intent = is_string($intent) ? AssistantIntent::tryFrom($intent) : $intent;
+    }
 
     public function getQuestion(): string
     {
@@ -35,7 +41,7 @@ final class LlmQueryMessage
         return $this->helpMessageId;
     }
 
-    public function getIntent(): ?string
+    public function getIntent(): ?AssistantIntent
     {
         return $this->intent;
     }

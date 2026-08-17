@@ -14,6 +14,8 @@ final readonly class SummarizeChannelTool extends AbstractAiTool
 {
     private MessagePromptFormatter $messagePromptFormatter;
 
+    public const string NAME = 'summarize_channel';
+
     public function __construct(
         private UserRepository $userRepository,
         private MessageRepository $messageRepository,
@@ -26,7 +28,7 @@ final readonly class SummarizeChannelTool extends AbstractAiTool
 
     public function getName(): string
     {
-        return 'summarize_channel';
+        return self::NAME;
     }
 
     public function getDescription(): string
