@@ -6,6 +6,10 @@ namespace App\Tests\Unit\Service;
 
 use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
+use App\Service\Formatter\EmojiProcessor;
+use App\Service\Formatter\EmoticonProcessor;
+use App\Service\Formatter\HtmlDecorator;
+use App\Service\Formatter\MentionProcessor;
 use App\Service\MessageFormatter;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -77,10 +81,10 @@ class MessageFormatterTest extends TestCase
         $this->testEmojisDir = __DIR__ . '/../../../var/test_emojis';
 
         $this->formatter = new MessageFormatter(
-            $this->security,
-            'http://example.com/emojis',
-            $this->channelRepository,
-            $this->userRepository,
+            new EmoticonProcessor(),
+            new EmojiProcessor('http://example.com/emojis'),
+            new MentionProcessor($this->security, $this->userRepository, $this->channelRepository),
+            new HtmlDecorator(),
         );
     }
 
@@ -316,10 +320,10 @@ class MessageFormatterTest extends TestCase
         $security->method('getUser')->willReturn($user);
 
         $formatter = new MessageFormatter(
-            $security,
-            'http://example.com/emojis',
-            $this->channelRepository,
-            $this->userRepository,
+            new EmoticonProcessor(),
+            new EmojiProcessor('http://example.com/emojis'),
+            new MentionProcessor($security, $this->userRepository, $this->channelRepository),
+            new HtmlDecorator(),
         );
         $result = $formatter->format('Bonjour @alice !');
 

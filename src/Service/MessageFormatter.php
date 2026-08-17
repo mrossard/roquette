@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Repository\ChannelRepository;
-use App\Repository\UserRepository;
 use App\Service\Formatter\EmojiProcessor;
 use App\Service\Formatter\EmoticonProcessor;
 use App\Service\Formatter\HtmlDecorator;
@@ -14,8 +12,6 @@ use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
 use League\CommonMark\MarkdownConverter;
-use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * Formate le contenu brut d'un message en HTML sécurisé.
@@ -27,21 +23,12 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 class MessageFormatter
 {
     private readonly MarkdownConverter $converter;
-    private readonly EmoticonProcessor $emoticonProcessor;
-    private readonly EmojiProcessor $emojiProcessor;
-    private readonly MentionProcessor $mentionProcessor;
-    private readonly HtmlDecorator $htmlDecorator;
 
     public function __construct(
-        private readonly Security $security,
-        #[Autowire('%env(EMOJI_BASE_URL)%')]
-        private readonly string $emojiBaseUrl,
-        private readonly ChannelRepository $channelRepository,
-        private readonly UserRepository $userRepository,
-        ?EmoticonProcessor $emoticonProcessor = null,
-        ?EmojiProcessor $emojiProcessor = null,
-        ?MentionProcessor $mentionProcessor = null,
-        ?HtmlDecorator $htmlDecorator = null,
+        private readonly EmoticonProcessor $emoticonProcessor,
+        private readonly EmojiProcessor $emojiProcessor,
+        private readonly MentionProcessor $mentionProcessor,
+        private readonly HtmlDecorator $htmlDecorator,
     ) {
         $config = [
             'html_input' => 'escape', // Échappe tout HTML brut fourni par l'utilisateur
@@ -56,10 +43,6 @@ class MessageFormatter
         $environment->addExtension(new GithubFlavoredMarkdownExtension());
 
         $this->converter = new MarkdownConverter($environment);
-        $this->emoticonProcessor = $emoticonProcessor ?? new EmoticonProcessor();
-        $this->emojiProcessor = $emojiProcessor ?? new EmojiProcessor($this->emojiBaseUrl);
-        $this->mentionProcessor = $mentionProcessor ?? new MentionProcessor($this->security, $this->userRepository, $this->channelRepository);
-        $this->htmlDecorator = $htmlDecorator ?? new HtmlDecorator();
     }
 
     /**
