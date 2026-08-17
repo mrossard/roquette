@@ -76,7 +76,7 @@
             {% endif %}
         {% endif %}
         {% if message_id|default(0) > 0 %}
-            {% if author and author.username != constant('App\\Entity\\User::ROBOT_USERNAME') %}
+            {% if author and author.username != constant('App\\Entity\\User::ROBOT_USERNAME') and not pollHasVotes|default(false) %}
                 <button class="btn-reply-subtle btn-edit-subtle"
                         hx-get="{{ path('app_message_edit_form', {id: message_id}) }}"
                         hx-target="closest .feed-item" hx-swap="morph transition:false" title="{{ 'Modifier'|trans }}">

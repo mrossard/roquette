@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
+use App\Dto\Message\EditMessageDto;
 use App\Repository\MessageRepository;
+use App\Service\MessageDeletionService;
+use App\Service\MessageEditor;
 use App\Service\MessageFeedContextService;
 use App\Service\MessageFormatter;
-use App\Service\MessageManager;
 use App\Service\MessageRenderer;
 use App\Service\MessageSubmissionHandler;
 use App\Service\SlashCommandHandler;
@@ -73,14 +75,25 @@ final class MessageController extends AbstractController
     }
 
     #[Route('/messages/{id}/edit', name: 'app_message_edit_form', methods: ['GET'])]
-    public function editMessageForm(int $id, MessageManager $messageManager): Response
-    {
+    public function editMessageForm(
+        int $id,
+        MessageRepository $messageRepository,
+        MessageEditor $messageEditor,
+    ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
         try {
-            $message = $messageManager->editMessageForm($id, $currentUser);
+            $message = $messageEditor->getEditableMessage($id, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            $message = $messageRepository->find($id);
+            if ($message !== null) {
+                return $this->render('dashboard/_feed_item.html.twig', array_merge(
+                    $this->messageRenderer->feedItemParams($message),
+                    ['no_fade' => true],
+                ), new Response(status: $e->getStatusCode()));
+            }
+
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
@@ -88,23 +101,28 @@ final class MessageController extends AbstractController
     }
 
     #[Route('/messages/{id}/edit', name: 'app_message_edit', methods: ['POST'])]
-    public function editMessage(int $id, Request $request, MessageManager $messageManager): Response
-    {
+    public function editMessage(
+        int $id,
+        Request $request,
+        MessageRepository $messageRepository,
+        MessageEditor $messageEditor,
+    ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $dto = \App\Dto\Message\EditMessageDto::fromRequest($request);
+        $dto = EditMessageDto::fromRequest($request);
 
         try {
-            $renderedHtml = $messageManager->editMessage(
-                $id,
-                $currentUser,
-                $dto->content,
-                $dto->pollQuestion,
-                $dto->pollOptions,
-                $dto->allowMultiple,
-            );
+            $renderedHtml = $messageEditor->edit($id, $currentUser, $dto);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            $message = $messageRepository->find($id);
+            if ($message !== null) {
+                return $this->render('dashboard/_edit_form.html.twig', [
+                    'message' => $message,
+                    'error' => $e->getMessage(),
+                ], new Response(status: $e->getStatusCode()));
+            }
+
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
@@ -112,13 +130,13 @@ final class MessageController extends AbstractController
     }
 
     #[Route('/messages/{id}/delete', name: 'app_message_delete', methods: ['POST'])]
-    public function deleteMessage(int $id, MessageManager $messageManager): Response
+    public function deleteMessage(int $id, MessageDeletionService $messageDeletionService): Response
     {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
         try {
-            $messageManager->deleteMessage($id, $currentUser);
+            $messageDeletionService->delete($id, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }

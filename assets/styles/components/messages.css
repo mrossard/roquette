@@ -457,7 +457,8 @@
     }
 
     /* Author-only actions (edit button) */
-    .feed-item:not([data-is-author="true"]) .btn-edit-subtle {
+    .feed-item:not([data-is-author="true"]) .btn-edit-subtle,
+    .feed-item[data-poll-has-votes="1"] .btn-edit-subtle {
         display: none !important;
     }
 

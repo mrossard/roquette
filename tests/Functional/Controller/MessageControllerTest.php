@@ -76,12 +76,16 @@ class MessageControllerTest extends WebTestCase
             $userRepository->findBy(['username' => 'test_msg_user']),
             $userRepository->findBy(['username' => 'test_other_user']),
             $userRepository->findBy(['username' => 'test_admin_user']),
+            $userRepository->findBy(['username' => 'author_user']),
         );
         foreach ($users as $u) {
             $this->entityManager->remove($u);
         }
 
-        $channels = $channelRepository->findBy(['slug' => 'test-msg-channel']);
+        $channels = array_merge(
+            $channelRepository->findBy(['slug' => 'test-msg-channel']),
+            $channelRepository->findBy(['slug' => 'other-channel-slug']),
+        );
         foreach ($channels as $c) {
             $this->entityManager->remove($c);
         }
@@ -276,11 +280,50 @@ class MessageControllerTest extends WebTestCase
         $this->client->request('POST', sprintf('/poll/%d/vote', $optionA->getId()));
         $this->assertResponseIsSuccessful();
 
-        // 3. Try to GET the edit form -> should return 400
+        // 3. Try to GET the edit form -> should return 400 with intact feed item HTML
         $this->client->request('GET', sprintf('/messages/%d/edit', $pollMessage->getId()));
         $this->assertResponseStatusCodeSame(400);
+        $this->assertSelectorExists('.feed-item');
 
+        // 4. Try to POST edit -> should return 400 with edit form and error message
+        $this->client->request('POST', sprintf('/messages/%d/edit', $pollMessage->getId()), [
+            'poll_question' => 'Trying to edit after vote?',
+            'poll_options' => ['Option A', 'Option B'],
+        ]);
         $this->assertResponseStatusCodeSame(400);
+        $this->assertSelectorExists('.edit-message-form');
+        $this->assertSelectorExists('.alert-error');
+    }
+
+    #[Test]
+    public function testEditPollWithSingleOptionReturnsErrorForm(): void
+    {
+        $this->client->request('POST', '/channels/test-msg-channel/publish', [
+            'poll_question' => 'Single option test?',
+            'poll_options' => ['Opt 1', 'Opt 2'],
+        ]);
+        $this->assertResponseIsSuccessful();
+
+        $messageRepository = $this->entityManager->getRepository(Message::class);
+        $messages = $messageRepository->findBy(['author' => $this->testUser]);
+        $pollMessage = null;
+        foreach ($messages as $msg) {
+            if (!$msg->isPoll() || $msg->getPoll()->getQuestion() !== 'Single option test?') {
+                continue;
+            }
+
+            $pollMessage = $msg;
+            break;
+        }
+        static::assertNotNull($pollMessage);
+
+        $this->client->request('POST', sprintf('/messages/%d/edit', $pollMessage->getId()), [
+            'poll_question' => 'Single option test?',
+            'poll_options' => ['Only One Option'],
+        ]);
+        $this->assertResponseStatusCodeSame(400);
+        $this->assertSelectorExists('.edit-message-form');
+        $this->assertSelectorExists('.alert-error');
     }
 
     #[Test]

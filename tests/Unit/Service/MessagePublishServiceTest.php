@@ -55,21 +55,34 @@ class MessagePublishServiceTest extends TestCase
 
         $this->translator->method('trans')->willReturnArgument(0);
         $this->messageRenderer->method('renderFeedItem')->willReturn('<div class="feed-item">Message</div>');
+        $this->messageRepository->method('findPreviousMessage')->willReturn(null);
         $this->messageRepository->method('findLatestInChannel')->willReturn([]);
         $this->twig->method('render')->willReturn('<div hx-swap-oob="beforeend:#live-feed">...</div>');
+
+        $messageFactory = new \App\Service\MessageFactory(
+            $this->messageRepository,
+            $this->fileUploadService,
+        );
+
+        $robotInteractionService = new \App\Service\RobotInteractionService(
+            $this->robotUserProvider,
+            $this->llmRateLimiter,
+            $this->messageBus,
+            $this->twig,
+            $this->translator,
+        );
 
         $this->publishService = new MessagePublishService(
             $this->messageRepository,
             $this->entityManager,
             $this->mercurePublisher,
-            $this->fileUploadService,
             $this->messageBus,
             $this->translator,
             $this->messageRenderer,
             $this->twig,
-            $this->llmRateLimiter,
-            $this->robotUserProvider,
             new \App\Service\PollFactory(),
+            $messageFactory,
+            $robotInteractionService,
         );
     }
 

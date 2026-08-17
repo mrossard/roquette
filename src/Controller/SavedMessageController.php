@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Repository\MessageRepository;
-use App\Service\MessageManager;
 use App\Service\MessageRenderer;
+use App\Service\SavedMessageService;
 use App\Service\SidebarDataProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,14 +24,14 @@ final class SavedMessageController extends AbstractController
     #[Route('/messages/{id}/save', name: 'app_message_save_toggle', methods: ['POST'])]
     public function toggleSaveMessage(
         int $id,
-        MessageManager $messageManager,
+        SavedMessageService $savedMessageService,
         MessageRenderer $messageRenderer,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
         try {
-            $message = $messageManager->toggleSaveMessage($id, $currentUser);
+            $message = $savedMessageService->toggleSave($id, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }

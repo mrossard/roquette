@@ -80,6 +80,22 @@ class MessageRepository extends ServiceEntityRepository
     }
 
     /**
+     * Returns the immediately preceding message in the channel (lightweight query without heavy joins).
+     */
+    public function findPreviousMessage(Channel $channel, int $beforeId): ?Message
+    {
+        return $this->createQueryBuilder('m')
+            ->where('m.channel = :channel')
+            ->andWhere('m.id < :beforeId')
+            ->setParameter('channel', $channel)
+            ->setParameter('beforeId', $beforeId)
+            ->orderBy('m.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
      * Finds the latest messages in a channel, eager loading the author, reactions, and reaction users.
      *
      * @return Message[]
