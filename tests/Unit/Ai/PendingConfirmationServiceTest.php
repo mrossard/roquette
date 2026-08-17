@@ -234,6 +234,13 @@ class PendingConfirmationServiceTest extends TestCase
         $messageRepo = $this->createMock(\App\Repository\MessageRepository::class);
         $messageRepo->expects($this->once())->method('findLatestInChannel')->with($channel, 5)->willReturn([$robotMsg]);
 
+        $robotDmMessageService = new \App\Service\RobotDmMessageService(
+            $entityManager,
+            $channelRepo,
+            $messageRepo,
+            $robotUserProvider,
+        );
+
         $service = new PendingConfirmationService(
             $this->signer,
             $toolRegistry,
@@ -245,9 +252,7 @@ class PendingConfirmationServiceTest extends TestCase
             $llmRateLimiter,
             'roquette',
             null,
-            $entityManager,
-            $channelRepo,
-            $messageRepo,
+            $robotDmMessageService,
         );
 
         $result = $service->executeConfirmation($token, $user);

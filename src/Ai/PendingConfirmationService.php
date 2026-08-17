@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace App\Ai;
 
-use App\Entity\Message;
 use App\Entity\User;
-use App\Repository\ChannelRepository;
-use App\Repository\MessageRepository;
 use App\Service\LlmRateLimiter;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
+use App\Service\RobotDmMessageService;
 use App\Service\RobotUserProvider;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\AI\Platform\Result\ToolCall;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
@@ -39,9 +36,7 @@ class PendingConfirmationService
         private readonly LlmRateLimiter $llmRateLimiter,
         private readonly string $mercureTopicPrefix = 'roquette',
         private readonly ?LlmService $llmService = null,
-        private readonly ?EntityManagerInterface $entityManager = null,
-        private readonly ?ChannelRepository $channelRepository = null,
-        private readonly ?MessageRepository $messageRepository = null,
+        private readonly ?RobotDmMessageService $robotDmMessageService = null,
     ) {}
 
     public function savePendingConfirmation(
@@ -244,7 +239,7 @@ class PendingConfirmationService
         $channelSlug = (string) ($payload['channelSlug'] ?? '');
 
         // Update or replace robot DM message in database so the obsolete "Veuillez confirmer..." is replaced by the actual result
-        $this->updateRobotDmMessageHistory($channelSlug, $result);
+        $this->robotDmMessageService?->updateOrPersistRobotDmMessage($channelSlug, $result);
 
         $topic = $this->mercureTopicPrefix . '/users/' . $user->getUsername();
         $renderedHtml = $this->twig->render('dashboard/_help_message_update.html.twig', [
@@ -259,46 +254,5 @@ class PendingConfirmationService
         $this->clearPendingConfirmation($user, $channelSlug);
 
         return true;
-    }
-
-    private function updateRobotDmMessageHistory(string $channelSlug, string $result): void
-    {
-        if ($this->entityManager === null || $this->channelRepository === null || $this->messageRepository === null) {
-            return;
-        }
-
-        if (!$this->robotUserProvider->isRobotDmChannel($channelSlug)) {
-            return;
-        }
-
-        $channel = $this->channelRepository->findOneBy(['slug' => $channelSlug]);
-        if ($channel === null) {
-            return;
-        }
-
-        // Find the latest robot message in this DM channel (which requested confirmation)
-        $latestMessages = $this->messageRepository->findLatestInChannel($channel, 5);
-        foreach ($latestMessages as $msg) {
-            if (!$this->robotUserProvider->isRobotUser($msg->getAuthor())) {
-                continue;
-            }
-
-            // Update the robot message with the result so the confirmation prompt is replaced
-            $msg->setContent($result);
-            $this->entityManager->flush();
-            return;
-        }
-
-        // If no prior message was found to update, persist a new robot message
-        $robotUser = $this->robotUserProvider->getRobotUser();
-        if ($robotUser !== null) {
-            $msg = new Message();
-            $msg->setAuthor($robotUser);
-            $msg->setChannel($channel);
-            $msg->setContent($result);
-            $msg->setCreatedAt(new \DateTimeImmutable());
-            $this->entityManager->persist($msg);
-            $this->entityManager->flush();
-        }
     }
 }

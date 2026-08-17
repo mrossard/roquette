@@ -7,8 +7,6 @@ namespace App\Service;
 use App\Ai\PendingConfirmationService;
 use App\Entity\Channel;
 use App\Entity\Message;
-use App\Entity\Poll;
-use App\Entity\PollOption;
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
 use App\Message\ModerateMessageMessage;
@@ -34,6 +32,7 @@ class MessagePublishService
         private readonly Environment $twig,
         private readonly LlmRateLimiter $llmRateLimiter,
         private readonly RobotUserProvider $robotUserProvider,
+        private readonly PollFactory $pollFactory,
         private readonly ?PendingConfirmationService $pendingConfirmationService = null,
     ) {}
 
@@ -87,7 +86,8 @@ class MessagePublishService
         $message = $builtMessage;
 
         if ($isPoll) {
-            $this->attachPoll($message, (string) $pollQuestion, $pollOptions ?? [], $pollAllowMultiple);
+            $poll = $this->pollFactory->createPoll($message, (string) $pollQuestion, $pollOptions ?? [], $pollAllowMultiple);
+            $this->entityManager->persist($poll);
         }
 
         $renderedHtml = $this->persistAndBroadcast(
@@ -147,9 +147,9 @@ class MessagePublishService
      */
     private function validatePoll(bool $isPoll, ?array $pollOptions, Channel $channel): ?PublishResult
     {
-        if ($isPoll && $pollOptions !== null && count($pollOptions) < 2) {
+        if ($isPoll && !$this->pollFactory->hasValidOptions($pollOptions)) {
             return PublishResult::error(
-                error: $this->translator->trans('Un sondage requiert au moins 2 options.'),
+                error: $this->translator->trans(PollFactory::ERROR_MIN_OPTIONS),
                 channel: $channel,
                 statusCode: 400,
             );
@@ -322,28 +322,6 @@ class MessagePublishService
             '/@(?:' . preg_quote($name, '/') . '|' . preg_quote($alias, '/') . ')(?![\p{L}\p{N}-])/iu',
             $messageText,
         ) === 1;
-    }
-
-    /**
-     * @param list<string> $optionsData
-     */
-    private function attachPoll(Message $message, string $pollQuestion, array $optionsData, bool $allowMultiple): void
-    {
-        $poll = new Poll();
-        $poll->setQuestion(trim($pollQuestion));
-        $poll->setAllowMultiple($allowMultiple);
-        $poll->setMessage($message);
-        $message->setPoll($poll);
-
-        $position = 0;
-        foreach ($optionsData as $optionText) {
-            $option = new PollOption();
-            $option->setText($optionText);
-            $option->setPosition($position++);
-            $poll->addOption($option);
-        }
-
-        $this->entityManager->persist($poll);
     }
 
     private function maybePrependDaySeparator(

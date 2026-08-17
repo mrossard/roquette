@@ -23,6 +23,7 @@ class MessageManager
         private readonly TranslatorInterface $translator,
         private readonly MessageRenderer $messageRenderer,
         private readonly ChannelAccessService $channelAccessService,
+        private readonly PollFactory $pollFactory,
         private readonly ?\Symfony\Component\Messenger\MessageBusInterface $messageBus = null,
     ) {}
 
@@ -172,37 +173,10 @@ class MessageManager
         array $optionsData,
         bool $allowMultiple,
     ): string {
-        if ($pollQuestion === null || trim($pollQuestion) === '') {
-            throw new BadRequestHttpException($this->translator->trans('La question du sondage ne peut pas être vide.'));
-        }
-
-        if (count($optionsData) < 2) {
-            throw new BadRequestHttpException($this->translator->trans('Un sondage requiert au moins 2 options.'));
-        }
-
-        $poll = $message->getPoll();
-        $poll->setQuestion(trim($pollQuestion));
-        $poll->setAllowMultiple($allowMultiple);
-
-        $existingOptions = $poll->getOptions()->getValues();
-        $position = 0;
-        foreach ($optionsData as $idx => $optText) {
-            if (array_key_exists($idx, $existingOptions)) {
-                if ($existingOptions[$idx]->getText() !== $optText) {
-                    $existingOptions[$idx]->setText($optText);
-                    $existingOptions[$idx]->getVotes()->clear();
-                }
-                $existingOptions[$idx]->setPosition($position++);
-            } else {
-                $newOption = new \App\Entity\PollOption();
-                $newOption->setText($optText);
-                $newOption->setPosition($position++);
-                $poll->addOption($newOption);
-            }
-        }
-
-        for ($i = count($optionsData); $i < count($existingOptions); $i++) {
-            $poll->removeOption($existingOptions[$i]);
+        try {
+            $this->pollFactory->updatePoll($message->getPoll(), (string) $pollQuestion, $optionsData, $allowMultiple);
+        } catch (\InvalidArgumentException $e) {
+            throw new BadRequestHttpException($this->translator->trans($e->getMessage()));
         }
 
         $message->setUpdatedAt(new \DateTimeImmutable());

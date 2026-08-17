@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
-use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
+use App\Service\MessageFeedContextService;
 use App\Service\MessageFormatter;
 use App\Service\MessageManager;
 use App\Service\MessageRenderer;
@@ -27,6 +27,7 @@ final class MessageController extends AbstractController
     public function __construct(
         private readonly TranslatorInterface $translator,
         private readonly MessageRenderer $messageRenderer,
+        private readonly MessageFeedContextService $feedContextService,
     ) {}
 
     #[Route('/api/message/preview', name: 'app_api_message_preview', methods: ['POST'])]
@@ -142,7 +143,6 @@ final class MessageController extends AbstractController
     public function replies(
         int $id,
         MessageRepository $messageRepository,
-        ChannelRepository $channelRepository,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -160,14 +160,13 @@ final class MessageController extends AbstractController
 
         // Include the original message as the first item
         $messages = array_merge([$message], $replies);
-        $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($channel);
+        $feedContext = $this->feedContextService->buildFeedContext($channel, $messages);
 
-        return $this->render('dashboard/_messages_feed.html.twig', [
+        return $this->render('dashboard/_messages_feed.html.twig', array_merge([
             'messages' => $messages,
             'activeChannel' => $channel,
             'firstUnreadMessageId' => null,
             'threadOf' => $message,
-            'subchannelByParentMessageId' => $subchannelByParentMessageId,
-        ]);
+        ], $feedContext));
     }
 }

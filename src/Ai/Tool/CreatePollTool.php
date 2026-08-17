@@ -6,13 +6,12 @@ namespace App\Ai\Tool;
 
 use App\Ai\ChannelResolver;
 use App\Entity\Message;
-use App\Entity\Poll;
-use App\Entity\PollOption;
 use App\Repository\UserRepository;
 use App\Service\ChannelAccessService;
 use App\Service\MercurePublisher;
 use App\Service\MessageFormatter;
 use App\Service\MessageRenderer;
+use App\Service\PollFactory;
 use App\Service\RobotUserProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Twig\Environment;
@@ -29,6 +28,7 @@ final readonly class CreatePollTool extends AbstractAiTool
         private MessageRenderer $messageRenderer,
         private ChannelResolver $channelResolver,
         private ChannelAccessService $channelAccessService,
+        private PollFactory $pollFactory,
     ) {}
 
     public function getName(): string
@@ -120,7 +120,7 @@ final readonly class CreatePollTool extends AbstractAiTool
             }
         }
 
-        if (count($options) < 2) {
+        if (!$this->pollFactory->hasValidOptions($options)) {
             return 'Impossible de créer un sondage avec moins de 2 options.';
         }
 
@@ -136,23 +136,10 @@ final readonly class CreatePollTool extends AbstractAiTool
         $message->setFormattedContent($this->messageFormatter->format($rawText));
         $message->setCreatedAt(new \DateTimeImmutable());
 
-        $poll = new Poll();
-        $poll->setQuestion($question);
-        $poll->setAllowMultiple($allowMultiple);
-        $poll->setMessage($message);
-        $message->setPoll($poll);
+        $poll = $this->pollFactory->createPoll($message, $question, $options, $allowMultiple);
 
         $this->em->persist($message);
         $this->em->persist($poll);
-
-        foreach ($options as $index => $optionText) {
-            $opt = new PollOption();
-            $opt->setText(trim($optionText));
-            $opt->setPosition($index + 1);
-            $opt->setPoll($poll);
-            $poll->addOption($opt);
-            $this->em->persist($opt);
-        }
 
         $this->em->flush();
 

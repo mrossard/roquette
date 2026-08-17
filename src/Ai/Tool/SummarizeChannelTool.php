@@ -5,18 +5,24 @@ declare(strict_types=1);
 namespace App\Ai\Tool;
 
 use App\Ai\ChannelResolver;
+use App\Ai\MessagePromptFormatter;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use App\Service\ChannelAccessService;
 
 final readonly class SummarizeChannelTool extends AbstractAiTool
 {
+    private MessagePromptFormatter $messagePromptFormatter;
+
     public function __construct(
         private UserRepository $userRepository,
         private MessageRepository $messageRepository,
         private ChannelResolver $channelResolver,
         private ChannelAccessService $channelAccessService,
-    ) {}
+        ?MessagePromptFormatter $messagePromptFormatter = null,
+    ) {
+        $this->messagePromptFormatter = $messagePromptFormatter ?? new MessagePromptFormatter();
+    }
 
     public function getName(): string
     {
@@ -128,10 +134,7 @@ final readonly class SummarizeChannelTool extends AbstractAiTool
                 continue;
             }
 
-            $authorDisp = $msg->getAuthor()?->getDisplayName();
-            $author = ($authorDisp !== null && $authorDisp !== '') ? $authorDisp : ($msg->getAuthor()?->getUsername() ?? 'Inconnu');
-            $date = $msg->getCreatedAt()->format('d/m H:i');
-            $extractedText[] = sprintf('[%s] %s: %s', $date, $author, mb_substr($content, 0, 500));
+            $extractedText[] = $this->messagePromptFormatter->formatLineWithDate($msg, 500, 'd/m H:i');
         }
 
         if ([] === $extractedText) {

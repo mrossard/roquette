@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace App\Ai\Tool;
 
+use App\Ai\MessagePromptFormatter;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 
 final readonly class SearchMessagesTool implements AiToolInterface
 {
+    private MessagePromptFormatter $messagePromptFormatter;
+
     public function __construct(
         private UserRepository $userRepository,
         private MessageRepository $messageRepository,
-    ) {}
+        ?MessagePromptFormatter $messagePromptFormatter = null,
+    ) {
+        $this->messagePromptFormatter = $messagePromptFormatter ?? new MessagePromptFormatter();
+    }
 
     public function getName(): string
     {
@@ -128,21 +134,7 @@ final readonly class SearchMessagesTool implements AiToolInterface
         $formatted = [];
 
         foreach ($results as $msg) {
-            $displayName = $msg->getAuthor()?->getDisplayName();
-            $authorName = ($displayName !== null && $displayName !== '') ? $displayName : ($msg->getAuthor()?->getUsername() ?? 'Inconnu');
-            $channelName = $msg->getChannel()?->getName() ?? 'Inconnu';
-            $channelSlug = $msg->getChannel()?->getSlug() ?? 'general';
-            $date = $msg->getCreatedAt()->format('d/m/Y H:i');
-            $content = mb_substr(trim($msg->getContent() ?? ''), 0, 300);
-            $messageId = (int) ($msg->getId() ?? 0);
-
-            $fileInfo = '';
-            if ($msg->getFileName()) {
-                $fileInfo = sprintf(' [Fichier: %s]', $msg->getFileName());
-            }
-
-            // Ex: #general?jumpTo=123 ou #general
-            $formatted[] = sprintf('[Réf: #%s?jumpTo=%d | %s] %s: %s%s', $channelSlug, $messageId, $date, $authorName, $content, $fileInfo);
+            $formatted[] = $this->messagePromptFormatter->formatSearchReference($msg, 300);
         }
 
         return [

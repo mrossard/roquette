@@ -120,11 +120,17 @@ class LlmQueryHandlerTest extends TestCase
             'roquette',
         );
 
+        $robotDmMessageService = new \App\Service\RobotDmMessageService(
+            $deps['entityManager'],
+            $deps['channelRepository'],
+            $deps['messageRepository'],
+            $deps['robotUserProvider'],
+        );
+
         $handler = new LlmQueryHandler(
             userRepository: $deps['userRepository'],
             channelRepository: $deps['channelRepository'],
             workspaceRepository: $deps['workspaceRepository'],
-            entityManager: $deps['entityManager'],
             llmService: $deps['llmService'],
             logger: $deps['logger'],
             channelResolver: $channelResolver,
@@ -138,6 +144,7 @@ class LlmQueryHandlerTest extends TestCase
             toolActionSigner: $deps['toolActionSigner'],
             toolsEnabled: $deps['toolsEnabled'],
             robotUserProvider: $deps['robotUserProvider'],
+            robotDmMessageService: $robotDmMessageService,
         );
 
         return [$handler, $deps];
@@ -217,7 +224,7 @@ class LlmQueryHandlerTest extends TestCase
         $llmService->expects($this->once())->method('generateTextStream')->willReturn($generator);
 
         $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
-        $entityManager->expects($this->once())->method('persist')->with($this->isInstanceOf(\App\Entity\Message::class));
+        $entityManager->expects($this->once())->method('persist')->with(static::isInstanceOf(\App\Entity\Message::class));
         $entityManager->expects($this->once())->method('flush');
 
         $overrides = [

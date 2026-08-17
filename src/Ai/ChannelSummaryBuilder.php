@@ -16,6 +16,8 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  */
 final readonly class ChannelSummaryBuilder
 {
+    private MessagePromptFormatter $messagePromptFormatter;
+
     public function __construct(
         private UserChannelReadRepository $userChannelReadRepository,
         private MessageRepository $messageRepository,
@@ -24,7 +26,10 @@ final readonly class ChannelSummaryBuilder
         private int $maxSummaryMessages = 100,
         #[Autowire(env: 'int:LLM_MAX_SUMMARY_BATCHES')]
         private int $maxSummaryBatches = 5,
-    ) {}
+        ?MessagePromptFormatter $messagePromptFormatter = null,
+    ) {
+        $this->messagePromptFormatter = $messagePromptFormatter ?? new MessagePromptFormatter();
+    }
 
     /**
      * @param list<Channel> $channels
@@ -108,16 +113,7 @@ final readonly class ChannelSummaryBuilder
     {
         $structured = [];
         foreach ($messages as $msg) {
-            $authorName = $msg->getAuthor() ? $msg->getAuthor()->getUsername() : 'Robot';
-            $content = $msg->isPoll()
-                ? '[Sondage] ' . $msg->getPoll()?->getQuestion()
-                : ($msg->getContent() ?? '');
-
-            $structured[] = [
-                'date' => $msg->getCreatedAt()->format('Y-m-d H:i'),
-                'auteur' => $authorName,
-                'contenu' => $content,
-            ];
+            $structured[] = $this->messagePromptFormatter->formatStructured($msg);
         }
 
         return $structured;

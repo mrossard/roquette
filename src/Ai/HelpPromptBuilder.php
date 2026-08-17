@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Ai;
 
 use App\Entity\Channel;
-use App\Entity\User;
 use App\Entity\Workspace;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
@@ -13,13 +12,18 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 final readonly class HelpPromptBuilder
 {
+    private MessagePromptFormatter $messagePromptFormatter;
+
     public function __construct(
         private DocumentContextBuilder $documentContextBuilder,
         private ChannelRepository $channelRepository,
         private MessageRepository $messageRepository,
         #[Autowire(env: 'int:LLM_MEMORY_MESSAGES')]
         private int $memoryMessages = 10,
-    ) {}
+        ?MessagePromptFormatter $messagePromptFormatter = null,
+    ) {
+        $this->messagePromptFormatter = $messagePromptFormatter ?? new MessagePromptFormatter();
+    }
 
     /**
      * Builds the default prompt and system prompt with workspace, channels, and documentation context.
@@ -131,8 +135,7 @@ final readonly class HelpPromptBuilder
                 continue;
             }
 
-            $author = $msg->getAuthor()?->getUsername() ?? User::ROBOT_USERNAME;
-            $history[] = sprintf('%s: %s', $author, mb_substr($content, 0, 500));
+            $history[] = $this->messagePromptFormatter->formatLine($msg, 500);
         }
 
         if ([] === $history) {

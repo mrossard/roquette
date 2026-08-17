@@ -14,6 +14,7 @@ use App\Repository\MessageRepository;
 use App\Repository\WorkspaceRepository;
 use App\Service\ChannelManager;
 use App\Service\MercurePublisher;
+use App\Service\MessageFeedContextService;
 use App\Service\ReadTrackingService;
 use App\Service\SidebarDataProvider;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,6 +38,7 @@ final class ChannelController extends AbstractController
         private readonly TranslatorInterface $translator,
         private readonly ChannelManager $channelManager,
         private readonly SidebarDataProvider $sidebarDataProvider,
+        private readonly MessageFeedContextService $feedContextService,
     ) {}
 
     #[Route('/channels/{slug}', name: 'app_channel', requirements: [
@@ -98,31 +100,24 @@ final class ChannelController extends AbstractController
 
         $typingUsers = $this->getTypingUsers($activeChannel, $currentUser, $isMember, $typingIndicatorService);
 
-        $messageIds = array_map(static fn(Message $m) => $m->getId(), $messages);
-        $replyCounts = $messageRepository->findReplyCounts($messageIds);
-        $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($activeChannel);
-        $savedMessageIds = $messageRepository->findSavedMessageIdsForUser($currentUser);
+        $feedContext = $this->feedContextService->buildFeedContext($activeChannel, $messages, $currentUser);
 
         return $this->render('dashboard/index.html.twig', array_merge([
             'activeChannel' => $activeChannel,
             'messages' => $messages,
-            'savedMessageIds' => $savedMessageIds,
             'topic_url' => $this->getChannelTopicUrl($activeChannel),
             'firstUnreadMessageId' => $firstUnreadMessageId,
             'usersToInvite' => [],
             'isMember' => $isMember,
             'notificationsEnabled' => $notificationsEnabled,
             'typingUsers' => $typingUsers,
-            'replyCounts' => $replyCounts,
-            'subchannelByParentMessageId' => $subchannelByParentMessageId,
-        ], $sidebarData));
+        ], $feedContext, $sidebarData));
     }
 
     #[Route('/channels/{slug}/more', name: 'app_channel_load_more', methods: ['GET'])]
     public function loadMore(
         string $slug,
         Request $request,
-        ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
     ): Response {
         $activeChannel = $this->channelManager->findChannelBySlug($slug);
@@ -142,18 +137,14 @@ final class ChannelController extends AbstractController
         $hasMore = count($moreMessages) === 50;
         $nextBeforeId = count($moreMessages) > 0 ? $moreMessages[0]->getId() : null;
 
-        $messageIds = array_map(static fn(Message $m) => $m->getId(), $moreMessages);
-        $replyCounts = $messageRepository->findReplyCounts($messageIds);
-        $subchannelByParentMessageId = $channelRepository->findSubchannelsByChannel($activeChannel);
+        $feedContext = $this->feedContextService->buildFeedContext($activeChannel, $moreMessages);
 
-        return $this->render('dashboard/_more_messages.html.twig', [
+        return $this->render('dashboard/_more_messages.html.twig', array_merge([
             'messages' => $moreMessages,
             'channel' => $activeChannel,
             'hasMore' => $hasMore,
             'nextBeforeId' => $nextBeforeId,
-            'replyCounts' => $replyCounts,
-            'subchannelByParentMessageId' => $subchannelByParentMessageId,
-        ]);
+        ], $feedContext));
     }
 
     #[Route('/channels/{slug}/sidebar-item', name: 'app_channel_sidebar_item', methods: ['GET'])]

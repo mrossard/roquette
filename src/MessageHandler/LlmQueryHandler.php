@@ -16,7 +16,6 @@ use App\Ai\ToolActionSigner;
 use App\Ai\ToolRegistry;
 use App\Ai\ToolRunner;
 use App\Ai\ToolRunState;
-use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\Workspace;
 use App\Message\LlmQueryMessage;
@@ -24,8 +23,8 @@ use App\Repository\ChannelRepository;
 use App\Repository\UserRepository;
 use App\Repository\WorkspaceRepository;
 use App\Service\LlmService;
+use App\Service\RobotDmMessageService;
 use App\Service\RobotUserProvider;
-use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -37,7 +36,6 @@ final readonly class LlmQueryHandler
         private UserRepository $userRepository,
         private ChannelRepository $channelRepository,
         private WorkspaceRepository $workspaceRepository,
-        private EntityManagerInterface $entityManager,
         private LlmService $llmService,
         private LoggerInterface $logger,
         private ChannelResolver $channelResolver,
@@ -50,6 +48,7 @@ final readonly class LlmQueryHandler
         private ToolRunner $toolRunner,
         private ToolActionSigner $toolActionSigner,
         private RobotUserProvider $robotUserProvider,
+        private RobotDmMessageService $robotDmMessageService,
         #[Autowire(env: 'bool:LLM_TOOLS_ENABLED')]
         private bool $toolsEnabled = true,
         private ?PendingConfirmationService $pendingConfirmationService = null,
@@ -117,7 +116,7 @@ final readonly class LlmQueryHandler
                 'durationMs' => (int) ((microtime(true) - $startedAt) * 1000),
             ]);
 
-            $this->persistRobotDmMessage($channelSlug, $prefix . $accumulatedText);
+            $this->robotDmMessageService->persistRobotDmMessage($channelSlug, $prefix . $accumulatedText);
         } catch (\Exception $e) {
             $this->logger->error('LlmQueryHandler failed:', [
                 'exception' => $e,
@@ -228,27 +227,6 @@ final readonly class LlmQueryHandler
         }
 
         return [$prompt, $systemPrompt, $prefix, $batches];
-    }
-
-    private function persistRobotDmMessage(string $channelSlug, string $content): void
-    {
-        if (!$this->robotUserProvider->isRobotDmChannel($channelSlug)) {
-            return;
-        }
-
-        $robotUser = $this->robotUserProvider->getRobotUser();
-        $channel = $this->channelRepository->findOneBy(['slug' => $channelSlug]);
-        if (!$robotUser || !$channel) {
-            return;
-        }
-
-        $dbMessage = new Message();
-        $dbMessage->setAuthor($robotUser);
-        $dbMessage->setChannel($channel);
-        $dbMessage->setContent($content);
-        $dbMessage->setCreatedAt(new \DateTimeImmutable());
-        $this->entityManager->persist($dbMessage);
-        $this->entityManager->flush();
     }
 
     private function createGenerator(

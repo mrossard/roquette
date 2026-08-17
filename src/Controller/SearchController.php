@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
-use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use App\Service\ChannelManager;
+use App\Service\MessageFeedContextService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,6 +30,7 @@ final class SearchController extends AbstractController
         private readonly MessageRepository $messageRepository,
         private readonly UserRepository $userRepository,
         private readonly EntityManagerInterface $entityManager,
+        private readonly MessageFeedContextService $feedContextService,
     ) {}
 
     #[Route('/channels/{slug}/search', name: 'app_channel_search', methods: ['GET'])]
@@ -55,33 +56,25 @@ final class SearchController extends AbstractController
             $messages = $this->messageRepository->findLatestInChannel($activeChannel, 50);
             $messages = array_reverse($messages);
 
-            $messageIds = array_map(static fn(Message $m) => (int) $m->getId(), $messages);
-            $replyCounts = $this->messageRepository->findReplyCounts($messageIds);
-            $subchannelByParentMessageId = $this->channelRepository->findSubchannelsByChannel($activeChannel);
+            $feedContext = $this->feedContextService->buildFeedContext($activeChannel, $messages);
 
-            return $this->render('dashboard/_messages_feed.html.twig', [
+            return $this->render('dashboard/_messages_feed.html.twig', array_merge([
                 'messages' => $messages,
                 'activeChannel' => $activeChannel,
                 'firstUnreadMessageId' => null,
-                'replyCounts' => $replyCounts,
-                'subchannelByParentMessageId' => $subchannelByParentMessageId,
-            ]);
+            ], $feedContext));
         }
 
         $messages = $this->messageRepository->searchInChannel($activeChannel, $query);
 
-        $messageIds = array_map(static fn(Message $m) => (int) $m->getId(), $messages);
-        $replyCounts = $this->messageRepository->findReplyCounts($messageIds);
-        $subchannelByParentMessageId = $this->channelRepository->findSubchannelsByChannel($activeChannel);
+        $feedContext = $this->feedContextService->buildFeedContext($activeChannel, $messages);
 
-        return $this->render('dashboard/_messages_feed.html.twig', [
+        return $this->render('dashboard/_messages_feed.html.twig', array_merge([
             'messages' => $messages,
             'activeChannel' => $activeChannel,
             'searchQuery' => $query,
             'firstUnreadMessageId' => null,
-            'replyCounts' => $replyCounts,
-            'subchannelByParentMessageId' => $subchannelByParentMessageId,
-        ]);
+        ], $feedContext));
     }
 
     #[Route('/search', name: 'app_global_search', methods: ['GET'])]
@@ -177,18 +170,14 @@ final class SearchController extends AbstractController
             );
         }
 
-        $messageIds = array_map(static fn(Message $m) => (int) $m->getId(), $messages);
-        $replyCounts = $this->messageRepository->findReplyCounts($messageIds);
-        $subchannelByParentMessageId = $this->channelRepository->findSubchannelsByChannel($activeChannel);
+        $feedContext = $this->feedContextService->buildFeedContext($activeChannel, $messages);
 
-        return $this->render('dashboard/_messages_feed.html.twig', [
+        return $this->render('dashboard/_messages_feed.html.twig', array_merge([
             'messages' => $messages,
             'activeChannel' => $activeChannel,
             'firstUnreadMessageId' => null,
             'unreadFilterActive' => true,
             'searchQuery' => $query !== '' ? $query : null,
-            'replyCounts' => $replyCounts,
-            'subchannelByParentMessageId' => $subchannelByParentMessageId,
-        ]);
+        ], $feedContext));
     }
 }

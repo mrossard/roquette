@@ -56,6 +56,7 @@ class CreatePollToolTest extends TestCase
             $messageRenderer,
             new ChannelResolver($channelRepo, $workspaceRepo),
             $accessService ?? $this->createMock(ChannelAccessService::class),
+            new \App\Service\PollFactory(),
         );
     }
 
@@ -172,6 +173,7 @@ class CreatePollToolTest extends TestCase
             $this->createMock(MessageRenderer::class),
             new ChannelResolver($channelRepo, $workspaceRepo),
             $accessService,
+            new \App\Service\PollFactory(),
         );
 
         $result = $tool->__invoke('private', 'Choix ?', ['A', 'B'], false, 7, null);

@@ -69,6 +69,7 @@ class MessagePublishServiceTest extends TestCase
             $this->twig,
             $this->llmRateLimiter,
             $this->robotUserProvider,
+            new \App\Service\PollFactory(),
         );
     }
 

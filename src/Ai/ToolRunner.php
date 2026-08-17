@@ -174,38 +174,21 @@ final readonly class ToolRunner
      */
     private function parsePseudoToolCall(string $text): ?ToolCall
     {
-        $trimmed = trim($text);
-
-        // Strip markdown code blocks if present (e.g. ```json ... ```)
-        if (str_starts_with($trimmed, '```')) {
-            $trimmed = preg_replace('/^```(?:json)?\s*/i', '', $trimmed) ?? $trimmed;
-            $trimmed = preg_replace('/\s*```$/', '', $trimmed) ?? $trimmed;
-            $trimmed = trim($trimmed);
-        }
-
-        if (!str_starts_with($trimmed, '{') || !str_ends_with($trimmed, '}')) {
+        $data = JsonExtractor::extractArray($text);
+        if (!\is_array($data)) {
             return null;
         }
 
-        try {
-            $data = json_decode($trimmed, true, 512, JSON_THROW_ON_ERROR);
-            if (!\is_array($data)) {
-                return null;
-            }
-
-            $name = $data['tool'] ?? $data['name'] ?? $data['function'] ?? null;
-            if (!\is_string($name) || '' === $name) {
-                return null;
-            }
-
-            $args = $data['action'] ?? $data['arguments'] ?? $data['parameters'] ?? $data['args'] ?? [];
-            if (!\is_array($args)) {
-                $args = [];
-            }
-
-            return new ToolCall(uniqid('pseudo_call_', true), $name, $args);
-        } catch (\Throwable) {
+        $name = $data['tool'] ?? $data['name'] ?? $data['function'] ?? null;
+        if (!\is_string($name) || '' === $name) {
             return null;
         }
+
+        $args = $data['action'] ?? $data['arguments'] ?? $data['parameters'] ?? $data['args'] ?? [];
+        if (!\is_array($args)) {
+            $args = [];
+        }
+
+        return new ToolCall(uniqid('pseudo_call_', true), $name, $args);
     }
 }

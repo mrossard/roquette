@@ -94,14 +94,9 @@ final readonly class LlmIntentClassifier
 
     private function parseClassification(string $output): ?array
     {
-        $jsonText = trim($output);
-        if (str_starts_with($jsonText, '```')) {
-            $jsonText = trim((string) preg_replace('/^```(?:json)?|```$/', '', $jsonText));
-        }
-
-        $data = json_decode($jsonText, true);
+        $data = JsonExtractor::extractArray($output);
         if (!\is_array($data)) {
-            $this->logger->warning('Intent classification returned no JSON', ['raw' => $jsonText]);
+            $this->logger->warning('Intent classification returned no JSON', ['raw' => $output]);
 
             return null;
         }
