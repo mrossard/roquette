@@ -23,7 +23,7 @@ final readonly class HelpSlashCommand implements SlashCommandInterface
         private Environment $twig,
         private LlmRateLimiter $llmRateLimiter,
         private RateLimitedOobRenderer $rateLimitedRenderer,
-        private ?PendingConfirmationService $pendingConfirmationService = null,
+        private PendingConfirmationService $pendingConfirmationService,
     ) {}
 
     public function getName(): string
@@ -40,16 +40,14 @@ final readonly class HelpSlashCommand implements SlashCommandInterface
     {
         $helpMessageId = 'help-' . uniqid();
 
-        if ($this->pendingConfirmationService !== null) {
-            $token = $this->pendingConfirmationService->getPendingConfirmation($user, $channel->getSlug());
-            if ($token !== null && $this->pendingConfirmationService->isConfirmation($args, $token, $user)) {
-                if ($this->pendingConfirmationService->executeConfirmation($token, $user)) {
-                    $formHtml = $this->twig->render('dashboard/_input_form.html.twig', [
-                        'activeChannel' => $channel,
-                    ]);
+        $token = $this->pendingConfirmationService->getPendingConfirmation($user, $channel->getSlug());
+        if ($token !== null && $this->pendingConfirmationService->isConfirmation($args, $token, $user)) {
+            if ($this->pendingConfirmationService->executeConfirmation($token, $user)) {
+                $formHtml = $this->twig->render('dashboard/_input_form.html.twig', [
+                    'activeChannel' => $channel,
+                ]);
 
-                    return SlashCommandResult::handled(new Response($formHtml));
-                }
+                return SlashCommandResult::handled(new Response($formHtml));
             }
         }
 

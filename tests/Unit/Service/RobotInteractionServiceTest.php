@@ -34,8 +34,9 @@ class RobotInteractionServiceTest extends TestCase
         $messageBus = $this->createStub(MessageBusInterface::class);
         $twig = $this->createStub(Environment::class);
         $translator = $this->createStub(TranslatorInterface::class);
+        $pendingConfirmationService = $this->createStub(PendingConfirmationService::class);
 
-        $service = new RobotInteractionService($robotUserProvider, $llmRateLimiter, $messageBus, $twig, $translator);
+        $service = new RobotInteractionService($robotUserProvider, $llmRateLimiter, $messageBus, $twig, $translator, $pendingConfirmationService);
 
         $this->assertTrue($service->isRobotMentioned('Salut @robot-roquette tu peux m\'aider ?'));
         $this->assertTrue($service->isRobotMentioned('@robot quel temps fait-il ?'));
@@ -54,8 +55,9 @@ class RobotInteractionServiceTest extends TestCase
         $twig = $this->createStub(Environment::class);
         $translator = $this->createStub(TranslatorInterface::class);
         $translator->method('trans')->willReturn('Trop de requêtes');
+        $pendingConfirmationService = $this->createStub(PendingConfirmationService::class);
 
-        $service = new RobotInteractionService($robotUserProvider, $llmRateLimiter, $messageBus, $twig, $translator);
+        $service = new RobotInteractionService($robotUserProvider, $llmRateLimiter, $messageBus, $twig, $translator, $pendingConfirmationService);
 
         $channel = new Channel();
         $user = new User();
@@ -87,8 +89,9 @@ class RobotInteractionServiceTest extends TestCase
             ->willReturn('<div>OOB help message</div>');
 
         $translator = $this->createStub(TranslatorInterface::class);
+        $pendingConfirmationService = $this->createStub(PendingConfirmationService::class);
 
-        $service = new RobotInteractionService($robotUserProvider, $llmRateLimiter, $messageBus, $twig, $translator);
+        $service = new RobotInteractionService($robotUserProvider, $llmRateLimiter, $messageBus, $twig, $translator, $pendingConfirmationService);
 
         $channel = new Channel();
         $channel->setSlug('general');

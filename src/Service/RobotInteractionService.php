@@ -22,7 +22,7 @@ class RobotInteractionService
         private readonly MessageBusInterface $messageBus,
         private readonly Environment $twig,
         private readonly TranslatorInterface $translator,
-        private readonly ?PendingConfirmationService $pendingConfirmationService = null,
+        private readonly PendingConfirmationService $pendingConfirmationService,
     ) {}
 
     public function isRobotDm(Channel $channel, User $currentUser): bool
@@ -68,10 +68,6 @@ class RobotInteractionService
 
     public function tryHandleConfirmation(User $currentUser, Channel $channel, string $messageText): ?PublishResult
     {
-        if ($this->pendingConfirmationService === null) {
-            return null;
-        }
-
         $pendingToken = $this->pendingConfirmationService->getPendingConfirmation($currentUser, $channel->getSlug());
         if ($pendingToken !== null && $this->pendingConfirmationService->isConfirmation($messageText, $pendingToken, $currentUser)) {
             if ($this->pendingConfirmationService->executeConfirmation($pendingToken, $currentUser)) {

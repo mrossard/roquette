@@ -50,9 +50,9 @@ final readonly class LlmQueryHandler
         private ToolActionSigner $toolActionSigner,
         private RobotUserProvider $robotUserProvider,
         private RobotDmMessageService $robotDmMessageService,
+        private PendingConfirmationService $pendingConfirmationService,
         #[Autowire(env: 'bool:LLM_TOOLS_ENABLED')]
         private bool $toolsEnabled = true,
-        private ?PendingConfirmationService $pendingConfirmationService = null,
         private ?StreamResponseCoordinator $streamCoordinator = null,
     ) {}
 
@@ -273,7 +273,7 @@ final readonly class LlmQueryHandler
                     'helpMessageId' => $message->getHelpMessageId(),
                     'channelSlug' => $message->getChannelSlug(),
                 ]);
-                $this->pendingConfirmationService?->savePendingConfirmation(
+                $this->pendingConfirmationService->savePendingConfirmation(
                     $message->getUserId(),
                     $state->pendingConfirmation,
                     $message->getChannelSlug(),

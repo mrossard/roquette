@@ -9,8 +9,8 @@ use App\Service\LlmRateLimiter;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
 use App\Service\RobotDmMessageService;
-use App\Service\RobotUserProvider;
 use Symfony\AI\Platform\Result\ToolCall;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -31,12 +31,12 @@ class PendingConfirmationService
         private readonly HubInterface $hub,
         private readonly Environment $twig,
         private readonly MessageFormatter $messageFormatter,
-        private readonly RobotUserProvider $robotUserProvider,
         private readonly CacheInterface $cache,
         private readonly LlmRateLimiter $llmRateLimiter,
+        private readonly LlmService $llmService,
+        private readonly RobotDmMessageService $robotDmMessageService,
+        #[Autowire(env: 'MERCURE_TOPIC_PREFIX')]
         private readonly string $mercureTopicPrefix = 'roquette',
-        private readonly ?LlmService $llmService = null,
-        private readonly ?RobotDmMessageService $robotDmMessageService = null,
     ) {}
 
     public function savePendingConfirmation(
@@ -119,7 +119,7 @@ class PendingConfirmationService
             return true;
         }
 
-        if ($this->llmService !== null && $token !== null && $user !== null && mb_strlen(trim($text)) < 200) {
+        if ($token !== null && $user !== null && mb_strlen(trim($text)) < 200) {
             $payload = $this->toolActionSigner->verify($token, $user->getId());
             if ($payload !== null) {
                 return $this->classifyWithLlm($text, $payload);
@@ -239,7 +239,7 @@ class PendingConfirmationService
         $channelSlug = (string) ($payload['channelSlug'] ?? '');
 
         // Update or replace robot DM message in database so the obsolete "Veuillez confirmer..." is replaced by the actual result
-        $this->robotDmMessageService?->updateOrPersistRobotDmMessage($channelSlug, $result);
+        $this->robotDmMessageService->updateOrPersistRobotDmMessage($channelSlug, $result);
 
         $topic = $this->mercureTopicPrefix . '/users/' . $user->getUsername();
         $renderedHtml = $this->twig->render('dashboard/_help_message_update.html.twig', [

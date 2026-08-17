@@ -64,12 +64,15 @@ class MessagePublishServiceTest extends TestCase
             $this->fileUploadService,
         );
 
+        $pendingConfirmationService = $this->createStub(\App\Ai\PendingConfirmationService::class);
+
         $robotInteractionService = new \App\Service\RobotInteractionService(
             $this->robotUserProvider,
             $this->llmRateLimiter,
             $this->messageBus,
             $this->twig,
             $this->translator,
+            $pendingConfirmationService,
         );
 
         $this->publishService = new MessagePublishService(

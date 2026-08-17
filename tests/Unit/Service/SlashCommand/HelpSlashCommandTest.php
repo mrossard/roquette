@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service\SlashCommand;
 
+use App\Ai\PendingConfirmationService;
 use App\Entity\Channel;
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
@@ -26,6 +27,7 @@ class HelpSlashCommandTest extends TestCase
     private Environment $twig;
     private LlmRateLimiter $llmRateLimiter;
     private RateLimitedOobRenderer $rateLimitedRenderer;
+    private PendingConfirmationService $pendingConfirmationService;
     private HelpSlashCommand $command;
 
     protected function setUp(): void
@@ -35,6 +37,7 @@ class HelpSlashCommandTest extends TestCase
         $this->twig = $this->createMock(Environment::class);
         $this->llmRateLimiter = $this->createMock(LlmRateLimiter::class);
         $this->rateLimitedRenderer = $this->createMock(RateLimitedOobRenderer::class);
+        $this->pendingConfirmationService = $this->createMock(PendingConfirmationService::class);
 
         $this->translator->method('trans')->willReturnArgument(0);
         $this->twig->method('render')->willReturn('<div>rendered</div>');
@@ -45,6 +48,7 @@ class HelpSlashCommandTest extends TestCase
             $this->twig,
             $this->llmRateLimiter,
             $this->rateLimitedRenderer,
+            $this->pendingConfirmationService,
         );
     }
 

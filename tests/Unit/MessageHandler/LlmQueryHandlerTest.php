@@ -127,6 +127,8 @@ class LlmQueryHandlerTest extends TestCase
             $deps['robotUserProvider'],
         );
 
+        $pendingConfirmationService = $deps['pendingConfirmationService'] ?? $this->createMock(\App\Ai\PendingConfirmationService::class);
+
         $handler = new LlmQueryHandler(
             userRepository: $deps['userRepository'],
             channelRepository: $deps['channelRepository'],
@@ -142,9 +144,10 @@ class LlmQueryHandlerTest extends TestCase
             toolRegistry: $toolRegistry,
             toolRunner: $toolRunner,
             toolActionSigner: $deps['toolActionSigner'],
-            toolsEnabled: $deps['toolsEnabled'],
             robotUserProvider: $deps['robotUserProvider'],
             robotDmMessageService: $robotDmMessageService,
+            pendingConfirmationService: $pendingConfirmationService,
+            toolsEnabled: $deps['toolsEnabled'],
         );
 
         return [$handler, $deps];

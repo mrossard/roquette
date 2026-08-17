@@ -5,18 +5,58 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Ai;
 
 use App\Ai\PendingConfirmationService;
+use App\Ai\Tool\AiToolInterface;
 use App\Ai\ToolActionSigner;
 use App\Ai\ToolRegistry;
+use App\Entity\Channel;
+use App\Entity\Message;
 use App\Entity\User;
+use App\Repository\ChannelRepository;
+use App\Repository\MessageRepository;
 use App\Service\LlmRateLimiter;
+use App\Service\LlmService;
 use App\Service\MessageFormatter;
+use App\Service\RobotDmMessageService;
 use App\Service\RobotUserProvider;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Twig\Environment;
+
+final class ConfirmationFakeTool implements AiToolInterface
+{
+    public bool $executed = false;
+
+    public function getName(): string
+    {
+        return 'confirm_tool';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Fake tool requiring confirmation';
+    }
+
+    public function getParametersSchema(): array
+    {
+        return ['type' => 'object', 'properties' => []];
+    }
+
+    public function requiresConfirmation(): bool
+    {
+        return true;
+    }
+
+    public function __invoke(string $channelSlug = 'general', ?int $authorUserId = null, ?int $workspaceId = null): string
+    {
+        $this->executed = true;
+
+        return 'Side-effect done';
+    }
+}
 
 #[AllowMockObjectsWithoutExpectations]
 class PendingConfirmationServiceTest extends TestCase
@@ -28,18 +68,34 @@ class PendingConfirmationServiceTest extends TestCase
         $this->signer = new ToolActionSigner('secret-key-123');
     }
 
+    private function createService(
+        ?ToolRegistry $toolRegistry = null,
+        ?HubInterface $hub = null,
+        ?Environment $twig = null,
+        ?MessageFormatter $messageFormatter = null,
+        ?ArrayAdapter $cache = null,
+        ?LlmRateLimiter $llmRateLimiter = null,
+        ?LlmService $llmService = null,
+        ?RobotDmMessageService $robotDmMessageService = null,
+        string $mercureTopicPrefix = 'roquette',
+    ): PendingConfirmationService {
+        return new PendingConfirmationService(
+            $this->signer,
+            $toolRegistry ?? new ToolRegistry([]),
+            $hub ?? $this->createStub(HubInterface::class),
+            $twig ?? $this->createStub(Environment::class),
+            $messageFormatter ?? $this->createStub(MessageFormatter::class),
+            $cache ?? new ArrayAdapter(),
+            $llmRateLimiter ?? $this->createStub(LlmRateLimiter::class),
+            $llmService ?? $this->createStub(LlmService::class),
+            $robotDmMessageService ?? $this->createStub(RobotDmMessageService::class),
+            $mercureTopicPrefix,
+        );
+    }
+
     public function testIsConfirmationText(): void
     {
-        $service = new PendingConfirmationService(
-            $this->signer,
-            new ToolRegistry([]),
-            $this->createMock(HubInterface::class),
-            $this->createMock(Environment::class),
-            $this->createMock(MessageFormatter::class),
-            $this->createMock(RobotUserProvider::class),
-            new ArrayAdapter(),
-            $this->createMock(LlmRateLimiter::class),
-        );
+        $service = $this->createService();
 
         $affirmative = [
             'ok', 'OK', 'ok!', 'okay', 'K', 'oui', 'OUI', 'Oui stp',
@@ -64,23 +120,12 @@ class PendingConfirmationServiceTest extends TestCase
 
     public function testIsConfirmationWithLlmFallback(): void
     {
-        $llmService = $this->createMock(\App\Service\LlmService::class);
+        $llmService = $this->createMock(LlmService::class);
         $llmService->expects($this->once())
             ->method('generateText')
             ->willReturn('YES');
 
-        $service = new PendingConfirmationService(
-            $this->signer,
-            new ToolRegistry([]),
-            $this->createMock(HubInterface::class),
-            $this->createMock(Environment::class),
-            $this->createMock(MessageFormatter::class),
-            $this->createMock(RobotUserProvider::class),
-            new ArrayAdapter(),
-            $this->createMock(LlmRateLimiter::class),
-            'roquette',
-            $llmService,
-        );
+        $service = $this->createService(llmService: $llmService);
 
         $user = new User();
         $ref = new \ReflectionProperty(User::class, 'id');
@@ -98,16 +143,7 @@ class PendingConfirmationServiceTest extends TestCase
     public function testSaveGetAndClearPendingConfirmation(): void
     {
         $cache = new ArrayAdapter();
-        $service = new PendingConfirmationService(
-            $this->signer,
-            new ToolRegistry([]),
-            $this->createMock(HubInterface::class),
-            $this->createMock(Environment::class),
-            $this->createMock(MessageFormatter::class),
-            $this->createMock(RobotUserProvider::class),
-            $cache,
-            $this->createMock(LlmRateLimiter::class),
-        );
+        $service = $this->createService(cache: $cache);
 
         $user = new User();
         $ref = new \ReflectionProperty(User::class, 'id');
@@ -163,16 +199,13 @@ class PendingConfirmationServiceTest extends TestCase
         $llmRateLimiter->method('consumeConfirmation')->willReturn(true);
 
         $cache = new ArrayAdapter();
-        $service = new PendingConfirmationService(
-            $this->signer,
-            $toolRegistry,
-            $hub,
-            $twig,
-            $formatter,
-            $this->createMock(RobotUserProvider::class),
-            $cache,
-            $llmRateLimiter,
-            'roquette',
+        $service = $this->createService(
+            toolRegistry: $toolRegistry,
+            hub: $hub,
+            twig: $twig,
+            messageFormatter: $formatter,
+            cache: $cache,
+            llmRateLimiter: $llmRateLimiter,
         );
 
         $service->savePendingConfirmation($user, $token, 'general');
@@ -194,10 +227,10 @@ class PendingConfirmationServiceTest extends TestCase
         $robotUser = new User();
         $robotUser->setUsername(User::ROBOT_USERNAME);
 
-        $channel = new \App\Entity\Channel();
+        $channel = new Channel();
         $channel->setSlug('dm-' . User::ROBOT_USERNAME . '-alice');
 
-        $robotMsg = new \App\Entity\Message();
+        $robotMsg = new Message();
         $robotMsg->setAuthor($robotUser);
         $robotMsg->setChannel($channel);
         $robotMsg->setContent('Veuillez confirmer cette action en cliquant sur le bouton de confirmation...');
@@ -221,38 +254,33 @@ class PendingConfirmationServiceTest extends TestCase
         $llmRateLimiter = $this->createStub(LlmRateLimiter::class);
         $llmRateLimiter->method('consumeConfirmation')->willReturn(true);
 
-        $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
+        $entityManager = $this->createMock(EntityManagerInterface::class);
         $entityManager->expects($this->once())->method('flush');
 
         $robotUserProvider = $this->createMock(RobotUserProvider::class);
         $robotUserProvider->method('isRobotDmChannel')->willReturn(true);
         $robotUserProvider->method('isRobotUser')->willReturn(true);
 
-        $channelRepo = $this->createMock(\App\Repository\ChannelRepository::class);
+        $channelRepo = $this->createMock(ChannelRepository::class);
         $channelRepo->expects($this->once())->method('findOneBy')->with(['slug' => $channel->getSlug()])->willReturn($channel);
 
-        $messageRepo = $this->createMock(\App\Repository\MessageRepository::class);
+        $messageRepo = $this->createMock(MessageRepository::class);
         $messageRepo->expects($this->once())->method('findLatestInChannel')->with($channel, 5)->willReturn([$robotMsg]);
 
-        $robotDmMessageService = new \App\Service\RobotDmMessageService(
+        $robotDmMessageService = new RobotDmMessageService(
             $entityManager,
             $channelRepo,
             $messageRepo,
             $robotUserProvider,
         );
 
-        $service = new PendingConfirmationService(
-            $this->signer,
-            $toolRegistry,
-            $hub,
-            $twig,
-            $formatter,
-            $robotUserProvider,
-            new ArrayAdapter(),
-            $llmRateLimiter,
-            'roquette',
-            null,
-            $robotDmMessageService,
+        $service = $this->createService(
+            toolRegistry: $toolRegistry,
+            hub: $hub,
+            twig: $twig,
+            messageFormatter: $formatter,
+            llmRateLimiter: $llmRateLimiter,
+            robotDmMessageService: $robotDmMessageService,
         );
 
         $result = $service->executeConfirmation($token, $user);
