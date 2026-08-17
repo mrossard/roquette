@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
-use App\Entity\Channel;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
@@ -32,58 +31,25 @@ final class ChannelMembershipController extends AbstractController
     #[Route('/dm/{username}', name: 'app_dm_open')]
     public function openDm(
         string $username,
-        EntityManagerInterface $entityManager,
-        ChannelRepository $channelRepository,
+        UserRepository $userRepository,
+        ChannelManager $channelManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $partner = $entityManager->getRepository(User::class)->findOneBy(['username' => $username]);
+        $partner = $userRepository->findOneBy(['username' => $username]);
         if (!$partner) {
             $this->addFlash('error', $this->translator->trans('Utilisateur non trouvé.'));
 
             return $this->redirectToRoute('app_dashboard');
         }
 
-        if ($partner->getId() === $currentUser->getId()) {
-            $this->addFlash(
-                'error',
-                $this->translator->trans('Vous ne pouvez pas envoyer de message direct à vous-même.'),
-            );
+        try {
+            $dmChannel = $channelManager->getOrCreateDm($currentUser, $partner);
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
 
             return $this->redirectToRoute('app_dashboard');
-        }
-
-        $dmChannel = $channelRepository->findDmBetween($currentUser, $partner);
-
-        if (!$dmChannel) {
-            $dmChannel = new Channel();
-            $dmChannel->setIsPrivate(true);
-            $dmChannel->setIsDm(true);
-
-            $minId = min($currentUser->getId(), $partner->getId());
-            $maxId = max($currentUser->getId(), $partner->getId());
-            $slug = sprintf('dm-%d-%d', $minId, $maxId);
-
-            $dmChannel->setSlug($slug);
-            $dmChannel->setName(sprintf('%s & %s', $currentUser->getUsername(), $partner->getUsername()));
-            $dmChannel->setDescription(sprintf(
-                'Conversation privée entre %s et %s',
-                $currentUser->getUsername(),
-                $partner->getUsername(),
-            ));
-
-            $dmChannel->setCreator($currentUser);
-            $dmChannel->addMember($currentUser);
-            $dmChannel->addMember($partner);
-
-            $entityManager->persist($dmChannel);
-            $entityManager->flush();
-        } else {
-            if (!$dmChannel->getMembers()->contains($currentUser)) {
-                $dmChannel->addMember($currentUser);
-                $entityManager->flush();
-            }
         }
 
         return $this->redirectToRoute('app_channel', ['slug' => $dmChannel->getSlug()]);

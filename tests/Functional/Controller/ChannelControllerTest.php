@@ -68,12 +68,18 @@ class ChannelControllerTest extends WebTestCase
         $users = array_merge(
             $userRepository->findBy(['username' => 'test_channel_user']),
             $userRepository->findBy(['username' => 'test_channel_user_2']),
+            $userRepository->findBy(['username' => 'dm_target_user']),
         );
 
         $channelRepository = $this->entityManager->getRepository(Channel::class);
         $channels = array_merge(
             $channelRepository->findBy(['slug' => 'test-channel-fav']),
             $channelRepository->findBy(['slug' => 'unique-edit-channel-name']),
+            $channelRepository->createQueryBuilder('c')
+                ->where('c.slug LIKE :dmPrefix')
+                ->setParameter('dmPrefix', 'dm-%')
+                ->getQuery()
+                ->getResult(),
         );
 
         $ucrRepo = $this->entityManager->getRepository(\App\Entity\UserChannelRead::class);
@@ -530,5 +536,36 @@ class ChannelControllerTest extends WebTestCase
         // The channel should only be rendered once in the sidebar
         $channelLinks = $crawler->filter(sprintf('.channel-link[data-channel-slug="%s"]', $this->channel->getSlug()));
         static::assertCount(1, $channelLinks);
+    }
+
+    #[Test]
+    public function testOpenDmCreatesAndRedirectsToDmChannel(): void
+    {
+        $otherUser = new User();
+        $otherUser->setUsername('dm_target_user');
+        $otherUser->setRoles(['ROLE_USER']);
+        $passwordHasher = $this->client->getContainer()->get('security.user_password_hasher');
+        $otherUser->setPassword($passwordHasher->hashPassword($otherUser, 'password123'));
+        $this->entityManager->persist($otherUser);
+        $this->entityManager->flush();
+
+        $this->client->request('GET', '/dm/dm_target_user');
+
+        $minId = min($this->testUser->getId(), $otherUser->getId());
+        $maxId = max($this->testUser->getId(), $otherUser->getId());
+        $expectedSlug = sprintf('dm-%d-%d', $minId, $maxId);
+
+        $this->assertResponseRedirects('/channels/' . $expectedSlug);
+
+        // Accessing the created DM channel
+        $this->client->followRedirect();
+        $this->assertResponseIsSuccessful();
+    }
+
+    #[Test]
+    public function testOpenDmWithSelfFails(): void
+    {
+        $this->client->request('GET', sprintf('/dm/%s', $this->testUser->getUsername()));
+        $this->assertResponseRedirects('/');
     }
 }

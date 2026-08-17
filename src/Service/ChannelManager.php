@@ -35,6 +35,7 @@ class ChannelManager
         private readonly KanbanManager $kanbanManager,
         private readonly WorkspaceManager $workspaceManager,
         private readonly GroupSubscriptionManager $groupSubscriptionManager,
+        private readonly ?RobotUserProvider $robotUserProvider = null,
     ) {}
 
     public function create(CreateChannelDto $dto, User $user): Channel
@@ -335,6 +336,61 @@ class ChannelManager
             $parentMessage->getId(),
             $currentUser->getUsername(),
         ));
+    }
+
+    public function getOrCreateDm(User $currentUser, User $partner): Channel
+    {
+        if ($partner->getId() === $currentUser->getId()) {
+            throw new \InvalidArgumentException($this->translator->trans(
+                'Vous ne pouvez pas envoyer de message direct à vous-même.',
+            ));
+        }
+
+        $dmChannel = $this->channelRepository->findDmBetween($currentUser, $partner);
+
+        if (!$dmChannel) {
+            $dmChannel = new Channel();
+            $dmChannel->setIsPrivate(true);
+            $dmChannel->setIsDm(true);
+
+            $slug = $this->generateDmSlug($currentUser, $partner);
+            $dmChannel->setSlug($slug);
+            $dmChannel->setName(sprintf('%s & %s', $currentUser->getUsername(), $partner->getUsername()));
+            $dmChannel->setDescription(sprintf(
+                'Conversation privée entre %s et %s',
+                $currentUser->getUsername(),
+                $partner->getUsername(),
+            ));
+
+            $dmChannel->setCreator($currentUser);
+            $dmChannel->addMember($currentUser);
+            $dmChannel->addMember($partner);
+
+            $this->entityManager->persist($dmChannel);
+            $this->entityManager->flush();
+        } elseif (!$dmChannel->getMembers()->contains($currentUser)) {
+            $dmChannel->addMember($currentUser);
+            $this->entityManager->flush();
+        }
+
+        return $dmChannel;
+    }
+
+    public function generateDmSlug(User $user1, User $user2): string
+    {
+        if ($this->robotUserProvider !== null) {
+            if ($this->robotUserProvider->isRobotUser($user1)) {
+                return $this->robotUserProvider->getDmChannelSlug($user2);
+            }
+            if ($this->robotUserProvider->isRobotUser($user2)) {
+                return $this->robotUserProvider->getDmChannelSlug($user1);
+            }
+        }
+
+        $minId = min((int) $user1->getId(), (int) $user2->getId());
+        $maxId = max((int) $user1->getId(), (int) $user2->getId());
+
+        return sprintf('dm-%d-%d', $minId, $maxId);
     }
 
     private function isCurrentUserAdmin(): bool
