@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Dto\Message\EditMessageDto;
+use App\Dto\Message\EditResult;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Message\ModerateMessageMessage;
@@ -36,7 +37,7 @@ class MessageEditor
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé à modifier ce message.'));
         }
 
-        if ($message->isPoll() && $message->getPoll()->getTotalVotes() > 0) {
+        if ($message->isPoll() && $message->getPoll()?->getTotalVotes() > 0) {
             throw new BadRequestHttpException($this->translator->trans(
                 'Impossible de modifier un sondage qui a déjà des votes.',
             ));
@@ -45,7 +46,7 @@ class MessageEditor
         return $message;
     }
 
-    public function edit(int $id, User $currentUser, EditMessageDto $dto): string
+    public function edit(int $id, User $currentUser, EditMessageDto $dto): EditResult
     {
         $message = $this->findMessage($id);
 
@@ -54,8 +55,12 @@ class MessageEditor
         }
 
         if ($message->isPoll()) {
-            if ($message->getPoll()->getTotalVotes() > 0) {
-                throw new BadRequestHttpException($this->translator->trans('Impossible de modifier un sondage qui a déjà des votes.'));
+            if ($message->getPoll()?->getTotalVotes() > 0) {
+                return EditResult::error(
+                    $this->translator->trans('Impossible de modifier un sondage qui a déjà des votes.'),
+                    $message,
+                    400,
+                );
             }
 
             try {
@@ -66,15 +71,15 @@ class MessageEditor
                     $dto->allowMultiple,
                 );
             } catch (\InvalidArgumentException $e) {
-                throw new BadRequestHttpException($this->translator->trans($e->getMessage()));
+                return EditResult::error($this->translator->trans($e->getMessage()), $message, 400);
             }
         } else {
             $newContent = $dto->content;
-            if (trim($newContent) === '' && !$message->getFilePath()) {
-                throw new BadRequestHttpException($this->translator->trans('Le message ne peut pas être vide.'));
+            if (trim((string) $newContent) === '' && !$message->getFilePath()) {
+                return EditResult::error($this->translator->trans('Le message ne peut pas être vide.'), $message, 400);
             }
 
-            $message->setContent(trim($newContent) === '' ? null : $newContent);
+            $message->setContent(trim((string) $newContent) === '' ? null : $newContent);
         }
 
         $message->setUpdatedAt(new \DateTimeImmutable());
@@ -87,7 +92,7 @@ class MessageEditor
             $this->messageBus?->dispatch(new ModerateMessageMessage($message->getId()));
         }
 
-        return $renderedHtml;
+        return EditResult::ok($message, $renderedHtml);
     }
 
     private function findMessage(int $id): Message

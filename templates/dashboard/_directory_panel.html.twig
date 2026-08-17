@@ -49,6 +49,7 @@
                         {% else %}
                             <form action="{{ path('app_channel_join', {slug: channel.slug}) }}" method="POST"
                                   style="width: 100%;" hx-boost="false">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                 <button type="submit" class="btn-publish"
                                         style="width: 100%; cursor: pointer; padding: 0.6rem; font-size: 0.9rem;">
                                     {{ 'Rejoindre'|trans }}

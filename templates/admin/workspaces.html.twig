@@ -68,6 +68,7 @@
                                             <td class="td--right">
                                                 {% if not ws.public %}
                                                     <form method="post" action="{{ path('app_admin_workspace_delete', {id: ws.id}) }}" onsubmit="return confirm('{{ 'Supprimer cet espace définitivement ?'|trans }}');" class="action-inline">
+                                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                         <input type="hidden" name="_token" value="{{ csrf_token('delete-workspace-' ~ ws.id) }}">
                                                         <button type="submit" class="status-pill status-pill--delete" style="border:none;cursor:pointer;">{{ 'Supprimer'|trans }}</button>
                                                     </form>

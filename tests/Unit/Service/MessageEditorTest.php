@@ -46,6 +46,7 @@ class MessageEditorTest extends TestCase
         $this->renderer = $this->createMock(MessageRenderer::class);
         $this->pollFactory = $this->createMock(PollFactory::class);
         $this->translator = $this->createStub(TranslatorInterface::class);
+        $this->translator->method('trans')->willReturnArgument(0);
         $this->messageBus = $this->createMock(MessageBusInterface::class);
 
         $this->editor = new MessageEditor(
@@ -132,9 +133,10 @@ class MessageEditorTest extends TestCase
             ->willReturn(new Envelope(new \stdClass()));
 
         $dto = new EditMessageDto(content: 'Nouveau contenu');
-        $html = $this->editor->edit(42, $author, $dto);
+        $result = $this->editor->edit(42, $author, $dto);
 
-        $this->assertSame('<div>Nouveau contenu</div>', $html);
+        $this->assertTrue($result->success);
+        $this->assertSame('<div>Nouveau contenu</div>', $result->renderedHtml);
         $this->assertSame('Nouveau contenu', $message->getContent());
     }
 
@@ -170,8 +172,50 @@ class MessageEditorTest extends TestCase
             pollOptions: ['Option A', 'Option B'],
             allowMultiple: true,
         );
-        $html = $this->editor->edit(10, $author, $dto);
+        $result = $this->editor->edit(10, $author, $dto);
 
-        $this->assertSame('<div>Sondage mis à jour</div>', $html);
+        $this->assertTrue($result->success);
+        $this->assertSame('<div>Sondage mis à jour</div>', $result->renderedHtml);
+    }
+
+    #[Test]
+    public function editReturnsErrorWhenPollAlreadyHasVotes(): void
+    {
+        $author = new User();
+        $poll = $this->createStub(Poll::class);
+        $poll->method('getTotalVotes')->willReturn(2);
+
+        $message = new Message();
+        $message->setAuthor($author);
+        $message->setPoll($poll);
+
+        $this->messageRepo->expects($this->once())->method('find')->with(5)->willReturn($message);
+
+        $dto = new EditMessageDto(pollQuestion: 'Nouvelle question ?');
+        $result = $this->editor->edit(5, $author, $dto);
+
+        $this->assertFalse($result->success);
+        $this->assertSame('Impossible de modifier un sondage qui a déjà des votes.', $result->error);
+        $this->assertSame(400, $result->statusCode);
+        $this->assertSame($message, $result->message);
+    }
+
+    #[Test]
+    public function editReturnsErrorWhenContentIsEmpty(): void
+    {
+        $author = new User();
+        $message = new Message();
+        $message->setAuthor($author);
+        $message->setContent('Ancien message');
+
+        $this->messageRepo->expects($this->once())->method('find')->with(8)->willReturn($message);
+
+        $dto = new EditMessageDto(content: '   ');
+        $result = $this->editor->edit(8, $author, $dto);
+
+        $this->assertFalse($result->success);
+        $this->assertSame('Le message ne peut pas être vide.', $result->error);
+        $this->assertSame(400, $result->statusCode);
+        $this->assertSame($message, $result->message);
     }
 }

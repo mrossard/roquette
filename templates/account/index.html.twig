@@ -49,11 +49,14 @@
 
                 <div class="settings-grid">
                     {% if not user.emailVerified %}
-                        <form id="resend-verification-form" action="{{ path('app_resend_verification') }}" method="POST" style="display: none;"></form>
+                        <form id="resend-verification-form" action="{{ path('app_resend_verification') }}" method="POST" style="display: none;">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+                        </form>
                     {% endif %}
 
                     <!-- Profile Settings Form -->
                     <form action="{{ path('app_account_profile') }}" method="POST" class="form-section">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                         <h3>{{ 'Informations de profil'|trans }}</h3>
 
                         <div class="input-group">
@@ -151,6 +154,7 @@
 
                     <!-- Password Settings Form -->
                     <form action="{{ path('app_account_password') }}" method="POST" class="form-section">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                         <h3>{{ 'Changer le mot de passe'|trans }}</h3>
 
                         <div class="input-group">
@@ -175,6 +179,7 @@
 
                     <!-- Desktop Notifications Settings -->
                     <form action="{{ path('app_account_notifications') }}" method="POST" class="form-section" id="desktop-notifications-section">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                         <h3>{{ 'Notifications'|trans }}</h3>
                         <p class="card-description" style="margin-bottom: 1.25rem;">
                             {{ 'Recevez des notifications pour les nouveaux messages et invitations, même lorsque le navigateur est fermé.'|trans }}

@@ -59,6 +59,7 @@
                         <div class="add-member-panel">
                             <h3>➕ {{ 'Ajouter un membre'|trans }}</h3>
                             <form action="{{ path('app_admin_group_member_add', {id: group.id}) }}" method="POST">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                 <div class="field-wrapper">
                                     <label for="member-search-input-field" class="form-label">{{ 'Rechercher un utilisateur'|trans }}</label>
                                     <input type="text" id="member-search-input-field" placeholder="{{ 'Saisir le nom ou l\'identifiant...'|trans }}" class="input-sidebar form-input-full" autocomplete="off"
@@ -112,10 +113,12 @@
                                                     {% if item.isRegistered %}
                                                         {% if group.isAdministrator(item.user) %}
                                                             <form action="{{ path('app_admin_group_administrator_remove', {id: group.id, userId: item.user.id}) }}" method="POST" data-confirm="{{ 'Retirer les droits administrateur de cet utilisateur ?'|trans }}" style="margin: 0;">
+                                                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                                 <button type="submit" class="btn-member-action btn-member-action--neutral">{{ 'Retirer Admin'|trans }}</button>
                                                             </form>
                                                         {% else %}
                                                             <form action="{{ path('app_admin_group_administrator_add', {id: group.id}) }}" method="POST" style="margin: 0;">
+                                                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                                 <input type="hidden" name="userId" value="{{ item.user.id }}">
                                                                 <button type="submit" class="btn-member-action btn-member-action--promote">{{ 'Nommer Admin'|trans }}</button>
                                                             </form>
@@ -151,15 +154,18 @@
                                             <div class="member-actions">
                                                 {% if group.isAdministrator(member) %}
                                                     <form action="{{ path('app_admin_group_administrator_remove', {id: group.id, userId: member.id}) }}" method="POST" data-confirm="{{ 'Retirer les droits administrateur de cet utilisateur ?'|trans }}" style="margin: 0;">
+                                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                         <button type="submit" class="btn-member-action btn-member-action--neutral">{{ 'Retirer Admin'|trans }}</button>
                                                     </form>
                                                 {% else %}
                                                     <form action="{{ path('app_admin_group_administrator_add', {id: group.id}) }}" method="POST" style="margin: 0;">
+                                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                         <input type="hidden" name="userId" value="{{ member.id }}">
                                                         <button type="submit" class="btn-member-action btn-member-action--promote">{{ 'Nommer Admin'|trans }}</button>
                                                     </form>
                                                 {% endif %}
                                                 <form action="{{ path('app_admin_group_member_remove', {id: group.id, userId: member.id}) }}" method="POST" data-confirm="{{ 'Retirer cet utilisateur du groupe ?'|trans }}" style="margin: 0;">
+                                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                     <button type="submit" class="btn-member-action btn-member-action--remove">{{ 'Retirer'|trans }}</button>
                                                 </form>
                                             </div>

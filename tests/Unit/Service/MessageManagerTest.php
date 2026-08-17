@@ -67,12 +67,13 @@ class MessageManagerTest extends TestCase
     public function editMessageDelegatesToEditor(): void
     {
         $user = new User();
+        $expectedResult = \App\Dto\Message\EditResult::ok(new Message(), '<div>rendered</div>');
         $this->editor->expects($this->once())
             ->method('edit')
             ->with(1, $user, $this->isInstanceOf(EditMessageDto::class))
-            ->willReturn('<div>rendered</div>');
+            ->willReturn($expectedResult);
 
-        $this->assertSame('<div>rendered</div>', $this->manager->editMessage(1, $user, 'test content'));
+        $this->assertSame($expectedResult, $this->manager->editMessage(1, $user, 'test content'));
     }
 
     #[Test]

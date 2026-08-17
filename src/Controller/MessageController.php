@@ -104,29 +104,26 @@ final class MessageController extends AbstractController
     public function editMessage(
         int $id,
         Request $request,
-        MessageRepository $messageRepository,
         MessageEditor $messageEditor,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
         $dto = EditMessageDto::fromRequest($request);
+        $result = $messageEditor->edit($id, $currentUser, $dto);
 
-        try {
-            $renderedHtml = $messageEditor->edit($id, $currentUser, $dto);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            $message = $messageRepository->find($id);
-            if ($message !== null) {
+        if (!$result->success) {
+            if ($result->message !== null) {
                 return $this->render('dashboard/_edit_form.html.twig', [
-                    'message' => $message,
-                    'error' => $e->getMessage(),
-                ], new Response(status: $e->getStatusCode()));
+                    'message' => $result->message,
+                    'error' => $result->error,
+                ], new Response(status: $result->statusCode));
             }
 
-            return new Response($e->getMessage(), $e->getStatusCode());
+            return new Response($result->error ?? '', $result->statusCode);
         }
 
-        return new Response($renderedHtml);
+        return new Response($result->renderedHtml);
     }
 
     #[Route('/messages/{id}/delete', name: 'app_message_delete', methods: ['POST'])]

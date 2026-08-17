@@ -36,7 +36,7 @@ class MessageManager
         ?string $pollQuestion = null,
         array $pollOptions = [],
         bool $pollAllowMultiple = false,
-    ): string {
+    ): \App\Dto\Message\EditResult {
         $dto = new EditMessageDto(
             content: $newContent,
             pollQuestion: $pollQuestion,

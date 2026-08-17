@@ -55,6 +55,7 @@
                         <div class="glass-panel">
                             <h3>🆕 {{ 'Créer un groupe local'|trans }}</h3>
                             <form action="{{ path('app_admin_group_create') }}" method="POST" class="inline-form">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                 <div style="flex-grow: 1;">
                                     <label for="group-name-input" class="form-label">{{ 'Nom du groupe'|trans }}</label>
                                     <input type="text" id="group-name-input" name="name" required placeholder="{{ 'Ex: Équipe Support'|trans }}" class="input-sidebar form-input-full">
@@ -96,6 +97,7 @@
                                                     <span class="badge-imported">{{ 'Importé'|trans }}</span>
                                                 {% else %}
                                                     <form action="{{ path('app_admin_group_import') }}" method="POST" style="margin: 0;">
+                                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                         <input type="hidden" name="identifier" value="{{ group.identifier }}">
                                                         <input type="hidden" name="name" value="{{ group.name }}">
                                                         <button type="submit" class="btn-publish" style="margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 0.35rem; cursor: pointer; height: auto;">{{ 'Importer'|trans }}</button>
@@ -163,6 +165,7 @@
                                                     </a>
                                                     {% if is_granted('ROLE_ADMIN') %}
                                                     <form action="{{ path('app_admin_group_delete', {id: group.id}) }}" method="POST" data-confirm="{{ 'Êtes-vous sûr de vouloir supprimer ce groupe ? Son canal officiel sera supprimé définitivement.'|trans }}" style="margin: 0;">
+                                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                         <button type="submit" class="btn-member-action btn-member-action--remove">
                                                             {{ 'Supprimer'|trans }}
                                                         </button>

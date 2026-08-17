@@ -97,6 +97,7 @@
                                             <form action="{{ path('app_admin_export_delete', {id: e.id}) }}" 
                                                   method="POST" class="action-inline" hx-boost="false"
                                                   data-confirm="{{ 'Êtes-vous sûr de vouloir supprimer cet export ? Le fichier physique sera également détruit.'|trans }}">
+                                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
                                                 <button type="submit" class="btn-delete-channel btn-action">
                                                     🗑️ {{ 'Supprimer'|trans }}
                                                 </button>
