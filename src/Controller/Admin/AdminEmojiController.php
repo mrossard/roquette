@@ -15,7 +15,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminEmojiController extends AbstractController
 {
-    private const int PER_PAGE = 25;
+    use AdminPaginationTrait;
 
     public function __construct(
         private readonly TranslatorInterface $translator,
@@ -24,11 +24,11 @@ final class AdminEmojiController extends AbstractController
     #[Route('/admin/emojis', name: 'app_admin_emojis')]
     public function emojis(Request $request, CustomEmojiService $emojiService): Response
     {
-        $page = max(1, $request->query->getInt('page', 1));
+        $page = $this->getPage($request);
         $q = trim($request->query->get('q', ''));
 
-        $result = $emojiService->list($q, $page, self::PER_PAGE);
-        $totalPages = (int) ceil($result['total'] / self::PER_PAGE);
+        $result = $emojiService->list($q, $page, self::ADMIN_PER_PAGE);
+        $totalPages = $this->calculateTotalPages($result['total']);
 
         return $this->render('admin/emojis.html.twig', [
             'emojis' => $result['emojis'],

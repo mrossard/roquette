@@ -17,15 +17,25 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminWorkspaceController extends AbstractController
 {
+    use AdminPaginationTrait;
+
     public function __construct(
         private readonly TranslatorInterface $translator,
     ) {}
 
     #[Route('/admin/workspaces', name: 'app_admin_workspaces')]
-    public function workspaces(WorkspaceRepository $workspaceRepo): Response
+    public function workspaces(Request $request, WorkspaceRepository $workspaceRepo): Response
     {
+        $page = $this->getPage($request);
+        $workspaces = $workspaceRepo->findPaginated($page, self::ADMIN_PER_PAGE);
+        $total = $workspaceRepo->countAll();
+        $totalPages = $this->calculateTotalPages($total);
+
         return $this->render('admin/workspaces.html.twig', [
-            'workspaces' => $workspaceRepo->findBy([], ['name' => 'ASC']),
+            'workspaces' => $workspaces,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
             'currentRoute' => 'app_admin_workspaces',
         ]);
     }

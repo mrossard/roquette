@@ -30,6 +30,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class ChannelController extends AbstractController
 {
     use ChannelAccessTrait;
+    use HxControllerTrait;
 
     public function __construct(
         private readonly MercurePublisher $mercurePublisher,
@@ -193,18 +194,8 @@ final class ChannelController extends AbstractController
         $channels = $sidebarData['channels'];
         $workspaces = $sidebarData['workspaces'];
 
-        $currentUrl = $request->headers->get('HX-Current-URL');
-        $activeChannel = null;
-        $currentWorkspace = null;
-        if ($currentUrl) {
-            $path = parse_url($currentUrl, PHP_URL_PATH);
-            if (preg_match('#^/channels/([a-z0-9-]+)$#', $path, $matches)) {
-                $activeChannel = $channelRepository->findOneBy(['slug' => $matches[1]]);
-                if ($activeChannel && $activeChannel->getWorkspace()) {
-                    $currentWorkspace = $activeChannel->getWorkspace();
-                }
-            }
-        }
+        $activeChannel = $this->findActiveChannelFromHxRequest($request, $channelRepository);
+        $currentWorkspace = $activeChannel?->getWorkspace();
 
         $session = $request->getSession();
         if ($currentWorkspace !== null) {

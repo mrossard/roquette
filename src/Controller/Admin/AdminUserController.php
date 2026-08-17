@@ -20,7 +20,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminUserController extends AbstractController
 {
-    private const int PER_PAGE = 25;
+    use AdminPaginationTrait;
 
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -30,10 +30,10 @@ final class AdminUserController extends AbstractController
     #[Route('/admin/users', name: 'app_admin_users')]
     public function users(Request $request, UserRepository $userRepository): Response
     {
-        $page = max(1, $request->query->getInt('page', 1));
-        $users = $userRepository->findPaginated($page, self::PER_PAGE);
+        $page = $this->getPage($request);
+        $users = $userRepository->findPaginated($page, self::ADMIN_PER_PAGE);
         $total = $userRepository->countAll();
-        $totalPages = (int) ceil($total / self::PER_PAGE);
+        $totalPages = $this->calculateTotalPages($total);
 
         return $this->render('admin/users.html.twig', [
             'users' => $users,

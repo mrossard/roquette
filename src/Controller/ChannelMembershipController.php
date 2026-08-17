@@ -23,6 +23,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class ChannelMembershipController extends AbstractController
 {
     use ChannelAccessTrait;
+    use HxControllerTrait;
 
     public function __construct(
         private TranslatorInterface $translator,
@@ -113,11 +114,8 @@ final class ChannelMembershipController extends AbstractController
         }
 
         $url = $this->generateUrl('app_channel', ['slug' => $slug]);
-        if ($request->headers->has('HX-Request')) {
-            return new Response(null, 204, ['HX-Redirect' => $url]);
-        }
 
-        return $this->redirect($url);
+        return $this->redirectOrHxRedirect($request, $url);
     }
 
     #[Route('/channels/{slug}/leave', name: 'app_channel_leave', methods: ['POST'])]
@@ -145,11 +143,8 @@ final class ChannelMembershipController extends AbstractController
         }
 
         $url = $this->generateUrl('app_dashboard');
-        if ($request->headers->has('HX-Request')) {
-            return new Response(null, 204, ['HX-Redirect' => $url]);
-        }
 
-        return $this->redirect($url);
+        return $this->redirectOrHxRedirect($request, $url);
     }
 
     #[Route('/channels/{slug}/admin-chip-add', name: 'app_channel_admin_chip_add', methods: ['POST'])]

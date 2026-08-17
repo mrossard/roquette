@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\Invitation;
 use App\Entity\User;
 use App\Repository\InvitationRepository;
 use App\Repository\UserRepository;
@@ -22,6 +21,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_USER')]
 final class InvitationController extends AbstractController
 {
+    use HxControllerTrait;
+
     public function __construct(
         private readonly InvitationManager $invitationManager,
         private readonly TranslatorInterface $translator,
@@ -116,6 +117,7 @@ final class InvitationController extends AbstractController
     #[Route('/invitations/{id}/accept', name: 'app_invite_accept', methods: ['POST'])]
     public function acceptInvitation(
         int $id,
+        Request $request,
         InvitationRepository $invitationRepository,
     ): Response {
         /** @var User $currentUser */
@@ -139,9 +141,7 @@ final class InvitationController extends AbstractController
             'workspace_switch' => $this->generateUrl('app_workspace_switch', ['workspaceSlug' => $result['slug']]),
         };
 
-        return new Response(null, 204, [
-            'HX-Redirect' => $redirectUrl,
-        ]);
+        return $this->redirectOrHxRedirect($request, $redirectUrl);
     }
 
     #[Route('/invitations/{id}/reject', name: 'app_invite_reject', methods: ['POST'])]

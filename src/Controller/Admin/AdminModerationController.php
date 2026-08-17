@@ -22,7 +22,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminModerationController extends AbstractController
 {
-    private const int PER_PAGE = 25;
+    use AdminPaginationTrait;
 
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -32,10 +32,10 @@ final class AdminModerationController extends AbstractController
     #[Route('/admin/moderation', name: 'app_admin_moderation')]
     public function moderation(Request $request, MessageRepository $messageRepository): Response
     {
-        $page = max(1, $request->query->getInt('page', 1));
-        $messages = $messageRepository->findModeratedPaginated($page, self::PER_PAGE);
+        $page = $this->getPage($request);
+        $messages = $messageRepository->findModeratedPaginated($page, self::ADMIN_PER_PAGE);
         $total = $messageRepository->countPendingModeration();
-        $totalPages = (int) ceil($total / self::PER_PAGE);
+        $totalPages = $this->calculateTotalPages($total);
 
         return $this->render('admin/moderation.html.twig', [
             'messages' => $messages,

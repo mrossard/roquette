@@ -16,6 +16,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_USER')]
 final class SubChannelController extends AbstractController
 {
+    use HxControllerTrait;
+
     public function __construct(
         private readonly TranslatorInterface $translator,
     ) {}
@@ -45,11 +47,8 @@ final class SubChannelController extends AbstractController
         ]));
 
         $url = $this->generateUrl('app_channel', ['slug' => $channel->getSlug()]);
-        if ($request->headers->has('HX-Request')) {
-            return new Response(null, 204, ['HX-Redirect' => $url]);
-        }
 
-        return $this->redirect($url);
+        return $this->redirectOrHxRedirect($request, $url);
     }
 
     #[Route('/messages/{id}/sub-channel-todo', name: 'app_message_create_subchannel_todo', methods: ['POST'])]
@@ -77,10 +76,7 @@ final class SubChannelController extends AbstractController
         ]));
 
         $url = $this->generateUrl('app_channel', ['slug' => $channel->getSlug()]);
-        if ($request->headers->has('HX-Request')) {
-            return new Response(null, 204, ['HX-Redirect' => $url]);
-        }
 
-        return $this->redirect($url);
+        return $this->redirectOrHxRedirect($request, $url);
     }
 }

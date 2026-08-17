@@ -20,6 +20,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class AdminGroupController extends AbstractController
 {
+    use AdminPaginationTrait;
+
     public function __construct(
         private readonly TranslatorInterface $translator,
         private readonly GroupProviderInterface $groupProvider,
@@ -40,7 +42,7 @@ final class AdminGroupController extends AbstractController
             throw $this->createAccessDeniedException('Accès interdit.');
         }
 
-        $page = max(1, $request->query->getInt('page', 1));
+        $page = $this->getPage($request);
 
         $localGroups = $isGlobalAdmin
             ? $this->userGroupRepository->findPaginatedAll($page)
@@ -49,7 +51,7 @@ final class AdminGroupController extends AbstractController
             ? $this->userGroupRepository->countAll()
             : $this->userGroupRepository->countAdministeredGroupsForUser($currentUser);
 
-        $totalPages = (int) ceil($totalGroups / 25);
+        $totalPages = $this->calculateTotalPages($totalGroups);
         $importedIdentifiers = array_map(static fn($g) => $g->getGroupIdentifier(), $localGroups);
 
         $searchQuery = trim((string) $request->request->get('search', (string) $request->query->get('search', '')));

@@ -29,21 +29,21 @@
   - Centralisation de `renderFeedItem(['oob' => true]) + publishToChannel('message_' . $slug)` et de `publishCurrentModerationCount()`.
   - Suppression de la duplication `renderMessageItem` dans `MessagePinController`.
 
-- [ ] **2.2 `PollFactory`/`PollUpdater`**
-  - 3 constructions de `Poll`+`PollOption` (MessagePublishService, MessageManager, CreatePollTool) + 2 validations « ≥2 options ».
+- [x] **2.2 `PollFactory`/`PollUpdater`**
+  - Service `PollFactory` unifiant la validation, la construction initiale et la mise à jour différentielle de `Poll` + `PollOption` dans `MessagePublishService`, `MessageManager` et `CreatePollTool`.
 
-- [ ] **2.3 `MessageFeedContextService`**
-  - Bloc `array_map(getId()) + findReplyCounts + findSubchannelsByChannel` (7× : ChannelController, SearchController, MessageController).
+- [x] **2.3 `MessageFeedContextService`**
+  - Centralisation de l'agrégation de contexte de feed (`replyCounts`, `subchannelByParentMessageId`, `savedMessageIds`) dans `MessageFeedContextService` pour `ChannelController`, `SearchController` et `MessageController`.
 
-- [ ] **2.4 `RobotDmMessageService`**
-  - Fusionne `LlmQueryHandler::persistRobotDmMessage` et `PendingConfirmationService::updateRobotDmMessageHistory`.
+- [x] **2.4 `RobotDmMessageService`**
+  - Centralisation de la persistance et mise à jour de l'historique DM du robot dans `RobotDmMessageService` pour `LlmQueryHandler` et `PendingConfirmationService`.
 
-- [ ] **2.5 `MessagePromptFormatter` + `JsonExtractor`**
-  - Un seul format messages→texte LLM (4 implémentations divergentes) ; `JsonExtractor::parse()` pour les fences ```json (2×).
+- [x] **2.5 `MessagePromptFormatter` + `JsonExtractor`**
+  - Unification du formatage des messages en texte/structure pour les prompts LLM (`MessagePromptFormatter`) et centralisation du parsing JSON avec nettoyage de markdown fences (`JsonExtractor`).
 
-- [ ] **2.6 Pagination admin + helpers HX**
-  - Trait `AdminPaginatedControllerTrait` (6 controllers, PER_PAGE=25).
-  - `redirectOrHxRedirect()` / `activeChannelFromHxRequest()` (dupliqués dans ChannelMembership, SubChannel, Invitation, ChannelAction, ChannelController).
+- [x] **2.6 Pagination admin + helpers HX**
+  - Trait `AdminPaginationTrait` (7 contrôleurs admin dont `AdminWorkspaceController`, pagination et calcul de pages unifiés).
+  - Trait `HxControllerTrait` (`redirectOrHxRedirect()` et `findActiveChannelFromHxRequest()`, intégrés dans `ChannelMembershipController`, `SubChannelController`, `InvitationController`, `ChannelActionController` et `ChannelController`).
 
 ---
 

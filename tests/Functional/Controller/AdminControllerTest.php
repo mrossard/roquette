@@ -123,6 +123,9 @@ class AdminControllerTest extends WebTestCase
 
         $this->client->request('GET', '/admin/audit-logs');
         $this->assertResponseStatusCodeSame(403);
+
+        $this->client->request('GET', '/admin/workspaces');
+        $this->assertResponseStatusCodeSame(403);
     }
 
     #[Test]
@@ -327,6 +330,16 @@ class AdminControllerTest extends WebTestCase
         $this->entityManager->clear();
         $reloaded = $this->entityManager->getRepository(\App\Entity\Message::class)->find($messageId);
         static::assertNull($reloaded);
+    }
+
+    #[Test]
+    public function testListWorkspacesWithPagination(): void
+    {
+        $this->client->loginUser($this->adminUser);
+        $crawler = $this->client->request('GET', '/admin/workspaces');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('h2', 'Espaces de travail');
     }
 }
 

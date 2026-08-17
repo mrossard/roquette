@@ -14,15 +14,15 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminAuditLogController extends AbstractController
 {
-    private const int PER_PAGE = 25;
+    use AdminPaginationTrait;
 
     #[Route('/admin/audit-logs', name: 'app_admin_audit_logs')]
     public function auditLogs(Request $request, AuditLogRepository $auditLogRepository): Response
     {
-        $page = max(1, $request->query->getInt('page', 1));
-        $logs = $auditLogRepository->findPaginated($page, self::PER_PAGE);
+        $page = $this->getPage($request);
+        $logs = $auditLogRepository->findPaginated($page, self::ADMIN_PER_PAGE);
         $total = $auditLogRepository->countAll();
-        $totalPages = (int) ceil($total / self::PER_PAGE);
+        $totalPages = $this->calculateTotalPages($total);
 
         return $this->render('admin/audit_logs.html.twig', [
             'logs' => $logs,

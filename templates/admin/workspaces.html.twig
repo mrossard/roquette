@@ -81,6 +81,13 @@
                             </table>
                         </div>
                     {% endif %}
+
+                    {% include 'admin/_pagination.html.twig' with {
+                        routeName: 'app_admin_workspaces',
+                        currentPage: page,
+                        totalPages: totalPages,
+                        totalItems: total,
+                    } %}
                 </div>
             </section>
         </main>

@@ -34,6 +34,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class ChannelActionController extends AbstractController
 {
     use ChannelAccessTrait;
+    use HxControllerTrait;
 
     public function __construct(
         private readonly TranslatorInterface $translator,
@@ -214,14 +215,7 @@ final class ChannelActionController extends AbstractController
             $sidebarData = $this->sidebarDataProvider->getSidebarData($currentUser);
             $channels = $sidebarData['channels'];
 
-            $currentUrl = $request->headers->get('HX-Current-URL');
-            $activeChannel = null;
-            if ($currentUrl) {
-                $path = parse_url($currentUrl, PHP_URL_PATH);
-                if (preg_match('#^/channels/([a-z0-9-]+)$#', $path, $matches)) {
-                    $activeChannel = $channelRepository->findOneBy(['slug' => $matches[1]]);
-                }
-            }
+            $activeChannel = $this->findActiveChannelFromHxRequest($request, $channelRepository);
 
             $sidebarHtml = $this->renderView('dashboard/_sidebar.html.twig', array_merge([
                 'activeChannel' => $activeChannel,

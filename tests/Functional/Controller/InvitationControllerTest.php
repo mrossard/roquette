@@ -167,7 +167,9 @@ class InvitationControllerTest extends WebTestCase
         $invitationId = $invitation->getId();
 
         $this->client->loginUser($this->invitee);
-        $this->client->request('POST', sprintf('/invitations/%d/accept', $invitationId));
+        $this->client->request('POST', sprintf('/invitations/%d/accept', $invitationId), server: [
+            'HTTP_HX-Request' => 'true',
+        ]);
 
         $this->assertResponseStatusCodeSame(204);
         $this->assertResponseHasHeader('HX-Redirect');

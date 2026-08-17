@@ -22,7 +22,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminExportController extends AbstractController
 {
-    private const int PER_PAGE = 25;
+    use AdminPaginationTrait;
 
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -32,10 +32,10 @@ final class AdminExportController extends AbstractController
     #[Route('/admin/exports', name: 'app_admin_exports')]
     public function exports(Request $request, ChannelExportRepository $exportRepository): Response
     {
-        $page = max(1, $request->query->getInt('page', 1));
-        $exports = $exportRepository->findPaginated($page, self::PER_PAGE);
+        $page = $this->getPage($request);
+        $exports = $exportRepository->findPaginated($page, self::ADMIN_PER_PAGE);
         $total = $exportRepository->countAll();
-        $totalPages = (int) ceil($total / self::PER_PAGE);
+        $totalPages = $this->calculateTotalPages($total);
 
         return $this->render('admin/exports.html.twig', [
             'exports' => $exports,

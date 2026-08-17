@@ -90,4 +90,20 @@ class WorkspaceRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getResult();
     }
+
+    /**
+     * @return Workspace[]
+     */
+    public function findPaginated(int $page, int $perPage = 25): array
+    {
+        $page = max(1, min($page, 10_000));
+        $perPage = max(1, min($perPage, 100));
+
+        return $this->findBy([], ['name' => 'ASC'], $perPage, ($page - 1) * $perPage);
+    }
+
+    public function countAll(): int
+    {
+        return $this->count([]);
+    }
 }
