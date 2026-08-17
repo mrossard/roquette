@@ -9,8 +9,7 @@ use App\Entity\User;
 use App\Enum\AuditAction;
 use App\Repository\MessageRepository;
 use App\Service\AuditLoggerService;
-use App\Service\MercurePublisher;
-use App\Service\MessageRenderer;
+use App\Service\MessageBroadcaster;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -51,10 +50,8 @@ final class AdminModerationController extends AbstractController
     public function approveMessage(
         Message $message,
         EntityManagerInterface $em,
-        MercurePublisher $mercurePublisher,
-        MessageRenderer $messageRenderer,
+        MessageBroadcaster $messageBroadcaster,
         AuditLoggerService $auditLogger,
-        MessageRepository $messageRepository,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -73,19 +70,8 @@ final class AdminModerationController extends AbstractController
             'author_username' => $message->getAuthor()?->getUsername(),
         ]);
 
-        try {
-            $channel = $message->getChannel();
-            $html = $messageRenderer->renderFeedItem($message, ['oob' => true]);
-            $mercurePublisher->publishToChannel($channel, $html, 'message_' . $channel->getSlug());
-        } catch (\Exception $e) {
-            $this->logger->error(sprintf(
-                'Failed to broadcast Mercure approval for message %d: %s',
-                $message->getId(),
-                $e->getMessage(),
-            ));
-        }
-
-        $mercurePublisher->publishModerationCount($messageRepository->countPendingModeration());
+        $messageBroadcaster->broadcastMessageUpdate($message);
+        $messageBroadcaster->publishCurrentModerationCount();
 
         $this->addFlash('success', $this->translator->trans('Le message #%id% a été approuvé et rétabli.', [
             '%id%' => $message->getId(),
@@ -98,9 +84,8 @@ final class AdminModerationController extends AbstractController
     public function deleteModeratedMessage(
         Message $message,
         EntityManagerInterface $em,
-        MercurePublisher $mercurePublisher,
+        MessageBroadcaster $messageBroadcaster,
         AuditLoggerService $auditLogger,
-        MessageRepository $messageRepository,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -117,18 +102,8 @@ final class AdminModerationController extends AbstractController
         $em->remove($message);
         $em->flush();
 
-        try {
-            $deleteHtml = sprintf('<div id="feed-item-%d" hx-swap-oob="outerHTML"></div>', $messageId);
-            $mercurePublisher->publishToChannel($channel, $deleteHtml, 'message_' . $channel->getSlug());
-        } catch (\Exception $e) {
-            $this->logger->error(sprintf(
-                'Failed to broadcast Mercure deletion for message %d: %s',
-                $messageId,
-                $e->getMessage(),
-            ));
-        }
-
-        $mercurePublisher->publishModerationCount($messageRepository->countPendingModeration());
+        $messageBroadcaster->broadcastMessageDeletion($channel, $messageId);
+        $messageBroadcaster->publishCurrentModerationCount();
 
         $this->addFlash('success', $this->translator->trans('Le message #%id% a été supprimé.', [
             '%id%' => $messageId,

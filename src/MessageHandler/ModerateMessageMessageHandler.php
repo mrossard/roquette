@@ -10,8 +10,7 @@ use App\Message\ModerateMessageMessage;
 use App\Repository\MessageRepository;
 use App\Service\AuditLoggerService;
 use App\Service\ContentModerationService;
-use App\Service\MercurePublisher;
-use App\Service\MessageRenderer;
+use App\Service\MessageBroadcaster;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -23,8 +22,7 @@ class ModerateMessageMessageHandler
         private readonly MessageRepository $messageRepository,
         private readonly ContentModerationService $moderationService,
         private readonly EntityManagerInterface $em,
-        private readonly MercurePublisher $mercurePublisher,
-        private readonly MessageRenderer $messageRenderer,
+        private readonly MessageBroadcaster $messageBroadcaster,
         private readonly LoggerInterface $logger,
         private readonly ?AuditLoggerService $auditLogger = null,
     ) {}
@@ -38,7 +36,6 @@ class ModerateMessageMessageHandler
             return;
         }
 
-
         $this->logger->info(sprintf('Starting content moderation scan for message %d.', $messageId));
 
         try {
@@ -49,8 +46,7 @@ class ModerateMessageMessageHandler
                 $dbMessage->setModerationStatus(ModerationStatus::CLEAN->value);
                 $this->em->flush();
                 if ($wasFlagged) {
-                    $pendingCount = $this->messageRepository->countPendingModeration();
-                    $this->mercurePublisher->publishModerationCount($pendingCount);
+                    $this->messageBroadcaster->publishCurrentModerationCount();
                 }
                 return;
             }
@@ -78,28 +74,10 @@ class ModerateMessageMessageHandler
             ]);
 
             $this->em->flush();
-            $this->publishUpdate($dbMessage);
-
-            $pendingCount = $this->messageRepository->countPendingModeration();
-            $this->mercurePublisher->publishModerationCount($pendingCount);
+            $this->messageBroadcaster->broadcastMessageUpdate($dbMessage);
+            $this->messageBroadcaster->publishCurrentModerationCount();
         } catch (\Exception $e) {
             $this->logger->error(sprintf('Moderation scan failed for message %d: %s', $messageId, $e->getMessage()));
-        }
-    }
-
-    private function publishUpdate(\App\Entity\Message $message): void
-    {
-        try {
-            $channel = $message->getChannel();
-            $html = $this->messageRenderer->renderFeedItem($message, ['oob' => true]);
-
-            $this->mercurePublisher->publishToChannel($channel, $html, 'message_' . $channel->getSlug());
-        } catch (\Exception $e) {
-            $this->logger->error(sprintf(
-                'Failed to publish Mercure moderation update for message %d: %s',
-                $message->getId(),
-                $e->getMessage(),
-            ));
         }
     }
 }

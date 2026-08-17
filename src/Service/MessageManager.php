@@ -18,7 +18,7 @@ class MessageManager
     public function __construct(
         private readonly MessageRepository $messageRepository,
         private readonly EntityManagerInterface $entityManager,
-        private readonly MercurePublisher $mercurePublisher,
+        private readonly MessageBroadcaster $messageBroadcaster,
         private readonly FileUploadService $fileUploadService,
         private readonly TranslatorInterface $translator,
         private readonly MessageRenderer $messageRenderer,
@@ -84,11 +84,11 @@ class MessageManager
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé à supprimer ce message.'));
         }
 
-        $oobHtml = '';
+        $extraOobHtml = '';
 
         if ($channel->getPinnedMessage() === $message) {
             $channel->setPinnedMessage(null);
-            $oobHtml .= '<div id="pinned-banner-container" hx-swap-oob="true"></div>';
+            $extraOobHtml .= '<div id="pinned-banner-container" hx-swap-oob="true"></div>';
         }
 
         if ($message->getFilePath()) {
@@ -101,14 +101,14 @@ class MessageManager
         $this->entityManager->flush();
 
         if ($wasPendingModeration) {
-            $this->mercurePublisher->publishModerationCount($this->messageRepository->countPendingModeration());
+            $this->messageBroadcaster->publishCurrentModerationCount();
         }
 
-        $oobHtml .= '<div id="feed-item-' . $id . '" hx-swap-oob="delete"></div>';
-        if ($channel->isTodoList()) {
-            $oobHtml .= '<div id="kanban-card-' . $id . '" hx-swap-oob="delete"></div>';
-        }
-        $this->mercurePublisher->publishToChannel($channel, $oobHtml, 'message_' . $channel->getSlug());
+        $this->messageBroadcaster->broadcastMessageDeletion(
+            $channel,
+            $id,
+            $extraOobHtml !== '' ? $extraOobHtml : null,
+        );
 
         return ['success' => true];
     }
@@ -154,14 +154,7 @@ class MessageManager
         $this->entityManager->flush();
 
         $renderedHtml = $this->messageRenderer->renderFeedItem($message, ['no_fade' => true]);
-
-        $renderedHtmlOob = $this->messageRenderer->renderFeedItem($message, ['oob' => true]);
-
-        $this->mercurePublisher->publishToChannel(
-            $message->getChannel(),
-            $renderedHtmlOob,
-            'message_' . $message->getChannel()->getSlug(),
-        );
+        $this->messageBroadcaster->broadcastMessageUpdate($message);
 
         if ($message->getContent() !== null && !$message->isPoll() && !$message->getChannel()?->isDm()) {
             $this->messageBus?->dispatch(new \App\Message\ModerateMessageMessage($message->getId()));
@@ -216,14 +209,7 @@ class MessageManager
         $this->entityManager->flush();
 
         $renderedHtml = $this->messageRenderer->renderFeedItem($message, ['no_fade' => true]);
-
-        $renderedHtmlOob = $this->messageRenderer->renderFeedItem($message, ['oob' => true]);
-
-        $this->mercurePublisher->publishToChannel(
-            $message->getChannel(),
-            $renderedHtmlOob,
-            'message_' . $message->getChannel()->getSlug(),
-        );
+        $this->messageBroadcaster->broadcastMessageUpdate($message);
 
         return $renderedHtml;
     }

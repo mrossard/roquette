@@ -10,8 +10,7 @@ use App\Message\ModerateMessageMessage;
 use App\MessageHandler\ModerateMessageMessageHandler;
 use App\Repository\MessageRepository;
 use App\Service\ContentModerationService;
-use App\Service\MercurePublisher;
-use App\Service\MessageRenderer;
+use App\Service\MessageBroadcaster;
 use App\Service\ModerationResult;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -20,15 +19,13 @@ use Psr\Log\NullLogger;
 
 #[AllowMockObjectsWithoutExpectations]
 final class ModerateMessageMessageHandlerTest extends TestCase
-
 {
     public function testInvokeMasksSecretAndPublishesMercure(): void
     {
         $messageRepository = $this->createMock(MessageRepository::class);
         $moderationService = $this->createMock(ContentModerationService::class);
         $em = $this->createMock(EntityManagerInterface::class);
-        $mercurePublisher = $this->createMock(MercurePublisher::class);
-        $messageRenderer = $this->createMock(MessageRenderer::class);
+        $messageBroadcaster = $this->createMock(MessageBroadcaster::class);
 
         $channel = new Channel();
         $channel->setSlug('general');
@@ -37,48 +34,37 @@ final class ModerateMessageMessageHandlerTest extends TestCase
         $messageEntity->setContent('Clé sk-proj-12345678901234567890123');
         $messageEntity->setChannel($channel);
 
-        $messageRepository->expects($this->once())
-            ->method('find')
-            ->with(42)
-            ->willReturn($messageEntity);
+        $messageRepository->expects($this->once())->method('find')->with(42)->willReturn($messageEntity);
 
         $moderationResult = ModerationResult::masked(
             maskedContent: 'Clé [SECRET MASQUÉ]',
             originalContent: 'Clé sk-proj-12345678901234567890123',
-            reason: 'Clé d\'API OpenAI'
+            reason: 'Clé d\'API OpenAI',
         );
 
-        $moderationService->expects($this->once())
+        $moderationService
+            ->expects($this->once())
             ->method('moderate')
             ->with('Clé sk-proj-12345678901234567890123')
             ->willReturn($moderationResult);
 
         $em->expects($this->once())->method('flush');
 
-        $messageRenderer->expects($this->once())
-            ->method('renderFeedItem')
-            ->with($messageEntity, ['oob' => true])
-            ->willReturn('<div>Rendered HTML</div>');
+        $messageBroadcaster
+            ->expects($this->once())
+            ->method('broadcastMessageUpdate')
+            ->with($messageEntity);
 
-        $mercurePublisher->expects($this->once())
-            ->method('publishToChannel')
-            ->with($channel, '<div>Rendered HTML</div>', 'message_general');
-
-        $messageRepository->expects($this->once())
-            ->method('countPendingModeration')
-            ->willReturn(1);
-
-        $mercurePublisher->expects($this->once())
-            ->method('publishModerationCount')
-            ->with(1);
+        $messageBroadcaster
+            ->expects($this->once())
+            ->method('publishCurrentModerationCount');
 
         $handler = new ModerateMessageMessageHandler(
             $messageRepository,
             $moderationService,
             $em,
-            $mercurePublisher,
-            $messageRenderer,
-            new NullLogger()
+            $messageBroadcaster,
+            new NullLogger(),
         );
 
         $handler(new ModerateMessageMessage(42));
@@ -93,8 +79,7 @@ final class ModerateMessageMessageHandlerTest extends TestCase
         $messageRepository = $this->createMock(MessageRepository::class);
         $moderationService = $this->createMock(ContentModerationService::class);
         $em = $this->createMock(EntityManagerInterface::class);
-        $mercurePublisher = $this->createMock(MercurePublisher::class);
-        $messageRenderer = $this->createMock(MessageRenderer::class);
+        $messageBroadcaster = $this->createMock(MessageBroadcaster::class);
 
         $channel = new Channel();
         $channel->setSlug('dm-user1-user2');
@@ -104,20 +89,18 @@ final class ModerateMessageMessageHandlerTest extends TestCase
         $messageEntity->setContent('Secret personnel en DM: sk-proj-12345678901234567890');
         $messageEntity->setChannel($channel);
 
-        $messageRepository->expects($this->once())
-            ->method('find')
-            ->with(99)
-            ->willReturn($messageEntity);
+        $messageRepository->expects($this->once())->method('find')->with(99)->willReturn($messageEntity);
 
         $moderationService->expects($this->never())->method('moderate');
+        $messageBroadcaster->expects($this->never())->method('broadcastMessageUpdate');
+        $messageBroadcaster->expects($this->never())->method('publishCurrentModerationCount');
 
         $handler = new ModerateMessageMessageHandler(
             $messageRepository,
             $moderationService,
             $em,
-            $mercurePublisher,
-            $messageRenderer,
-            new NullLogger()
+            $messageBroadcaster,
+            new NullLogger(),
         );
 
         $handler(new ModerateMessageMessage(99));
@@ -125,6 +108,3 @@ final class ModerateMessageMessageHandlerTest extends TestCase
         static::assertNull($messageEntity->getModerationStatus());
     }
 }
-
-
-

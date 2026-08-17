@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\Message;
 use App\Entity\User;
 use App\Repository\MessageRepository;
-use App\Service\MercurePublisher;
+use App\Service\MessageBroadcaster;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,7 +26,7 @@ final class MessagePinController extends AbstractController
         int $id,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
-        MercurePublisher $mercurePublisher,
+        MessageBroadcaster $messageBroadcaster,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -46,19 +45,8 @@ final class MessagePinController extends AbstractController
             'pinnedMessage' => $message,
             'activeChannel' => $channel,
         ]);
-        $bannerOob = '<div id="pinned-banner-container" hx-swap-oob="true">' . $bannerHtml . '</div>';
-        $messageHtml = $this->renderMessageItem($message, true);
 
-        $previousMessageHtml = '';
-        if ($previousPinnedMessage) {
-            $previousMessageHtml = $this->renderMessageItem($previousPinnedMessage, true);
-        }
-
-        $mercurePublisher->publishToChannel(
-            $channel,
-            $bannerOob . $messageHtml . $previousMessageHtml,
-            'message_' . $channel->getSlug(),
-        );
+        $messageBroadcaster->broadcastPin($channel, $message, $previousPinnedMessage, $bannerHtml);
 
         return new Response($bannerHtml);
     }
@@ -68,7 +56,7 @@ final class MessagePinController extends AbstractController
         int $id,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
-        MercurePublisher $mercurePublisher,
+        MessageBroadcaster $messageBroadcaster,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -83,29 +71,9 @@ final class MessagePinController extends AbstractController
             $channel->setPinnedMessage(null);
             $entityManager->flush();
 
-            $bannerOob = '<div id="pinned-banner-container" hx-swap-oob="true"></div>';
-            $messageHtml = $this->renderMessageItem($message, true);
-
-            $mercurePublisher->publishToChannel($channel, $bannerOob . $messageHtml, 'message_' . $channel->getSlug());
+            $messageBroadcaster->broadcastUnpin($channel, $message);
         }
 
         return new Response('');
-    }
-
-    private function renderMessageItem(Message $message, bool $oob = false): string
-    {
-        return $this->renderView('dashboard/_feed_item.html.twig', [
-            'author' => $message->getAuthor(),
-            'message' => $message->getContent(),
-            'timestamp' => $message->getCreatedAt(),
-            'message_id' => $message->getId(),
-            'updated_at' => $message->getUpdatedAt(),
-            'fileName' => $message->getFileName(),
-            'fileSize' => $message->getFileSize(),
-            'filePath' => $message->getFilePath(),
-            'mimeType' => $message->getMimeType(),
-            'messageObject' => $message,
-            'oob' => $oob,
-        ]);
     }
 }

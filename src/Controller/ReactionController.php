@@ -8,10 +8,10 @@ use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\Reaction;
 use App\Repository\MessageRepository;
 use App\Repository\ReactionRepository;
-use App\Service\MercurePublisher;
+use App\Service\KanbanManager;
+use App\Service\MessageBroadcaster;
 use App\Service\MessageRenderer;
 use App\Service\SidebarDataProvider;
-use App\Service\KanbanManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,7 +38,7 @@ final class ReactionController extends AbstractController
         string $emoji,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
-        MercurePublisher $mercurePublisher,
+        MessageBroadcaster $messageBroadcaster,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -91,9 +91,7 @@ $hasCheck = true;
         }
 
         $renderedHtml = $this->messageRenderer->renderFeedItem($message, ['no_fade' => true]);
-        $renderedHtmlOob = $this->messageRenderer->renderFeedItem($message, ['oob' => true]);
-
-        $mercurePublisher->publishToChannel($channel, $renderedHtmlOob, 'message_' . $channel->getSlug());
+        $messageBroadcaster->broadcastMessageUpdate($message);
 
         return new Response($renderedHtml);
     }

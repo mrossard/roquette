@@ -8,8 +8,7 @@ use App\Message\ScanFileMessage;
 use App\Repository\MessageRepository;
 use App\Service\ClamavService;
 use App\Service\FileUploadService;
-use App\Service\MercurePublisher;
-use App\Service\MessageRenderer;
+use App\Service\MessageBroadcaster;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -22,8 +21,7 @@ class ScanFileMessageHandler
         private readonly FileUploadService $fileUploadService,
         private readonly ClamavService $clamavService,
         private readonly EntityManagerInterface $em,
-        private readonly MercurePublisher $mercurePublisher,
-        private readonly MessageRenderer $messageRenderer,
+        private readonly MessageBroadcaster $messageBroadcaster,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -46,7 +44,7 @@ class ScanFileMessageHandler
             if (!$this->fileUploadService->exists($dbMessage->getFilePath())) {
                 $dbMessage->setVirusScanStatus('failed');
                 $this->em->flush();
-                $this->publishUpdate($dbMessage);
+                $this->messageBroadcaster->broadcastMessageUpdate($dbMessage);
                 return;
             }
 
@@ -76,22 +74,6 @@ class ScanFileMessageHandler
         $this->em->flush();
 
         // Push real-time HTML update to all clients in the channel
-        $this->publishUpdate($dbMessage);
-    }
-
-    private function publishUpdate(\App\Entity\Message $message): void
-    {
-        try {
-            $channel = $message->getChannel();
-            $html = $this->messageRenderer->renderFeedItem($message, ['oob' => true]);
-
-            $this->mercurePublisher->publishToChannel($channel, $html, 'message_' . $channel->getSlug());
-        } catch (\Exception $e) {
-            $this->logger->error(sprintf(
-                'Failed to publish Mercure scan update for message %d: %s',
-                $message->getId(),
-                $e->getMessage(),
-            ));
-        }
+        $this->messageBroadcaster->broadcastMessageUpdate($dbMessage);
     }
 }

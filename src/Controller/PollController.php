@@ -7,7 +7,7 @@ namespace App\Controller;
 use App\Controller\Trait\ChannelAccessTrait;
 use App\Entity\PollOption;
 use App\Service\ChannelManager;
-use App\Service\MercurePublisher;
+use App\Service\MessageBroadcaster;
 use App\Service\MessageRenderer;
 use App\Service\PollManager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -44,7 +44,7 @@ final class PollController extends AbstractController
     public function vote(
         int $optionId,
         EntityManagerInterface $entityManager,
-        MercurePublisher $mercurePublisher,
+        MessageBroadcaster $messageBroadcaster,
         PollManager $pollManager,
         MessageRenderer $messageRenderer,
     ): Response {
@@ -55,7 +55,6 @@ final class PollController extends AbstractController
 
         $poll = $option->getPoll();
         $message = $poll->getMessage();
-        $channel = $message->getChannel();
 
         $this->authorizeMessageAccess($message);
 
@@ -65,13 +64,7 @@ final class PollController extends AbstractController
         $pollManager->toggleVote($option, $currentUser);
 
         $renderedHtml = $messageRenderer->renderFeedItem($message, ['no_fade' => true]);
-
-        $renderedHtmlOob = $this->renderView('dashboard/_feed_item.html.twig', array_merge(
-            $messageRenderer->feedItemParams($message),
-            ['oob' => true],
-        ));
-
-        $mercurePublisher->publishToChannel($channel, $renderedHtmlOob, 'message_' . $channel->getSlug());
+        $messageBroadcaster->broadcastMessageUpdate($message);
 
         return new Response($renderedHtml);
     }
