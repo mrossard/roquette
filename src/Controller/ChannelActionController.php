@@ -81,15 +81,6 @@ final class ChannelActionController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $name = trim($request->request->get('name', ''));
-        $description = trim($request->request->get('description', ''));
-
-        if ($name === '') {
-            $this->addFlash('error', $this->translator->trans('Le nom du canal ne peut pas être vide.'));
-
-            return $this->redirectToRoute('app_dashboard');
-        }
-
         $workspaceId = $request->request->getInt('workspaceId', 0);
         $workspace = null;
         if ($workspaceId > 0) {
@@ -101,22 +92,15 @@ final class ChannelActionController extends AbstractController
             }
         }
 
+        $dto = CreateChannelDto::fromRequest($request, $workspace);
+        if (!$dto->isValid()) {
+            $this->addFlash('error', $this->translator->trans('Le nom du canal ne peut pas être vide.'));
+
+            return $this->redirectToRoute('app_dashboard');
+        }
+
         try {
-            $channel = $channelManager->create(
-                CreateChannelDto::fromNameDescriptionAndExtra(
-                    $name,
-                    $description,
-                    [
-                        'isPrivate' => $request->request->getBoolean('isPrivate', false),
-                        'groupIdentifier' => $request->request->get('groupIdentifier', ''),
-                        'isGroupChannel' => $request->request->getBoolean('isGroupChannel', false),
-                        'isTodoList' => $request->request->getBoolean('isTodoList', false),
-                        'retentionMonths' => $request->request->get('messageRetentionMonths'),
-                        'workspace' => $workspace,
-                    ],
-                ),
-                $currentUser,
-            );
+            $channel = $channelManager->create($dto, $currentUser);
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());
 

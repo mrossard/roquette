@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Workspace\CreateWorkspaceDto;
+use App\Dto\Workspace\UpdateWorkspaceDto;
 use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Repository\InvitationRepository;
@@ -97,16 +99,14 @@ final class WorkspaceController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $name = trim($request->request->get('name', ''));
-        $description = trim($request->request->get('description', ''));
-
-        if ($name === '') {
+        $dto = CreateWorkspaceDto::fromRequest($request);
+        if (!$dto->isValid()) {
             $this->addFlash('error', $this->translator->trans('Le nom du workspace ne peut pas être vide.'));
 
             return $this->redirectToRoute('app_workspaces');
         }
 
-        $workspace = $this->workspaceManager->create($name, $description !== '' ? $description : null, $currentUser);
+        $workspace = $this->workspaceManager->create($dto->name, $dto->description, $currentUser);
         $this->workspaceContext->setCurrentWorkspace($workspace);
 
         $defaultChannel = $this->workspaceManager->getDefaultChannel($workspace);
@@ -149,17 +149,15 @@ final class WorkspaceController extends AbstractController
 
         $this->denyAccessUnlessGranted('EDIT', $workspace);
 
-        $name = trim($request->request->get('name', ''));
-        $description = trim($request->request->get('description', ''));
-
-        if ($name === '') {
+        $dto = UpdateWorkspaceDto::fromRequest($request);
+        if (!$dto->isValid()) {
             $this->addFlash('error', $this->translator->trans('Le nom du workspace ne peut pas être vide.'));
 
             return $this->redirectToRoute('app_workspace_switch', ['workspaceSlug' => $slug]);
         }
 
         // Delete avatar if requested
-        if ($request->request->has('delete_avatar')) {
+        if ($dto->deleteAvatar) {
             if ($workspace->getAvatarPath()) {
                 $fileUploadService->delete($workspace->getAvatarPath());
                 $workspace->setAvatarPath(null);
@@ -167,15 +165,13 @@ final class WorkspaceController extends AbstractController
         }
 
         // Handle file upload
-        /** @var UploadedFile|null $avatarFile */
-        $avatarFile = $request->files->get('avatar');
-        if ($avatarFile instanceof UploadedFile) {
+        if ($dto->avatarFile instanceof UploadedFile) {
             try {
                 // Delete old avatar first if it exists
                 if ($workspace->getAvatarPath()) {
                     $fileUploadService->delete($workspace->getAvatarPath());
                 }
-                $meta = $fileUploadService->upload($avatarFile);
+                $meta = $fileUploadService->upload($dto->avatarFile);
                 $workspace->setAvatarPath($meta->filePath);
             } catch (\InvalidArgumentException $e) {
                 $this->addFlash('error', $e->getMessage());
@@ -184,7 +180,7 @@ final class WorkspaceController extends AbstractController
             }
         }
 
-        $this->workspaceManager->update($workspace, $name, $description !== '' ? $description : null);
+        $this->workspaceManager->update($workspace, $dto->name, $dto->description);
         $entityManager->flush();
 
         $this->addFlash('success', $this->translator->trans('Les paramètres du workspace ont été modifiés.'));

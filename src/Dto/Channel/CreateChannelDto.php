@@ -41,4 +41,26 @@ final readonly class CreateChannelDto
             workspace: ($extra['workspace'] ?? null) instanceof Workspace ? $extra['workspace'] : null,
         );
     }
+
+    public static function fromRequest(
+        \Symfony\Component\HttpFoundation\Request $request,
+        ?Workspace $workspace = null,
+    ): self {
+        $name = trim((string) $request->request->get('name', ''));
+        $description = trim((string) $request->request->get('description', ''));
+
+        return self::fromNameDescriptionAndExtra($name, $description, [
+            'isPrivate' => $request->request->getBoolean('isPrivate', false),
+            'groupIdentifier' => (string) $request->request->get('groupIdentifier', ''),
+            'isGroupChannel' => $request->request->getBoolean('isGroupChannel', false),
+            'isTodoList' => $request->request->getBoolean('isTodoList', false),
+            'retentionMonths' => $request->request->get('messageRetentionMonths'),
+            'workspace' => $workspace,
+        ]);
+    }
+
+    public function isValid(): bool
+    {
+        return $this->name !== '';
+    }
 }

@@ -54,6 +54,29 @@ class ChannelDtoTest extends TestCase
     }
 
     #[Test]
+    public function createChannelDtoFromRequest(): void
+    {
+        $workspace = $this->createMock(Workspace::class);
+        $request = new \Symfony\Component\HttpFoundation\Request(request: [
+            'name' => '  Dev Team  ',
+            'description' => 'Channel description',
+            'isPrivate' => '1',
+            'isTodoList' => '1',
+            'messageRetentionMonths' => '3',
+        ]);
+
+        $dto = CreateChannelDto::fromRequest($request, $workspace);
+
+        $this->assertSame('Dev Team', $dto->name);
+        $this->assertSame('Channel description', $dto->description);
+        $this->assertTrue($dto->isPrivate);
+        $this->assertTrue($dto->isTodoList);
+        $this->assertSame(3, $dto->retentionMonths);
+        $this->assertSame($workspace, $dto->workspace);
+        $this->assertTrue($dto->isValid());
+    }
+
+    #[Test]
     public function updateChannelDtoFactoryHandlesValues(): void
     {
         $dto = UpdateChannelDto::fromNameDescriptionAndExtra('new-name', 'new-desc', [
