@@ -128,6 +128,7 @@
             {% include 'modals/_global_search_modal.html.twig' %}
             {% include 'modals/_busy_status_modal.html.twig' %}
             {% include 'partials/_confirmation_dialogs.html.twig' %}
+            <div id="modal-container" hx-target="this" hx-swap="innerHTML"></div>
             <div id="global-sse-triggers" style="display:none;">
                 <div hx-trigger="sse:moderation_count_changed"></div>
                 <div hx-trigger="sse:user_status_changed"></div>
