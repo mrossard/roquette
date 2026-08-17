@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Twig;
 
 use App\Service\EmojiMapping;
+use App\Service\Link\LinkExtractor;
 use App\Service\MessageFormatter;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Extension\AbstractExtension;
@@ -19,10 +20,15 @@ use Twig\TwigFunction;
  */
 class AppExtension extends AbstractExtension
 {
+    private readonly LinkExtractor $linkExtractor;
+
     public function __construct(
         private readonly MessageFormatter $formatter,
         private readonly TranslatorInterface $translator,
-    ) {}
+        ?LinkExtractor $linkExtractor = null,
+    ) {
+        $this->linkExtractor = $linkExtractor ?? new LinkExtractor();
+    }
 
     public function getFunctions(): array
     {
@@ -42,43 +48,9 @@ class AppExtension extends AbstractExtension
             new TwigFilter('wrap_emojis', [$this->formatter, 'wrapUnicodeEmojis'], ['is_safe' => ['html']]),
             new TwigFilter('format_bytes', [$this, 'formatBytes']),
             new TwigFilter('reaction_tooltip', [$this, 'formatReactionTooltip']),
-            new TwigFilter('extract_external_links', [$this, 'extractExternalLinks']),
-            new TwigFilter('is_image_url', [$this, 'isImageUrl']),
+            new TwigFilter('extract_external_links', [$this->linkExtractor, 'extractExternalLinks']),
+            new TwigFilter('is_image_url', [$this->linkExtractor, 'isImageUrl']),
         ];
-    }
-
-    public function extractExternalLinks(?string $content): array
-    {
-        if (!$content) {
-            return [];
-        }
-
-        // Strip Markdown image syntax ![alt](url) so that image URLs already
-        // rendered by CommonMark are not extracted again as link previews.
-        $content = preg_replace('/!\[.*?\]\(.*?\)/s', '', $content);
-
-        // Match http/https URLs
-        preg_match_all('/https?:\/\/[^\s\)<>"]+/i', $content, $matches);
-        if ($matches[0] === []) {
-            return [];
-        }
-
-        return array_values(array_unique($matches[0]));
-    }
-
-    /**
-     * Vérifie si une URL pointe vers une image en se basant uniquement sur l'extension.
-     * Utilisé dans les templates Twig pour éviter les placeholders HTMX pour les images directes.
-     */
-    public function isImageUrl(?string $url): bool
-    {
-        if (!$url) {
-            return false;
-        }
-        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'bmp', 'tiff', 'tif'];
-        $path = parse_url($url, PHP_URL_PATH) ?? '';
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        return in_array($ext, $imageExtensions, true);
     }
 
     public function formatBytes(int $bytes, int $precision = 2): string

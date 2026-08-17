@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Twig;
 
+use App\Service\Link\LinkExtractor;
 use App\Service\MessageFormatter;
 use App\Twig\AppExtension;
 use App\Twig\AppExtensionRuntime;
@@ -16,6 +17,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class AppExtensionTest extends TestCase
 {
     private AppExtension $extension;
+    private LinkExtractor $linkExtractor;
 
     protected function setUp(): void
     {
@@ -31,7 +33,8 @@ class AppExtensionTest extends TestCase
                 return strtr($id, $parameters);
             });
 
-        $this->extension = new AppExtension($formatter, $translator);
+        $this->linkExtractor = new LinkExtractor();
+        $this->extension = new AppExtension($formatter, $translator, $this->linkExtractor);
     }
 
     #[Test]
@@ -98,22 +101,32 @@ class AppExtensionTest extends TestCase
         static::assertSame('1.5 MB', $this->extension->formatBytes((int) (1.5 * 1024 * 1024)));
     }
 
-    public function testExtractExternalLinks(): void
+    public function testExtractExternalLinksFilter(): void
     {
+        $filters = array_values(array_filter($this->extension->getFilters(), static fn($f) => $f->getName() === 'extract_external_links'));
+        static::assertNotEmpty($filters);
+        $callable = $filters[0]->getCallable();
+        static::assertIsCallable($callable);
+
         $content = 'Check https://example.com and http://test.org/path and ![image](https://example.com/img.png)';
-        $links = $this->extension->extractExternalLinks($content);
+        $links = $callable($content);
 
         static::assertContains('https://example.com', $links);
         static::assertContains('http://test.org/path', $links);
         static::assertNotContains('https://example.com/img.png', $links);
     }
 
-    public function testIsImageUrl(): void
+    public function testIsImageUrlFilter(): void
     {
-        static::assertTrue($this->extension->isImageUrl('https://example.com/image.png'));
-        static::assertTrue($this->extension->isImageUrl('https://example.com/photo.jpeg'));
-        static::assertFalse($this->extension->isImageUrl('https://example.com/document.pdf'));
-        static::assertFalse($this->extension->isImageUrl(''));
-        static::assertFalse($this->extension->isImageUrl(null));
+        $filters = array_values(array_filter($this->extension->getFilters(), static fn($f) => $f->getName() === 'is_image_url'));
+        static::assertNotEmpty($filters);
+        $callable = $filters[0]->getCallable();
+        static::assertIsCallable($callable);
+
+        static::assertTrue($callable('https://example.com/image.png'));
+        static::assertTrue($callable('https://example.com/photo.jpeg'));
+        static::assertFalse($callable('https://example.com/document.pdf'));
+        static::assertFalse($callable(''));
+        static::assertFalse($callable(null));
     }
 }

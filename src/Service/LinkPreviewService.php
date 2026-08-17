@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Dto\Link\LinkPreviewDto;
+use App\Service\Link\LinkExtractor;
 use App\Service\Link\UrlSafetyValidator;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -14,16 +15,17 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class LinkPreviewService
 {
     private readonly UrlSafetyValidator $urlSafetyValidator;
+    private readonly LinkExtractor $linkExtractor;
 
     public function __construct(
         private readonly CacheInterface $cache,
         private readonly HttpClientInterface $httpClient,
         ?UrlSafetyValidator $urlSafetyValidator = null,
+        ?LinkExtractor $linkExtractor = null,
     ) {
         $this->urlSafetyValidator = $urlSafetyValidator ?? new UrlSafetyValidator();
+        $this->linkExtractor = $linkExtractor ?? new LinkExtractor();
     }
-
-    private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'bmp', 'tiff', 'tif'];
 
     private const MAX_REDIRECTS = 3;
 
@@ -32,9 +34,7 @@ class LinkPreviewService
      */
     public function isDirectImageUrl(string $url): bool
     {
-        $path = parse_url($url, PHP_URL_PATH) ?? '';
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        if (in_array($ext, self::IMAGE_EXTENSIONS, true)) {
+        if ($this->linkExtractor->isImageUrl($url)) {
             return true;
         }
 
@@ -108,9 +108,7 @@ class LinkPreviewService
             return null;
         }
 
-        $path = parse_url($url, PHP_URL_PATH) ?? '';
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        if (in_array($ext, self::IMAGE_EXTENSIONS, true)) {
+        if ($this->linkExtractor->isImageUrl($url)) {
             $item->expiresAfter(86_400 * 7);
             return ['type' => 'direct_image', 'url' => $url];
         }
