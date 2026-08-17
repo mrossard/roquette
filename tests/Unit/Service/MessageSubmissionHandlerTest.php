@@ -55,10 +55,12 @@ class MessageSubmissionHandlerTest extends TestCase
         $this->session->start();
         $this->twig = $this->createMock(Environment::class);
         $this->translator = $this->createMock(TranslatorInterface::class);
-        $this->rateLimiter = $this->createMock(RateLimiterFactoryInterface::class);
-
         $this->translator->method('trans')->willReturnArgument(0);
         $this->twig->method('render')->willReturn('<form></form>');
+        $this->rateLimiter = $this->createMock(RateLimiterFactoryInterface::class);
+
+        $workspaceRepository = $this->createMock(\App\Repository\WorkspaceRepository::class);
+        $workspaceContext = new \App\Service\WorkspaceContext($this->requestStack, $workspaceRepository);
 
         $this->handler = new MessageSubmissionHandler(
             $this->channelManager,
@@ -69,6 +71,7 @@ class MessageSubmissionHandlerTest extends TestCase
             $this->twig,
             $this->translator,
             $this->rateLimiter,
+            $workspaceContext,
         );
     }
 

@@ -32,6 +32,7 @@ final class DashboardController extends AbstractController
 {
     public function __construct(
         private readonly \App\Service\SidebarDataProvider $sidebarDataProvider,
+        private readonly \App\Service\WorkspaceContext $workspaceContext,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -76,29 +77,14 @@ final class DashboardController extends AbstractController
 
     #[Route('/channels/directory', name: 'app_channels_directory')]
     public function directory(
-        Request $request,
         ChannelRepository $channelRepository,
         UserRepository $userRepository,
-        WorkspaceRepository $workspaceRepository,
     ): Response {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
         $sidebarData = $this->sidebarDataProvider->getSidebarData($currentUser);
-
-        // Get active workspace
-        $session = $request->getSession();
-        $currentWorkspaceId = $session->get('current_workspace_id');
-        $currentWorkspace = null;
-        if ($currentWorkspaceId) {
-            $currentWorkspace = $workspaceRepository->find($currentWorkspaceId);
-        }
-        if (!$currentWorkspace) {
-            $currentWorkspace = $workspaceRepository->findPublicWorkspace();
-            if ($currentWorkspace) {
-                $session->set('current_workspace_id', $currentWorkspace->getId());
-            }
-        }
+        $currentWorkspace = $this->workspaceContext->getCurrentWorkspace();
 
         $allPublicChannels = $currentWorkspace
             ? $channelRepository->findPublicForWorkspace($currentWorkspace)
@@ -121,20 +107,9 @@ final class DashboardController extends AbstractController
         Request $request,
         ChannelRepository $channelRepository,
         UserRepository $userRepository,
-        WorkspaceRepository $workspaceRepository,
     ): Response {
         $currentUser = $this->getUser();
-
-        // Get active workspace
-        $session = $request->getSession();
-        $currentWorkspaceId = $session->get('current_workspace_id');
-        $currentWorkspace = null;
-        if ($currentWorkspaceId) {
-            $currentWorkspace = $workspaceRepository->find($currentWorkspaceId);
-        }
-        if (!$currentWorkspace) {
-            $currentWorkspace = $workspaceRepository->findPublicWorkspace();
-        }
+        $currentWorkspace = $this->workspaceContext->getCurrentWorkspace();
 
         $etag = md5(sprintf('directory-%s-%s-%s', $type, $currentWorkspace?->getId() ?? 'none', $currentUser?->getUserIdentifier() ?? 'guest'));
         $response = new Response();

@@ -32,6 +32,7 @@ class MessageSubmissionHandler
         private readonly TranslatorInterface $translator,
         #[Autowire(service: 'limiter.message_api')]
         private readonly RateLimiterFactoryInterface $rateLimiter,
+        private readonly WorkspaceContext $workspaceContext,
     ) {}
 
     public function handle(string $slug, Request $request, User $currentUser): Response
@@ -65,13 +66,15 @@ class MessageSubmissionHandler
             return $this->renderForm($channel);
         }
 
+        $workspaceId = $this->workspaceContext->getCurrentWorkspaceId();
+
         // Handle slash commands that return a direct Response
         if (!$isPoll && !$uploadedFile && str_starts_with(trim($messageText), '/')) {
             $slashResult = $this->slashCommandHandler->process(
                 $messageText,
                 $channel,
                 $currentUser,
-                $this->getCurrentWorkspaceId($request),
+                $workspaceId,
             );
             if ($slashResult->response !== null) {
                 return $slashResult->response;
@@ -87,9 +90,9 @@ class MessageSubmissionHandler
             file: $uploadedFile,
             pollQuestion: $pollDto?->question,
             pollOptions: $pollDto?->options,
-            pollAllowMultiple: $pollDto?->allowMultiple ?? false,
+            pollAllowMultiple: $pollDto->allowMultiple ?? false,
             replyToId: ($replyTo = $request->request->get('replyTo')) ? (int) $replyTo : null,
-            workspaceId: $this->getCurrentWorkspaceId($request),
+            workspaceId: $workspaceId,
         );
 
         if (!$result->success) {
@@ -109,18 +112,6 @@ class MessageSubmissionHandler
         }
 
         return $this->renderForm($channel);
-    }
-
-    private function getCurrentWorkspaceId(Request $request): ?int
-    {
-        $session = $request->getSession();
-        if ($session === null || !$session->isStarted()) {
-            return null;
-        }
-
-        $workspaceId = $session->get('current_workspace_id');
-
-        return is_int($workspaceId) ? $workspaceId : null;
     }
 
     private function findChannel(string $slug, User $currentUser): Channel

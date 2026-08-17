@@ -11,7 +11,6 @@ use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
-use App\Repository\WorkspaceRepository;
 use App\Service\ChannelManager;
 use App\Service\MercurePublisher;
 use App\Service\MessageFeedContextService;
@@ -40,6 +39,7 @@ final class ChannelController extends AbstractController
         private readonly ChannelManager $channelManager,
         private readonly SidebarDataProvider $sidebarDataProvider,
         private readonly MessageFeedContextService $feedContextService,
+        private readonly \App\Service\WorkspaceContext $workspaceContext,
     ) {}
 
     #[Route('/channels/{slug}', name: 'app_channel', requirements: [
@@ -65,9 +65,7 @@ final class ChannelController extends AbstractController
         }
         [$activeChannel, $isMember] = $resolved;
 
-        if ($activeChannel->getWorkspace()) {
-            $request->getSession()->set('current_workspace_id', $activeChannel->getWorkspace()->getId());
-        }
+        $this->workspaceContext->syncFromChannel($activeChannel);
 
         $this->trackPreviousChannel($request, $slug, $currentUser, $channelRepository);
 
@@ -167,7 +165,6 @@ final class ChannelController extends AbstractController
         Request $request,
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
-        WorkspaceRepository $workspaceRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         /** @var User $currentUser */
@@ -179,24 +176,7 @@ final class ChannelController extends AbstractController
         $workspaces = $sidebarData['workspaces'];
 
         $activeChannel = $this->findActiveChannelFromHxRequest($request, $channelRepository);
-        $currentWorkspace = $activeChannel?->getWorkspace();
-
-        $session = $request->getSession();
-        if ($currentWorkspace !== null) {
-            $session->set('current_workspace_id', $currentWorkspace->getId());
-        } else {
-            $currentWorkspaceId = $session->get('current_workspace_id');
-            if ($currentWorkspaceId !== null) {
-                $currentWorkspace = $workspaceRepository->find($currentWorkspaceId);
-            }
-        }
-
-        if (!$currentWorkspace) {
-            $currentWorkspace = $workspaceRepository->findPublicWorkspace();
-            if ($currentWorkspace) {
-                $session->set('current_workspace_id', $currentWorkspace->getId());
-            }
-        }
+        $currentWorkspace = $this->workspaceContext->syncFromChannel($activeChannel);
 
         // Filter channels to current workspace
         if ($currentWorkspace) {

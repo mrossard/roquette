@@ -26,6 +26,7 @@ final class WorkspaceController extends AbstractController
     public function __construct(
         private readonly WorkspaceManager $workspaceManager,
         private readonly TranslatorInterface $translator,
+        private readonly \App\Service\WorkspaceContext $workspaceContext,
     ) {}
 
     #[Route('/workspaces', name: 'app_workspaces')]
@@ -71,7 +72,7 @@ final class WorkspaceController extends AbstractController
             $entityManager->flush();
         }
 
-        $request->getSession()->set('current_workspace_id', $workspace->getId());
+        $this->workspaceContext->setCurrentWorkspace($workspace);
 
         // Redirect to default channel in this workspace
         $defaultChannel = $this->workspaceManager->getDefaultChannel($workspace);
@@ -106,7 +107,7 @@ final class WorkspaceController extends AbstractController
         }
 
         $workspace = $this->workspaceManager->create($name, $description !== '' ? $description : null, $currentUser);
-        $request->getSession()->set('current_workspace_id', $workspace->getId());
+        $this->workspaceContext->setCurrentWorkspace($workspace);
 
         $defaultChannel = $this->workspaceManager->getDefaultChannel($workspace);
         if ($defaultChannel) {

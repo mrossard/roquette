@@ -36,6 +36,7 @@ final class ChannelActionController extends AbstractController
         private readonly ChannelManager $channelManager,
         private readonly WorkspaceManager $workspaceManager,
         private readonly SidebarDataProvider $sidebarDataProvider,
+        private readonly \App\Service\WorkspaceContext $workspaceContext,
     ) {}
 
     #[Route('/channels/{slug}/summarize', name: 'app_channel_summarize_modal', methods: ['POST'])]
@@ -51,12 +52,7 @@ final class ChannelActionController extends AbstractController
 
         $helpMessageId = 'summary-modal-stream-' . uniqid();
         $promptText = 'résume le canal ' . $channel->getName();
-
-        $session = $request->getSession();
-        $workspaceId = $session?->get('current_workspace_id');
-        if (!is_int($workspaceId)) {
-            $workspaceId = null;
-        }
+        $workspaceId = $this->workspaceContext->getCurrentWorkspaceId();
 
         $messageBus->dispatch(new LlmQueryMessage(
             question: $promptText,
