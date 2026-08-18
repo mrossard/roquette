@@ -23,13 +23,37 @@ integrations = ["symfony", "phpunit"]
 [linter.rules]
 literal-named-argument = { enabled = false }
 no-literal-password = { enabled = false }
-halstead = { effort-threshold = 7000 }
 kan-defect = { enabled = false }
-cyclomatic-complexity = { threshold = 100 }
-too-many-methods = { threshold = 45 }
-excessive-parameter-list = { threshold = 25 }
-too-many-properties = { threshold = 35 }
 no-boolean-flag-parameter = { enabled = false }
+
+# Thresholds tightened to the actual codebase limits
+cyclomatic-complexity = { threshold = 50, method-threshold = 22 }
+too-many-methods = { threshold = 40, count-setters-and-getters = false }
+excessive-parameter-list = { threshold = 10, constructor-threshold = 20 }
+too-many-properties = { threshold = 30 }
+halstead = { effort-threshold = 7000 }
+
+# Additional active code quality & safety rules
+no-dead-store = { enabled = true }
+no-unused-closure-capture = { enabled = true }
+no-unused-global = { enabled = true }
+no-unused-static = { enabled = true }
+no-redundant-else = { enabled = true }
+switch-continue-to-break = { enabled = true }
+no-alternative-syntax = { enabled = true }
+prefer-self-return-type = { enabled = true }
+prefer-datetimeimmutable-create-from-timestamp = { enabled = true }
+prefer-explode-over-preg-split = { enabled = true }
+no-short-bool-cast = { enabled = true }
+no-is-null = { enabled = true }
+no-null-property-init = { enabled = true }
+no-assign-in-argument = { enabled = true }
+no-parameter-shadowing = { enabled = true }
+no-array-accumulation-in-loop = { enabled = true }
+no-side-effects-with-declarations = { enabled = true }
+no-iterator-to-array-in-foreach = { enabled = true }
+disallowed-type-instantiation = { enabled = true }
+sorted-integer-keys = { enabled = true }
 
 [analyzer]
 plugins = []
