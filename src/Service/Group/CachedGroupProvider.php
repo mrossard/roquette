@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Group;
 
+use App\Dto\Group\GroupDto;
 use App\Entity\User;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
@@ -34,7 +35,7 @@ class CachedGroupProvider implements GroupProviderInterface
         });
     }
 
-    public function getGroupByIdentifier(string $identifier): ?GroupDTO
+    public function getGroupByIdentifier(string $identifier): ?GroupDto
     {
         $key = sprintf('group_provider_group_%s', md5($identifier));
         return $this->cache->get($key, function (ItemInterface $item) use ($identifier) {

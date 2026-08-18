@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Dto\Emoji\DeleteEmojiDto;
+use App\Dto\Emoji\EditEmojiTagsDto;
+use App\Dto\Emoji\EmojiTagDto;
+use App\Dto\Emoji\UploadEmojiDto;
 use App\Service\CustomEmojiService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,18 +46,16 @@ final class AdminEmojiController extends AbstractController
     #[Route('/admin/emojis/edit', name: 'app_admin_emojis_edit', methods: ['POST'])]
     public function editEmoji(Request $request, CustomEmojiService $emojiService): Response
     {
-        $code = $request->request->get('code', '');
-        $tagsString = $request->request->get('tags', '');
-
-        if ($code === '') {
+        $dto = EditEmojiTagsDto::fromRequest($request);
+        if (!$dto->isValid()) {
             $this->addFlash('error', $this->translator->trans('Émoji invalide.'));
             return $this->redirectToRoute('app_admin_emojis');
         }
 
         try {
-            $emojiService->saveTags($code, $tagsString);
+            $emojiService->saveTags($dto->code, $dto->tags);
             $this->addFlash('success', $this->translator->trans('Tags mis à jour pour l\'émoji %code%.', [
-                '%code%' => $code,
+                '%code%' => $dto->code,
             ]));
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());
@@ -65,18 +67,16 @@ final class AdminEmojiController extends AbstractController
     #[Route('/admin/emojis/upload', name: 'app_admin_emojis_upload', methods: ['POST'])]
     public function uploadEmoji(Request $request, CustomEmojiService $emojiService): Response
     {
-        $code = trim($request->request->get('code', ''));
-        $file = $request->files->get('emoji_file');
-
-        if ($code === '' || !$file) {
+        $dto = UploadEmojiDto::fromRequest($request);
+        if (!$dto->isValid()) {
             $this->addFlash('error', $this->translator->trans('Le code et le fichier sont obligatoires.'));
             return $this->redirectToRoute('app_admin_emojis');
         }
 
         try {
-            $emojiService->upload($code, $file, $request->request->get('tags', ''));
+            $emojiService->upload($dto->code, $dto->file, $dto->tags);
             $this->addFlash('success', $this->translator->trans('Émoji %code% ajouté avec succès.', [
-                '%code%' => $code,
+                '%code%' => $dto->code,
             ]));
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());
@@ -92,12 +92,16 @@ final class AdminEmojiController extends AbstractController
     #[Route('/admin/emojis/delete', name: 'app_admin_emojis_delete', methods: ['POST'])]
     public function deleteEmoji(Request $request, CustomEmojiService $emojiService): Response
     {
-        $code = $request->request->get('code', '');
+        $dto = DeleteEmojiDto::fromRequest($request);
+        if (!$dto->isValid()) {
+            $this->addFlash('error', $this->translator->trans('Émoji invalide.'));
+            return $this->redirectToRoute('app_admin_emojis');
+        }
 
         try {
-            $emojiService->delete($code);
+            $emojiService->delete($dto->code);
             $this->addFlash('success', $this->translator->trans('L\'émoji %code% a été supprimé.', [
-                '%code%' => $code,
+                '%code%' => $dto->code,
             ]));
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());
@@ -107,18 +111,21 @@ final class AdminEmojiController extends AbstractController
             ]));
         }
 
-        return $this->redirectToRoute('app_admin_emojis');
+        return $this->redirectToRoute('app_admin_emojis', $request->query->all());
     }
 
     #[Route('/admin/emojis/add-tag', name: 'app_admin_emojis_add_tag', methods: ['POST'])]
     public function addTag(Request $request, CustomEmojiService $emojiService): Response
     {
-        $code = $request->request->get('code', '');
-        $newTag = trim($request->request->get('tag', ''));
+        $dto = EmojiTagDto::fromRequest($request);
+        if (!$dto->isValid()) {
+            $this->addFlash('error', $this->translator->trans('Émoji ou tag invalide.'));
+            return $this->redirectToRoute('app_admin_emojis', $request->query->all());
+        }
 
         try {
-            $emojiService->addTag($code, $newTag);
-            $this->addFlash('success', $this->translator->trans('Tag "%tag%" ajouté.', ['%tag%' => $newTag]));
+            $emojiService->addTag($dto->code, $dto->tag);
+            $this->addFlash('success', $this->translator->trans('Tag "%tag%" ajouté.', ['%tag%' => $dto->tag]));
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());
         }
@@ -129,12 +136,15 @@ final class AdminEmojiController extends AbstractController
     #[Route('/admin/emojis/remove-tag', name: 'app_admin_emojis_remove_tag', methods: ['POST'])]
     public function removeTag(Request $request, CustomEmojiService $emojiService): Response
     {
-        $code = $request->request->get('code', '');
-        $tagToRemove = trim($request->request->get('tag', ''));
+        $dto = EmojiTagDto::fromRequest($request);
+        if (!$dto->isValid()) {
+            $this->addFlash('error', $this->translator->trans('Émoji ou tag invalide.'));
+            return $this->redirectToRoute('app_admin_emojis', $request->query->all());
+        }
 
         try {
-            $emojiService->removeTag($code, $tagToRemove);
-            $this->addFlash('success', $this->translator->trans('Tag "%tag%" retiré.', ['%tag%' => $tagToRemove]));
+            $emojiService->removeTag($dto->code, $dto->tag);
+            $this->addFlash('success', $this->translator->trans('Tag "%tag%" retiré.', ['%tag%' => $dto->tag]));
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());
         }

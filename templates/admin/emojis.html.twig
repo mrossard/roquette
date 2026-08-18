@@ -119,14 +119,15 @@
                                             +
                                         </button>
                                     </div>
-                                    
-                                    <div style="margin-top: 0.5rem; width: 100%;">
-                                        <button type="submit" name="delete" value="1" class="btn-delete-emoji" style="width: 100%;"
-                                                formaction="{{ path('app_admin_emojis_delete') }}"
-                                                onclick="return confirm('{{ 'Êtes-vous sûr de vouloir supprimer l\'émoji %code% ?'|trans({'%code%': emoji.code}) }}');">
-                                            {{ 'Supprimer l\'émoji'|trans }}
-                                        </button>
-                                    </div>
+                                </form>
+
+                                <form action="{{ path('app_admin_emojis_delete', app.request.query.all) }}" method="POST" hx-boost="false" style="margin-top: 0.5rem; width: 100%;">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('app') }}">
+                                    <input type="hidden" name="code" value="{{ emoji.code }}">
+                                    <button type="submit" class="btn-delete-emoji" style="width: 100%;"
+                                            onclick="return confirm('{{ 'Êtes-vous sûr de vouloir supprimer l\'émoji %code% ?'|trans({'%code%': emoji.code}) }}');">
+                                        {{ 'Supprimer l\'émoji'|trans }}
+                                    </button>
                                 </form>
                             </div>
                         {% else %}

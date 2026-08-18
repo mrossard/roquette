@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Group;
 
+use App\Dto\Group\GroupDto;
 use App\Entity\User;
 use LDAP\Connection;
 use Psr\Log\LoggerInterface;
@@ -76,9 +77,9 @@ readonly class LdapGroupProvider implements GroupProviderInterface
 
     /**
      * @param array<string, mixed> $entries
-     * @return GroupDTO[]
+     * @return GroupDto[]
      */
-    private function entriesToGroupDTOs(array $entries): array
+    private function entriesToGroupDtos(array $entries): array
     {
         if ($entries['count'] === 0) {
             return [];
@@ -91,7 +92,7 @@ readonly class LdapGroupProvider implements GroupProviderInterface
             $name = $entry['cn'][0] ?? $dn;
             $description = $entry['description'][0] ?? null;
 
-            $groups[] = new GroupDTO($dn, $name, $description);
+            $groups[] = new GroupDto($dn, $name, $description);
         }
 
         return $groups;
@@ -154,7 +155,7 @@ readonly class LdapGroupProvider implements GroupProviderInterface
             return [];
         }
 
-        return $this->entriesToGroupDTOs($entries);
+        return $this->entriesToGroupDtos($entries);
     }
 
     public function getGroupsForUser(User $user): array
@@ -192,10 +193,10 @@ readonly class LdapGroupProvider implements GroupProviderInterface
             return [];
         }
 
-        return $this->entriesToGroupDTOs($entries);
+        return $this->entriesToGroupDtos($entries);
     }
 
-    public function getGroupByIdentifier(string $identifier): ?GroupDTO
+    public function getGroupByIdentifier(string $identifier): ?GroupDto
     {
         $conn = $this->getConnection();
         if (!$conn) {
@@ -216,7 +217,7 @@ readonly class LdapGroupProvider implements GroupProviderInterface
         $name = $entry['cn'][0] ?? $identifier;
         $description = $entry['description'][0] ?? null;
 
-        return new GroupDTO($identifier, $name, $description);
+        return new GroupDto($identifier, $name, $description);
     }
 
     public function getGroupMembers(string $groupIdentifier): array

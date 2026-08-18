@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Group;
 
+use App\Dto\Group\GroupDto;
 use App\Entity\User;
 
 class InMemoryGroupProvider implements GroupProviderInterface
@@ -43,7 +44,7 @@ class InMemoryGroupProvider implements GroupProviderInterface
                     continue;
                 }
             }
-            $dtos[] = new GroupDTO($identifier, $data['name'], $data['description']);
+            $dtos[] = new GroupDto($identifier, $data['name'], $data['description']);
         }
         return $dtos;
     }
@@ -55,18 +56,18 @@ class InMemoryGroupProvider implements GroupProviderInterface
             if (!in_array($user->getUsername(), $data['members'], true)) {
                 continue;
             }
-            $dtos[] = new GroupDTO($identifier, $data['name'], $data['description']);
+            $dtos[] = new GroupDto($identifier, $data['name'], $data['description']);
         }
         return $dtos;
     }
 
-    public function getGroupByIdentifier(string $identifier): ?GroupDTO
+    public function getGroupByIdentifier(string $identifier): ?GroupDto
     {
         if (!\array_key_exists($identifier, $this->groups)) {
             return null;
         }
         $data = $this->groups[$identifier];
-        return new GroupDTO($identifier, $data['name'], $data['description']);
+        return new GroupDto($identifier, $data['name'], $data['description']);
     }
 
     public function getGroupMembers(string $groupIdentifier): array

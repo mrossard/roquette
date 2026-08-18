@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service\Group;
 
+use App\Dto\Group\GroupDto;
 use App\Entity\Channel;
 use App\Entity\GroupSubscription;
-use App\Service\Group\GroupDTO;
 use App\Service\Group\GroupProviderInterface;
 use App\Service\Group\GroupSubscriptionManager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -203,7 +203,7 @@ final class GroupSubscriptionManagerTest extends TestCase
             ->expects($this->once())
             ->method('getGroupByIdentifier')
             ->with('group-dev')
-            ->willReturn(new GroupDTO('group-dev', 'Développeurs'));
+            ->willReturn(new GroupDto('group-dev', 'Développeurs'));
 
         $resolved = $this->manager->getResolvedSubscriptions($channel, $groupProvider);
 

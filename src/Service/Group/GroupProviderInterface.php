@@ -4,21 +4,22 @@ declare(strict_types=1);
 
 namespace App\Service\Group;
 
+use App\Dto\Group\GroupDto;
 use App\Entity\User;
 
 interface GroupProviderInterface
 {
     /**
-     * @return GroupDTO[]
+     * @return GroupDto[]
      */
     public function getGroups(string $searchQuery = ''): array;
 
     /**
-     * @return GroupDTO[]
+     * @return GroupDto[]
      */
     public function getGroupsForUser(User $user): array;
 
-    public function getGroupByIdentifier(string $identifier): ?GroupDTO;
+    public function getGroupByIdentifier(string $identifier): ?GroupDto;
 
     /**
      * @return string[] List of usernames in the group

@@ -102,11 +102,7 @@ final class KanbanController extends AbstractController
             return new Response($this->translator->trans('Le nom de la colonne est requis.'), 400);
         }
 
-        try {
-            $this->kanbanManager->createColumn($channel, $dto->name, $dto->color, null, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
+        $this->kanbanManager->createColumn($channel, $dto->name, $dto->color, null, $currentUser);
 
         return $this->redirectToRoute('app_channel_kanban', ['slug' => $channel->getSlug()]);
     }
@@ -129,11 +125,7 @@ final class KanbanController extends AbstractController
             return new Response($this->translator->trans('Le nom de la colonne est requis.'), 400);
         }
 
-        try {
-            $this->kanbanManager->renameColumn($column, $dto->name, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
+        $this->kanbanManager->renameColumn($column, $dto->name, $currentUser);
 
         return $this->render('dashboard/_kanban_column_header.html.twig', [
             'column' => $column,
@@ -155,11 +147,7 @@ final class KanbanController extends AbstractController
         $channel = $column->getChannel();
         $this->denyAccessUnlessGranted('MANAGE', $channel);
 
-        try {
-            $this->kanbanManager->deleteColumn($column, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
+        $this->kanbanManager->deleteColumn($column, $currentUser);
 
         return $this->redirectToRoute('app_channel_kanban', ['slug' => $channel->getSlug()]);
     }
@@ -184,11 +172,7 @@ final class KanbanController extends AbstractController
             $this->denyAccessUnlessGranted('MANAGE', $firstCol->getChannel());
         }
 
-        try {
-            $this->kanbanManager->reorderColumns($dto->columnIds, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
+        $this->kanbanManager->reorderColumns($dto->columnIds, $currentUser);
 
         return new Response(null, 204);
     }
@@ -202,11 +186,7 @@ final class KanbanController extends AbstractController
         $columnId = UpdateKanbanCardDto::parseColumnId($request);
         $column = $columnId !== null ? $this->kanbanColumnRepository->find($columnId) : null;
 
-        try {
-            $this->kanbanManager->moveMessageToColumn($message, $column, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
+        $this->kanbanManager->moveMessageToColumn($message, $column, $currentUser);
 
         return $this->renderKanbanCard($message);
     }
@@ -220,11 +200,7 @@ final class KanbanController extends AbstractController
         $userId = UpdateKanbanCardDto::parseUserId($request);
         $user = $userId !== null ? $this->userRepository->find($userId) : null;
 
-        try {
-            $this->kanbanManager->assignMessage($message, $user, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
+        $this->kanbanManager->assignMessage($message, $user, $currentUser);
 
         return $this->renderKanbanCard($message);
     }
@@ -237,11 +213,7 @@ final class KanbanController extends AbstractController
 
         $dueAt = UpdateKanbanCardDto::parseDueDate($request);
 
-        try {
-            $this->kanbanManager->setDueDate($message, $dueAt, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
+        $this->kanbanManager->setDueDate($message, $dueAt, $currentUser);
 
         return $this->renderKanbanCard($message);
     }
@@ -254,11 +226,7 @@ final class KanbanController extends AbstractController
 
         $priority = UpdateKanbanCardDto::parsePriority($request);
 
-        try {
-            $this->kanbanManager->setPriority($message, $priority, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
+        $this->kanbanManager->setPriority($message, $priority, $currentUser);
 
         return $this->renderKanbanCard($message);
     }
@@ -271,11 +239,7 @@ final class KanbanController extends AbstractController
 
         $labels = UpdateKanbanCardDto::parseLabels($request);
 
-        try {
-            $this->kanbanManager->setLabels($message, $labels, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
+        $this->kanbanManager->setLabels($message, $labels, $currentUser);
 
         return $this->renderKanbanCard($message);
     }
@@ -286,13 +250,9 @@ final class KanbanController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        try {
-            $message->isCompleted()
-                ? $this->kanbanManager->markAsIncomplete($message, $currentUser)
-                : $this->kanbanManager->markAsCompleted($message, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
+        $message->isCompleted()
+            ? $this->kanbanManager->markAsIncomplete($message, $currentUser)
+            : $this->kanbanManager->markAsCompleted($message, $currentUser);
 
         return $this->renderKanbanCard($message);
     }

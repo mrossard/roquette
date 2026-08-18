@@ -11,7 +11,7 @@ use App\Entity\UserGroup;
 use App\Repository\UserGroupRepository;
 use App\Repository\UserRepository;
 use App\Service\ChannelMembersDataProvider;
-use App\Service\Group\GroupDTO;
+use App\Dto\Group\GroupDto;
 use App\Service\Group\GroupProviderInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -92,7 +92,7 @@ class ChannelMembersDataProviderTest extends TestCase
 
         $this->userGroupRepository->method('findOneBy')->willReturn($localGroup);
 
-        $this->groupProvider->method('getGroupByIdentifier')->willReturn(new GroupDTO('devs', 'Developers'));
+        $this->groupProvider->method('getGroupByIdentifier')->willReturn(new GroupDto('devs', 'Developers'));
 
         $data = $this->provider->getMembersModalData($channel);
 
@@ -125,7 +125,7 @@ class ChannelMembersDataProviderTest extends TestCase
 
         $this->groupProvider
             ->method('getGroupByIdentifier')
-            ->willReturn(new GroupDTO('ldap-marketing', 'Marketing LDAP'));
+            ->willReturn(new GroupDto('ldap-marketing', 'Marketing LDAP'));
 
         $this->groupProvider->method('getGroupMembers')->willReturn(['registered_user', 'unregistered_user']);
 
