@@ -592,7 +592,7 @@ class MessageRepository extends ServiceEntityRepository
     {
         $messages = $this->createQueryBuilder('m')
             ->where('m.channel = :channel')
-            ->andWhere('m.parent IS NULL')
+            ->andWhere('m.parentMessage IS NULL')
             ->andWhere('m.id <= :lastReadId')
             ->orderBy('m.id', 'DESC')
             ->setParameter('channel', $channel)

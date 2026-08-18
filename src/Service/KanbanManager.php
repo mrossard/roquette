@@ -258,7 +258,8 @@ class KanbanManager
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
         }
 
-        if (!$channel->isAdministrator($user) && !($channel->getCreator()?->getId() === $user->getId())) {
+        $isWorkspaceCreator = $channel->getWorkspace() !== null && $channel->getWorkspace()->getCreator()?->getId() === $user->getId();
+        if (!$user->isAdmin() && !$channel->isAdministrator($user) && !$isWorkspaceCreator && !($channel->getCreator()?->getId() === $user->getId())) {
             throw new AccessDeniedHttpException($this->translator->trans(
                 'Seuls les administrateurs peuvent gérer les colonnes du tableau.',
             ));

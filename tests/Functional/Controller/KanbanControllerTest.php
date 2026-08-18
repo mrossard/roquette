@@ -353,4 +353,30 @@ class KanbanControllerTest extends WebTestCase
         $message = $this->entityManager->getRepository(Message::class)->find($this->testMessage->getId());
         static::assertTrue($message->isCompleted());
     }
+
+    #[Test]
+    public function testNonAdminCannotManageKanbanColumns(): void
+    {
+        $otherUser = new User();
+        $otherUser->setUsername('test_kanban_other');
+        $otherUser->setRoles(['ROLE_USER']);
+        $passwordHasher = self::getContainer()->get('security.user_password_hasher');
+        $otherUser->setPassword($passwordHasher->hashPassword($otherUser, 'password123'));
+        $this->entityManager->persist($otherUser);
+
+        $this->todoChannel->addMember($otherUser);
+        $this->entityManager->flush();
+
+        $this->client->loginUser($otherUser);
+
+        $this->client->request('POST', '/kanban/columns', [
+            'channelId' => $this->todoChannel->getId(),
+            'name' => 'Unauthorized Column',
+        ]);
+
+        static::assertResponseStatusCodeSame(403);
+
+        $this->entityManager->remove($otherUser);
+        $this->entityManager->flush();
+    }
 }

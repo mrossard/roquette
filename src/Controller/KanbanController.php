@@ -93,6 +93,8 @@ final class KanbanController extends AbstractController
             return new Response($this->translator->trans('Canal non trouvé.'), 404);
         }
 
+        $this->denyAccessUnlessGranted('MANAGE', $channel);
+
         if ($dto->name === '') {
             return new Response($this->translator->trans('Le nom de la colonne est requis.'), 400);
         }
@@ -116,6 +118,8 @@ final class KanbanController extends AbstractController
         if (!$column) {
             return new Response($this->translator->trans('Colonne non trouvée.'), 404);
         }
+
+        $this->denyAccessUnlessGranted('MANAGE', $column->getChannel());
 
         $dto = UpdateKanbanColumnDto::fromRequest($request);
         if (!$dto->isValid()) {
@@ -146,6 +150,7 @@ final class KanbanController extends AbstractController
         }
 
         $channel = $column->getChannel();
+        $this->denyAccessUnlessGranted('MANAGE', $channel);
 
         try {
             $this->kanbanManager->deleteColumn($column, $currentUser);
@@ -165,6 +170,15 @@ final class KanbanController extends AbstractController
         $dto = ReorderKanbanColumnsDto::fromRequest($request);
         if (!$dto->isValid()) {
             return new Response($this->translator->trans('Paramètres invalides.'), 400);
+        }
+
+        if ($dto->columnIds === []) {
+            return new Response(null, 204);
+        }
+
+        $firstCol = $this->kanbanColumnRepository->find($dto->columnIds[0]);
+        if ($firstCol !== null) {
+            $this->denyAccessUnlessGranted('MANAGE', $firstCol->getChannel());
         }
 
         try {

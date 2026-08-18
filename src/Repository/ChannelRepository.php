@@ -153,7 +153,7 @@ class ChannelRepository extends ServiceEntityRepository
         return $qb->getQuery()->getOneOrNullResult();
     }
 
-    public function searchByName(string $query, User $user): array
+    public function searchByName(string $query, User $user, int $limit = 5): array
     {
         $providerGroups = $this->groupProvider->getGroupsForUser($user);
         $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
@@ -175,7 +175,7 @@ class ChannelRepository extends ServiceEntityRepository
             ->setParameter('query', '%' . strtolower($query) . '%')
             ->setParameter('userId', $user->getId())
             ->andWhere($accessConditions)
-            ->setMaxResults($limit ?? 5)
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
 
@@ -338,6 +338,7 @@ class ChannelRepository extends ServiceEntityRepository
                 ->getDQL();
 
             $conditions->add($qb->expr()->in('w.id', $externalGroupWorkspaceDql));
+            $qb->setParameter('providerGroupIdentifiers', $providerGroupIdentifiers);
         }
 
         return $conditions;
