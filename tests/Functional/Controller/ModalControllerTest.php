@@ -57,11 +57,26 @@ class ModalControllerTest extends WebTestCase
         $publicChannel->setCreator($member);
         $this->entityManager->persist($publicChannel);
 
+        $admin = new User();
+        $admin->setUsername('modal_admin');
+        $admin->setRoles(['ROLE_ADMIN']);
+        $admin->setPassword($passwordHasher->hashPassword($admin, 'password123'));
+        $this->entityManager->persist($admin);
+
+        $noCreatorChannel = new Channel();
+        $noCreatorChannel->setName('Modal No Creator Channel');
+        $noCreatorChannel->setSlug('modal-no-creator-channel');
+        $noCreatorChannel->setIsPrivate(false);
+        $this->entityManager->persist($noCreatorChannel);
+
         $this->entityManager->flush();
 
         $this->member = $member;
         $this->outsider = $outsider;
+        $this->admin = $admin;
     }
+
+    private User $admin;
 
     protected function tearDown(): void
     {
@@ -74,12 +89,12 @@ class ModalControllerTest extends WebTestCase
         $userRepository = $this->entityManager->getRepository(User::class);
         $channelRepository = $this->entityManager->getRepository(Channel::class);
 
-        $channels = $channelRepository->findBy(['slug' => ['modal-private-channel', 'modal-public-channel']]);
+        $channels = $channelRepository->findBy(['slug' => ['modal-private-channel', 'modal-public-channel', 'modal-no-creator-channel']]);
         foreach ($channels as $c) {
             $this->entityManager->remove($c);
         }
 
-        $users = $userRepository->findBy(['username' => ['modal_member', 'modal_outsider']]);
+        $users = $userRepository->findBy(['username' => ['modal_member', 'modal_outsider', 'modal_admin']]);
         foreach ($users as $u) {
             $this->entityManager->remove($u);
         }
@@ -116,5 +131,27 @@ class ModalControllerTest extends WebTestCase
         $this->client->request('GET', '/channels/modal-public-channel/members-modal');
 
         $this->assertResponseIsSuccessful();
+    }
+
+    #[Test]
+    public function testEditModalRendersForCreator(): void
+    {
+        $this->client->loginUser($this->member);
+
+        $this->client->request('GET', '/channels/modal-public-channel/edit-modal');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('#edit-channel-modal');
+    }
+
+    #[Test]
+    public function testEditModalRendersForAdminWhenChannelHasNoCreator(): void
+    {
+        $this->client->loginUser($this->admin);
+
+        $this->client->request('GET', '/channels/modal-no-creator-channel/edit-modal');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('#edit-channel-modal');
     }
 }

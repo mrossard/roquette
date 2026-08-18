@@ -86,8 +86,9 @@ readonly class ChannelExportService
                 if (is_resource($fileStream)) {
                     $streams['files/' . basename($filePath)] = $fileStream;
                 }
-            } catch (\Exception) {
-                // Continue with other attachments if one stream fails
+            } catch (\Exception $e) {
+                // @mago-expect no-empty-catch-clause - Continue with other attachments if one stream fails
+                unset($e);
             }
         }
 
@@ -100,9 +101,11 @@ readonly class ChannelExportService
     private function closeStreams(array $streams): void
     {
         foreach ($streams as $stream) {
-            if (is_resource($stream)) {
-                fclose($stream);
+            if (!is_resource($stream)) {
+                continue;
             }
+
+            fclose($stream);
         }
     }
 

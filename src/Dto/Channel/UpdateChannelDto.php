@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Channel;
 
+use Symfony\Component\HttpFoundation\Request;
+
 final readonly class UpdateChannelDto
 {
     /**
@@ -16,6 +18,23 @@ final readonly class UpdateChannelDto
         public ?int $retentionMonths = 6,
         public array $administratorIds = [],
     ) {}
+
+    public static function fromRequest(Request $request): self
+    {
+        $name = trim((string) $request->request->get('name', ''));
+        $description = trim((string) $request->request->get('description', ''));
+
+        return self::fromNameDescriptionAndExtra($name, $description, [
+            'isTodoList' => $request->request->getBoolean('isTodoList', false),
+            'retentionMonths' => $request->request->get('messageRetentionMonths'),
+            'administratorIds' => $request->request->all('administrators'),
+        ]);
+    }
+
+    public function isValid(): bool
+    {
+        return $this->name !== '';
+    }
 
     /**
      * @param array<string, mixed> $extra

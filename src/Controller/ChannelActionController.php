@@ -220,14 +220,10 @@ final class ChannelActionController extends AbstractController
 
         $this->denyAccessUnlessGranted('EDIT', $channel);
 
-        $retention = $request->request->get('messageRetentionMonths');
-        $retentionVal = null;
-        if ($retention !== null && $retention !== '') {
-            $retentionVal = (int) $retention;
-        }
+        $dto = \App\Dto\Channel\UpdateRetentionDto::fromRequest($request);
 
         try {
-            $channelManager->updateRetention($channel, $retentionVal, $currentUser);
+            $channelManager->updateRetention($channel, $dto->retentionMonths, $currentUser);
         } catch (HttpExceptionInterface $e) {
             throw $this->createAccessDeniedException($e->getMessage());
         }
@@ -253,29 +249,15 @@ final class ChannelActionController extends AbstractController
 
         $this->denyAccessUnlessGranted('EDIT', $channel);
 
-        $name = trim($request->request->get('name', ''));
-        $description = trim($request->request->get('description', ''));
-
-        if ($name === '') {
+        $dto = UpdateChannelDto::fromRequest($request);
+        if (!$dto->isValid()) {
             $this->addFlash('error', $this->translator->trans('Le nom du canal ne peut pas être vide.'));
 
             return $this->redirectToRoute('app_channel', ['slug' => $slug]);
         }
 
         try {
-            $channelManager->update(
-                $channel,
-                UpdateChannelDto::fromNameDescriptionAndExtra(
-                    $name,
-                    $description,
-                    [
-                        'isTodoList' => $request->request->getBoolean('isTodoList', false),
-                        'retentionMonths' => $request->request->get('messageRetentionMonths'),
-                        'administratorIds' => $request->request->all('administrators'),
-                    ],
-                ),
-                $currentUser,
-            );
+            $channelManager->update($channel, $dto, $currentUser);
         } catch (HttpExceptionInterface $e) {
             throw $this->createAccessDeniedException($e->getMessage());
         }

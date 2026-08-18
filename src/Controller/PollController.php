@@ -73,34 +73,15 @@ final class PollController extends AbstractController
     public function toggleComposer(string $slug, Request $request, ChannelManager $channelManager): Response
     {
         $channel = $channelManager->findChannelBySlug($slug);
-
-        $open = (bool) ($request->query->get('open') ?? $request->request->get('open', false));
-        $messageValue = $request->query->get('message') ?? $request->request->get('message', '');
-        $pollQuestion = $request->query->get('poll_question') ?? $request->request->get('poll_question', '');
-
-        $pollOptions = $request->query->all('poll_options');
-        if ($pollOptions === []) {
-            $pollOptions = $request->request->all('poll_options');
-        }
-
-        $allowMultiple = (bool) (
-            $request->query->get('allow_multiple') ?? $request->request->get('allow_multiple', false)
-        );
-
-        // If we are closing, clear the poll fields
-        if (!$open) {
-            $pollQuestion = '';
-            $pollOptions = [];
-            $allowMultiple = false;
-        }
+        $dto = \App\Dto\Poll\ToggleComposerDto::fromRequest($request);
 
         return $this->render('dashboard/_input_form.html.twig', [
             'activeChannel' => $channel,
-            'pollComposerOpen' => $open,
-            'messageValue' => $messageValue,
-            'pollQuestion' => $pollQuestion,
-            'pollOptions' => $pollOptions,
-            'allowMultiple' => $allowMultiple,
+            'pollComposerOpen' => $dto->open,
+            'messageValue' => $dto->messageValue,
+            'pollQuestion' => $dto->pollQuestion,
+            'pollOptions' => $dto->pollOptions,
+            'allowMultiple' => $dto->allowMultiple,
         ]);
     }
 }
