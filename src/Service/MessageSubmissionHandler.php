@@ -70,12 +70,7 @@ class MessageSubmissionHandler
 
         // Handle slash commands that return a direct Response
         if (!$isPoll && !$uploadedFile && str_starts_with(trim($messageText), '/')) {
-            $slashResult = $this->slashCommandHandler->process(
-                $messageText,
-                $channel,
-                $currentUser,
-                $workspaceId,
-            );
+            $slashResult = $this->slashCommandHandler->process($messageText, $channel, $currentUser, $workspaceId);
             if ($slashResult->response !== null) {
                 return $slashResult->response;
             }

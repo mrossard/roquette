@@ -50,14 +50,9 @@ final class ModerateMessageMessageHandlerTest extends TestCase
 
         $em->expects($this->once())->method('flush');
 
-        $messageBroadcaster
-            ->expects($this->once())
-            ->method('broadcastMessageUpdate')
-            ->with($messageEntity);
+        $messageBroadcaster->expects($this->once())->method('broadcastMessageUpdate')->with($messageEntity);
 
-        $messageBroadcaster
-            ->expects($this->once())
-            ->method('publishCurrentModerationCount');
+        $messageBroadcaster->expects($this->once())->method('publishCurrentModerationCount');
 
         $handler = new ModerateMessageMessageHandler(
             $messageRepository,

@@ -61,20 +61,12 @@ final class ChannelManagerTest extends TestCase
         $user = new User();
         $user->setUsername('alice');
 
-        $this->slugGenerator->expects($this->once())
-            ->method('generate')
-            ->willReturn('general');
+        $this->slugGenerator->expects($this->once())->method('generate')->willReturn('general');
 
-        $this->entityManager->expects($this->once())
-            ->method('persist')
-            ->with($this->isInstanceOf(Channel::class));
+        $this->entityManager->expects($this->once())->method('persist')->with($this->isInstanceOf(Channel::class));
         $this->entityManager->expects($this->once())->method('flush');
 
-        $dto = new CreateChannelDto(
-            name: 'General',
-            description: 'General discussion',
-            isPrivate: false,
-        );
+        $dto = new CreateChannelDto(name: 'General', description: 'General discussion', isPrivate: false);
 
         $channel = $this->channelManager->create($dto, $user);
 
@@ -90,7 +82,8 @@ final class ChannelManagerTest extends TestCase
         $channel = new Channel();
         $channel->setSlug('test-channel');
 
-        $this->channelRepository->expects($this->once())
+        $this->channelRepository
+            ->expects($this->once())
             ->method('findOneBy')
             ->with(['slug' => 'test-channel'])
             ->willReturn($channel);

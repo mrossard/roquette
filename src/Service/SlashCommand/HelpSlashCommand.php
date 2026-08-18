@@ -74,7 +74,14 @@ final readonly class HelpSlashCommand implements SlashCommandInterface
         }
 
         $this->messageBus->dispatch(
-            new LlmQueryMessage($args, $user->getId(), $channel->getSlug(), $helpMessageId, \App\Ai\AssistantIntent::Help, workspaceId: $workspaceId),
+            new LlmQueryMessage(
+                $args,
+                $user->getId(),
+                $channel->getSlug(),
+                $helpMessageId,
+                \App\Ai\AssistantIntent::Help,
+                workspaceId: $workspaceId,
+            ),
         );
 
         $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [

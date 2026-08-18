@@ -53,7 +53,12 @@ final class SendReminderMessageHandlerTest extends TestCase
 
         $reminderRepository->expects(self::once())->method('save')->with($reminder);
 
-        $handler = new SendReminderMessageHandler($reminderRepository, $userRepository, $messagePublishService, $robotUserProvider);
+        $handler = new SendReminderMessageHandler(
+            $reminderRepository,
+            $userRepository,
+            $messagePublishService,
+            $robotUserProvider,
+        );
 
         $handler(new SendReminderMessage(42));
 
@@ -73,7 +78,12 @@ final class SendReminderMessageHandlerTest extends TestCase
 
         $messagePublishService->expects(self::never())->method('publish');
 
-        $handler = new SendReminderMessageHandler($reminderRepository, $userRepository, $messagePublishService, $this->createMock(RobotUserProvider::class));
+        $handler = new SendReminderMessageHandler(
+            $reminderRepository,
+            $userRepository,
+            $messagePublishService,
+            $this->createMock(RobotUserProvider::class),
+        );
 
         $handler(new SendReminderMessage(42));
     }

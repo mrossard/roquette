@@ -74,11 +74,19 @@ final class FileStreamResponseFactoryTest extends TestCase
         $message->setMimeType('application/pdf');
         $message->setCreatedAt(new \DateTimeImmutable());
 
-        $this->fileUploadService->expects(self::once())->method('exists')->with('uploads/document.pdf')->willReturn(true);
+        $this->fileUploadService
+            ->expects(self::once())
+            ->method('exists')
+            ->with('uploads/document.pdf')
+            ->willReturn(true);
         $stream = fopen('php://memory', 'r+');
         fwrite($stream, 'PDF content');
         rewind($stream);
-        $this->fileUploadService->expects(self::once())->method('readStream')->with('uploads/document.pdf')->willReturn($stream);
+        $this->fileUploadService
+            ->expects(self::once())
+            ->method('readStream')
+            ->with('uploads/document.pdf')
+            ->willReturn($stream);
 
         $request = new Request();
         $response = $this->factory->createMessageFileResponse(
@@ -99,7 +107,11 @@ final class FileStreamResponseFactoryTest extends TestCase
         $stream = fopen('php://memory', 'r+');
         fwrite($stream, 'image data');
         rewind($stream);
-        $this->fileUploadService->expects(self::once())->method('readStream')->with('avatars/pic.jpg')->willReturn($stream);
+        $this->fileUploadService
+            ->expects(self::once())
+            ->method('readStream')
+            ->with('avatars/pic.jpg')
+            ->willReturn($stream);
 
         $response = $this->factory->createAvatarResponse('avatars/pic.jpg', $this->fileUploadService);
 
@@ -115,11 +127,19 @@ final class FileStreamResponseFactoryTest extends TestCase
         $export->setFileName('export-general.zip');
         $export->setFilePath('exports/export-general.zip');
 
-        $this->fileUploadService->expects(self::once())->method('exists')->with('exports/export-general.zip')->willReturn(true);
+        $this->fileUploadService
+            ->expects(self::once())
+            ->method('exists')
+            ->with('exports/export-general.zip')
+            ->willReturn(true);
         $stream = fopen('php://memory', 'r+');
         fwrite($stream, 'zip archive');
         rewind($stream);
-        $this->fileUploadService->expects(self::once())->method('readStream')->with('exports/export-general.zip')->willReturn($stream);
+        $this->fileUploadService
+            ->expects(self::once())
+            ->method('readStream')
+            ->with('exports/export-general.zip')
+            ->willReturn($stream);
 
         $response = $this->factory->createExportDownloadResponse($export, $this->fileUploadService);
 
@@ -133,7 +153,11 @@ final class FileStreamResponseFactoryTest extends TestCase
         $message = new Message();
         $message->setFilePath('uploads/nonexistent.txt');
 
-        $this->fileUploadService->expects(self::once())->method('exists')->with('uploads/nonexistent.txt')->willReturn(false);
+        $this->fileUploadService
+            ->expects(self::once())
+            ->method('exists')
+            ->with('uploads/nonexistent.txt')
+            ->willReturn(false);
         $this->translator->method('trans')->willReturn('Le fichier n\'existe pas.');
 
         $this->expectException(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
@@ -149,7 +173,11 @@ final class FileStreamResponseFactoryTest extends TestCase
         $stream = fopen('php://memory', 'r+');
         fwrite($stream, 'Short file content');
         rewind($stream);
-        $this->fileUploadService->expects(self::once())->method('readStream')->with('uploads/sample.txt')->willReturn($stream);
+        $this->fileUploadService
+            ->expects(self::once())
+            ->method('readStream')
+            ->with('uploads/sample.txt')
+            ->willReturn($stream);
 
         $result = $this->factory->readTextPreview($message, $this->fileUploadService);
 
@@ -165,7 +193,11 @@ final class FileStreamResponseFactoryTest extends TestCase
         $stream = fopen('php://memory', 'r+');
         fwrite($stream, str_repeat('A', 100));
         rewind($stream);
-        $this->fileUploadService->expects(self::once())->method('readStream')->with('uploads/long.txt')->willReturn($stream);
+        $this->fileUploadService
+            ->expects(self::once())
+            ->method('readStream')
+            ->with('uploads/long.txt')
+            ->willReturn($stream);
         $this->translator->method('trans')->willReturn('Contenu tronqué');
 
         $result = $this->factory->readTextPreview($message, $this->fileUploadService, 50);

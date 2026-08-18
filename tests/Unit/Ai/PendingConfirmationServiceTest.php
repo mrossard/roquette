@@ -62,8 +62,11 @@ class PendingConfirmationServiceTest extends TestCase
                 return true;
             }
 
-            public function __invoke(string $channelSlug = 'general', ?int $authorUserId = null, ?int $workspaceId = null): string
-            {
+            public function __invoke(
+                string $channelSlug = 'general',
+                ?int $authorUserId = null,
+                ?int $workspaceId = null,
+            ): string {
                 $this->executed = true;
 
                 return 'Side-effect done';
@@ -105,32 +108,61 @@ class PendingConfirmationServiceTest extends TestCase
         $service = $this->createService();
 
         $affirmative = [
-            'ok', 'OK', 'ok!', 'okay', 'K', 'oui', 'OUI', 'Oui stp',
-            'd\'accord', 'daccord', 'dac', 'd\'ac', 'confirm', 'confirmer',
-            'je confirme', 'valider', 'je valide', 'go', 'ok go',
-            'c\'est bon', 'ca marche', 'ça marche', 'super', 'parfait',
+            'ok',
+            'OK',
+            'ok!',
+            'okay',
+            'K',
+            'oui',
+            'OUI',
+            'Oui stp',
+            'd\'accord',
+            'daccord',
+            'dac',
+            'd\'ac',
+            'confirm',
+            'confirmer',
+            'je confirme',
+            'valider',
+            'je valide',
+            'go',
+            'ok go',
+            'c\'est bon',
+            'ca marche',
+            'ça marche',
+            'super',
+            'parfait',
         ];
 
         foreach ($affirmative as $text) {
-            static::assertTrue($service->isConfirmationText($text), "Expected '{$text}' to be recognized as confirmation.");
+            static::assertTrue(
+                $service->isConfirmationText($text),
+                "Expected '{$text}' to be recognized as confirmation.",
+            );
         }
 
         $nonAffirmative = [
-            'non', 'non merci', 'annuler', 'pas maintenant',
-            'quel temps fait-il ?', 'comment vas-tu', '',
+            'non',
+            'non merci',
+            'annuler',
+            'pas maintenant',
+            'quel temps fait-il ?',
+            'comment vas-tu',
+            '',
         ];
 
         foreach ($nonAffirmative as $text) {
-            static::assertFalse($service->isConfirmationText($text), "Expected '{$text}' NOT to be recognized as confirmation.");
+            static::assertFalse(
+                $service->isConfirmationText($text),
+                "Expected '{$text}' NOT to be recognized as confirmation.",
+            );
         }
     }
 
     public function testIsConfirmationWithLlmFallback(): void
     {
         $llmService = $this->createMock(LlmService::class);
-        $llmService->expects($this->once())
-            ->method('generateText')
-            ->willReturn('YES');
+        $llmService->expects($this->once())->method('generateText')->willReturn('YES');
 
         $service = $this->createService(llmService: $llmService);
 
@@ -144,7 +176,11 @@ class PendingConfirmationServiceTest extends TestCase
             'uid' => 42,
         ]);
 
-        static::assertTrue($service->isConfirmation('Absolument c\'est une super idée lance le sondage', $token, $user));
+        static::assertTrue($service->isConfirmation(
+            'Absolument c\'est une super idée lance le sondage',
+            $token,
+            $user,
+        ));
     }
 
     public function testSaveGetAndClearPendingConfirmation(): void
@@ -190,14 +226,10 @@ class PendingConfirmationServiceTest extends TestCase
         $toolRegistry = new ToolRegistry([$fakeTool]);
 
         $hub = $this->createMock(HubInterface::class);
-        $hub->expects($this->once())
-            ->method('publish')
-            ->with(static::isInstanceOf(Update::class));
+        $hub->expects($this->once())->method('publish')->with(static::isInstanceOf(Update::class));
 
         $twig = $this->createMock(Environment::class);
-        $twig->expects($this->once())
-            ->method('render')
-            ->willReturn('<div>Sondage créé HTML</div>');
+        $twig->expects($this->once())->method('render')->willReturn('<div>Sondage créé HTML</div>');
 
         $formatter = $this->createMock(MessageFormatter::class);
         $formatter->method('format')->willReturn('<p>Sondage créé</p>');
@@ -269,7 +301,11 @@ class PendingConfirmationServiceTest extends TestCase
         $robotUserProvider->method('isRobotUser')->willReturn(true);
 
         $channelRepo = $this->createMock(ChannelRepository::class);
-        $channelRepo->expects($this->once())->method('findOneBy')->with(['slug' => $channel->getSlug()])->willReturn($channel);
+        $channelRepo
+            ->expects($this->once())
+            ->method('findOneBy')
+            ->with(['slug' => $channel->getSlug()])
+            ->willReturn($channel);
 
         $messageRepo = $this->createMock(MessageRepository::class);
         $messageRepo->expects($this->once())->method('findLatestInChannel')->with($channel, 5)->willReturn([$robotMsg]);

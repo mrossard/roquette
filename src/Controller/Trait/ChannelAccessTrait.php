@@ -18,8 +18,11 @@ trait ChannelAccessTrait
      * @throws NotFoundHttpException if the channel does not exist
      * @throws AccessDeniedHttpException if the user does not have access
      */
-    private function findAuthorizedChannel(string $slug, ChannelManager $channelManager, string $attribute = 'VIEW'): Channel
-    {
+    private function findAuthorizedChannel(
+        string $slug,
+        ChannelManager $channelManager,
+        string $attribute = 'VIEW',
+    ): Channel {
         $channel = $channelManager->findChannelBySlug($slug);
 
         $this->denyAccessUnlessGranted($attribute, $channel);

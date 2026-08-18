@@ -16,9 +16,7 @@ final readonly class ModerationResult
         private ?string $maskedContent = null,
         private ?string $originalContent = null,
     ) {
-        $this->status = is_string($status)
-            ? (ModerationStatus::tryFrom($status) ?? ModerationStatus::CLEAN)
-            : $status;
+        $this->status = is_string($status) ? ModerationStatus::tryFrom($status) ?? ModerationStatus::CLEAN : $status;
     }
 
     public function isFlagged(): bool
@@ -61,8 +59,11 @@ final readonly class ModerationResult
         return new self(status: ModerationStatus::CLEAN);
     }
 
-    public static function masked(string $maskedContent, string $originalContent, string $reason = "Secret ou clé d'API détecté(e)"): self
-    {
+    public static function masked(
+        string $maskedContent,
+        string $originalContent,
+        string $reason = "Secret ou clé d'API détecté(e)",
+    ): self {
         return new self(
             status: ModerationStatus::MASKED,
             reason: $reason,
@@ -73,9 +74,6 @@ final readonly class ModerationResult
 
     public static function flagged(string $reason): self
     {
-        return new self(
-            status: ModerationStatus::FLAGGED,
-            reason: $reason,
-        );
+        return new self(status: ModerationStatus::FLAGGED, reason: $reason);
     }
 }

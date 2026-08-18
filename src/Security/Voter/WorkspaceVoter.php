@@ -36,18 +36,22 @@ class WorkspaceVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [
-            self::VIEW,
-            self::EDIT,
-            self::DELETE,
-            self::INVITE,
-            self::MANAGE_MEMBERS,
-            self::WORKSPACE_VIEW,
-            self::WORKSPACE_EDIT,
-            self::WORKSPACE_DELETE,
-            self::WORKSPACE_INVITE,
-            self::WORKSPACE_MANAGE_MEMBERS,
-        ], true)) {
+        if (!in_array(
+            $attribute,
+            [
+                self::VIEW,
+                self::EDIT,
+                self::DELETE,
+                self::INVITE,
+                self::MANAGE_MEMBERS,
+                self::WORKSPACE_VIEW,
+                self::WORKSPACE_EDIT,
+                self::WORKSPACE_DELETE,
+                self::WORKSPACE_INVITE,
+                self::WORKSPACE_MANAGE_MEMBERS,
+            ],
+            true,
+        )) {
             return false;
         }
 
@@ -57,7 +61,8 @@ class WorkspaceVoter extends Voter
     protected function voteOnAttribute(
         string $attribute,
         mixed $subject,
-        #[\SensitiveParameter] TokenInterface $token,
+        #[\SensitiveParameter]
+        TokenInterface $token,
         ?Vote $vote = null,
     ): bool {
         $user = $token->getUser();
@@ -70,10 +75,15 @@ class WorkspaceVoter extends Voter
 
         return match ($attribute) {
             self::VIEW, self::WORKSPACE_VIEW => $this->workspaceManager->isUserMember($workspace, $user),
-            self::EDIT, self::DELETE, self::INVITE, self::MANAGE_MEMBERS,
-            self::WORKSPACE_EDIT, self::WORKSPACE_DELETE, self::WORKSPACE_INVITE, self::WORKSPACE_MANAGE_MEMBERS => (
-                $this->security->isGranted('ROLE_ADMIN') || $workspace->getCreator() === $user
-            ),
+            self::EDIT,
+            self::DELETE,
+            self::INVITE,
+            self::MANAGE_MEMBERS,
+            self::WORKSPACE_EDIT,
+            self::WORKSPACE_DELETE,
+            self::WORKSPACE_INVITE,
+            self::WORKSPACE_MANAGE_MEMBERS,
+                => $this->security->isGranted('ROLE_ADMIN') || $workspace->getCreator() === $user,
             default => false,
         };
     }

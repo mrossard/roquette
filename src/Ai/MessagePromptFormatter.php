@@ -30,14 +30,12 @@ class MessagePromptFormatter
     /**
      * Formats a single message line for plain-text conversation prompts (e.g. "Alice: Bonjour").
      */
-    public function formatLine(
-        Message $message,
-        int $maxLength = 500,
-    ): string {
+    public function formatLine(Message $message, int $maxLength = 500): string
+    {
         $author = $this->resolveAuthorName($message);
         $content = $message->isPoll()
             ? '[Sondage] ' . ($message->getPoll()?->getQuestion() ?? '')
-            : ($message->getContent() ?? '');
+            : $message->getContent() ?? '';
 
         $truncated = mb_substr(trim($content), 0, $maxLength);
 
@@ -47,15 +45,12 @@ class MessagePromptFormatter
     /**
      * Formats a single message line including timestamp (e.g. "[17/08 12:00] Alice: Bonjour").
      */
-    public function formatLineWithDate(
-        Message $message,
-        int $maxLength = 500,
-        string $dateFormat = 'd/m H:i',
-    ): string {
+    public function formatLineWithDate(Message $message, int $maxLength = 500, string $dateFormat = 'd/m H:i'): string
+    {
         $author = $this->resolveAuthorName($message);
         $content = $message->isPoll()
             ? '[Sondage] ' . ($message->getPoll()?->getQuestion() ?? '')
-            : ($message->getContent() ?? '');
+            : $message->getContent() ?? '';
 
         $truncated = mb_substr(trim($content), 0, $maxLength);
         $date = $message->getCreatedAt()->format($dateFormat);
@@ -76,7 +71,15 @@ class MessagePromptFormatter
 
         $fileInfo = $message->getFileName() ? sprintf(' [Fichier: %s]', $message->getFileName()) : '';
 
-        return sprintf('[Réf: #%s?jumpTo=%d | %s] %s: %s%s', $channelSlug, $messageId, $date, $author, $content, $fileInfo);
+        return sprintf(
+            '[Réf: #%s?jumpTo=%d | %s] %s: %s%s',
+            $channelSlug,
+            $messageId,
+            $date,
+            $author,
+            $content,
+            $fileInfo,
+        );
     }
 
     /**
@@ -91,7 +94,7 @@ class MessagePromptFormatter
             'auteur' => $message->getAuthor()?->getUsername() ?? 'Robot',
             'contenu' => $message->isPoll()
                 ? '[Sondage] ' . ($message->getPoll()?->getQuestion() ?? '')
-                : ($message->getContent() ?? ''),
+                : $message->getContent() ?? '',
         ];
     }
 }

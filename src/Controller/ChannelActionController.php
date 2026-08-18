@@ -87,7 +87,10 @@ final class ChannelActionController extends AbstractController
         if ($workspaceId > 0) {
             $workspace = $workspaceRepository->find($workspaceId);
             if (!$workspace || !$this->isGranted('VIEW', $workspace)) {
-                $this->addFlash('error', $this->translator->trans('Vous ne pouvez pas créer un canal dans cet espace de travail.'));
+                $this->addFlash(
+                    'error',
+                    $this->translator->trans('Vous ne pouvez pas créer un canal dans cet espace de travail.'),
+                );
 
                 return $this->redirectToRoute('app_dashboard');
             }

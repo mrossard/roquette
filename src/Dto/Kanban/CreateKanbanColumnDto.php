@@ -21,11 +21,7 @@ final readonly class CreateKanbanColumnDto
         $rawColor = (string) $request->request->get('color', '');
         $color = $rawColor !== '' ? $rawColor : null;
 
-        return new self(
-            channelId: $channelId,
-            name: $name,
-            color: $color,
-        );
+        return new self(channelId: $channelId, name: $name, color: $color);
     }
 
     public function isValid(): bool

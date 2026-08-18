@@ -31,9 +31,7 @@ final class EmojiProcessor
             if ($part[0] === '<') {
                 $tagName = strtolower(preg_replace('/^<\/?([a-z0-9]+).*/is', '$1', $part));
                 if ($tagName === 'code' || $tagName === 'pre') {
-                    $inCodeOrPre = str_starts_with($part, '</')
-                        ? max(0, $inCodeOrPre - 1)
-                        : $inCodeOrPre + 1;
+                    $inCodeOrPre = str_starts_with($part, '</') ? max(0, $inCodeOrPre - 1) : $inCodeOrPre + 1;
                 }
                 continue;
             }
@@ -121,7 +119,10 @@ final class EmojiProcessor
 
                 $pos = strrpos($code, ':');
                 $webPath = $pos !== false
-                    ? '/emojis/' . rawurlencode(substr($code, $pos + 1)) . '/' . rawurlencode(basename(substr($code, 0, $pos) . '.gif'))
+                    ? '/emojis/'
+                    . rawurlencode(substr($code, $pos + 1))
+                    . '/'
+                    . rawurlencode(basename(substr($code, 0, $pos) . '.gif'))
                     : '/emojis/' . rawurlencode(basename($code . '.gif'));
 
                 $title = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');

@@ -34,7 +34,7 @@ final readonly class ToolActionSigner
      */
     public function sign(array $payload): string
     {
-        $payload['exp'] = (new \DateTimeImmutable())->getTimestamp() + $this->ttl;
+        $payload['exp'] = new \DateTimeImmutable()->getTimestamp() + $this->ttl;
 
         $encoded = $this->encode($payload);
 

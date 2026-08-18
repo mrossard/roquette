@@ -7,8 +7,8 @@ namespace App\Tests\Unit\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
-use App\Service\ChannelManager;
 use App\Service\ChannelAccessService;
+use App\Service\ChannelManager;
 use App\Service\MessagePublishService;
 use App\Service\MessageSubmissionHandler;
 use App\Service\PublishResult;
@@ -173,9 +173,7 @@ class MessageSubmissionHandlerTest extends TestCase
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
         $directResponse = new Response('modal content');
-        $this->slashCommandHandler
-            ->method('process')
-            ->willReturn(new SlashCommandResult('/shrug', $directResponse));
+        $this->slashCommandHandler->method('process')->willReturn(new SlashCommandResult('/shrug', $directResponse));
 
         $request = new Request([], ['message' => '/shrug']);
         $this->requestStack->push($request);
@@ -198,9 +196,7 @@ class MessageSubmissionHandlerTest extends TestCase
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
         $message = new Message();
-        $this->publishService
-            ->method('publish')
-            ->willReturn(PublishResult::ok($channel, $message, '<div>item</div>'));
+        $this->publishService->method('publish')->willReturn(PublishResult::ok($channel, $message, '<div>item</div>'));
 
         $request = new Request([], ['message' => 'Hello world']);
         $this->requestStack->push($request);
@@ -223,9 +219,7 @@ class MessageSubmissionHandlerTest extends TestCase
         $this->channelAccessService->method('canUserAccess')->willReturn(true);
         $this->rateLimiter->method('create')->willReturn($this->createAcceptedLimiter());
 
-        $this->publishService
-            ->method('publish')
-            ->willReturn(PublishResult::error('Bad request', $channel, 422));
+        $this->publishService->method('publish')->willReturn(PublishResult::error('Bad request', $channel, 422));
 
         $request = new Request([], ['message' => 'Hello']);
         $this->requestStack->push($request);
@@ -252,9 +246,7 @@ class MessageSubmissionHandlerTest extends TestCase
 
         $message = new Message();
         $oob = '<div hx-swap-oob="beforeend:#live-feed"><div id="help-123">Loading...</div></div>';
-        $this->publishService
-            ->method('publish')
-            ->willReturn(PublishResult::ok($channel, $message, $oob));
+        $this->publishService->method('publish')->willReturn(PublishResult::ok($channel, $message, $oob));
 
         $request = new Request([], ['message' => '@robot aide']);
         $this->requestStack->push($request);

@@ -104,7 +104,10 @@ class MessagePromptFormatterTest extends TestCase
         $ref->setValue($msg, 42);
 
         $result = $this->formatter->formatSearchReference($msg);
-        $this->assertSame('[Réf: #dev?jumpTo=42 | 17/08/2026 14:15] Alice: Regardez ce schéma [Fichier: architecture.pdf]', $result);
+        $this->assertSame(
+            '[Réf: #dev?jumpTo=42 | 17/08/2026 14:15] Alice: Regardez ce schéma [Fichier: architecture.pdf]',
+            $result,
+        );
     }
 
     #[Test]
@@ -119,10 +122,13 @@ class MessagePromptFormatterTest extends TestCase
         $msg->setCreatedAt(new \DateTimeImmutable('2026-08-17 10:00:00'));
 
         $structured = $this->formatter->formatStructured($msg);
-        $this->assertSame([
-            'date' => '2026-08-17 10:00',
-            'auteur' => 'alice',
-            'contenu' => 'Discussion importante',
-        ], $structured);
+        $this->assertSame(
+            [
+                'date' => '2026-08-17 10:00',
+                'auteur' => 'alice',
+                'contenu' => 'Discussion importante',
+            ],
+            $structured,
+        );
     }
 }

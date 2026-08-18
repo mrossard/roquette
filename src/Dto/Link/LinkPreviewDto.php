@@ -28,10 +28,7 @@ final readonly class LinkPreviewDto implements \ArrayAccess
 
     public static function directImage(string $url): self
     {
-        return new self(
-            url: $url,
-            type: 'direct_image',
-        );
+        return new self(url: $url, type: 'direct_image');
     }
 
     public static function ogPreview(

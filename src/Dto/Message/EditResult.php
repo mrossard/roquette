@@ -18,21 +18,11 @@ final readonly class EditResult
 
     public static function ok(Message $message, string $renderedHtml): self
     {
-        return new self(
-            success: true,
-            message: $message,
-            renderedHtml: $renderedHtml,
-            statusCode: 200,
-        );
+        return new self(success: true, message: $message, renderedHtml: $renderedHtml, statusCode: 200);
     }
 
     public static function error(string $error, ?Message $message = null, int $statusCode = 400): self
     {
-        return new self(
-            success: false,
-            message: $message,
-            error: $error,
-            statusCode: $statusCode,
-        );
+        return new self(success: false, message: $message, error: $error, statusCode: $statusCode);
     }
 }

@@ -60,7 +60,13 @@ readonly class ChannelExportService
 
         try {
             $filename = $channel->getSlug() . '-export.' . $this->archiveExporter->getExtension();
-            return $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $tempArchivePath, $this->archiveExporter->getExtension());
+            return $this->saveAndCreateExportEntity(
+                $channel,
+                $currentUser,
+                $filename,
+                $tempArchivePath,
+                $this->archiveExporter->getExtension(),
+            );
         } finally {
             if (file_exists($tempArchivePath)) {
                 unlink($tempArchivePath);

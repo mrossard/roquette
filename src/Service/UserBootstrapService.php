@@ -99,11 +99,8 @@ class UserBootstrapService
         return [$publicWorkspace, $needsFlush];
     }
 
-    private function ensureGeneralChannel(
-        Workspace $publicWorkspace,
-        string $generalName,
-        string $generalDesc,
-    ): bool {
+    private function ensureGeneralChannel(Workspace $publicWorkspace, string $generalName, string $generalDesc): bool
+    {
         $general = $this->entityManager
             ->getRepository(Channel::class)
             ->findOneBy([
@@ -115,7 +112,8 @@ class UserBootstrapService
             $generalSlug = $this->slugGenerator->generate(
                 'general',
                 'general',
-                fn(string $s) => $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => $s]) !== null,
+                fn(string $s) => $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => $s])
+                !== null,
             );
 
             $general = new Channel();

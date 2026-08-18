@@ -27,8 +27,12 @@ final readonly class LlmIntentClassifier
      * @param list<Channel> $channels
      * @return array{intent: AssistantIntent, channelSlug: string|null}|null
      */
-    public function classify(string $question, array $channels, string $currentChannelSlug, ?Workspace $currentWorkspace = null): ?array
-    {
+    public function classify(
+        string $question,
+        array $channels,
+        string $currentChannelSlug,
+        ?Workspace $currentWorkspace = null,
+    ): ?array {
         $classificationPrompt = json_encode([
             'message' => $question,
             'currentWorkspace' => $currentWorkspace?->getName(),
@@ -71,7 +75,7 @@ final readonly class LlmIntentClassifier
 
     private function classificationSystemPrompt(): string
     {
-        return
+        return (
             "Tu es un outil d'analyse d'intention d'utilisateur pour l'application Roquette. "
             . "L'entrée qui te sera fournie sous forme de prompt est un objet JSON contenant :\n"
             . "- \"message\" : Le message ou la question écrite par l'utilisateur.\n"
@@ -87,7 +91,8 @@ final readonly class LlmIntentClassifier
             . "{\n"
             . "  \"intent\": \"resumer\", \"sondage\", ou \"help\",\n"
             . "  \"channelSlug\": \"le slug du canal cible\" (ou null)\n"
-            . '}';
+            . '}'
+        );
     }
 
     /**

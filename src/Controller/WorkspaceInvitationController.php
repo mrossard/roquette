@@ -38,11 +38,8 @@ final class WorkspaceInvitationController extends AbstractController
     }
 
     #[Route('/workspaces/{slug}/invite', name: 'app_workspace_invite', methods: ['POST'])]
-    public function invite(
-        string $slug,
-        Request $request,
-        UserRepository $userRepository,
-    ): Response {
+    public function invite(string $slug, Request $request, UserRepository $userRepository): Response
+    {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 

@@ -14,8 +14,6 @@ final readonly class UpdateNotificationPreferencesDto
 
     public static function fromRequest(Request $request): self
     {
-        return new self(
-            mentionNotificationsEnabled: (bool) $request->request->get('mentionNotificationsEnabled'),
-        );
+        return new self(mentionNotificationsEnabled: (bool) $request->request->get('mentionNotificationsEnabled'));
     }
 }

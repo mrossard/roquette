@@ -163,10 +163,8 @@ class FileStreamResponseFactory
     /**
      * Builds a streamed response for an avatar image file.
      */
-    public function createAvatarResponse(
-        string $avatarPath,
-        FileUploadService $fileUploadService,
-    ): StreamedResponse {
+    public function createAvatarResponse(string $avatarPath, FileUploadService $fileUploadService): StreamedResponse
+    {
         if (!$fileUploadService->exists($avatarPath)) {
             throw new NotFoundHttpException($this->translator->trans('Le fichier n\'existe pas.'));
         }
@@ -181,16 +179,10 @@ class FileStreamResponseFactory
             default => 'image/png',
         };
 
-        return $this->createStreamedResponse(
-            $stream,
-            $mimeType,
-            null,
-            HeaderUtils::DISPOSITION_INLINE,
-            [
-                'Cache-Control' => 'public, max-age=31536000, immutable',
-                'Content-Security-Policy' => 'sandbox',
-            ],
-        );
+        return $this->createStreamedResponse($stream, $mimeType, null, HeaderUtils::DISPOSITION_INLINE, [
+            'Cache-Control' => 'public, max-age=31536000, immutable',
+            'Content-Security-Policy' => 'sandbox',
+        ]);
     }
 
     /**

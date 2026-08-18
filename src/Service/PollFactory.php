@@ -46,12 +46,8 @@ class PollFactory
      *
      * @param array<int, string> $options
      */
-    public function createPoll(
-        Message $message,
-        string $question,
-        array $options,
-        bool $allowMultiple = false,
-    ): Poll {
+    public function createPoll(Message $message, string $question, array $options, bool $allowMultiple = false): Poll
+    {
         $this->validate($question, $options);
 
         $poll = new Poll();
@@ -76,12 +72,8 @@ class PollFactory
      *
      * @param array<int, string> $optionsData
      */
-    public function updatePoll(
-        Poll $poll,
-        string $question,
-        array $optionsData,
-        bool $allowMultiple = false,
-    ): void {
+    public function updatePoll(Poll $poll, string $question, array $optionsData, bool $allowMultiple = false): void
+    {
         $this->validate($question, $optionsData);
 
         $poll->setQuestion(trim($question));

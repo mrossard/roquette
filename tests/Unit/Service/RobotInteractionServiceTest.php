@@ -36,7 +36,14 @@ class RobotInteractionServiceTest extends TestCase
         $translator = $this->createStub(TranslatorInterface::class);
         $pendingConfirmationService = $this->createStub(PendingConfirmationService::class);
 
-        $service = new RobotInteractionService($robotUserProvider, $llmRateLimiter, $messageBus, $twig, $translator, $pendingConfirmationService);
+        $service = new RobotInteractionService(
+            $robotUserProvider,
+            $llmRateLimiter,
+            $messageBus,
+            $twig,
+            $translator,
+            $pendingConfirmationService,
+        );
 
         $this->assertTrue($service->isRobotMentioned('Salut @robot-roquette tu peux m\'aider ?'));
         $this->assertTrue($service->isRobotMentioned('@robot quel temps fait-il ?'));
@@ -63,7 +70,14 @@ class RobotInteractionServiceTest extends TestCase
         $translator->method('trans')->willReturn('Trop de requêtes');
         $pendingConfirmationService = $this->createStub(PendingConfirmationService::class);
 
-        $service = new RobotInteractionService($robotUserProvider, $llmRateLimiter, $messageBus, $twig, $translator, $pendingConfirmationService);
+        $service = new RobotInteractionService(
+            $robotUserProvider,
+            $llmRateLimiter,
+            $messageBus,
+            $twig,
+            $translator,
+            $pendingConfirmationService,
+        );
 
         $result = $service->checkRobotDmLlmRateLimit($user, $channel);
 
@@ -80,13 +94,15 @@ class RobotInteractionServiceTest extends TestCase
         $llmRateLimiter->method('consume')->willReturn(true);
 
         $messageBus = $this->createMock(MessageBusInterface::class);
-        $messageBus->expects($this->once())
+        $messageBus
+            ->expects($this->once())
             ->method('dispatch')
             ->with($this->isInstanceOf(LlmQueryMessage::class))
             ->willReturn(new Envelope(new \stdClass()));
 
         $twig = $this->createMock(Environment::class);
-        $twig->expects($this->once())
+        $twig
+            ->expects($this->once())
             ->method('render')
             ->with('dashboard/_help_message_oob.html.twig', $this->callback(is_array(...)))
             ->willReturn('<div>OOB help message</div>');
@@ -94,7 +110,14 @@ class RobotInteractionServiceTest extends TestCase
         $translator = $this->createStub(TranslatorInterface::class);
         $pendingConfirmationService = $this->createStub(PendingConfirmationService::class);
 
-        $service = new RobotInteractionService($robotUserProvider, $llmRateLimiter, $messageBus, $twig, $translator, $pendingConfirmationService);
+        $service = new RobotInteractionService(
+            $robotUserProvider,
+            $llmRateLimiter,
+            $messageBus,
+            $twig,
+            $translator,
+            $pendingConfirmationService,
+        );
 
         $channel = new Channel();
         $channel->setSlug('general');

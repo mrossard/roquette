@@ -17,8 +17,12 @@ readonly class RateLimitedOobRenderer
         private TranslatorInterface $translator,
     ) {}
 
-    public function render(string $helpMessageId, string $question, Channel $channel, string $translationKey = LlmRateLimiter::MESSAGE_KEY): Response
-    {
+    public function render(
+        string $helpMessageId,
+        string $question,
+        Channel $channel,
+        string $translationKey = LlmRateLimiter::MESSAGE_KEY,
+    ): Response {
         $oobHtml = $this->twig->render('dashboard/_help_message_oob.html.twig', [
             'answer' => $this->translator->trans($translationKey),
             'question' => $question,

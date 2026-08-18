@@ -84,7 +84,8 @@ final class SubChannelManagerTest extends TestCase
         $user = new User();
 
         $existingSub = new Channel();
-        $this->channelRepository->expects($this->once())
+        $this->channelRepository
+            ->expects($this->once())
             ->method('findOneBy')
             ->with(['parentMessage' => $parentMessage])
             ->willReturn($existingSub);

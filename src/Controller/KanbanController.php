@@ -42,16 +42,16 @@ final class KanbanController extends AbstractController
     ) {}
 
     #[Route('/channels/{slug}/kanban', name: 'app_channel_kanban', methods: ['GET'])]
-    public function kanbanBoard(
-        string $slug,
-        Request $request,
-    ): Response {
+    public function kanbanBoard(string $slug, Request $request): Response
+    {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         $channel = $this->channelManager->findChannelBySlug($slug);
         if (!$channel->isTodoList()) {
-            throw $this->createNotFoundException($this->translator->trans('Canal non trouvé ou non configuré en todo.'));
+            throw $this->createNotFoundException($this->translator->trans(
+                'Canal non trouvé ou non configuré en todo.',
+            ));
         }
 
         $this->authorizeChannelAccess($channel);
@@ -60,7 +60,10 @@ final class KanbanController extends AbstractController
         $untriagedMessages = $this->messageRepository->findUntriagedByChannel($channel);
         $members = $channel->getMembers()->toArray();
 
-        if ($request->headers->has('HX-Request') && in_array($request->headers->get('HX-Target'), ['live-feed', 'kanban-board'], true)) {
+        if (
+            $request->headers->has('HX-Request')
+            && in_array($request->headers->get('HX-Target'), ['live-feed', 'kanban-board'], true)
+        ) {
             return $this->render('dashboard/_kanban_board.html.twig', [
                 'channel' => $channel,
                 'kanbanColumns' => $columns,

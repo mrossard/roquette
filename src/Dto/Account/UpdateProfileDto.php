@@ -42,11 +42,6 @@ final readonly class UpdateProfileDto
         $rawLocale = (string) $request->request->get('locale', '');
         $locale = \in_array($rawLocale, ['fr', 'en'], true) ? $rawLocale : null;
 
-        return new self(
-            displayName: $displayName,
-            hue: $hue,
-            statusOverride: $statusOverride,
-            locale: $locale,
-        );
+        return new self(displayName: $displayName, hue: $hue, statusOverride: $statusOverride, locale: $locale);
     }
 }

@@ -302,7 +302,10 @@ class FileControllerTest extends WebTestCase
             'text/plain',
             (string) $this->client->getResponse()->headers->get('Content-Type'),
         );
-        static::assertStringContainsString('attachment', (string) $this->client->getResponse()->headers->get('Content-Disposition'));
+        static::assertStringContainsString(
+            'attachment',
+            (string) $this->client->getResponse()->headers->get('Content-Disposition'),
+        );
     }
 
     #[Test]
@@ -315,7 +318,10 @@ class FileControllerTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('Content-Type', 'application/octet-stream');
-        static::assertStringContainsString('attachment', (string) $this->client->getResponse()->headers->get('Content-Disposition'));
+        static::assertStringContainsString(
+            'attachment',
+            (string) $this->client->getResponse()->headers->get('Content-Disposition'),
+        );
     }
 
     #[Test]

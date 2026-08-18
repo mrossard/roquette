@@ -58,11 +58,14 @@ class DashboardControllerTest extends WebTestCase
     private function cleanup(): void
     {
         $conn = $this->entityManager->getConnection();
-        $conn->executeStatement('DELETE FROM reminder WHERE user_id IN (SELECT id FROM "user" WHERE username LIKE ?) OR channel_id IN (SELECT id FROM channel WHERE slug LIKE ? OR slug = ?)', [
-            'test_dash_%',
-            'test-dash-%',
-            'general',
-        ]);
+        $conn->executeStatement(
+            'DELETE FROM reminder WHERE user_id IN (SELECT id FROM "user" WHERE username LIKE ?) OR channel_id IN (SELECT id FROM channel WHERE slug LIKE ? OR slug = ?)',
+            [
+                'test_dash_%',
+                'test-dash-%',
+                'general',
+            ],
+        );
         $conn->executeStatement('DELETE FROM invitation WHERE invitee_id IN (SELECT id FROM "user" WHERE username LIKE ?)', [
             'test_dash_%',
         ]);
@@ -77,16 +80,35 @@ class DashboardControllerTest extends WebTestCase
         $conn->executeStatement('DELETE FROM "user" WHERE username LIKE ?', ['test_dash_%']);
     }
 
-    private function createChannel(string $slug, string $name, bool $public = true): Channel
+    private function createPublicChannel(string $slug, string $name): Channel
     {
         $channel = new Channel();
         $channel->setName($name);
         $channel->setSlug($slug);
         $channel->setCreator($this->testUser);
         $channel->addMember($this->testUser);
-        if (!$public) {
-            $channel->setIsPrivate(true);
+
+        $publicWorkspace = $this->entityManager
+            ->getRepository(\App\Entity\Workspace::class)
+            ->findOneBy(['isPublic' => true]);
+        if ($publicWorkspace) {
+            $channel->setWorkspace($publicWorkspace);
         }
+
+        $this->entityManager->persist($channel);
+        $this->entityManager->flush();
+
+        return $channel;
+    }
+
+    private function createPrivateChannel(string $slug, string $name): Channel
+    {
+        $channel = new Channel();
+        $channel->setName($name);
+        $channel->setSlug($slug);
+        $channel->setCreator($this->testUser);
+        $channel->addMember($this->testUser);
+        $channel->setIsPrivate(true);
 
         $publicWorkspace = $this->entityManager
             ->getRepository(\App\Entity\Workspace::class)
@@ -108,8 +130,8 @@ class DashboardControllerTest extends WebTestCase
     #[Test]
     public function testIndexRedirectsToGeneral(): void
     {
-        $this->createChannel('test-dash-other', 'Other Channel');
-        $this->createChannel('test-dash-general', 'General');
+        $this->createPublicChannel('test-dash-other', 'Other Channel');
+        $this->createPublicChannel('test-dash-general', 'General');
 
         // Manually update slug to 'general' (otherwise cleanup would delete it)
         $conn = $this->entityManager->getConnection();
@@ -131,7 +153,7 @@ class DashboardControllerTest extends WebTestCase
     #[Test]
     public function testDirectoryRenders(): void
     {
-        $this->createChannel('test-dash-channel', 'Channel For Directory');
+        $this->createPublicChannel('test-dash-channel', 'Channel For Directory');
 
         $this->client->request('GET', '/channels/directory');
 
@@ -143,8 +165,8 @@ class DashboardControllerTest extends WebTestCase
     #[Test]
     public function testDirectoryShowsPublicChannels(): void
     {
-        $this->createChannel('test-dash-public', 'Public Channel');
-        $this->createChannel('test-dash-private', 'Private Channel', false);
+        $this->createPublicChannel('test-dash-public', 'Public Channel');
+        $this->createPrivateChannel('test-dash-private', 'Private Channel');
 
         $this->client->request('GET', '/channels/directory');
 
@@ -184,7 +206,7 @@ class DashboardControllerTest extends WebTestCase
     #[Test]
     public function testDirectoryShowsPendingInvitations(): void
     {
-        $channel = $this->createChannel('test-dash-invite', 'Invite Channel');
+        $channel = $this->createPublicChannel('test-dash-invite', 'Invite Channel');
 
         $invitation = new Invitation();
         $invitation->setChannel($channel);

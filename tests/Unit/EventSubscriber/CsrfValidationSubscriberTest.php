@@ -121,7 +121,8 @@ final class CsrfValidationSubscriberTest extends TestCase
         $event = $this->createMainEvent($request);
 
         $this->security->expects($this->once())->method('getUser')->willReturn(new User());
-        $this->tokenManager->expects($this->once())
+        $this->tokenManager
+            ->expects($this->once())
             ->method('isTokenValid')
             ->with($this->equalTo(new CsrfToken('app', 'invalid_token')))
             ->willReturn(false);
@@ -140,7 +141,8 @@ final class CsrfValidationSubscriberTest extends TestCase
         $event = $this->createMainEvent($request);
 
         $this->security->expects($this->once())->method('getUser')->willReturn(new User());
-        $this->tokenManager->expects($this->once())
+        $this->tokenManager
+            ->expects($this->once())
             ->method('isTokenValid')
             ->with($this->equalTo(new CsrfToken('app', 'valid_token')))
             ->willReturn(true);
@@ -157,7 +159,8 @@ final class CsrfValidationSubscriberTest extends TestCase
         $event = $this->createMainEvent($request);
 
         $this->security->expects($this->once())->method('getUser')->willReturn(new User());
-        $this->tokenManager->expects($this->once())
+        $this->tokenManager
+            ->expects($this->once())
             ->method('isTokenValid')
             ->with($this->equalTo(new CsrfToken('app', 'valid_token_from_header')))
             ->willReturn(true);

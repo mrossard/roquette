@@ -111,11 +111,8 @@ final class InvitationController extends AbstractController
     }
 
     #[Route('/invitations/{id}/accept', name: 'app_invite_accept', methods: ['POST'])]
-    public function acceptInvitation(
-        int $id,
-        Request $request,
-        InvitationRepository $invitationRepository,
-    ): Response {
+    public function acceptInvitation(int $id, Request $request, InvitationRepository $invitationRepository): Response
+    {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
@@ -141,10 +138,8 @@ final class InvitationController extends AbstractController
     }
 
     #[Route('/invitations/{id}/reject', name: 'app_invite_reject', methods: ['POST'])]
-    public function rejectInvitation(
-        int $id,
-        InvitationRepository $invitationRepository,
-    ): Response {
+    public function rejectInvitation(int $id, InvitationRepository $invitationRepository): Response
+    {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 

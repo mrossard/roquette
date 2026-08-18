@@ -31,10 +31,13 @@ class LinkExtractorTest extends TestCase
         $text = 'Check out https://symfony.com and http://php.net/manual/fr/index.php for more.';
         $links = $this->extractor->extractExternalLinks($text);
 
-        static::assertSame([
-            'https://symfony.com',
-            'http://php.net/manual/fr/index.php',
-        ], $links);
+        static::assertSame(
+            [
+                'https://symfony.com',
+                'http://php.net/manual/fr/index.php',
+            ],
+            $links,
+        );
     }
 
     #[Test]

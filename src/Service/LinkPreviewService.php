@@ -252,9 +252,7 @@ class LinkPreviewService
             $path = $parsedUrl['path'] ?? '';
             $dir = dirname($path);
             $dirPrefix = $dir === '/' ? '' : $dir;
-            $image = str_starts_with($image, '/')
-                ? $base . $image
-                : $base . $dirPrefix . '/' . $image;
+            $image = str_starts_with($image, '/') ? $base . $image : $base . $dirPrefix . '/' . $image;
         }
 
         // 4. Nom du site

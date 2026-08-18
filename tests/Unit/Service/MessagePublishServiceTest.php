@@ -59,10 +59,7 @@ class MessagePublishServiceTest extends TestCase
         $this->messageRepository->method('findLatestInChannel')->willReturn([]);
         $this->twig->method('render')->willReturn('<div hx-swap-oob="beforeend:#live-feed">...</div>');
 
-        $messageFactory = new \App\Service\MessageFactory(
-            $this->messageRepository,
-            $this->fileUploadService,
-        );
+        $messageFactory = new \App\Service\MessageFactory($this->messageRepository, $this->fileUploadService);
 
         $pendingConfirmationService = $this->createStub(\App\Ai\PendingConfirmationService::class);
 
@@ -95,11 +92,7 @@ class MessagePublishServiceTest extends TestCase
         $channel = new Channel();
         $user = new User();
 
-        $result = $this->publishService->publish(
-            channel: $channel,
-            currentUser: $user,
-            messageText: '   ',
-        );
+        $result = $this->publishService->publish(channel: $channel, currentUser: $user, messageText: '   ');
 
         $this->assertFalse($result->success);
         $this->assertSame($channel, $result->channel);
@@ -134,7 +127,8 @@ class MessagePublishServiceTest extends TestCase
         $userRef = new \ReflectionProperty(User::class, 'id');
         $userRef->setValue($user, 1);
 
-        $this->entityManager->expects($this->once())
+        $this->entityManager
+            ->expects($this->once())
             ->method('persist')
             ->willReturnCallback(static function (Message $m) {
                 $ref = new \ReflectionProperty(Message::class, 'id');
@@ -142,12 +136,14 @@ class MessagePublishServiceTest extends TestCase
             });
         $this->entityManager->expects($this->once())->method('flush');
 
-        $this->messageBus->expects($this->once())
+        $this->messageBus
+            ->expects($this->once())
             ->method('dispatch')
             ->with($this->isInstanceOf(ModerateMessageMessage::class))
             ->willReturn(new Envelope(new \stdClass()));
 
-        $this->mercurePublisher->expects($this->once())
+        $this->mercurePublisher
+            ->expects($this->once())
             ->method('publishNewMessage')
             ->with(
                 $channel,
@@ -157,11 +153,7 @@ class MessagePublishServiceTest extends TestCase
                 '<div class="feed-item">Message</div>',
             );
 
-        $result = $this->publishService->publish(
-            channel: $channel,
-            currentUser: $user,
-            messageText: 'Hello world',
-        );
+        $result = $this->publishService->publish(channel: $channel, currentUser: $user, messageText: 'Hello world');
 
         $this->assertTrue($result->success);
         $this->assertNotNull($result->message);
@@ -184,7 +176,8 @@ class MessagePublishServiceTest extends TestCase
         $this->llmRateLimiter->method('consume')->willReturn(true);
 
         $this->entityManager->expects($this->never())->method('persist');
-        $this->messageBus->expects($this->once())
+        $this->messageBus
+            ->expects($this->once())
             ->method('dispatch')
             ->with($this->isInstanceOf(LlmQueryMessage::class))
             ->willReturn(new Envelope(new \stdClass()));
@@ -210,12 +203,7 @@ class MessagePublishServiceTest extends TestCase
             ->method('uploadAndAttachToMessage')
             ->willThrowException(new \InvalidArgumentException('L\'extension de fichier ".3gp" n\'est pas autorisée.'));
 
-        $result = $this->publishService->publish(
-            channel: $channel,
-            currentUser: $user,
-            messageText: '',
-            file: $file,
-        );
+        $result = $this->publishService->publish(channel: $channel, currentUser: $user, messageText: '', file: $file);
 
         $this->assertFalse($result->success);
         $this->assertSame(422, $result->statusCode);

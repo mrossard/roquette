@@ -17,4 +17,3 @@ enum AuditAction: string
     case GROUP_DELETE = 'group_delete';
     case MESSAGE_MODERATED = 'message_moderated';
 }
-

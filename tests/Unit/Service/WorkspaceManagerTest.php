@@ -88,16 +88,11 @@ final class WorkspaceManagerTest extends TestCase
         $workspace->setName('Old Name');
         $workspace->setSlug('old-name');
 
-        $this->slugGenerator->expects($this->once())
-            ->method('generate')
-            ->willReturn('new-name');
+        $this->slugGenerator->expects($this->once())->method('generate')->willReturn('new-name');
 
         $this->entityManager->expects($this->once())->method('flush');
 
-        $dto = new UpdateWorkspaceDto(
-            name: 'New Name',
-            description: 'New Description',
-        );
+        $dto = new UpdateWorkspaceDto(name: 'New Name', description: 'New Description');
 
         $this->workspaceManager->update($workspace, $dto);
 
@@ -116,9 +111,7 @@ final class WorkspaceManagerTest extends TestCase
         $workspace->setIsPublic(false);
         $workspace->setAvatarPath('avatars/ws-1.png');
 
-        $this->fileUploadService->expects($this->once())
-            ->method('delete')
-            ->with('avatars/ws-1.png');
+        $this->fileUploadService->expects($this->once())->method('delete')->with('avatars/ws-1.png');
 
         $this->entityManager->expects($this->once())->method('remove')->with($workspace);
         $this->entityManager->expects($this->once())->method('flush');

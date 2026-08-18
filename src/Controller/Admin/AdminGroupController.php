@@ -176,11 +176,8 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/{id}/members/add', name: 'app_admin_group_member_add', methods: ['POST'])]
-    public function addMember(
-        UserGroup $userGroup,
-        Request $request,
-        UserRepository $userRepository,
-    ): Response {
+    public function addMember(UserGroup $userGroup, Request $request, UserRepository $userRepository): Response
+    {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $userId = $request->request->getInt('userId');
@@ -201,11 +198,8 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/{id}/members/{userId}/remove', name: 'app_admin_group_member_remove', methods: ['POST'])]
-    public function removeMember(
-        UserGroup $userGroup,
-        int $userId,
-        UserRepository $userRepository,
-    ): Response {
+    public function removeMember(UserGroup $userGroup, int $userId, UserRepository $userRepository): Response
+    {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $user = $userRepository->find($userId);
@@ -225,11 +219,8 @@ final class AdminGroupController extends AbstractController
     }
 
     #[Route('/admin/groups/{id}/administrators/add', name: 'app_admin_group_administrator_add', methods: ['POST'])]
-    public function addAdministrator(
-        UserGroup $userGroup,
-        Request $request,
-        UserRepository $userRepository,
-    ): Response {
+    public function addAdministrator(UserGroup $userGroup, Request $request, UserRepository $userRepository): Response
+    {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $userId = $request->request->getInt('userId');
@@ -254,11 +245,8 @@ final class AdminGroupController extends AbstractController
         name: 'app_admin_group_administrator_remove',
         methods: ['POST'],
     )]
-    public function removeAdministrator(
-        UserGroup $userGroup,
-        int $userId,
-        UserRepository $userRepository,
-    ): Response {
+    public function removeAdministrator(UserGroup $userGroup, int $userId, UserRepository $userRepository): Response
+    {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
         $user = $userRepository->find($userId);

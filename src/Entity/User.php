@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-
 use App\Enum\UserLocale;
 use App\Enum\UserPresenceStatus;
 use App\Enum\UserTheme;
@@ -476,7 +475,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setStatusOverride(UserPresenceStatus|string|null $statusOverride): static
     {
-        $this->statusOverride = $statusOverride instanceof UserPresenceStatus ? $statusOverride->value : $statusOverride;
+        $this->statusOverride = $statusOverride instanceof UserPresenceStatus
+            ? $statusOverride->value
+            : $statusOverride;
 
         return $this;
     }

@@ -97,11 +97,19 @@ class InvitationManagerTest extends TestCase
         $this->mercurePublisher
             ->expects(static::once())
             ->method('publishToUser')
-            ->with($invitee, static::callback(static fn(array $data) => $data['type'] === 'invitation_received'
-                && $data['invitedUsername'] === 'bob'
-                && $data['channelSlug'] === 'projet-alpha'
-                && $data['senderName'] === 'Alice Wonder'
-                && $data['html'] === '<div>Invite</div>'), 'invitation_received');
+            ->with(
+                $invitee,
+                static::callback(
+                    static fn(array $data) => (
+                        $data['type'] === 'invitation_received'
+                        && $data['invitedUsername'] === 'bob'
+                        && $data['channelSlug'] === 'projet-alpha'
+                        && $data['senderName'] === 'Alice Wonder'
+                        && $data['html'] === '<div>Invite</div>'
+                    ),
+                ),
+                'invitation_received',
+            );
 
         $invitation = $this->manager->inviteToChannel($channel, $inviter, $invitee);
 

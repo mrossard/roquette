@@ -52,7 +52,12 @@ class PollFactoryTest extends TestCase
     public function createPollBuildsPollAndOptionsCorrectly(): void
     {
         $message = new Message();
-        $poll = $this->factory->createPoll($message, '   Votre langage préféré ?   ', [' PHP ', ' JS ', ' Python '], true);
+        $poll = $this->factory->createPoll(
+            $message,
+            '   Votre langage préféré ?   ',
+            [' PHP ', ' JS ', ' Python '],
+            true,
+        );
 
         $this->assertSame($message, $poll->getMessage());
         $this->assertSame($poll, $message->getPoll());

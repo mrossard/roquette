@@ -45,13 +45,16 @@ class LinkPreviewDtoTest extends TestCase
         $this->assertSame('https://example.com/cover.jpg', $dto->image);
         $this->assertSame('Example News', $dto->siteName);
 
-        $this->assertSame([
-            'url' => 'https://example.com/article',
-            'type' => 'og_preview',
-            'title' => 'My Article',
-            'description' => 'A great article',
-            'image' => 'https://example.com/cover.jpg',
-            'siteName' => 'Example News',
-        ], $dto->toArray());
+        $this->assertSame(
+            [
+                'url' => 'https://example.com/article',
+                'type' => 'og_preview',
+                'title' => 'My Article',
+                'description' => 'A great article',
+                'image' => 'https://example.com/cover.jpg',
+                'siteName' => 'Example News',
+            ],
+            $dto->toArray(),
+        );
     }
 }

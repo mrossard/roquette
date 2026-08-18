@@ -16,14 +16,11 @@ class ToggleComposerDtoTest extends TestCase
     #[Test]
     public function toggleComposerDtoHandlesOpenState(): void
     {
-        $request = new Request(
-            query: ['open' => '1', 'message' => 'Hello'],
-            request: [
-                'poll_question' => 'Your favorite?',
-                'poll_options' => ['Option A', 'Option B'],
-                'allow_multiple' => '1',
-            ],
-        );
+        $request = new Request(query: ['open' => '1', 'message' => 'Hello'], request: [
+            'poll_question' => 'Your favorite?',
+            'poll_options' => ['Option A', 'Option B'],
+            'allow_multiple' => '1',
+        ]);
 
         $dto = ToggleComposerDto::fromRequest($request);
 
@@ -37,13 +34,10 @@ class ToggleComposerDtoTest extends TestCase
     #[Test]
     public function toggleComposerDtoResetsFieldsWhenClosed(): void
     {
-        $request = new Request(
-            query: ['open' => '0', 'message' => 'Draft text'],
-            request: [
-                'poll_question' => 'Old question',
-                'poll_options' => ['Old Option'],
-            ],
-        );
+        $request = new Request(query: ['open' => '0', 'message' => 'Draft text'], request: [
+            'poll_question' => 'Old question',
+            'poll_options' => ['Old Option'],
+        ]);
 
         $dto = ToggleComposerDto::fromRequest($request);
 

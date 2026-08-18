@@ -86,7 +86,8 @@ class MessageDeletionServiceTest extends TestCase
         $this->em->expects($this->once())->method('remove')->with($message);
         $this->em->expects($this->once())->method('flush');
         $this->broadcaster->expects($this->once())->method('publishCurrentModerationCount');
-        $this->broadcaster->expects($this->once())
+        $this->broadcaster
+            ->expects($this->once())
             ->method('broadcastMessageDeletion')
             ->with($channel, 42, '<div id="pinned-banner-container" hx-swap-oob="true"></div>');
 

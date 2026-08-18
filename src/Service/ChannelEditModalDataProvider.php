@@ -29,7 +29,10 @@ final readonly class ChannelEditModalDataProvider
     {
         $webhooks = $this->webhookRepository->findBy(['channel' => $channel], ['createdAt' => 'ASC']);
         $groups = $this->groupProvider->getGroups();
-        $resolvedSubscriptions = $this->groupSubscriptionManager->getResolvedSubscriptions($channel, $this->groupProvider);
+        $resolvedSubscriptions = $this->groupSubscriptionManager->getResolvedSubscriptions(
+            $channel,
+            $this->groupProvider,
+        );
 
         return [
             'activeChannel' => $channel,

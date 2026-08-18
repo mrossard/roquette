@@ -68,7 +68,8 @@ class MessageManagerTest extends TestCase
     {
         $user = new User();
         $expectedResult = \App\Dto\Message\EditResult::ok(new Message(), '<div>rendered</div>');
-        $this->editor->expects($this->once())
+        $this->editor
+            ->expects($this->once())
             ->method('edit')
             ->with(1, $user, $this->isInstanceOf(EditMessageDto::class))
             ->willReturn($expectedResult);

@@ -45,7 +45,11 @@ class UserGroupVoterTest extends TestCase
         $token = $this->createMock(TokenInterface::class);
         $token->method('getUser')->willReturn($user);
 
-        $this->assertSame(VoterInterface::ACCESS_ABSTAIN, $this->voter->vote($token, new \stdClass(), [UserGroupVoter::VIEW]));
+        $this->assertSame(VoterInterface::ACCESS_ABSTAIN, $this->voter->vote(
+            $token,
+            new \stdClass(),
+            [UserGroupVoter::VIEW],
+        ));
         $this->assertSame(VoterInterface::ACCESS_ABSTAIN, $this->voter->vote($token, new UserGroup(), ['UNSUPPORTED']));
     }
 

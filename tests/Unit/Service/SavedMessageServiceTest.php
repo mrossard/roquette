@@ -65,7 +65,11 @@ class SavedMessageServiceTest extends TestCase
         $message->setChannel($channel);
 
         $this->messageRepo->expects($this->exactly(2))->method('find')->with(1)->willReturn($message);
-        $this->accessService->expects($this->exactly(2))->method('canUserAccess')->with($channel, $user)->willReturn(true);
+        $this->accessService
+            ->expects($this->exactly(2))
+            ->method('canUserAccess')
+            ->with($channel, $user)
+            ->willReturn(true);
         $this->em->expects($this->exactly(2))->method('flush');
 
         // Add

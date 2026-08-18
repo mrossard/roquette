@@ -36,18 +36,15 @@ final class SavedMessageController extends AbstractController
             return new Response($e->getMessage(), $e->getStatusCode());
         }
 
-        return $this->render('dashboard/_feed_item.html.twig', array_merge(
-            $messageRenderer->feedItemParams($message),
-            ['no_fade' => true],
-        ));
+        return $this->render('dashboard/_feed_item.html.twig', array_merge($messageRenderer->feedItemParams($message), [
+            'no_fade' => true,
+        ]));
     }
 
     #[Route('/saved-messages', name: 'app_saved_messages', methods: ['GET'])]
     #[Route('/saved-messages/more', name: 'app_saved_messages_more', methods: ['GET'])]
-    public function savedMessages(
-        Request $request,
-        MessageRepository $messageRepository,
-    ): Response {
+    public function savedMessages(Request $request, MessageRepository $messageRepository): Response
+    {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 

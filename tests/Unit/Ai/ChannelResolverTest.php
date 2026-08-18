@@ -44,10 +44,7 @@ final class ChannelResolverTest extends TestCase
         $workspace = $this->createMock(Workspace::class);
         $workspace->method('getChannels')->willReturn(new ArrayCollection([$channel]));
 
-        $this->workspaceRepo->expects($this->once())
-            ->method('find')
-            ->with(10)
-            ->willReturn($workspace);
+        $this->workspaceRepo->expects($this->once())->method('find')->with(10)->willReturn($workspace);
 
         $this->assertSame($channel, $this->resolver->resolve('général', 10));
     }
@@ -62,10 +59,7 @@ final class ChannelResolverTest extends TestCase
         $workspace = $this->createMock(Workspace::class);
         $workspace->method('getChannels')->willReturn(new ArrayCollection([$channel]));
 
-        $this->workspaceRepo->expects($this->once())
-            ->method('find')
-            ->with(10)
-            ->willReturn($workspace);
+        $this->workspaceRepo->expects($this->once())->method('find')->with(10)->willReturn($workspace);
 
         $this->assertSame($channel, $this->resolver->resolve('dev', 10));
     }
@@ -77,12 +71,10 @@ final class ChannelResolverTest extends TestCase
         $channel->setName('Support Tech');
         $channel->setSlug('support-tech');
 
-        $this->workspaceRepo->expects($this->once())
-            ->method('find')
-            ->with(5)
-            ->willReturn(null);
+        $this->workspaceRepo->expects($this->once())->method('find')->with(5)->willReturn(null);
 
-        $this->channelRepo->expects($this->once())
+        $this->channelRepo
+            ->expects($this->once())
             ->method('findOneByNameOrSlugFuzzy')
             ->with('support')
             ->willReturn($channel);

@@ -99,11 +99,7 @@ final readonly class SearchMessagesTool implements AiToolInterface
             return (string) $result['result'];
         }
 
-        return sprintf(
-            "Résultats de recherche (%d trouvés) :\n\n%s",
-            $result['count'] ?? 0,
-            $result['results'] ?? ''
-        );
+        return sprintf("Résultats de recherche (%d trouvés) :\n\n%s", $result['count'] ?? 0, $result['results'] ?? '');
     }
 
     public function execute(array $arguments, int $userId, ?int $workspaceId = null): array
@@ -114,11 +110,17 @@ final readonly class SearchMessagesTool implements AiToolInterface
         }
 
         $query = trim((string) ($arguments['query'] ?? ''));
-        $rawAuthor = \array_key_exists('author', $arguments) && $arguments['author'] !== null ? trim((string) $arguments['author']) : '';
+        $rawAuthor = \array_key_exists('author', $arguments) && $arguments['author'] !== null
+            ? trim((string) $arguments['author'])
+            : '';
         $author = $rawAuthor !== '' ? $rawAuthor : null;
-        $rawChannel = \array_key_exists('channel', $arguments) && $arguments['channel'] !== null ? trim((string) $arguments['channel']) : '';
+        $rawChannel = \array_key_exists('channel', $arguments) && $arguments['channel'] !== null
+            ? trim((string) $arguments['channel'])
+            : '';
         $channel = $rawChannel !== '' ? $rawChannel : null;
-        $hasFile = array_key_exists('hasFile', $arguments) && $arguments['hasFile'] !== null ? (bool) $arguments['hasFile'] : null;
+        $hasFile = array_key_exists('hasFile', $arguments) && $arguments['hasFile'] !== null
+            ? (bool) $arguments['hasFile']
+            : null;
 
         $results = $this->messageRepository->searchGlobal(
             currentUser: $user,

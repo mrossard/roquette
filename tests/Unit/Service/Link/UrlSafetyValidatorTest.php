@@ -46,24 +46,24 @@ class UrlSafetyValidatorTest extends TestCase
     #[Test]
     public function resolveUrlHandlesAbsoluteAndRelative(): void
     {
-        $this->assertSame(
+        $this->assertSame('https://other.com/page', $this->validator->resolveUrl(
+            'https://example.com/dir/index.html',
             'https://other.com/page',
-            $this->validator->resolveUrl('https://example.com/dir/index.html', 'https://other.com/page'),
-        );
+        ));
 
-        $this->assertSame(
-            'https://example.com/dir/page.html',
-            $this->validator->resolveUrl('https://example.com/dir/index.html', 'page.html'),
-        );
+        $this->assertSame('https://example.com/dir/page.html', $this->validator->resolveUrl(
+            'https://example.com/dir/index.html',
+            'page.html',
+        ));
 
-        $this->assertSame(
-            'https://example.com/root.html',
-            $this->validator->resolveUrl('https://example.com/dir/index.html', '/root.html'),
-        );
+        $this->assertSame('https://example.com/root.html', $this->validator->resolveUrl(
+            'https://example.com/dir/index.html',
+            '/root.html',
+        ));
 
-        $this->assertSame(
-            'https://example.com/proto.html',
-            $this->validator->resolveUrl('https://example.com/dir/index.html', '//example.com/proto.html'),
-        );
+        $this->assertSame('https://example.com/proto.html', $this->validator->resolveUrl(
+            'https://example.com/dir/index.html',
+            '//example.com/proto.html',
+        ));
     }
 }

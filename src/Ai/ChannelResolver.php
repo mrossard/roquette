@@ -65,8 +65,7 @@ final readonly class ChannelResolver
             return null;
         }
 
-        return $this->matchExactChannel($normalized, $channels)
-            ?? $this->matchPartialChannel($normalized, $channels);
+        return $this->matchExactChannel($normalized, $channels) ?? $this->matchPartialChannel($normalized, $channels);
     }
 
     /**
@@ -75,7 +74,10 @@ final readonly class ChannelResolver
     private function matchExactChannel(string $query, array $channels): ?Channel
     {
         foreach ($channels as $channel) {
-            if (strtolower((string) $channel->getSlug()) === $query || strtolower((string) $channel->getName()) === $query) {
+            if (
+                strtolower((string) $channel->getSlug()) === $query
+                || strtolower((string) $channel->getName()) === $query
+            ) {
                 return $channel;
             }
         }
@@ -89,7 +91,10 @@ final readonly class ChannelResolver
     private function matchPartialChannel(string $query, array $channels): ?Channel
     {
         foreach ($channels as $channel) {
-            if (str_contains(strtolower((string) $channel->getName()), $query) || str_contains(strtolower((string) $channel->getSlug()), $query)) {
+            if (
+                str_contains(strtolower((string) $channel->getName()), $query)
+                || str_contains(strtolower((string) $channel->getSlug()), $query)
+            ) {
                 return $channel;
             }
         }

@@ -43,10 +43,13 @@ class JsonExtractorTest extends TestCase
         $input = "```\n{\n  \"tool\": \"create_poll\",\n  \"parameters\": {\"question\": \"Test ?\"}\n}\n```";
         $result = JsonExtractor::extractArray($input);
 
-        $this->assertSame([
-            'tool' => 'create_poll',
-            'parameters' => ['question' => 'Test ?'],
-        ], $result);
+        $this->assertSame(
+            [
+                'tool' => 'create_poll',
+                'parameters' => ['question' => 'Test ?'],
+            ],
+            $result,
+        );
     }
 
     #[Test]

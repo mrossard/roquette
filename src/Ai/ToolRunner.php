@@ -11,12 +11,12 @@ use Symfony\AI\Platform\Result\Stream\Delta\ToolCallComplete;
 use Symfony\AI\Platform\Result\ToolCall;
 
 use function array_key_exists;
+use function implode;
 use function is_array;
 use function is_string;
 use function microtime;
 use function sprintf;
 use function trim;
-use function implode;
 
 /**
  * Executes the model tool-calling loop and streams the final answer.
@@ -115,11 +115,8 @@ final readonly class ToolRunner
      * @param list<array{type: string, function: array<string, mixed>}> $tools
      * @return array{0: ?array<ToolCall>, 1: list<string>}
      */
-    private function consumeIterationStream(
-        string $currentPrompt,
-        ?string $systemPrompt,
-        array $tools,
-    ): array {
+    private function consumeIterationStream(string $currentPrompt, ?string $systemPrompt, array $tools): array
+    {
         $toolCalls = null;
         $textDeltas = [];
         $textBuffer = '';
@@ -182,7 +179,10 @@ final readonly class ToolRunner
         $results = [];
 
         foreach ($calls as $call) {
-            if ($onConfirmationRequired !== null && $this->toolRegistry->get($call->getName())?->requiresConfirmation()) {
+            if (
+                $onConfirmationRequired !== null
+                && $this->toolRegistry->get($call->getName())?->requiresConfirmation()
+            ) {
                 $confirmationPending = true;
                 $this->logger?->info('Tool action requires user confirmation', [
                     'tool' => $call->getName(),
@@ -219,10 +219,12 @@ final readonly class ToolRunner
      */
     private function buildConfirmationPrompt(string $originalPrompt, array $results): string
     {
-        return "Une action demandée nécessite une confirmation de l'utilisateur :\n"
+        return (
+            "Une action demandée nécessite une confirmation de l'utilisateur :\n"
             . implode("\n", $results)
             . "\n\nRéponds maintenant brièvement à l'utilisateur : explique l'action demandée et demande-lui de la confirmer (via le bouton ou en répondant simplement 'ok'). N'appelle aucun outil.\n"
-            . $originalPrompt;
+            . $originalPrompt
+        );
     }
 
     /**
@@ -230,10 +232,12 @@ final readonly class ToolRunner
      */
     private function buildToolExecutionPrompt(string $originalPrompt, array $results): string
     {
-        return "Résultats des outils exécutés :\n"
+        return (
+            "Résultats des outils exécutés :\n"
             . implode("\n", $results)
             . "\n\nRéponds maintenant brièvement à l'utilisateur pour confirmer l'action réalisée en utilisant exactement l'information de confirmation ci-dessus :\n"
-            . $originalPrompt;
+            . $originalPrompt
+        );
     }
 
     /**

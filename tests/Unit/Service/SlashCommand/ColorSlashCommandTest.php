@@ -40,7 +40,8 @@ class ColorSlashCommandTest extends TestCase
         $user = new User();
         $channel = new Channel();
 
-        $this->twig->expects($this->once())
+        $this->twig
+            ->expects($this->once())
             ->method('render')
             ->with('dashboard/_input_form.html.twig', ['activeChannel' => $channel])
             ->willReturn('<form></form>');

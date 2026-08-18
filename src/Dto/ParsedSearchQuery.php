@@ -17,9 +17,7 @@ final readonly class ParsedSearchQuery
 
     public function hasFilters(): bool
     {
-        return $this->authorUsername !== null
-            || $this->channelName !== null
-            || $this->hasFile !== null;
+        return $this->authorUsername !== null || $this->channelName !== null || $this->hasFile !== null;
     }
 
     public function isEmpty(): bool

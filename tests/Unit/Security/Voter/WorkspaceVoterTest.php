@@ -49,7 +49,11 @@ class WorkspaceVoterTest extends TestCase
         $token->method('getUser')->willReturn($user);
 
         $workspace = new Workspace();
-        $this->workspaceManager->expects($this->once())->method('isUserMember')->with($workspace, $user)->willReturn(true);
+        $this->workspaceManager
+            ->expects($this->once())
+            ->method('isUserMember')
+            ->with($workspace, $user)
+            ->willReturn(true);
 
         $result = $this->voter->vote($token, $workspace, ['VIEW']);
 
@@ -64,7 +68,11 @@ class WorkspaceVoterTest extends TestCase
         $token->method('getUser')->willReturn($user);
 
         $workspace = new Workspace();
-        $this->workspaceManager->expects($this->once())->method('isUserMember')->with($workspace, $user)->willReturn(false);
+        $this->workspaceManager
+            ->expects($this->once())
+            ->method('isUserMember')
+            ->with($workspace, $user)
+            ->willReturn(false);
 
         $result = $this->voter->vote($token, $workspace, ['VIEW']);
 

@@ -36,7 +36,10 @@ class AppExtension extends AbstractExtension
             new TwigFunction('get_cached_link_preview', [AppExtensionRuntime::class, 'getCachedLinkPreview']),
             new TwigFunction('get_subchannel', [AppExtensionRuntime::class, 'getSubchannel']),
             new TwigFunction('get_user_mercure_topics', [AppExtensionRuntime::class, 'getUserMercureTopics']),
-            new TwigFunction('get_user_channel_notifications_map', [AppExtensionRuntime::class, 'getUserChannelNotificationsMap']),
+            new TwigFunction('get_user_channel_notifications_map', [
+                AppExtensionRuntime::class,
+                'getUserChannelNotificationsMap',
+            ]),
             new TwigFunction('get_pending_moderation_count', [AppExtensionRuntime::class, 'getPendingModerationCount']),
         ];
     }

@@ -89,7 +89,11 @@ class ModalControllerTest extends WebTestCase
         $userRepository = $this->entityManager->getRepository(User::class);
         $channelRepository = $this->entityManager->getRepository(Channel::class);
 
-        $channels = $channelRepository->findBy(['slug' => ['modal-private-channel', 'modal-public-channel', 'modal-no-creator-channel']]);
+        $channels = $channelRepository->findBy(['slug' => [
+            'modal-private-channel',
+            'modal-public-channel',
+            'modal-no-creator-channel',
+        ]]);
         foreach ($channels as $c) {
             $this->entityManager->remove($c);
         }

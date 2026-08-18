@@ -32,7 +32,7 @@ class WorkspaceContext
         $session = $this->getSession();
         $workspaceId = $session?->get(self::SESSION_KEY);
 
-        if (is_int($workspaceId) || (is_string($workspaceId) && ctype_digit($workspaceId))) {
+        if (is_int($workspaceId) || is_string($workspaceId) && ctype_digit($workspaceId)) {
             return $this->workspaceRepository->find((int) $workspaceId);
         }
 

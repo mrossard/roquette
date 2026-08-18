@@ -43,10 +43,8 @@ final class AccountController extends AbstractController
     }
 
     #[Route('/account/profile', name: 'app_account_profile', methods: ['POST'])]
-    public function updateProfile(
-        Request $request,
-        EntityManagerInterface $entityManager,
-    ): Response {
+    public function updateProfile(Request $request, EntityManagerInterface $entityManager): Response
+    {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
@@ -78,10 +76,8 @@ final class AccountController extends AbstractController
     }
 
     #[Route('/account/notifications', name: 'app_account_notifications', methods: ['POST'])]
-    public function updateNotifications(
-        Request $request,
-        EntityManagerInterface $entityManager,
-    ): Response {
+    public function updateNotifications(Request $request, EntityManagerInterface $entityManager): Response
+    {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
@@ -90,10 +86,7 @@ final class AccountController extends AbstractController
 
         $entityManager->flush();
 
-        $this->addFlash(
-            'success',
-            $this->translator->trans('Vos préférences de notification ont été mises à jour !'),
-        );
+        $this->addFlash('success', $this->translator->trans('Vos préférences de notification ont été mises à jour !'));
 
         return $this->redirectToRoute('app_account');
     }
@@ -110,10 +103,7 @@ final class AccountController extends AbstractController
         $dto = ChangePasswordDto::fromRequest($request);
 
         if (!$dto->isFilled()) {
-            $this->addFlash(
-                'error',
-                $this->translator->trans('Tous les champs de mot de passe sont obligatoires.'),
-            );
+            $this->addFlash('error', $this->translator->trans('Tous les champs de mot de passe sont obligatoires.'));
             return $this->redirectToRoute('app_account');
         }
 
@@ -141,10 +131,7 @@ final class AccountController extends AbstractController
         $hashed = $passwordHasher->hashPassword($currentUser, $dto->newPassword);
         $currentUser->setPassword($hashed);
         $entityManager->flush();
-        $this->addFlash(
-            'success',
-            $this->translator->trans('Votre mot de passe a été modifié avec succès !'),
-        );
+        $this->addFlash('success', $this->translator->trans('Votre mot de passe a été modifié avec succès !'));
 
         return $this->redirectToRoute('app_account');
     }

@@ -56,10 +56,23 @@ final readonly class CreatePollTool extends AbstractAiTool
         return [
             'type' => 'object',
             'properties' => [
-                'channelSlug' => ['type' => 'string', 'description' => "Le slug du canal où publier le sondage (ex: 'general')."],
-                'question' => ['type' => 'string', 'description' => 'La question du sondage, sans les choix de réponse.'],
-                'options' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'La liste des choix possibles (au moins 2).'],
-                'allowMultiple' => ['type' => 'boolean', 'description' => "Indique si l'utilisateur peut sélectionner plusieurs choix."],
+                'channelSlug' => [
+                    'type' => 'string',
+                    'description' => "Le slug du canal où publier le sondage (ex: 'general').",
+                ],
+                'question' => [
+                    'type' => 'string',
+                    'description' => 'La question du sondage, sans les choix de réponse.',
+                ],
+                'options' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'string'],
+                    'description' => 'La liste des choix possibles (au moins 2).',
+                ],
+                'allowMultiple' => [
+                    'type' => 'boolean',
+                    'description' => "Indique si l'utilisateur peut sélectionner plusieurs choix.",
+                ],
             ],
             'required' => ['channelSlug', 'question', 'options'],
         ];
@@ -81,9 +94,11 @@ final readonly class CreatePollTool extends AbstractAiTool
         ?int $authorUserId = null,
         ?int $workspaceId = null,
     ): string {
-        $author = $this->resolveUser($this->userRepository, $authorUserId)
-            ?? $this->robotUserProvider->getRobotUser()
-            ?? $this->userRepository->findOneBy([]);
+        $author =
+            $this->resolveUser(
+                $this->userRepository,
+                $authorUserId,
+            ) ?? $this->robotUserProvider->getRobotUser() ?? $this->userRepository->findOneBy([]);
 
         $resolved = $this->resolveChannelAndCheckAccess(
             $this->channelResolver,
@@ -146,19 +161,21 @@ final readonly class CreatePollTool extends AbstractAiTool
         $this->em->flush();
 
         // Render standard feed item wrapped with OOB insertion for live feed
-        $renderedHtml = '<div hx-swap-oob="beforeend:#live-feed">' . $this->messageRenderer->renderFeedItem($message, [
-            'no_fade' => false,
-        ]) . '</div>';
+        $renderedHtml =
+            '<div hx-swap-oob="beforeend:#live-feed">'
+            . $this->messageRenderer->renderFeedItem($message, [
+                'no_fade' => false,
+            ])
+            . '</div>';
 
         // Broadcast via Mercure SSE to all connected channel clients
-        $this->mercurePublisher->publishNewMessage(
-            $channel,
-            $message,
-            $author,
-            $rawText,
-            $renderedHtml,
-        );
+        $this->mercurePublisher->publishNewMessage($channel, $message, $author, $rawText, $renderedHtml);
 
-        return sprintf("Le sondage '%s' avec %d options a été publié dans le canal #%s.", $question, count($options), $channel->getName());
+        return sprintf(
+            "Le sondage '%s' avec %d options a été publié dans le canal #%s.",
+            $question,
+            count($options),
+            $channel->getName(),
+        );
     }
 }

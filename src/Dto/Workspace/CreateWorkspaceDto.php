@@ -18,10 +18,7 @@ final readonly class CreateWorkspaceDto
         $name = trim((string) $request->request->get('name', ''));
         $description = trim((string) $request->request->get('description', ''));
 
-        return new self(
-            name: $name,
-            description: $description !== '' ? $description : null,
-        );
+        return new self(name: $name, description: $description !== '' ? $description : null);
     }
 
     public function isValid(): bool

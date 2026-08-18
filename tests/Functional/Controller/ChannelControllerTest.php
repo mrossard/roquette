@@ -75,7 +75,8 @@ class ChannelControllerTest extends WebTestCase
         $channels = array_merge(
             $channelRepository->findBy(['slug' => 'test-channel-fav']),
             $channelRepository->findBy(['slug' => 'unique-edit-channel-name']),
-            $channelRepository->createQueryBuilder('c')
+            $channelRepository
+                ->createQueryBuilder('c')
                 ->where('c.slug LIKE :dmPrefix')
                 ->setParameter('dmPrefix', 'dm-%')
                 ->getQuery()
@@ -158,7 +159,7 @@ class ChannelControllerTest extends WebTestCase
             [
                 'HTTP_HX-Request' => 'true',
                 'HTTP_HX-Current-URL' => sprintf('http://localhost/channels/%s', $this->channel->getSlug()),
-            ]
+            ],
         );
 
         $this->assertResponseIsSuccessful();
@@ -492,7 +493,9 @@ class ChannelControllerTest extends WebTestCase
     #[Test]
     public function testUnreadChannelWithMultipleMembersNotDuplicatedInSidebar(): void
     {
-        $publicWorkspace = $this->entityManager->getRepository(\App\Entity\Workspace::class)->findOneBy(['isPublic' => true]);
+        $publicWorkspace = $this->entityManager
+            ->getRepository(\App\Entity\Workspace::class)
+            ->findOneBy(['isPublic' => true]);
         if ($publicWorkspace) {
             $this->channel->setWorkspace($publicWorkspace);
             $publicWorkspace->addMember($this->testUser);

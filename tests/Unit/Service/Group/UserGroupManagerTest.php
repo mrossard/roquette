@@ -73,7 +73,14 @@ class UserGroupManagerTest extends TestCase
         $this->auditLogger
             ->expects(static::once())
             ->method('log')
-            ->with(AuditAction::GROUP_CREATE, $creator, static::callback(static fn(array $context): bool => $context['group_name'] === 'Dev Team' && str_starts_with($context['group_identifier'], 'local-group-')));
+            ->with(
+                AuditAction::GROUP_CREATE,
+                $creator,
+                static::callback(
+                    static fn(array $context): bool => $context['group_name'] === 'Dev Team'
+                    && str_starts_with($context['group_identifier'], 'local-group-'),
+                ),
+            );
 
         $group = $this->manager->createLocalGroup('Dev Team', $creator);
 
@@ -95,7 +102,11 @@ class UserGroupManagerTest extends TestCase
         $creator = new User();
         $creator->setUsername('alice');
 
-        $this->userGroupRepository->expects(static::once())->method('findOneBy')->with(['groupIdentifier' => 'ldap-devs'])->willReturn(null);
+        $this->userGroupRepository
+            ->expects(static::once())
+            ->method('findOneBy')
+            ->with(['groupIdentifier' => 'ldap-devs'])
+            ->willReturn(null);
 
         $workspace = new Workspace();
         $this->workspaceManager
@@ -110,9 +121,17 @@ class UserGroupManagerTest extends TestCase
         $this->auditLogger
             ->expects(static::once())
             ->method('log')
-            ->with(AuditAction::GROUP_CREATE, $creator, static::callback(static fn(array $context): bool => $context['group_name'] === 'LDAP Devs'
-                    && $context['group_identifier'] === 'ldap-devs'
-                    && ($context['imported'] ?? false) === true));
+            ->with(
+                AuditAction::GROUP_CREATE,
+                $creator,
+                static::callback(
+                    static fn(array $context): bool => (
+                        $context['group_name'] === 'LDAP Devs'
+                        && $context['group_identifier'] === 'ldap-devs'
+                        && ($context['imported'] ?? false) === true
+                    ),
+                ),
+            );
 
         $group = $this->manager->importGroup('ldap-devs', 'LDAP Devs', $creator);
 
@@ -124,7 +143,11 @@ class UserGroupManagerTest extends TestCase
     {
         $creator = new User();
         $existing = new UserGroup();
-        $this->userGroupRepository->expects(static::once())->method('findOneBy')->with(['groupIdentifier' => 'ldap-devs'])->willReturn($existing);
+        $this->userGroupRepository
+            ->expects(static::once())
+            ->method('findOneBy')
+            ->with(['groupIdentifier' => 'ldap-devs'])
+            ->willReturn($existing);
 
         $this->expectException(InvalidArgumentException::class);
         $this->manager->importGroup('ldap-devs', 'LDAP Devs', $creator);
@@ -146,7 +169,16 @@ class UserGroupManagerTest extends TestCase
         $this->auditLogger
             ->expects(static::once())
             ->method('log')
-            ->with(AuditAction::GROUP_DELETE, $user, static::callback(static fn(array $context): bool => $context['group_name'] === 'Marketing' && $context['group_identifier'] === 'local-group-123'));
+            ->with(
+                AuditAction::GROUP_DELETE,
+                $user,
+                static::callback(
+                    static fn(array $context): bool => (
+                        $context['group_name'] === 'Marketing'
+                        && $context['group_identifier'] === 'local-group-123'
+                    ),
+                ),
+            );
 
         $this->manager->deleteGroup($group, $user);
     }

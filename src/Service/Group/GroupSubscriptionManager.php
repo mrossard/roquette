@@ -22,7 +22,14 @@ readonly class GroupSubscriptionManager
      */
     public function attachGroupSubscription(Channel $channel, string $groupIdentifier): GroupSubscription
     {
-        return $this->doAttachGroupSubscription($channel, $groupIdentifier, false);
+        $this->assertValidGroupIdentifier($groupIdentifier);
+
+        $groupSubscription = new GroupSubscription();
+        $groupSubscription->setGroupIdentifier($groupIdentifier);
+        $groupSubscription->setIsGroupChannel(false);
+        $channel->addGroupSubscription($groupSubscription);
+
+        return $groupSubscription;
     }
 
     /**
@@ -30,71 +37,84 @@ readonly class GroupSubscriptionManager
      */
     public function attachOfficialGroupSubscription(Channel $channel, string $groupIdentifier): GroupSubscription
     {
-        return $this->doAttachGroupSubscription($channel, $groupIdentifier, true);
-    }
-
-    private function doAttachGroupSubscription(Channel $channel, string $groupIdentifier, bool $isGroupChannel): GroupSubscription
-    {
-        if ($groupIdentifier === '') {
-            throw new InvalidArgumentException($this->translator->trans('Identifiant de groupe invalide.'));
-        }
-
-        if ($isGroupChannel) {
-            $existingGroupSub = $this->entityManager
-                ->getRepository(GroupSubscription::class)
-                ->findOneBy([
-                    'groupIdentifier' => $groupIdentifier,
-                    'isGroupChannel' => true,
-                ]);
-
-            if ($existingGroupSub !== null) {
-                throw new InvalidArgumentException($this->translator->trans(
-                    'Ce groupe possède déjà un canal officiel.',
-                ));
-            }
-        }
+        $this->assertValidGroupIdentifier($groupIdentifier);
+        $this->assertNoOfficialGroupChannel($groupIdentifier);
 
         $groupSubscription = new GroupSubscription();
         $groupSubscription->setGroupIdentifier($groupIdentifier);
-        $groupSubscription->setIsGroupChannel($isGroupChannel);
+        $groupSubscription->setIsGroupChannel(true);
         $channel->addGroupSubscription($groupSubscription);
 
         return $groupSubscription;
     }
 
+    private function assertValidGroupIdentifier(string $groupIdentifier): void
+    {
+        if ($groupIdentifier === '') {
+            throw new InvalidArgumentException($this->translator->trans('Identifiant de groupe invalide.'));
+        }
+    }
+
+    private function assertNoOfficialGroupChannel(string $groupIdentifier): void
+    {
+        $existingGroupSub = $this->entityManager
+            ->getRepository(GroupSubscription::class)
+            ->findOneBy([
+                'groupIdentifier' => $groupIdentifier,
+                'isGroupChannel' => true,
+            ]);
+
+        if ($existingGroupSub !== null) {
+            throw new InvalidArgumentException($this->translator->trans('Ce groupe possède déjà un canal officiel.'));
+        }
+    }
+
     public function subscribe(Channel $channel, string $groupIdentifier): ?GroupSubscription
-    {
-        return $this->doSubscribe($channel, $groupIdentifier, false);
-    }
-
-    public function subscribeOfficial(Channel $channel, string $groupIdentifier): ?GroupSubscription
-    {
-        return $this->doSubscribe($channel, $groupIdentifier, true);
-    }
-
-    private function doSubscribe(Channel $channel, string $groupIdentifier, bool $isOfficial): ?GroupSubscription
     {
         $groupIdentifier = trim($groupIdentifier);
         if ($groupIdentifier === '') {
             return null;
         }
 
-        $existingSub = $this->entityManager
+        $existingSub = $this->findExistingSubscription($channel, $groupIdentifier);
+        if ($existingSub !== null) {
+            return $existingSub;
+        }
+
+        $sub = $this->attachGroupSubscription($channel, $groupIdentifier);
+        $this->entityManager->persist($sub);
+        $this->entityManager->flush();
+
+        return $sub;
+    }
+
+    public function subscribeOfficial(Channel $channel, string $groupIdentifier): ?GroupSubscription
+    {
+        $groupIdentifier = trim($groupIdentifier);
+        if ($groupIdentifier === '') {
+            return null;
+        }
+
+        $existingSub = $this->findExistingSubscription($channel, $groupIdentifier);
+        if ($existingSub !== null) {
+            return $existingSub;
+        }
+
+        $sub = $this->attachOfficialGroupSubscription($channel, $groupIdentifier);
+        $this->entityManager->persist($sub);
+        $this->entityManager->flush();
+
+        return $sub;
+    }
+
+    private function findExistingSubscription(Channel $channel, string $groupIdentifier): ?GroupSubscription
+    {
+        return $this->entityManager
             ->getRepository(GroupSubscription::class)
             ->findOneBy([
                 'channel' => $channel,
                 'groupIdentifier' => $groupIdentifier,
             ]);
-
-        if ($existingSub !== null) {
-            return $existingSub;
-        }
-
-        $sub = $this->doAttachGroupSubscription($channel, $groupIdentifier, $isOfficial);
-        $this->entityManager->persist($sub);
-        $this->entityManager->flush();
-
-        return $sub;
     }
 
     public function unsubscribe(Channel $channel, int $subscriptionId): bool

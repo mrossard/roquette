@@ -32,16 +32,20 @@ class UserGroupVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [
-            self::VIEW,
-            self::EDIT,
-            self::MANAGE,
-            self::DELETE,
-            self::GROUP_VIEW,
-            self::GROUP_EDIT,
-            self::GROUP_MANAGE,
-            self::GROUP_DELETE,
-        ], true)) {
+        if (!in_array(
+            $attribute,
+            [
+                self::VIEW,
+                self::EDIT,
+                self::MANAGE,
+                self::DELETE,
+                self::GROUP_VIEW,
+                self::GROUP_EDIT,
+                self::GROUP_MANAGE,
+                self::GROUP_DELETE,
+            ],
+            true,
+        )) {
             return false;
         }
 
@@ -51,7 +55,8 @@ class UserGroupVoter extends Voter
     protected function voteOnAttribute(
         string $attribute,
         mixed $subject,
-        #[\SensitiveParameter] TokenInterface $token,
+        #[\SensitiveParameter]
+        TokenInterface $token,
         ?Vote $vote = null,
     ): bool {
         $user = $token->getUser();
@@ -67,7 +72,8 @@ class UserGroupVoter extends Voter
         $userGroup = $subject;
 
         return match ($attribute) {
-            self::VIEW, self::GROUP_VIEW => $userGroup->isAdministrator($user) || $userGroup->getMembers()->contains($user),
+            self::VIEW, self::GROUP_VIEW => $userGroup->isAdministrator($user)
+                || $userGroup->getMembers()->contains($user),
             self::EDIT, self::MANAGE, self::GROUP_EDIT, self::GROUP_MANAGE => $userGroup->isAdministrator($user),
             self::DELETE, self::GROUP_DELETE => false,
             default => false,

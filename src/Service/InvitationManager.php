@@ -36,7 +36,9 @@ class InvitationManager
     public function inviteToChannel(Channel $channel, User $inviter, User $invitee): Invitation
     {
         if ($channel->isDm()) {
-            throw new InvalidArgumentException($this->translator->trans('Opération non autorisée pour un message direct.'));
+            throw new InvalidArgumentException($this->translator->trans(
+                'Opération non autorisée pour un message direct.',
+            ));
         }
 
         $invitation = new Invitation();
@@ -58,9 +60,10 @@ class InvitationManager
             'invite' => $invitation,
         ]);
 
-        $senderName = ($inviter->getDisplayName() !== null && $inviter->getDisplayName() !== '')
-            ? $inviter->getDisplayName()
-            : $inviter->getUsername();
+        $senderName =
+            $inviter->getDisplayName() !== null && $inviter->getDisplayName() !== ''
+                ? $inviter->getDisplayName()
+                : $inviter->getUsername();
 
         $this->mercurePublisher->publishToUser(
             $invitee,

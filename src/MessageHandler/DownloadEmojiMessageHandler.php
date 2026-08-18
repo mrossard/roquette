@@ -88,10 +88,7 @@ class DownloadEmojiMessageHandler
                 $this->entityManager->flush();
             }
 
-            $this->logger->info(sprintf(
-                'Emoji "%s" saved successfully to local storage and registered in DB.',
-                $path,
-            ));
+            $this->logger->info(sprintf('Emoji "%s" saved successfully to local storage and registered in DB.', $path));
         } catch (\Exception $e) {
             $this->logger->error(sprintf('Exception while downloading emoji "%s": %s', $path, $e->getMessage()));
         }

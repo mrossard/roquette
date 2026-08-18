@@ -100,12 +100,14 @@ class AccountControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/account');
         $this->assertResponseIsSuccessful();
 
-        $form = $crawler->selectButton('Sauvegarder le profil')->form([
-            'displayName' => 'Crawler Name',
-            'hue' => '200',
-            'statusOverride' => 'online',
-            'locale' => 'en',
-        ]);
+        $form = $crawler
+            ->selectButton('Sauvegarder le profil')
+            ->form([
+                'displayName' => 'Crawler Name',
+                'hue' => '200',
+                'statusOverride' => 'online',
+                'locale' => 'en',
+            ]);
 
         $this->client->submit($form);
         $this->assertResponseRedirects('/account');

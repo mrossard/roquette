@@ -27,10 +27,10 @@ class ArchiveExporterTest extends TestCase
         fwrite($stream, 'Binary file content');
         rewind($stream);
 
-        $archivePath = $exporter->createArchive(
-            stringEntries: ['channel.json' => '{"name": "test"}', 'channel.html' => '<html>Test</html>'],
-            streamEntries: ['files/test.txt' => $stream],
-        );
+        $archivePath = $exporter->createArchive(stringEntries: [
+            'channel.json' => '{"name": "test"}',
+            'channel.html' => '<html>Test</html>',
+        ], streamEntries: ['files/test.txt' => $stream]);
 
         fclose($stream);
 
@@ -61,10 +61,9 @@ class ArchiveExporterTest extends TestCase
         fwrite($stream, 'Tar binary content');
         rewind($stream);
 
-        $archivePath = $exporter->createArchive(
-            stringEntries: ['channel.json' => '{"name": "tar_test"}'],
-            streamEntries: ['files/attachment.txt' => $stream],
-        );
+        $archivePath = $exporter->createArchive(stringEntries: [
+            'channel.json' => '{"name": "tar_test"}',
+        ], streamEntries: ['files/attachment.txt' => $stream]);
 
         fclose($stream);
 

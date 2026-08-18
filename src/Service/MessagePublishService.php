@@ -69,25 +69,20 @@ class MessagePublishService
         try {
             $message = $this->messageFactory->create($channel, $currentUser, $messageText, $file, $replyToId);
         } catch (\InvalidArgumentException $e) {
-            return PublishResult::error(
-                error: $e->getMessage(),
-                channel: $channel,
-                statusCode: 422,
-            );
+            return PublishResult::error(error: $e->getMessage(), channel: $channel, statusCode: 422);
         }
 
         if ($isPoll) {
-            $poll = $this->pollFactory->createPoll($message, (string) $pollQuestion, $pollOptions ?? [], $pollAllowMultiple);
+            $poll = $this->pollFactory->createPoll(
+                $message,
+                (string) $pollQuestion,
+                $pollOptions ?? [],
+                $pollAllowMultiple,
+            );
             $this->entityManager->persist($poll);
         }
 
-        $renderedHtml = $this->persistAndBroadcast(
-            $message,
-            $channel,
-            $currentUser,
-            $messageText,
-            $workspaceId,
-        );
+        $renderedHtml = $this->persistAndBroadcast($message, $channel, $currentUser, $messageText, $workspaceId);
 
         return PublishResult::ok($channel, $message, $renderedHtml);
     }
@@ -100,7 +95,11 @@ class MessagePublishService
         ?int $workspaceId,
     ): ?PublishResult {
         if ($file === null && $messageText !== '') {
-            $confirmationResult = $this->robotInteractionService->tryHandleConfirmation($currentUser, $channel, $messageText);
+            $confirmationResult = $this->robotInteractionService->tryHandleConfirmation(
+                $currentUser,
+                $channel,
+                $messageText,
+            );
             if ($confirmationResult !== null) {
                 return $confirmationResult;
             }
@@ -109,7 +108,12 @@ class MessagePublishService
         $isDmWithRobot = $this->robotInteractionService->isRobotDm($channel, $currentUser);
 
         if ($this->robotInteractionService->isRobotMentioned($messageText) && !$isDmWithRobot) {
-            return $this->robotInteractionService->handleRobotMentionInChannel($channel, $currentUser, $messageText, $workspaceId);
+            return $this->robotInteractionService->handleRobotMentionInChannel(
+                $channel,
+                $currentUser,
+                $messageText,
+                $workspaceId,
+            );
         }
 
         if ($file === null) {
@@ -149,7 +153,11 @@ class MessagePublishService
             $this->messageBus->dispatch(new ModerateMessageMessage((int) $message->getId()));
         }
 
-        if (!$message->isPoll() && $message->getFilePath() === null && $this->robotInteractionService->isRobotDm($channel, $currentUser)) {
+        if (
+            !$message->isPoll()
+            && $message->getFilePath() === null
+            && $this->robotInteractionService->isRobotDm($channel, $currentUser)
+        ) {
             $this->robotInteractionService->dispatchRobotDmQuery($message, $messageText, $workspaceId);
         }
     }
@@ -171,13 +179,7 @@ class MessagePublishService
             ? 'Sondage : ' . ($message->getPoll()?->getQuestion() ?? '')
             : $messageText;
 
-        $this->mercurePublisher->publishNewMessage(
-            $channel,
-            $message,
-            $currentUser,
-            $notificationText,
-            $renderedHtml,
-        );
+        $this->mercurePublisher->publishNewMessage($channel, $message, $currentUser, $notificationText, $renderedHtml);
 
         return $renderedHtml;
     }

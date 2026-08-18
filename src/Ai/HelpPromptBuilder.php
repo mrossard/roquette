@@ -130,7 +130,7 @@ final readonly class HelpPromptBuilder
             // Exclude obsolete confirmation prompts from history
             if (
                 str_contains($content, 'bouton de confirmation')
-                || (str_contains($content, 'confirmer') && str_contains($content, 'répondant ok'))
+                || str_contains($content, 'confirmer') && str_contains($content, 'répondant ok')
             ) {
                 continue;
             }

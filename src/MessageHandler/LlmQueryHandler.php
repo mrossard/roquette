@@ -77,10 +77,17 @@ final readonly class LlmQueryHandler
         );
 
         $channels = $this->channelRepository->findAllForUser($user);
-        $workspace = $message->getWorkspaceId() !== null ? $this->workspaceRepository->find($message->getWorkspaceId()) : null;
+        $workspace = $message->getWorkspaceId() !== null
+            ? $this->workspaceRepository->find($message->getWorkspaceId())
+            : null;
 
         try {
-            [$intent, $targetChannelSlug] = $this->resolveIntentAndTarget($message, $channelSlug, $channels, $workspace);
+            [$intent, $targetChannelSlug] = $this->resolveIntentAndTarget(
+                $message,
+                $channelSlug,
+                $channels,
+                $workspace,
+            );
             $promptBundle = $this->buildPromptsForIntent(
                 $intent,
                 $targetChannelSlug,
@@ -93,7 +100,13 @@ final readonly class LlmQueryHandler
             );
 
             $streamCoordinator = $this->streamCoordinator ?? new StreamResponseCoordinator($this->streamPublisher);
-            $generator = $this->createGenerator($promptBundle->prompt, $promptBundle->systemPrompt, $message, $personalTopic, $state);
+            $generator = $this->createGenerator(
+                $promptBundle->prompt,
+                $promptBundle->systemPrompt,
+                $message,
+                $personalTopic,
+                $state,
+            );
 
             $streamResult = $streamCoordinator->streamAndPublish(
                 $generator,
@@ -170,8 +183,10 @@ final readonly class LlmQueryHandler
         LlmQueryMessage $message,
         string $personalTopic,
     ): LlmPromptBundle {
-        $currentChannel = $this->channelResolver->resolveFromList($channelSlug, $channels)
-            ?? $this->channelRepository->findOneBy(['slug' => $channelSlug]);
+        $currentChannel = $this->channelResolver->resolveFromList(
+            $channelSlug,
+            $channels,
+        ) ?? $this->channelRepository->findOneBy(['slug' => $channelSlug]);
 
         [$prompt, $systemPrompt] = $this->helpPromptBuilder->buildDefaultPrompts(
             $message->getQuestion(),

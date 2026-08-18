@@ -95,11 +95,8 @@ final class ChannelController extends AbstractController
     }
 
     #[Route('/channels/{slug}/more', name: 'app_channel_load_more', methods: ['GET'])]
-    public function loadMore(
-        string $slug,
-        Request $request,
-        MessageRepository $messageRepository,
-    ): Response {
+    public function loadMore(string $slug, Request $request, MessageRepository $messageRepository): Response
+    {
         $activeChannel = $this->channelManager->findChannelBySlug($slug);
 
         if (!$this->isGranted('VIEW', $activeChannel)) {

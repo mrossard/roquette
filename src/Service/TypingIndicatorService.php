@@ -44,7 +44,6 @@ class TypingIndicatorService
         $this->saveCleanedTypingUsers($cacheKey, $typingUsers);
     }
 
-
     private function saveCleanedTypingUsers(string $cacheKey, array $typingUsers): void
     {
         $now = time();

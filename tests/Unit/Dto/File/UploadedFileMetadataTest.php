@@ -37,12 +37,15 @@ class UploadedFileMetadataTest extends TestCase
         $this->assertNull($meta['nonExistent']);
 
         // toArray
-        $this->assertSame([
-            'fileName' => 'doc.pdf',
-            'filePath' => 'uploads/doc-123.pdf',
-            'fileSize' => 1024,
-            'mimeType' => 'application/pdf',
-        ], $meta->toArray());
+        $this->assertSame(
+            [
+                'fileName' => 'doc.pdf',
+                'filePath' => 'uploads/doc-123.pdf',
+                'fileSize' => 1024,
+                'mimeType' => 'application/pdf',
+            ],
+            $meta->toArray(),
+        );
     }
 
     #[Test]

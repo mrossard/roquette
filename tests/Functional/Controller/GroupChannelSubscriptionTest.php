@@ -142,10 +142,12 @@ class GroupChannelSubscriptionTest extends WebTestCase
         static::assertStringContainsString('group-dev', $content);
 
         // Verify DB
-        $sub = $this->entityManager->getRepository(GroupSubscription::class)->findOneBy([
-            'channel' => $channel,
-            'groupIdentifier' => 'group-dev',
-        ]);
+        $sub = $this->entityManager
+            ->getRepository(GroupSubscription::class)
+            ->findOneBy([
+                'channel' => $channel,
+                'groupIdentifier' => 'group-dev',
+            ]);
         static::assertNotNull($sub);
         static::assertTrue($sub->isGroupChannel());
 

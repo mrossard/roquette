@@ -55,11 +55,7 @@ class MessageDeletionService
             $this->messageBroadcaster->publishCurrentModerationCount();
         }
 
-        $this->messageBroadcaster->broadcastMessageDeletion(
-            $channel,
-            $id,
-            $extraOobHtml !== '' ? $extraOobHtml : null,
-        );
+        $this->messageBroadcaster->broadcastMessageDeletion($channel, $id, $extraOobHtml !== '' ? $extraOobHtml : null);
     }
 
     private function findMessage(int $id): Message

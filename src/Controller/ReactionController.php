@@ -82,10 +82,12 @@ final class ReactionController extends AbstractController
         if ($channel->isTodoList() && $emoji === '✅') {
             $hasCheck = false;
             foreach ($message->getReactions() as $r) {
-                if ($r->getEmoji() !== '✅') { continue; }
+                if ($r->getEmoji() !== '✅') {
+                    continue;
+                }
 
-$hasCheck = true;
-                    break;
+                $hasCheck = true;
+                break;
             }
             $hasCheck
                 ? $this->kanbanManager->markAsCompleted($message, $currentUser)

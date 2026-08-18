@@ -177,12 +177,15 @@ class MercurePublisherTest extends TestCase
         $channel->method('isPrivate')->willReturn(false);
         $channel->method('isWorkspaceChannel')->willReturn(false);
 
-        $hub->expects($this->once())->method('publish')->with($this->callback(
-            static fn(Update $update) => (
-                $update->getTopics() === ['http://test-mercure/channels/general-channel']
-                && $update->getData() === 'test-data'
-            ),
-        ));
+        $hub
+            ->expects($this->once())
+            ->method('publish')
+            ->with($this->callback(
+                static fn(Update $update) => (
+                    $update->getTopics() === ['http://test-mercure/channels/general-channel']
+                    && $update->getData() === 'test-data'
+                ),
+            ));
         $this->bus->expects($this->never())->method('dispatch');
 
         $publisher->publishToChannel($channel, 'test-data');

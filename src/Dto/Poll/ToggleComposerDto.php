@@ -42,7 +42,9 @@ final readonly class ToggleComposerDto
 
         /** @var list<string> $pollOptions */
         $pollOptions = is_array($rawOptions) ? array_values(array_map('strval', $rawOptions)) : [];
-        $allowMultiple = (bool) ($request->query->get('allow_multiple') ?? $request->request->get('allow_multiple', false));
+        $allowMultiple = (bool) (
+            $request->query->get('allow_multiple') ?? $request->request->get('allow_multiple', false)
+        );
 
         return new self(
             open: true,

@@ -19,10 +19,8 @@ class SlashCommandHandler
     /**
      * @param iterable<SlashCommandInterface> $commands
      */
-    public function __construct(
-        #[AutowireIterator('app.slash_command')]
-        iterable $commands = [],
-    ) {
+    public function __construct(#[AutowireIterator('app.slash_command')] iterable $commands = [])
+    {
         foreach ($commands as $command) {
             $this->commands[strtolower($command->getName())] = $command;
         }
@@ -60,8 +58,12 @@ class SlashCommandHandler
      * @param Channel $channel     the active channel
      * @param User    $user        the current user
      */
-    public function process(string $messageText, Channel $channel, User $user, ?int $workspaceId = null): SlashCommandResult
-    {
+    public function process(
+        string $messageText,
+        Channel $channel,
+        User $user,
+        ?int $workspaceId = null,
+    ): SlashCommandResult {
         $trimmedMsg = trim($messageText);
         if (!str_starts_with($trimmedMsg, '/')) {
             return SlashCommandResult::unhandled($messageText);

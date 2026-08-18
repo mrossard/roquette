@@ -117,7 +117,10 @@ class ChannelManager
             $newSlug = $this->slugGenerator->generate(
                 $dto->name,
                 'channel',
-                fn(string $s) => ($existing = $this->channelRepository->findOneBy(['slug' => $s])) !== null && $existing->getId() !== $channel->getId(),
+                fn(string $s) => (
+                    ($existing = $this->channelRepository->findOneBy(['slug' => $s])) !== null
+                    && $existing->getId() !== $channel->getId()
+                ),
             );
             $channel->setSlug($newSlug);
             $channel->setName($dto->name);

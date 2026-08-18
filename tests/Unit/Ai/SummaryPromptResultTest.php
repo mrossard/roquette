@@ -20,7 +20,11 @@ class SummaryPromptResultTest extends TestCase
     #[Test]
     public function requiresBatchingReturnsFalseWhenSingleBatch(): void
     {
-        $result = new SummaryPromptResult('prompt', 'systemPrompt', [[['date' => '2026-01-01', 'auteur' => 'alice', 'contenu' => 'hello']]]);
+        $result = new SummaryPromptResult('prompt', 'systemPrompt', [[[
+            'date' => '2026-01-01',
+            'auteur' => 'alice',
+            'contenu' => 'hello',
+        ]]]);
         $this->assertFalse($result->requiresBatching());
     }
 

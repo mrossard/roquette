@@ -184,7 +184,9 @@ class OAuth2Authenticator extends AbstractAuthenticator
         $username = (string) (
             $userData[$this->usernameField] ?? $userData['username'] ?? $userData['email'] ?? $userData['login'] ?? null
         );
-        $displayName = is_string($userData[$this->displayNameField] ?? null) ? $userData[$this->displayNameField] : $username;
+        $displayName = is_string($userData[$this->displayNameField] ?? null)
+            ? $userData[$this->displayNameField]
+            : $username;
         $email = is_string($userData['mail'] ?? null) ? $userData['mail'] : null;
 
         if ($oauthId === '' || $username === '') {
@@ -206,12 +208,8 @@ class OAuth2Authenticator extends AbstractAuthenticator
         ];
     }
 
-    private function findOrCreateUser(
-        string $oauthId,
-        string $username,
-        string $displayName,
-        ?string $email,
-    ): User {
+    private function findOrCreateUser(string $oauthId, string $username, string $displayName, ?string $email): User
+    {
         // 1. Search by OAuth ID and provider
         $user = $this->userRepository->findOneBy([
             'oauthId' => $oauthId,
@@ -264,12 +262,8 @@ class OAuth2Authenticator extends AbstractAuthenticator
         }
     }
 
-    private function linkExistingUser(
-        User $existingUser,
-        string $oauthId,
-        string $username,
-        ?string $email,
-    ): User {
+    private function linkExistingUser(User $existingUser, string $oauthId, string $username, ?string $email): User
+    {
         if ($existingUser->getOauthId() !== null && $existingUser->getOauthId() !== $oauthId) {
             $this->logger->warning(sprintf(
                 'Refused linking OAuth account for username "%s": existing OAuth ID "%s" does not match incoming "%s".',
@@ -301,12 +295,8 @@ class OAuth2Authenticator extends AbstractAuthenticator
         return $existingUser;
     }
 
-    private function registerNewOAuthUser(
-        string $oauthId,
-        string $username,
-        string $displayName,
-        ?string $email,
-    ): User {
+    private function registerNewOAuthUser(string $oauthId, string $username, string $displayName, ?string $email): User
+    {
         $user = new User();
         $user->setUsername($username);
         $user->setDisplayName($displayName);

@@ -88,9 +88,10 @@ final readonly class SummarizeChannelTool extends AbstractAiTool
         return sprintf(
             "Résumé des messages récents du canal #%s :\n\n%s",
             $result['channelName'] ?? $channelSlug,
-            $result['messages'] ?? ''
+            $result['messages'] ?? '',
         );
     }
+
     public function execute(array $arguments, int $userId, ?int $workspaceId = null): array
     {
         $user = $this->resolveUser($this->userRepository, $userId);
@@ -103,7 +104,9 @@ final readonly class SummarizeChannelTool extends AbstractAiTool
             return $this->formatError('Veuillez fournir un canal valide.');
         }
 
-        $limit = \array_key_exists('limit', $arguments) && $arguments['limit'] !== null ? (int) $arguments['limit'] : 50;
+        $limit = \array_key_exists('limit', $arguments) && $arguments['limit'] !== null
+            ? (int) $arguments['limit']
+            : 50;
         $limit = max(5, min(100, $limit));
 
         $resolved = $this->resolveChannelAndCheckAccess(
@@ -124,7 +127,10 @@ final readonly class SummarizeChannelTool extends AbstractAiTool
 
         $recentMessages = $this->messageRepository->findLatestInChannel($channel, $limit);
         if ([] === $recentMessages) {
-            return $this->formatSuccess(sprintf("Le canal #%s ne contient aucun message récent à résumer.", $channel->getName()));
+            return $this->formatSuccess(sprintf(
+                'Le canal #%s ne contient aucun message récent à résumer.',
+                $channel->getName(),
+            ));
         }
 
         $recentMessages = array_reverse($recentMessages);
@@ -140,7 +146,10 @@ final readonly class SummarizeChannelTool extends AbstractAiTool
         }
 
         if ([] === $extractedText) {
-            return $this->formatSuccess(sprintf("Le canal #%s ne contient pas de texte exploitable à résumer.", $channel->getName()));
+            return $this->formatSuccess(sprintf(
+                'Le canal #%s ne contient pas de texte exploitable à résumer.',
+                $channel->getName(),
+            ));
         }
 
         return [

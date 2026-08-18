@@ -30,10 +30,7 @@ final class GroupSubscriptionManagerTest extends TestCase
         $this->translator = $this->createStub(TranslatorInterface::class);
         $this->translator->method('trans')->willReturnArgument(0);
 
-        $this->manager = new GroupSubscriptionManager(
-            $this->entityManager,
-            $this->translator,
-        );
+        $this->manager = new GroupSubscriptionManager($this->entityManager, $this->translator);
     }
 
     #[Test]
@@ -51,12 +48,14 @@ final class GroupSubscriptionManagerTest extends TestCase
         $channel = new Channel();
 
         $repo = $this->createMock(EntityRepository::class);
-        $repo->expects($this->once())
+        $repo
+            ->expects($this->once())
             ->method('findOneBy')
             ->with(['groupIdentifier' => 'group-tech', 'isGroupChannel' => true])
             ->willReturn(new GroupSubscription());
 
-        $this->entityManager->expects($this->once())
+        $this->entityManager
+            ->expects($this->once())
             ->method('getRepository')
             ->with(GroupSubscription::class)
             ->willReturn($repo);
@@ -80,12 +79,14 @@ final class GroupSubscriptionManagerTest extends TestCase
         $existing->setGroupIdentifier('group-sales');
 
         $repo = $this->createMock(EntityRepository::class);
-        $repo->expects($this->once())
+        $repo
+            ->expects($this->once())
             ->method('findOneBy')
             ->with(['channel' => $channel, 'groupIdentifier' => 'group-sales'])
             ->willReturn($existing);
 
-        $this->entityManager->expects($this->once())
+        $this->entityManager
+            ->expects($this->once())
             ->method('getRepository')
             ->with(GroupSubscription::class)
             ->willReturn($repo);
@@ -102,17 +103,22 @@ final class GroupSubscriptionManagerTest extends TestCase
         $channel = new Channel();
 
         $repo = $this->createMock(EntityRepository::class);
-        $repo->expects($this->once())
+        $repo
+            ->expects($this->once())
             ->method('findOneBy')
             ->with(['channel' => $channel, 'groupIdentifier' => 'group-marketing'])
             ->willReturn(null);
 
-        $this->entityManager->expects($this->once())
+        $this->entityManager
+            ->expects($this->once())
             ->method('getRepository')
             ->with(GroupSubscription::class)
             ->willReturn($repo);
 
-        $this->entityManager->expects($this->once())->method('persist')->with($this->isInstanceOf(GroupSubscription::class));
+        $this->entityManager
+            ->expects($this->once())
+            ->method('persist')
+            ->with($this->isInstanceOf(GroupSubscription::class));
         $this->entityManager->expects($this->once())->method('flush');
 
         $result = $this->manager->subscribe($channel, 'group-marketing');
@@ -128,12 +134,10 @@ final class GroupSubscriptionManagerTest extends TestCase
         $channel = new Channel();
 
         $repo = $this->createMock(EntityRepository::class);
-        $repo->expects($this->once())
-            ->method('find')
-            ->with(99)
-            ->willReturn(null);
+        $repo->expects($this->once())->method('find')->with(99)->willReturn(null);
 
-        $this->entityManager->expects($this->once())
+        $this->entityManager
+            ->expects($this->once())
             ->method('getRepository')
             ->with(GroupSubscription::class)
             ->willReturn($repo);
@@ -151,12 +155,10 @@ final class GroupSubscriptionManagerTest extends TestCase
         $channel2->addGroupSubscription($sub);
 
         $repo = $this->createMock(EntityRepository::class);
-        $repo->expects($this->once())
-            ->method('find')
-            ->with(12)
-            ->willReturn($sub);
+        $repo->expects($this->once())->method('find')->with(12)->willReturn($sub);
 
-        $this->entityManager->expects($this->once())
+        $this->entityManager
+            ->expects($this->once())
             ->method('getRepository')
             ->with(GroupSubscription::class)
             ->willReturn($repo);
@@ -172,12 +174,10 @@ final class GroupSubscriptionManagerTest extends TestCase
         $channel->addGroupSubscription($sub);
 
         $repo = $this->createMock(EntityRepository::class);
-        $repo->expects($this->once())
-            ->method('find')
-            ->with(12)
-            ->willReturn($sub);
+        $repo->expects($this->once())->method('find')->with(12)->willReturn($sub);
 
-        $this->entityManager->expects($this->once())
+        $this->entityManager
+            ->expects($this->once())
             ->method('getRepository')
             ->with(GroupSubscription::class)
             ->willReturn($repo);
@@ -199,7 +199,8 @@ final class GroupSubscriptionManagerTest extends TestCase
         $channel->addGroupSubscription($sub);
 
         $groupProvider = $this->createMock(GroupProviderInterface::class);
-        $groupProvider->expects($this->once())
+        $groupProvider
+            ->expects($this->once())
             ->method('getGroupByIdentifier')
             ->with('group-dev')
             ->willReturn(new GroupDTO('group-dev', 'Développeurs'));

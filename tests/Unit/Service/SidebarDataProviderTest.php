@@ -78,16 +78,9 @@ class SidebarDataProviderTest extends TestCase
         $invitation = $this->createMock(Invitation::class);
         $invitations = [$invitation];
 
-        $this->channelRepository
-            ->expects($this->once())
-            ->method('findAllForUser')
-            ->with($user)
-            ->willReturn($channels);
+        $this->channelRepository->expects($this->once())->method('findAllForUser')->with($user)->willReturn($channels);
 
-        $this->readTrackingService
-            ->expects($this->once())
-            ->method('ensureUserChannelReads')
-            ->with($user, $channels);
+        $this->readTrackingService->expects($this->once())->method('ensureUserChannelReads')->with($user, $channels);
 
         $this->workspaceRepository
             ->expects($this->once())

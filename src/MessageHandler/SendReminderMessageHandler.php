@@ -32,22 +32,16 @@ final readonly class SendReminderMessageHandler
         $channel = $reminder->getChannel();
 
         // Récupérer le Robot Roquette comme auteur du message pour éviter qu'il soit ignoré
-        $robotUser = $this->robotUserProvider->getRobotUser()
-            ?? $this->userRepository->findOneBy([]);
+        $robotUser = $this->robotUserProvider->getRobotUser() ?? $this->userRepository->findOneBy([]);
 
-        $reminderText = sprintf("⏰ **Rappel pour @%s** : %s", $user->getUsername(), $reminder->getMessage());
+        $reminderText = sprintf('⏰ **Rappel pour @%s** : %s', $user->getUsername(), $reminder->getMessage());
 
         // Publier le message via MessagePublishService avec l'auteur Robot.
         // MessagePublishService s'occupe de la diffusion sur Mercure (channel_notification)
         // et du déclenchement des notifications push pour les membres du canal.
-        $this->messagePublishService->publish(
-            channel: $channel,
-            currentUser: $robotUser,
-            messageText: $reminderText,
-        );
+        $this->messagePublishService->publish(channel: $channel, currentUser: $robotUser, messageText: $reminderText);
 
         $reminder->setStatus('delivered');
         $this->reminderRepository->save($reminder);
     }
 }
-

@@ -80,10 +80,8 @@ final class ModalController extends AbstractController
     }
 
     #[Route('/channels/create-modal', name: 'app_channel_create_modal', methods: ['GET'])]
-    public function createModal(
-        Request $request,
-        WorkspaceRepository $workspaceRepository,
-    ): Response {
+    public function createModal(Request $request, WorkspaceRepository $workspaceRepository): Response
+    {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
         $groups = $this->groupProvider->getGroups();

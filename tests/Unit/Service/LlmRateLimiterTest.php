@@ -51,7 +51,11 @@ final class LlmRateLimiterTest extends TestCase
     public function consumeConfirmationUsesToolConfirmScopedKey(): void
     {
         $factory = $this->createMock(RateLimiterFactoryInterface::class);
-        $factory->expects($this->once())->method('create')->with('tool_confirm_42')->willReturn($this->createLimiter(true));
+        $factory
+            ->expects($this->once())
+            ->method('create')
+            ->with('tool_confirm_42')
+            ->willReturn($this->createLimiter(true));
 
         $rateLimiter = new LlmRateLimiter($factory);
 

@@ -31,8 +31,13 @@ class ChannelAccessVoter extends Voter
         return $subject instanceof Channel;
     }
 
-    protected function voteOnAttribute(string $attribute, mixed $subject, #[\SensitiveParameter] TokenInterface $token, ?\Symfony\Component\Security\Core\Authorization\Voter\Vote $vote = null): bool
-    {
+    protected function voteOnAttribute(
+        string $attribute,
+        mixed $subject,
+        #[\SensitiveParameter]
+        TokenInterface $token,
+        ?\Symfony\Component\Security\Core\Authorization\Voter\Vote $vote = null,
+    ): bool {
         $user = $token->getUser();
         if (!$user instanceof User) {
             return false;

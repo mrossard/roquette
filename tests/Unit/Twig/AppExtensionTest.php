@@ -103,7 +103,10 @@ class AppExtensionTest extends TestCase
 
     public function testExtractExternalLinksFilter(): void
     {
-        $filters = array_values(array_filter($this->extension->getFilters(), static fn($f) => $f->getName() === 'extract_external_links'));
+        $filters = array_values(array_filter(
+            $this->extension->getFilters(),
+            static fn($f) => $f->getName() === 'extract_external_links',
+        ));
         static::assertNotEmpty($filters);
         $callable = $filters[0]->getCallable();
         static::assertIsCallable($callable);
@@ -118,7 +121,10 @@ class AppExtensionTest extends TestCase
 
     public function testIsImageUrlFilter(): void
     {
-        $filters = array_values(array_filter($this->extension->getFilters(), static fn($f) => $f->getName() === 'is_image_url'));
+        $filters = array_values(array_filter(
+            $this->extension->getFilters(),
+            static fn($f) => $f->getName() === 'is_image_url',
+        ));
         static::assertNotEmpty($filters);
         $callable = $filters[0]->getCallable();
         static::assertIsCallable($callable);

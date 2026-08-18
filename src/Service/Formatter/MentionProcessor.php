@@ -96,7 +96,8 @@ final class MentionProcessor
                 $isMe = $currentUsername && strcasecmp($username, $currentUsername) === 0;
                 $class = $isMe ? 'mention mention-me' : 'mention';
                 $rawDisplayName = $user->getDisplayName();
-                $displayName = ($rawDisplayName !== null && $rawDisplayName !== '') ? $rawDisplayName : $user->getUsername();
+                $displayName =
+                    $rawDisplayName !== null && $rawDisplayName !== '' ? $rawDisplayName : $user->getUsername();
                 $url = '/dm/' . urlencode($user->getUsername());
 
                 return (

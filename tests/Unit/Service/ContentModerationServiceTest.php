@@ -44,7 +44,6 @@ final class ContentModerationServiceTest extends TestCase
         static::assertSame('Clé avec points : [SECRET MASQUÉ]', $result->getMaskedContent());
     }
 
-
     public function testDetectAwsKey(): void
     {
         $service = new ContentModerationService();
@@ -69,9 +68,7 @@ final class ContentModerationServiceTest extends TestCase
     public function testToxicityWithLlmService(): void
     {
         $llmService = $this->createMock(LlmService::class);
-        $llmService->expects($this->once())
-            ->method('generateText')
-            ->willReturn('TOXIC');
+        $llmService->expects($this->once())->method('generateText')->willReturn('TOXIC');
 
         $service = new ContentModerationService($llmService);
         $result = $service->moderate('Message agressif et insultant');
@@ -85,8 +82,7 @@ final class ContentModerationServiceTest extends TestCase
     public function testToxicityWithLlmServiceDisabled(): void
     {
         $llmService = $this->createMock(LlmService::class);
-        $llmService->expects($this->never())
-            ->method('generateText');
+        $llmService->expects($this->never())->method('generateText');
 
         $service = new ContentModerationService($llmService, null, aiModerationEnabled: false);
         $result = $service->moderate('Message agressif et insultant');
@@ -99,8 +95,7 @@ final class ContentModerationServiceTest extends TestCase
     public function testSecretDetectionStillWorksWhenLlmModerationDisabled(): void
     {
         $llmService = $this->createMock(LlmService::class);
-        $llmService->expects($this->never())
-            ->method('generateText');
+        $llmService->expects($this->never())->method('generateText');
 
         $service = new ContentModerationService($llmService, null, aiModerationEnabled: false);
         $secretMessage = 'Mon accès AWS : AKIAIOSFODNN7EXAMPLE';
@@ -112,5 +107,3 @@ final class ContentModerationServiceTest extends TestCase
         static::assertStringContainsString('[SECRET MASQUÉ]', $result->getMaskedContent() ?? '');
     }
 }
-
-

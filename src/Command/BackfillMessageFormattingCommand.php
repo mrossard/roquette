@@ -60,9 +60,7 @@ class BackfillMessageFormattingCommand extends Command
         while ($processed < $total) {
             $qbFetch = $this->em->createQueryBuilder();
             $qbFetch->select('m')->from(Message::class, 'm');
-            $force
-                ? $qbFetch->setFirstResult($processed)
-                : $qbFetch->where('m.formattedContent IS NULL');
+            $force ? $qbFetch->setFirstResult($processed) : $qbFetch->where('m.formattedContent IS NULL');
             $qbFetch->setMaxResults($batchSize);
 
             /** @var Message[] $messages */

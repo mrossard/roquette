@@ -8,7 +8,6 @@ use App\Entity\Channel;
 use App\Entity\GroupSubscription;
 use App\Entity\User;
 use App\Entity\UserGroup;
-
 use App\Service\Group\GroupProviderInterface;
 use Doctrine\ORM\EntityManagerInterface;
 

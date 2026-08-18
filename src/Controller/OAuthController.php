@@ -44,10 +44,9 @@ final class OAuthController extends AbstractController
         $codeVerifier = PkceUtil::generateCodeVerifier();
         $request->getSession()->set('oauth2code_verifier', $codeVerifier);
 
-        $redirectUri =
-            $this->redirectUri !== ''
-                ? $this->redirectUri
-                : $this->generateUrl('app_oauth_check', [], UrlGeneratorInterface::ABSOLUTE_URL);
+        $redirectUri = $this->redirectUri !== ''
+            ? $this->redirectUri
+            : $this->generateUrl('app_oauth_check', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
         // Build redirect URL with PKCE
         $queryParams = http_build_query([

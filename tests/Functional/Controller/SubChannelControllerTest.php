@@ -44,7 +44,9 @@ class SubChannelControllerTest extends WebTestCase
         $channel->setSlug('parent-channel-subch');
         $channel->setIsPrivate(false);
         $channel->setIsDm(false);
-        $publicWorkspace = $this->entityManager->getRepository(\App\Entity\Workspace::class)->findOneBy(['isPublic' => true]);
+        $publicWorkspace = $this->entityManager
+            ->getRepository(\App\Entity\Workspace::class)
+            ->findOneBy(['isPublic' => true]);
         if ($publicWorkspace) {
             $channel->setWorkspace($publicWorkspace);
             $publicWorkspace->addMember($user);
@@ -75,7 +77,10 @@ class SubChannelControllerTest extends WebTestCase
     private function cleanup(): void
     {
         $conn = $this->entityManager->getConnection();
-        $conn->executeStatement('DELETE FROM channel WHERE slug LIKE ? OR slug LIKE ?', ['sc-%', 'parent-channel-subch%']);
+        $conn->executeStatement('DELETE FROM channel WHERE slug LIKE ? OR slug LIKE ?', [
+            'sc-%',
+            'parent-channel-subch%',
+        ]);
         $conn->executeStatement('DELETE FROM "user" WHERE username LIKE ?', ['test_subch_%']);
     }
 
@@ -85,15 +90,20 @@ class SubChannelControllerTest extends WebTestCase
         $this->client->request('POST', '/messages/' . $this->testMessage->getId() . '/sub-channel');
         $this->assertResponseRedirects();
 
-        $createdSubChannel = $this->entityManager->getRepository(Channel::class)->findOneBy([
-            'parentMessage' => $this->testMessage,
-        ]);
+        $createdSubChannel = $this->entityManager
+            ->getRepository(Channel::class)
+            ->findOneBy([
+                'parentMessage' => $this->testMessage,
+            ]);
         static::assertNotNull($createdSubChannel);
         static::assertStringStartsWith('sc-', $createdSubChannel->getSlug());
         static::assertSame('Thread discussion message content', $createdSubChannel->getName());
         static::assertFalse($createdSubChannel->isTodoList());
         if ($this->testChannel->getWorkspace()) {
-            static::assertSame($this->testChannel->getWorkspace()->getId(), $createdSubChannel->getWorkspace()?->getId());
+            static::assertSame(
+                $this->testChannel->getWorkspace()->getId(),
+                $createdSubChannel->getWorkspace()?->getId(),
+            );
         }
     }
 
@@ -103,20 +113,29 @@ class SubChannelControllerTest extends WebTestCase
         $this->client->request('POST', '/messages/' . $this->testMessage->getId() . '/sub-channel-todo');
         $this->assertResponseRedirects();
 
-        $createdSubChannel = $this->entityManager->getRepository(Channel::class)->findOneBy([
-            'parentMessage' => $this->testMessage,
-        ]);
+        $createdSubChannel = $this->entityManager
+            ->getRepository(Channel::class)
+            ->findOneBy([
+                'parentMessage' => $this->testMessage,
+            ]);
         static::assertNotNull($createdSubChannel);
         static::assertStringStartsWith('sc-', $createdSubChannel->getSlug());
         static::assertTrue($createdSubChannel->isTodoList());
         if ($this->testChannel->getWorkspace()) {
-            static::assertSame($this->testChannel->getWorkspace()->getId(), $createdSubChannel->getWorkspace()?->getId());
+            static::assertSame(
+                $this->testChannel->getWorkspace()->getId(),
+                $createdSubChannel->getWorkspace()?->getId(),
+            );
         }
 
         // Verify that the todo sub-channel appears in the sidebar when loading the channel page
         $crawler = $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
         $todoItem = $crawler->filter('#section-todos #sidebar-channel-' . $createdSubChannel->getSlug());
-        static::assertGreaterThan(0, $todoItem->count(), 'Todo subchannel should be visible in #section-todos in the sidebar');
+        static::assertGreaterThan(
+            0,
+            $todoItem->count(),
+            'Todo subchannel should be visible in #section-todos in the sidebar',
+        );
     }
 }

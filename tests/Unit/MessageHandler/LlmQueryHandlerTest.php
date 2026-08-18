@@ -21,6 +21,7 @@ use App\Service\ChannelAccessService;
 use App\Service\DocChunker;
 use App\Service\LlmService;
 use App\Service\MessageFormatter;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\AI\Platform\Result\Stream\Delta\ToolCallComplete;
@@ -41,7 +42,41 @@ class LlmQueryHandlerTest extends TestCase
      */
     private function buildHandler(array $overrides = []): array
     {
-        $defaults = [
+        $deps = array_merge($this->createDefaultHandlerDependencies(), $overrides);
+        $deps['twig']->method('render')->willReturn('<div>test</div>');
+
+        $collaborators = $this->buildHandlerCollaborators($deps);
+
+        $handler = new LlmQueryHandler(
+            userRepository: $deps['userRepository'],
+            channelRepository: $deps['channelRepository'],
+            workspaceRepository: $deps['workspaceRepository'],
+            llmService: $deps['llmService'],
+            logger: $deps['logger'],
+            channelResolver: $collaborators['channelResolver'],
+            intentClassifier: $collaborators['intentClassifier'],
+            summaryBuilder: $collaborators['summaryBuilder'],
+            helpPromptBuilder: $collaborators['helpPromptBuilder'],
+            batchSummarizer: $collaborators['batchSummarizer'],
+            streamPublisher: $collaborators['streamPublisher'],
+            toolRegistry: $collaborators['toolRegistry'],
+            toolRunner: $collaborators['toolRunner'],
+            toolActionSigner: $deps['toolActionSigner'],
+            robotUserProvider: $deps['robotUserProvider'],
+            robotDmMessageService: $collaborators['robotDmMessageService'],
+            pendingConfirmationService: $collaborators['pendingConfirmationService'],
+            toolsEnabled: $deps['toolsEnabled'],
+        );
+
+        return [$handler, $deps];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function createDefaultHandlerDependencies(): array
+    {
+        return [
             'userRepository' => $this->createMock(UserRepository::class),
             'channelRepository' => $this->createMock(\App\Repository\ChannelRepository::class),
             'messageRepository' => $this->createMock(\App\Repository\MessageRepository::class),
@@ -74,17 +109,21 @@ class LlmQueryHandlerTest extends TestCase
             'toolActionSigner' => new ToolActionSigner('test-secret'),
             'robotUserProvider' => (function () {
                 $provider = $this->createMock(\App\Service\RobotUserProvider::class);
-                $provider->method('isRobotDmChannel')->willReturnCallback(
-                    static fn(string $slug): bool => str_starts_with($slug, 'dm-robot-roquette-'),
-                );
+                $provider
+                    ->method('isRobotDmChannel')
+                    ->willReturnCallback(static fn(string $slug): bool => str_starts_with($slug, 'dm-robot-roquette-'));
 
                 return $provider;
             })(),
         ];
-        $deps = array_merge($defaults, $overrides);
+    }
 
-        $deps['twig']->method('render')->willReturn('<div>test</div>');
-
+    /**
+     * @param array<string, mixed> $deps
+     * @return array<string, mixed>
+     */
+    private function buildHandlerCollaborators(array $deps): array
+    {
         $channelResolver = new ChannelResolver($deps['channelRepository'], $deps['workspaceRepository']);
         $intentClassifier = new IntentClassifier(
             new LlmIntentClassifier($deps['llmService'], $deps['logger']),
@@ -132,30 +171,21 @@ class LlmQueryHandlerTest extends TestCase
             $deps['robotUserProvider'],
         );
 
-        $pendingConfirmationService = $deps['pendingConfirmationService'] ?? $this->createMock(\App\Ai\PendingConfirmationService::class);
+        $pendingConfirmationService =
+            $deps['pendingConfirmationService'] ?? $this->createMock(\App\Ai\PendingConfirmationService::class);
 
-        $handler = new LlmQueryHandler(
-            userRepository: $deps['userRepository'],
-            channelRepository: $deps['channelRepository'],
-            workspaceRepository: $deps['workspaceRepository'],
-            llmService: $deps['llmService'],
-            logger: $deps['logger'],
-            channelResolver: $channelResolver,
-            intentClassifier: $intentClassifier,
-            summaryBuilder: $summaryBuilder,
-            helpPromptBuilder: $helpPromptBuilder,
-            batchSummarizer: $batchSummarizer,
-            streamPublisher: $streamPublisher,
-            toolRegistry: $toolRegistry,
-            toolRunner: $toolRunner,
-            toolActionSigner: $deps['toolActionSigner'],
-            robotUserProvider: $deps['robotUserProvider'],
-            robotDmMessageService: $robotDmMessageService,
-            pendingConfirmationService: $pendingConfirmationService,
-            toolsEnabled: $deps['toolsEnabled'],
-        );
-
-        return [$handler, $deps];
+        return [
+            'channelResolver' => $channelResolver,
+            'intentClassifier' => $intentClassifier,
+            'summaryBuilder' => $summaryBuilder,
+            'helpPromptBuilder' => $helpPromptBuilder,
+            'batchSummarizer' => $batchSummarizer,
+            'streamPublisher' => $streamPublisher,
+            'toolRegistry' => $toolRegistry,
+            'toolRunner' => $toolRunner,
+            'robotDmMessageService' => $robotDmMessageService,
+            'pendingConfirmationService' => $pendingConfirmationService,
+        ];
     }
 
     public function testHandlerInvokesLlmAndPublishesToMercure(): void
@@ -226,13 +256,20 @@ class LlmQueryHandlerTest extends TestCase
 
         $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
         $channelRepository->expects($this->once())->method('findAllForUser')->willReturn([$dmChannel]);
-        $channelRepository->expects($this->exactly(2))->method('findOneBy')->with(['slug' => $dmChannel->getSlug()])->willReturn($dmChannel);
+        $channelRepository
+            ->expects($this->exactly(2))
+            ->method('findOneBy')
+            ->with(['slug' => $dmChannel->getSlug()])
+            ->willReturn($dmChannel);
 
         $llmService = $this->createMock(LlmService::class);
         $llmService->expects($this->once())->method('generateTextStream')->willReturn($generator);
 
         $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
-        $entityManager->expects($this->once())->method('persist')->with(static::isInstanceOf(\App\Entity\Message::class));
+        $entityManager
+            ->expects($this->once())
+            ->method('persist')
+            ->with(static::isInstanceOf(\App\Entity\Message::class));
         $entityManager->expects($this->once())->method('flush');
 
         $overrides = [
@@ -407,19 +444,62 @@ class LlmQueryHandlerTest extends TestCase
         $channel->setName('Assistant');
         $channel->setSlug('assistant');
 
-        $entityManager = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
         $persistedReminders = [];
-        $entityManager
-            ->method('persist')
-            ->willReturnCallback(static function ($entity) use (&$persistedReminders) {
-                if ($entity instanceof \App\Entity\Reminder) {
-                    $persistedReminders[] = $entity;
-                }
-            });
-        $entityManager->method('flush');
+        $entityManager = $this->createMockEntityManagerForReminders($persistedReminders);
 
-        $bus = $this->createMock(MessageBusInterface::class);
         $dispatched = [];
+        $bus = $this->createMockBusForReminders($dispatched);
+
+        $channelRepository = $this->createMockChannelRepositoryForAssistant($channel);
+        $userRepository = $this->createMockUserRepositoryForUser($user);
+
+        $llmService = $this->createMockLlmForReminderConfirmation();
+        $tool = $this->createReminderScheduleTool($entityManager, $userRepository, $channelRepository, $bus);
+        $toolRunner = new ToolRunner($llmService, new ToolRegistry([$tool]));
+
+        $formattedTexts = [];
+        $renderedTemplates = [];
+        $spies = $this->createReminderSpies($formattedTexts, $renderedTemplates);
+
+        $overrides = [
+            'userRepository' => $userRepository,
+            'channelRepository' => $channelRepository,
+            'entityManager' => $entityManager,
+            'llmService' => $llmService,
+            'messageFormatter' => $spies['formatter'],
+            'hub' => $spies['hub'],
+            'twig' => $spies['twig'],
+            'toolsEnabled' => true,
+            'toolRegistry' => new ToolRegistry([$tool]),
+            'toolRunner' => $toolRunner,
+        ];
+
+        [$handler] = $this->buildHandler($overrides);
+
+        $handler(new LlmQueryMessage('rappelle moi d\'aller manger à 15h22', 42, 'general', 'help-123'));
+
+        static::assertSame([], $persistedReminders);
+        static::assertSame([], $dispatched);
+        static::assertContains('dashboard/_tool_confirmation.html.twig', $renderedTemplates);
+        static::assertStringContainsString('Voulez-vous que je programme ce rappel', implode(' ', $formattedTexts));
+    }
+
+    private function createMockEntityManagerForReminders(array &$persistedReminders): EntityManagerInterface
+    {
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('persist')->willReturnCallback(static function ($entity) use (&$persistedReminders) {
+            if ($entity instanceof \App\Entity\Reminder) {
+                $persistedReminders[] = $entity;
+            }
+        });
+        $em->method('flush');
+
+        return $em;
+    }
+
+    private function createMockBusForReminders(array &$dispatched): MessageBusInterface
+    {
+        $bus = $this->createMock(MessageBusInterface::class);
         $bus->method('dispatch')->willReturnCallback(static function (object $message, array $stamps = []) use (
             &$dispatched,
         ) {
@@ -428,35 +508,32 @@ class LlmQueryHandlerTest extends TestCase
             return new Envelope($message);
         });
 
-        $channelRepository = $this->createMock(\App\Repository\ChannelRepository::class);
-        $channelRepository->method('findAllForUser')->willReturn([]);
-        $channelRepository->method('findOneBy')->willReturnCallback(static fn(array $criteria) => (
-            $criteria['slug'] ?? null
-        )
+        return $bus;
+    }
+
+    private function createMockChannelRepositoryForAssistant(\App\Entity\Channel $channel): \App\Repository\ChannelRepository
+    {
+        $repo = $this->createMock(\App\Repository\ChannelRepository::class);
+        $repo->method('findAllForUser')->willReturn([]);
+        $repo->method('findOneBy')->willReturnCallback(static fn(array $criteria) => ($criteria['slug'] ?? null)
             === 'assistant'
                 ? $channel
                 : null);
 
-        $userRepository = $this->createMock(UserRepository::class);
-        $userRepository->method('find')->willReturn($user);
+        return $repo;
+    }
 
-        $accessService = $this->createMock(ChannelAccessService::class);
-        $accessService->method('canUserAccess')->willReturn(true);
+    private function createMockUserRepositoryForUser(User $user): UserRepository
+    {
+        $repo = $this->createMock(UserRepository::class);
+        $repo->method('find')->willReturn($user);
 
-        $llmService = $this->createMock(LlmService::class);
+        return $repo;
+    }
 
-        $tool = new ScheduleReminderTool(
-            $entityManager,
-            $userRepository,
-            $this->createMock(\App\Service\RobotUserProvider::class),
-            $bus,
-            new ChannelResolver($channelRepository, $this->createStub(\App\Repository\WorkspaceRepository::class)),
-            $accessService,
-        );
-        $toolRegistry = new ToolRegistry([$tool]);
-        $toolRunner = new ToolRunner($llmService, $toolRegistry);
-
-        // The model requests the schedule_reminder tool.
+    private function createMockLlmForReminderConfirmation(): LlmService
+    {
+        $llm = $this->createMock(LlmService::class);
         $firstStream = (static function () {
             yield new ToolCallComplete([new ToolCall('1', 'schedule_reminder', [
                 'channelSlug' => 'assistant',
@@ -464,18 +541,25 @@ class LlmQueryHandlerTest extends TestCase
                 'delayMinutes' => 51,
             ])]);
         })();
-
-        // The final generation asks the user for confirmation.
         $questionStream = (static function () {
             yield 'Voulez-vous que je programme ce rappel ?';
         })();
 
-        $llmService->expects($this->once())->method('generateStreamWithTools')->willReturn($firstStream);
-        $llmService->expects($this->once())->method('generateTextStream')->willReturn($questionStream);
+        $llm->expects($this->once())->method('generateStreamWithTools')->willReturn($firstStream);
+        $llm->expects($this->once())->method('generateTextStream')->willReturn($questionStream);
 
-        $formattedTexts = [];
-        $messageFormatter = $this->createStub(MessageFormatter::class);
-        $messageFormatter
+        return $llm;
+    }
+
+    /**
+     * @param list<string> $formattedTexts
+     * @param list<string> $renderedTemplates
+     * @return array{formatter: MessageFormatter, hub: HubInterface, twig: \Twig\Environment}
+     */
+    private function createReminderSpies(array &$formattedTexts, array &$renderedTemplates): array
+    {
+        $formatter = $this->createStub(MessageFormatter::class);
+        $formatter
             ->method('format')
             ->willReturnCallback(static function ($text) use (&$formattedTexts) {
                 $formattedTexts[] = $text;
@@ -486,7 +570,6 @@ class LlmQueryHandlerTest extends TestCase
         $hub = $this->createMock(HubInterface::class);
         $hub->expects($this->atLeastOnce())->method('publish')->with(static::isInstanceOf(Update::class));
 
-        $renderedTemplates = [];
         $twig = $this->createStub(\Twig\Environment::class);
         $twig->method('render')->willReturnCallback(static function (string $name, array $context = []) use (
             &$renderedTemplates,
@@ -496,27 +579,25 @@ class LlmQueryHandlerTest extends TestCase
             return '<div>test</div>';
         });
 
-        $overrides = [
-            'userRepository' => $userRepository,
-            'channelRepository' => $channelRepository,
-            'entityManager' => $entityManager,
-            'llmService' => $llmService,
-            'messageFormatter' => $messageFormatter,
-            'hub' => $hub,
-            'twig' => $twig,
-            'toolsEnabled' => true,
-            'toolRegistry' => $toolRegistry,
-            'toolRunner' => $toolRunner,
-        ];
+        return ['formatter' => $formatter, 'hub' => $hub, 'twig' => $twig];
+    }
 
-        [$handler] = $this->buildHandler($overrides);
+    private function createReminderScheduleTool(
+        EntityManagerInterface $entityManager,
+        UserRepository $userRepository,
+        \App\Repository\ChannelRepository $channelRepository,
+        MessageBusInterface $bus,
+    ): ScheduleReminderTool {
+        $accessService = $this->createMock(ChannelAccessService::class);
+        $accessService->method('canUserAccess')->willReturn(true);
 
-        $message = new LlmQueryMessage('rappelle moi d\'aller manger à 15h22', 42, 'general', 'help-123');
-        $handler($message);
-
-        static::assertSame([], $persistedReminders);
-        static::assertSame([], $dispatched);
-        static::assertContains('dashboard/_tool_confirmation.html.twig', $renderedTemplates);
-        static::assertStringContainsString('Voulez-vous que je programme ce rappel', implode(' ', $formattedTexts));
+        return new ScheduleReminderTool(
+            $entityManager,
+            $userRepository,
+            $this->createMock(\App\Service\RobotUserProvider::class),
+            $bus,
+            new ChannelResolver($channelRepository, $this->createStub(\App\Repository\WorkspaceRepository::class)),
+            $accessService,
+        );
     }
 }

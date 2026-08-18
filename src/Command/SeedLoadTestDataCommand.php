@@ -102,9 +102,13 @@ class SeedLoadTestDataCommand extends Command
         $numChannelMessages = (int) $input->getOption('channel-messages');
         $batchSize = (int) $input->getOption('batch-size');
         $outputMapping = $input->getOption('output-mapping');
-        $force = (bool) $input->getOption('force');
+        if ($force) {
+            $this->purgeExistingData($io);
+        }
 
-        if (!$this->checkAndPurgeExistingData($force, $io)) {
+        if (!$force && $this->hasExistingData()) {
+            $io->warning('Des données de test existent déjà. Utilisez --force pour les supprimer et les recréer.');
+
             return Command::FAILURE;
         }
 
@@ -135,46 +139,47 @@ class SeedLoadTestDataCommand extends Command
             $this->writeMappingFile($outputMapping, array_keys($users), $privateChannelData, $dmData, $io);
         }
 
-        $this->displaySummary($io, $numUsers, $password, $numPrivateChannels, $numDms, $numDmMessages, $numChannelMessages);
+        $this->displaySummary(
+            $io,
+            $numUsers,
+            $password,
+            $numPrivateChannels,
+            $numDms,
+            $numDmMessages,
+            $numChannelMessages,
+        );
 
         return Command::SUCCESS;
     }
 
-    private function checkAndPurgeExistingData(bool $force, SymfonyStyle $io): bool
+    private function hasExistingData(): bool
     {
-        if (!$force) {
-            $existing = (int) $this->em
-                ->getRepository(User::class)
-                ->createQueryBuilder('u')
-                ->where('u.username LIKE :prefix')
-                ->setParameter('prefix', 'loadtest_%')
-                ->select('COUNT(u.id)')
-                ->getQuery()
-                ->getSingleScalarResult();
+        $existing = (int) $this->em
+            ->getRepository(User::class)
+            ->createQueryBuilder('u')
+            ->where('u.username LIKE :prefix')
+            ->setParameter('prefix', 'loadtest_%')
+            ->select('COUNT(u.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
 
-            if ($existing > 0) {
-                $io->warning('Des données de test existent déjà. Utilisez --force pour les supprimer et les recréer.');
+        return $existing > 0;
+    }
 
-                return false;
-            }
-        }
-
-        if ($force) {
-            $io->note('Suppression des données de test existantes...');
-            $conn = $this->em->getConnection();
-            $conn->executeStatement(
-                'DELETE FROM "message" WHERE author_id IN (SELECT id FROM "user" WHERE username LIKE \'loadtest_%\')',
-            );
-            $conn->executeStatement(
-                'DELETE FROM "channel_user" WHERE channel_id IN (SELECT id FROM "channel" WHERE slug LIKE \'private-channel-%\' OR slug LIKE \'dm-%\')',
-            );
-            $conn->executeStatement('DELETE FROM "channel" WHERE slug LIKE \'private-channel-%\' OR slug LIKE \'dm-%\'');
-            $conn->executeStatement('DELETE FROM "user" WHERE username LIKE \'loadtest_%\'');
-            $this->em->clear();
-            $io->info('Données de test supprimées.');
-        }
-
-        return true;
+    private function purgeExistingData(SymfonyStyle $io): void
+    {
+        $io->note('Suppression des données de test existantes...');
+        $conn = $this->em->getConnection();
+        $conn->executeStatement(
+            'DELETE FROM "message" WHERE author_id IN (SELECT id FROM "user" WHERE username LIKE \'loadtest_%\')',
+        );
+        $conn->executeStatement(
+            'DELETE FROM "channel_user" WHERE channel_id IN (SELECT id FROM "channel" WHERE slug LIKE \'private-channel-%\' OR slug LIKE \'dm-%\')',
+        );
+        $conn->executeStatement('DELETE FROM "channel" WHERE slug LIKE \'private-channel-%\' OR slug LIKE \'dm-%\'');
+        $conn->executeStatement('DELETE FROM "user" WHERE username LIKE \'loadtest_%\'');
+        $this->em->clear();
+        $io->info('Données de test supprimées.');
     }
 
     private function displaySummary(
@@ -209,8 +214,13 @@ class SeedLoadTestDataCommand extends Command
     /**
      * @return array<int, User> indexed by userId (int)
      */
-    private function createUsers(int $numUsers, #[\SensitiveParameter] string $password, int $batchSize, SymfonyStyle $io): array
-    {
+    private function createUsers(
+        int $numUsers,
+        #[\SensitiveParameter]
+        string $password,
+        int $batchSize,
+        SymfonyStyle $io,
+    ): array {
         $dummy = new User();
         $dummy->setUsername('_hash_dummy_');
         $commonHash = $this->passwordHasher->hashPassword($dummy, $password);

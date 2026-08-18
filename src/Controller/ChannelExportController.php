@@ -32,10 +32,8 @@ final class ChannelExportController extends AbstractController
     ) {}
 
     #[Route('/channels/{slug}/export', name: 'app_channel_export', methods: ['POST'])]
-    public function exportChannel(
-        string $slug,
-        MessageBusInterface $messageBus,
-    ): Response {
+    public function exportChannel(string $slug, MessageBusInterface $messageBus): Response
+    {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 

@@ -19,11 +19,17 @@ readonly class LlmRateLimiter
 
     public function consume(User $user): bool
     {
-        return $this->llmApiLimiter->create('user_' . $user->getId())->consume(1)->isAccepted();
+        return $this->llmApiLimiter
+            ->create('user_' . $user->getId())
+            ->consume(1)
+            ->isAccepted();
     }
 
     public function consumeConfirmation(User $user): bool
     {
-        return $this->llmApiLimiter->create('tool_confirm_' . $user->getId())->consume(1)->isAccepted();
+        return $this->llmApiLimiter
+            ->create('tool_confirm_' . $user->getId())
+            ->consume(1)
+            ->isAccepted();
     }
 }

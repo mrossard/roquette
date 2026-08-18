@@ -57,7 +57,12 @@ class Workspace
     /**
      * @var Collection<int, Channel>
      */
-    #[ORM\OneToMany(targetEntity: Channel::class, mappedBy: 'workspace', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(
+        targetEntity: Channel::class,
+        mappedBy: 'workspace',
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true,
+    )]
     private Collection $channels;
 
     #[ORM\OneToOne(mappedBy: 'workspace', targetEntity: UserGroup::class)]
@@ -228,4 +233,3 @@ class Workspace
         return $this;
     }
 }
-

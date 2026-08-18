@@ -86,7 +86,10 @@ final readonly class UpdateKanbanCardDto
             default => [],
         };
 
-        $filtered = array_values(array_filter(array_map('trim', $labels), static fn(string $label): bool => $label !== ''));
+        $filtered = array_values(array_filter(
+            array_map('trim', $labels),
+            static fn(string $label): bool => $label !== '',
+        ));
 
         return $filtered !== [] ? $filtered : null;
     }

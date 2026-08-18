@@ -64,14 +64,16 @@ class ChannelAccessVoterTest extends TestCase
     {
         $token = $this->createMock(TokenInterface::class);
 
-        static::assertSame(
-            ChannelAccessVoter::ACCESS_ABSTAIN,
-            $this->voter->vote($token, new \stdClass(), [ChannelAccessVoter::VIEW]),
-        );
+        static::assertSame(ChannelAccessVoter::ACCESS_ABSTAIN, $this->voter->vote(
+            $token,
+            new \stdClass(),
+            [ChannelAccessVoter::VIEW],
+        ));
 
-        static::assertSame(
-            ChannelAccessVoter::ACCESS_ABSTAIN,
-            $this->voter->vote($token, new Channel(), ['UNSUPPORTED_ATTRIBUTE']),
-        );
+        static::assertSame(ChannelAccessVoter::ACCESS_ABSTAIN, $this->voter->vote(
+            $token,
+            new Channel(),
+            ['UNSUPPORTED_ATTRIBUTE'],
+        ));
     }
 }

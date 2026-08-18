@@ -26,8 +26,12 @@ final readonly class IntentClassifier
      * @param list<Channel> $channels
      * @return array{intent: AssistantIntent, channelSlug: string|null}
      */
-    public function classify(string $question, array $channels, string $currentChannelSlug, ?Workspace $currentWorkspace = null): array
-    {
+    public function classify(
+        string $question,
+        array $channels,
+        string $currentChannelSlug,
+        ?Workspace $currentWorkspace = null,
+    ): array {
         $keywordIntent = $this->classifyByKeywords($question);
         if ($keywordIntent !== null) {
             $channelSlug = $keywordIntent === AssistantIntent::Summarize
@@ -37,19 +41,33 @@ final readonly class IntentClassifier
             return ['intent' => $keywordIntent, 'channelSlug' => $channelSlug];
         }
 
-        return $this->llmClassifier->classify($question, $channels, $currentChannelSlug, $currentWorkspace)
-            ?? ['intent' => AssistantIntent::Help, 'channelSlug' => null];
+        return (
+            $this->llmClassifier->classify($question, $channels, $currentChannelSlug, $currentWorkspace) ?? [
+                'intent' => AssistantIntent::Help,
+                'channelSlug' => null,
+            ]
+        );
     }
 
     private function classifyByKeywords(string $question): ?AssistantIntent
     {
         $normalized = mb_strtolower($question);
 
-        if (preg_match('/\b(?:r[ée]sum[ée]|r[ée]sumer|r[ée]cap|synth[èe]se|synth[èe]tiser)\b|r[ée]sume-moi|fais.{0,30}(?:r[ée]sum[ée]|synth[èe]se)/iu', $normalized) === 1) {
+        if (
+            preg_match(
+                '/\b(?:r[ée]sum[ée]|r[ée]sumer|r[ée]cap|synth[èe]se|synth[èe]tiser)\b|r[ée]sume-moi|fais.{0,30}(?:r[ée]sum[ée]|synth[èe]se)/iu',
+                $normalized,
+            ) === 1
+        ) {
             return AssistantIntent::Summarize;
         }
 
-        if (preg_match('/\b(?:sondage|scrutin|sonder|voter)\b|lance.{0,30}(?:sondage|vote)|cr[ée]e.{0,30}(?:sondage|vote)/iu', $normalized) === 1) {
+        if (
+            preg_match(
+                '/\b(?:sondage|scrutin|sonder|voter)\b|lance.{0,30}(?:sondage|vote)|cr[ée]e.{0,30}(?:sondage|vote)/iu',
+                $normalized,
+            ) === 1
+        ) {
             return AssistantIntent::Poll;
         }
 

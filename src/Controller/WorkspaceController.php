@@ -205,7 +205,6 @@ final class WorkspaceController extends AbstractController
         return $fileResponseFactory->createAvatarResponse($workspace->getAvatarPath(), $fileUploadService);
     }
 
-
     #[Route('/workspaces/{slug}/leave', name: 'app_workspace_leave', methods: ['POST'])]
     public function leave(string $slug): Response
     {

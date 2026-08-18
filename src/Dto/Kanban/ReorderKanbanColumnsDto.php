@@ -23,7 +23,9 @@ final readonly class ReorderKanbanColumnsDto
             return new self(columnIds: []);
         }
 
-        $columnIds = array_values(array_map('intval', array_filter($rawColumnIds, static fn($v): bool => is_numeric($v))));
+        $columnIds = array_values(array_map('intval', array_filter($rawColumnIds, static fn($v): bool => is_numeric(
+            $v,
+        ))));
 
         return new self(columnIds: $columnIds);
     }

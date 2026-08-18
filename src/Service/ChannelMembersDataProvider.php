@@ -72,7 +72,10 @@ final readonly class ChannelMembersDataProvider
             }
         }
 
-        uasort($groupMembers, static fn(array $a, array $b): int => strcasecmp(self::getMemberSortName($a), self::getMemberSortName($b)));
+        uasort($groupMembers, static fn(array $a, array $b): int => strcasecmp(
+            self::getMemberSortName($a),
+            self::getMemberSortName($b),
+        ));
 
         return [
             'activeChannel' => $channel,

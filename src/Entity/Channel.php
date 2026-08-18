@@ -86,8 +86,6 @@ class Channel
     #[ORM\OneToMany(targetEntity: GroupSubscription::class, mappedBy: 'channel', cascade: ['all'], orphanRemoval: true)]
     private Collection $groupSubscriptions;
 
-
-
     #[ORM\ManyToOne(targetEntity: Workspace::class, inversedBy: 'channels')]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Workspace $workspace = null;
@@ -376,8 +374,6 @@ class Channel
         }
         return $this;
     }
-
-
 
     public function getWorkspace(): ?Workspace
     {

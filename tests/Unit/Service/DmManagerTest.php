@@ -107,7 +107,8 @@ final class DmManagerTest extends TestCase
         $existing->addMember($u1);
         $existing->addMember($u2);
 
-        $this->channelRepository->expects($this->once())
+        $this->channelRepository
+            ->expects($this->once())
             ->method('findDmBetween')
             ->with($u1, $u2)
             ->willReturn($existing);
@@ -130,10 +131,7 @@ final class DmManagerTest extends TestCase
         $u2->setUsername('bob');
         $ref->setValue($u2, 2);
 
-        $this->channelRepository->expects($this->once())
-            ->method('findDmBetween')
-            ->with($u1, $u2)
-            ->willReturn(null);
+        $this->channelRepository->expects($this->once())->method('findDmBetween')->with($u1, $u2)->willReturn(null);
 
         $this->entityManager->expects($this->once())->method('persist')->with($this->isInstanceOf(Channel::class));
         $this->entityManager->expects($this->once())->method('flush');

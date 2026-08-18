@@ -120,14 +120,14 @@ class MessageEditorTest extends TestCase
 
         $this->messageRepo->expects($this->once())->method('find')->with(42)->willReturn($message);
         $this->em->expects($this->once())->method('flush');
-        $this->renderer->expects($this->once())
+        $this->renderer
+            ->expects($this->once())
             ->method('renderFeedItem')
             ->with($message, ['no_fade' => true])
             ->willReturn('<div>Nouveau contenu</div>');
-        $this->broadcaster->expects($this->once())
-            ->method('broadcastMessageUpdate')
-            ->with($message);
-        $this->messageBus->expects($this->once())
+        $this->broadcaster->expects($this->once())->method('broadcastMessageUpdate')->with($message);
+        $this->messageBus
+            ->expects($this->once())
             ->method('dispatch')
             ->with($this->isInstanceOf(ModerateMessageMessage::class))
             ->willReturn(new Envelope(new \stdClass()));
@@ -155,17 +155,17 @@ class MessageEditorTest extends TestCase
         $message->setPoll($poll);
 
         $this->messageRepo->expects($this->once())->method('find')->with(10)->willReturn($message);
-        $this->pollFactory->expects($this->once())
+        $this->pollFactory
+            ->expects($this->once())
             ->method('updatePoll')
             ->with($poll, 'Nouvelle question ?', ['Option A', 'Option B'], true);
         $this->em->expects($this->once())->method('flush');
-        $this->renderer->expects($this->once())
+        $this->renderer
+            ->expects($this->once())
             ->method('renderFeedItem')
             ->with($message, ['no_fade' => true])
             ->willReturn('<div>Sondage mis à jour</div>');
-        $this->broadcaster->expects($this->once())
-            ->method('broadcastMessageUpdate')
-            ->with($message);
+        $this->broadcaster->expects($this->once())->method('broadcastMessageUpdate')->with($message);
 
         $dto = new EditMessageDto(
             pollQuestion: 'Nouvelle question ?',

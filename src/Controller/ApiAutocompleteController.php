@@ -78,11 +78,8 @@ final class ApiAutocompleteController extends AbstractController
     }
 
     #[Route('/api/autocomplete/{type}', name: 'app_api_autocomplete', methods: ['GET'])]
-    public function apiAutocomplete(
-        string $type,
-        Request $request,
-        CustomEmojiService $emojiService,
-    ): Response {
+    public function apiAutocomplete(string $type, Request $request, CustomEmojiService $emojiService): Response
+    {
         $q = (string) $request->query->get('q', '');
 
         if ($type === 'custom-emojis') {

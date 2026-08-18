@@ -39,7 +39,9 @@ class ModerateMessageMessageHandler
         $this->logger->info(sprintf('Starting content moderation scan for message %d.', $messageId));
 
         try {
-            $wasFlagged = $dbMessage->getModerationStatus() !== null && $dbMessage->getModerationStatus() !== ModerationStatus::CLEAN->value;
+            $wasFlagged =
+                $dbMessage->getModerationStatus() !== null
+                && $dbMessage->getModerationStatus() !== ModerationStatus::CLEAN->value;
             $result = $this->moderationService->moderate($dbMessage->getContent());
 
             if (!$result->isFlagged()) {
@@ -63,7 +65,7 @@ class ModerateMessageMessageHandler
                 'Message %d moderated: status=%s, reason="%s".',
                 $messageId,
                 $result->getStatus(),
-                $result->getReason() ?? ''
+                $result->getReason() ?? '',
             ));
 
             $this->auditLogger?->log(AuditAction::MESSAGE_MODERATED, $dbMessage->getAuthor(), [

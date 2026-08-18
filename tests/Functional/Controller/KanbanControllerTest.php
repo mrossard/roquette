@@ -148,7 +148,7 @@ class KanbanControllerTest extends WebTestCase
             [
                 'HTTP_HX-Request' => 'true',
                 'HTTP_HX-Target' => 'kanban-board',
-            ]
+            ],
         );
         $this->assertResponseIsSuccessful();
     }
@@ -156,22 +156,18 @@ class KanbanControllerTest extends WebTestCase
     #[Test]
     public function testCreateColumn(): void
     {
-        $this->client->request(
-            'POST',
-            '/kanban/columns',
-            [
-                'channelId' => $this->todoChannel->getId(),
-                'name' => 'In Progress',
-                'color' => '#ff0000',
-            ]
-        );
+        $this->client->request('POST', '/kanban/columns', [
+            'channelId' => $this->todoChannel->getId(),
+            'name' => 'In Progress',
+            'color' => '#ff0000',
+        ]);
 
         $this->assertResponseRedirects(sprintf('/channels/%s/kanban', $this->todoChannel->getSlug()));
 
         $this->entityManager->clear();
         $columns = $this->entityManager->getRepository(KanbanColumn::class)->findBy(['channel' => $this->todoChannel]);
         static::assertCount(2, $columns);
-        
+
         $names = array_map(static fn($col) => $col->getName(), $columns);
         static::assertContains('In Progress', $names);
     }
@@ -179,13 +175,9 @@ class KanbanControllerTest extends WebTestCase
     #[Test]
     public function testRenameColumn(): void
     {
-        $this->client->request(
-            'POST',
-            sprintf('/kanban/columns/%d/rename', $this->todoColumn->getId()),
-            [
-                'name' => 'Renamed Column Name',
-            ]
-        );
+        $this->client->request('POST', sprintf('/kanban/columns/%d/rename', $this->todoColumn->getId()), [
+            'name' => 'Renamed Column Name',
+        ]);
 
         $this->assertResponseIsSuccessful();
 
@@ -222,13 +214,9 @@ class KanbanControllerTest extends WebTestCase
         $this->entityManager->persist($col2);
         $this->entityManager->flush();
 
-        $this->client->request(
-            'POST',
-            '/kanban/columns/reorder',
-            [
-                'columnIds' => [$col2->getId(), $this->todoColumn->getId()],
-            ]
-        );
+        $this->client->request('POST', '/kanban/columns/reorder', [
+            'columnIds' => [$col2->getId(), $this->todoColumn->getId()],
+        ]);
 
         $this->assertResponseStatusCodeSame(204);
 
@@ -252,13 +240,9 @@ class KanbanControllerTest extends WebTestCase
         $this->entityManager->persist($col2);
         $this->entityManager->flush();
 
-        $this->client->request(
-            'POST',
-            sprintf('/messages/%d/kanban-column', $this->testMessage->getId()),
-            [
-                'columnId' => $col2->getId(),
-            ]
-        );
+        $this->client->request('POST', sprintf('/messages/%d/kanban-column', $this->testMessage->getId()), [
+            'columnId' => $col2->getId(),
+        ]);
 
         $this->assertResponseIsSuccessful();
 
@@ -272,13 +256,9 @@ class KanbanControllerTest extends WebTestCase
     #[Test]
     public function testAssignMessage(): void
     {
-        $this->client->request(
-            'POST',
-            sprintf('/messages/%d/assign', $this->testMessage->getId()),
-            [
-                'userId' => $this->testUser->getId(),
-            ]
-        );
+        $this->client->request('POST', sprintf('/messages/%d/assign', $this->testMessage->getId()), [
+            'userId' => $this->testUser->getId(),
+        ]);
 
         $this->assertResponseIsSuccessful();
 
@@ -290,13 +270,9 @@ class KanbanControllerTest extends WebTestCase
     #[Test]
     public function testSetDueDate(): void
     {
-        $this->client->request(
-            'POST',
-            sprintf('/messages/%d/due-date', $this->testMessage->getId()),
-            [
-                'dueAt' => '2026-12-25',
-            ]
-        );
+        $this->client->request('POST', sprintf('/messages/%d/due-date', $this->testMessage->getId()), [
+            'dueAt' => '2026-12-25',
+        ]);
 
         $this->assertResponseIsSuccessful();
 
@@ -308,13 +284,9 @@ class KanbanControllerTest extends WebTestCase
     #[Test]
     public function testSetPriority(): void
     {
-        $this->client->request(
-            'POST',
-            sprintf('/messages/%d/priority', $this->testMessage->getId()),
-            [
-                'priority' => 'high',
-            ]
-        );
+        $this->client->request('POST', sprintf('/messages/%d/priority', $this->testMessage->getId()), [
+            'priority' => 'high',
+        ]);
 
         $this->assertResponseIsSuccessful();
 
@@ -326,13 +298,9 @@ class KanbanControllerTest extends WebTestCase
     #[Test]
     public function testSetLabels(): void
     {
-        $this->client->request(
-            'POST',
-            sprintf('/messages/%d/labels', $this->testMessage->getId()),
-            [
-                'labels' => 'bug, urgent, frontend',
-            ]
-        );
+        $this->client->request('POST', sprintf('/messages/%d/labels', $this->testMessage->getId()), [
+            'labels' => 'bug, urgent, frontend',
+        ]);
 
         $this->assertResponseIsSuccessful();
 

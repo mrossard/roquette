@@ -38,20 +38,20 @@ class RobotInteractionService
         }
 
         $rawUsername = $robot->getUsername();
-        $name = ($rawUsername !== null && $rawUsername !== '') ? $rawUsername : User::ROBOT_USERNAME;
+        $name = $rawUsername !== null && $rawUsername !== '' ? $rawUsername : User::ROBOT_USERNAME;
         $tokenAlias = strtok($name, '-');
-        $alias = ($tokenAlias !== false && $tokenAlias !== '') ? $tokenAlias : $name;
+        $alias = $tokenAlias !== false && $tokenAlias !== '' ? $tokenAlias : $name;
 
-        return preg_match(
-            '/@(?:' . preg_quote($name, '/') . '|' . preg_quote($alias, '/') . ')(?![\p{L}\p{N}-])/iu',
-            $messageText,
-        ) === 1;
+        return (
+            preg_match(
+                '/@(?:' . preg_quote($name, '/') . '|' . preg_quote($alias, '/') . ')(?![\p{L}\p{N}-])/iu',
+                $messageText,
+            ) === 1
+        );
     }
 
-    public function checkRobotDmLlmRateLimit(
-        User $currentUser,
-        Channel $channel,
-    ): ?PublishResult {
+    public function checkRobotDmLlmRateLimit(User $currentUser, Channel $channel): ?PublishResult
+    {
         if ($this->isRobotDm($channel, $currentUser) && !$this->llmRateLimiter->consume($currentUser)) {
             return PublishResult::error(
                 error: $this->translator->trans(LlmRateLimiter::MESSAGE_KEY),
@@ -66,7 +66,10 @@ class RobotInteractionService
     public function tryHandleConfirmation(User $currentUser, Channel $channel, string $messageText): ?PublishResult
     {
         $pendingToken = $this->pendingConfirmationService->getPendingConfirmation($currentUser, $channel->getSlug());
-        if ($pendingToken !== null && $this->pendingConfirmationService->isConfirmation($messageText, $pendingToken, $currentUser)) {
+        if (
+            $pendingToken !== null
+            && $this->pendingConfirmationService->isConfirmation($messageText, $pendingToken, $currentUser)
+        ) {
             if ($this->pendingConfirmationService->executeConfirmation($pendingToken, $currentUser)) {
                 return PublishResult::ok($channel, null, '');
             }
@@ -91,7 +94,13 @@ class RobotInteractionService
 
         $helpMessageId = 'help-' . uniqid();
         $this->messageBus->dispatch(
-            new LlmQueryMessage($messageText, $currentUser->getId(), $channel->getSlug(), $helpMessageId, workspaceId: $workspaceId),
+            new LlmQueryMessage(
+                $messageText,
+                $currentUser->getId(),
+                $channel->getSlug(),
+                $helpMessageId,
+                workspaceId: $workspaceId,
+            ),
         );
 
         $tempMessage = new Message();

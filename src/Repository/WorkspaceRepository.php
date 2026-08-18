@@ -27,17 +27,16 @@ class WorkspaceRepository extends ServiceEntityRepository
         $providerGroups = $this->groupProvider->getGroupsForUser($user);
         $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
 
-        $qb = $this->createQueryBuilder('w')
-            ->leftJoin('w.userGroup', 'ug')
-            ->addSelect('ug');
+        $qb = $this->createQueryBuilder('w')->leftJoin('w.userGroup', 'ug')->addSelect('ug');
 
         $conditions = $qb->expr()->orX(
             $qb->expr()->isMemberOf(':userId', 'w.members'),
-            $qb->expr()->eq('w.isPublic', 'true')
+            $qb->expr()->eq('w.isPublic', 'true'),
         );
 
         // Local group membership DQL
-        $localGroupDql = $this->getEntityManager()
+        $localGroupDql = $this
+            ->getEntityManager()
             ->createQueryBuilder()
             ->select('w2.id')
             ->from(Workspace::class, 'w2')
@@ -60,7 +59,6 @@ class WorkspaceRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-
 
     public function findPublicWorkspace(): ?Workspace
     {

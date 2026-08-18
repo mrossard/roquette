@@ -23,11 +23,8 @@ final class ChannelGroupController extends AbstractController
     ) {}
 
     #[Route('/channels/{slug}/subscribe-group', name: 'app_channel_subscribe_group', methods: ['POST'])]
-    public function subscribeGroup(
-        string $slug,
-        Request $request,
-        ChannelManager $channelManager,
-    ): Response {
+    public function subscribeGroup(string $slug, Request $request, ChannelManager $channelManager): Response
+    {
         $channel = $channelManager->findChannelBySlug($slug);
         $this->denyAccessUnlessGranted('MANAGE', $channel);
 
@@ -55,11 +52,8 @@ final class ChannelGroupController extends AbstractController
         name: 'app_channel_unsubscribe_group',
         methods: ['POST'],
     )]
-    public function unsubscribeGroup(
-        string $slug,
-        int $subscriptionId,
-        ChannelManager $channelManager,
-    ): Response {
+    public function unsubscribeGroup(string $slug, int $subscriptionId, ChannelManager $channelManager): Response
+    {
         $channel = $channelManager->findChannelBySlug($slug);
         $this->denyAccessUnlessGranted('MANAGE', $channel);
 

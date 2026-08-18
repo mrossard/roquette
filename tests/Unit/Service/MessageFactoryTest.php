@@ -71,7 +71,8 @@ class MessageFactoryTest extends TestCase
         $fileUploadService = $this->createMock(FileUploadService::class);
 
         $file = $this->createStub(UploadedFile::class);
-        $fileUploadService->expects($this->once())
+        $fileUploadService
+            ->expects($this->once())
             ->method('uploadAndAttachToMessage')
             ->with($file, $this->isInstanceOf(Message::class));
 

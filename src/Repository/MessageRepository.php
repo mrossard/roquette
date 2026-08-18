@@ -84,7 +84,8 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findPreviousMessage(Channel $channel, int $beforeId): ?Message
     {
-        return $this->createQueryBuilder('m')
+        return $this
+            ->createQueryBuilder('m')
             ->where('m.channel = :channel')
             ->andWhere('m.id < :beforeId')
             ->setParameter('channel', $channel)
@@ -163,7 +164,8 @@ class MessageRepository extends ServiceEntityRepository
         }
 
         if ($missingParentIds !== []) {
-            $this->createQueryBuilder('m')
+            $this
+                ->createQueryBuilder('m')
                 ->select('m', 'author', 'poll')
                 ->leftJoin('m.author', 'author')
                 ->leftJoin('m.poll', 'poll')
@@ -204,13 +206,15 @@ class MessageRepository extends ServiceEntityRepository
             ->setMaxResults(max(1, min($limit, 100)));
 
         if ($authorUsername !== null && $authorUsername !== '') {
-            $qb->andWhere('(LOWER(u.username) = :authorUsername OR LOWER(u.display_name) = :authorUsername)')
-                ->setParameter('authorUsername', mb_strtolower($authorUsername, 'UTF-8'));
+            $qb->andWhere(
+                '(LOWER(u.username) = :authorUsername OR LOWER(u.display_name) = :authorUsername)',
+            )->setParameter('authorUsername', mb_strtolower($authorUsername, 'UTF-8'));
         }
 
         if ($channelName !== null && $channelName !== '') {
-            $qb->andWhere('(LOWER(ch.name) = :channelName OR LOWER(ch.slug) = :channelName)')
-                ->setParameter('channelName', mb_strtolower($channelName, 'UTF-8'));
+            $qb->andWhere(
+                '(LOWER(ch.name) = :channelName OR LOWER(ch.slug) = :channelName)',
+            )->setParameter('channelName', mb_strtolower($channelName, 'UTF-8'));
         }
 
         if ($hasFile) {
@@ -219,13 +223,17 @@ class MessageRepository extends ServiceEntityRepository
 
         if ($fileType !== null && $fileType !== '') {
             $isPdf = $fileType === 'pdf';
-            $qb->andWhere($isPdf ? 'm.mime_type = :fileType' : 'm.mime_type LIKE :fileType')
-                ->setParameter('fileType', $isPdf ? 'application/pdf' : $fileType . '/%');
+            $qb->andWhere($isPdf ? 'm.mime_type = :fileType' : 'm.mime_type LIKE :fileType')->setParameter(
+                'fileType',
+                $isPdf ? 'application/pdf' : $fileType . '/%',
+            );
         }
 
         if ($textQuery !== null && trim($textQuery) !== '') {
-            $qb->andWhere('LOWER(m.content) LIKE :textQuery')
-                ->setParameter('textQuery', '%' . mb_strtolower(trim($textQuery), 'UTF-8') . '%');
+            $qb->andWhere('LOWER(m.content) LIKE :textQuery')->setParameter(
+                'textQuery',
+                '%' . mb_strtolower(trim($textQuery), 'UTF-8') . '%',
+            );
         }
 
         $ids = array_map('intval', $qb->fetchFirstColumn());
@@ -508,10 +516,9 @@ class MessageRepository extends ServiceEntityRepository
     public function findSavedMessageIdsForUser(User $user): array
     {
         $conn = $this->getEntityManager()->getConnection();
-        $ids = $conn->fetchFirstColumn(
-            'SELECT message_id FROM user_saved_messages WHERE user_id = :userId',
-            ['userId' => $user->getId()]
-        );
+        $ids = $conn->fetchFirstColumn('SELECT message_id FROM user_saved_messages WHERE user_id = :userId', [
+            'userId' => $user->getId(),
+        ]);
 
         return array_map('intval', $ids);
     }
@@ -521,7 +528,8 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findModeratedPaginated(int $page = 1, int $perPage = 25): array
     {
-        return $this->createQueryBuilder('m')
+        return $this
+            ->createQueryBuilder('m')
             ->select('m', 'author', 'channel')
             ->join('m.author', 'author')
             ->join('m.channel', 'channel')
@@ -537,7 +545,8 @@ class MessageRepository extends ServiceEntityRepository
 
     public function countPendingModeration(): int
     {
-        return (int) $this->createQueryBuilder('m')
+        return (int) $this
+            ->createQueryBuilder('m')
             ->select('COUNT(m.id)')
             ->where('m.moderationStatus IS NOT NULL')
             ->andWhere('m.moderationStatus != :cleanStatus')
@@ -554,7 +563,8 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findUntriagedByChannel(Channel $channel): array
     {
-        return $this->createQueryBuilder('m')
+        return $this
+            ->createQueryBuilder('m')
             ->leftJoin('m.author', 'a')
             ->addSelect('a')
             ->leftJoin('m.assignedTo', 'at')
@@ -574,7 +584,8 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findRecentInChannel(Channel $channel, int $limit = 100): array
     {
-        $messages = $this->createQueryBuilder('m')
+        $messages = $this
+            ->createQueryBuilder('m')
             ->where('m.channel = :channel')
             ->orderBy('m.createdAt', 'DESC')
             ->setParameter('channel', $channel)
@@ -590,7 +601,8 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findRecentReadBefore(Channel $channel, int $lastReadId, int $limit = 5): array
     {
-        $messages = $this->createQueryBuilder('m')
+        $messages = $this
+            ->createQueryBuilder('m')
             ->where('m.channel = :channel')
             ->andWhere('m.parentMessage IS NULL')
             ->andWhere('m.id <= :lastReadId')
@@ -604,4 +616,3 @@ class MessageRepository extends ServiceEntityRepository
         return array_reverse($messages);
     }
 }
-

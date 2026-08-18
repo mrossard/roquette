@@ -287,7 +287,10 @@ class AdminControllerTest extends WebTestCase
 
         $this->client->request('GET', '/admin/moderation');
         $this->assertResponseIsSuccessful();
-        static::assertStringContainsString('Console de Modération IA', $this->client->getResponse()->getContent() ?? '');
+        static::assertStringContainsString(
+            'Console de Modération IA',
+            $this->client->getResponse()->getContent() ?? '',
+        );
 
         // Test approve
         $this->client->request('POST', sprintf('/admin/moderation/%d/approve', $message->getId()));
@@ -340,4 +343,3 @@ class AdminControllerTest extends WebTestCase
         $this->assertSelectorTextContains('h2', 'Espaces de travail');
     }
 }
-

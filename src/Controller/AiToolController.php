@@ -21,9 +21,8 @@ final class AiToolController extends AbstractController
     ) {}
 
     #[Route('/ai/tool/confirm', name: 'ai_tool_confirm', methods: ['POST'])]
-    public function confirm(
-        Request $request,
-    ): Response {
+    public function confirm(Request $request): Response
+    {
         /** @var User|null $user */
         $user = $this->getUser();
         if (!$user) {

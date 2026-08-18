@@ -47,16 +47,13 @@ class WorkspaceDtoTest extends TestCase
     public function updateWorkspaceDtoFromRequest(): void
     {
         $file = $this->createStub(UploadedFile::class);
-        $request = new Request(
-            request: [
-                'name' => 'Updated Name',
-                'description' => 'Updated Description',
-                'delete_avatar' => '1',
-            ],
-            files: [
-                'avatar' => $file,
-            ],
-        );
+        $request = new Request(request: [
+            'name' => 'Updated Name',
+            'description' => 'Updated Description',
+            'delete_avatar' => '1',
+        ], files: [
+            'avatar' => $file,
+        ]);
 
         $dto = UpdateWorkspaceDto::fromRequest($request);
 

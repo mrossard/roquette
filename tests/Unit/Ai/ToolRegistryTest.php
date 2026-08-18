@@ -28,10 +28,7 @@ class ToolRegistryTest extends TestCase
         $tool = new FakeTool();
         $registry = new ToolRegistry([$tool]);
 
-        $result = $registry->execute(
-            new ToolCall('1', 'fake_tool', ['channelSlug' => 'general']),
-            42,
-        );
+        $result = $registry->execute(new ToolCall('1', 'fake_tool', ['channelSlug' => 'general']), 42);
 
         static::assertSame('Tool executed for general', $result);
         static::assertSame('general', $tool->lastChannelSlug);
@@ -43,11 +40,7 @@ class ToolRegistryTest extends TestCase
         $tool = new FakeTool();
         $registry = new ToolRegistry([$tool]);
 
-        $result = $registry->execute(
-            new ToolCall('1', 'fake_tool', ['channelSlug' => 'general']),
-            null,
-            7,
-        );
+        $result = $registry->execute(new ToolCall('1', 'fake_tool', ['channelSlug' => 'general']), null, 7);
 
         static::assertSame('Tool executed for general', $result);
         static::assertSame(7, $tool->lastWorkspaceId);
@@ -58,10 +51,7 @@ class ToolRegistryTest extends TestCase
         $tool = new FakeTool();
         $registry = new ToolRegistry([$tool]);
 
-        $registry->execute(
-            new ToolCall('1', 'fake_tool', ['channelSlug' => 'general']),
-            null,
-        );
+        $registry->execute(new ToolCall('1', 'fake_tool', ['channelSlug' => 'general']), null);
 
         static::assertNull($tool->lastWorkspaceId);
     }
@@ -71,10 +61,10 @@ class ToolRegistryTest extends TestCase
         $tool = new FakeTool();
         $registry = new ToolRegistry([$tool]);
 
-        $result = $registry->execute(
-            new ToolCall('1', 'fake_tool', ['channelSlug' => 'general', 'injected' => 'x']),
-            null,
-        );
+        $result = $registry->execute(new ToolCall('1', 'fake_tool', [
+            'channelSlug' => 'general',
+            'injected' => 'x',
+        ]), null);
 
         static::assertSame('Tool executed for general', $result);
         static::assertNull($tool->lastAuthorUserId);

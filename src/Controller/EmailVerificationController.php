@@ -92,7 +92,12 @@ final class EmailVerificationController extends AbstractController
         return $this->redirectToRoute('app_account');
     }
 
-    #[Route('/verify-email/{token}', name: 'app_verify_email', requirements: ['token' => '[a-f0-9]{64}'], methods: ['GET'])]
+    #[Route(
+        '/verify-email/{token}',
+        name: 'app_verify_email',
+        requirements: ['token' => '[a-f0-9]{64}'],
+        methods: ['GET'],
+    )]
     public function verify(#[\SensitiveParameter] string $token, EntityManagerInterface $entityManager): Response
     {
         $user = $entityManager

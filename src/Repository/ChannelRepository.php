@@ -51,7 +51,7 @@ class ChannelRepository extends ServiceEntityRepository
             // Channels in workspaces the user belongs to
             $workspaceConditions,
             // Group-subscribed channels
-            $groupConditions
+            $groupConditions,
         );
 
         $joinedChannels = $qb
@@ -168,7 +168,7 @@ class ChannelRepository extends ServiceEntityRepository
         $accessConditions = $qb->expr()->orX(
             'c.isPrivate = false',
             'm.id = :userId',
-            $this->buildGroupAccessConditions($qb, $providerGroupIdentifiers, 'c')
+            $this->buildGroupAccessConditions($qb, $providerGroupIdentifiers, 'c'),
         );
 
         $results = $qb
@@ -269,7 +269,8 @@ class ChannelRepository extends ServiceEntityRepository
         $providerGroups = $this->groupProvider->getGroupsForUser($user);
         $providerGroupIdentifiers = array_map(static fn($g) => $g->identifier, $providerGroups);
 
-        $qb = $this->createQueryBuilder('c')
+        $qb = $this
+            ->createQueryBuilder('c')
             ->leftJoin('c.members', 'm')
             ->where('c.isDm = false')
             ->andWhere('c.parentMessage IS NULL');
@@ -277,21 +278,19 @@ class ChannelRepository extends ServiceEntityRepository
         $accessConditions = $qb->expr()->orX(
             'c.isPrivate = false',
             'm.id = :userId',
-            $this->buildGroupAccessConditions($qb, $providerGroupIdentifiers, 'c')
+            $this->buildGroupAccessConditions($qb, $providerGroupIdentifiers, 'c'),
         );
 
-        $qb->andWhere($accessConditions)
-            ->setParameter('userId', $user->getId());
+        $qb->andWhere($accessConditions)->setParameter('userId', $user->getId());
 
         if ($query !== '') {
-            $qb->andWhere('LOWER(c.name) LIKE :q OR LOWER(c.slug) LIKE :q')
-                ->setParameter('q', '%' . mb_strtolower($query) . '%');
+            $qb->andWhere('LOWER(c.name) LIKE :q OR LOWER(c.slug) LIKE :q')->setParameter(
+                'q',
+                '%' . mb_strtolower($query) . '%',
+            );
         }
 
-        $results = $qb->orderBy('LOWER(c.name)', 'ASC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+        $results = $qb->orderBy('LOWER(c.name)', 'ASC')->setMaxResults($limit)->getQuery()->getResult();
 
         $unique = [];
         foreach ($results as $ch) {
@@ -304,9 +303,12 @@ class ChannelRepository extends ServiceEntityRepository
     /**
      * @param list<string> $providerGroupIdentifiers
      */
-    private function buildWorkspaceAccessConditions(\Doctrine\ORM\QueryBuilder $qb, array $providerGroupIdentifiers): \Doctrine\ORM\Query\Expr\Orx
-    {
-        $directWorkspaceDql = $this->getEntityManager()
+    private function buildWorkspaceAccessConditions(
+        \Doctrine\ORM\QueryBuilder $qb,
+        array $providerGroupIdentifiers,
+    ): \Doctrine\ORM\Query\Expr\Orx {
+        $directWorkspaceDql = $this
+            ->getEntityManager()
             ->createQueryBuilder()
             ->select('w2.id')
             ->from(\App\Entity\Workspace::class, 'w2')
@@ -314,7 +316,8 @@ class ChannelRepository extends ServiceEntityRepository
             ->where('wm.id = :userId')
             ->getDQL();
 
-        $localGroupWorkspaceDql = $this->getEntityManager()
+        $localGroupWorkspaceDql = $this
+            ->getEntityManager()
             ->createQueryBuilder()
             ->select('w3.id')
             ->from(\App\Entity\Workspace::class, 'w3')
@@ -325,11 +328,12 @@ class ChannelRepository extends ServiceEntityRepository
 
         $conditions = $qb->expr()->orX(
             $qb->expr()->in('w.id', $directWorkspaceDql),
-            $qb->expr()->in('w.id', $localGroupWorkspaceDql)
+            $qb->expr()->in('w.id', $localGroupWorkspaceDql),
         );
 
         if ($providerGroupIdentifiers !== []) {
-            $externalGroupWorkspaceDql = $this->getEntityManager()
+            $externalGroupWorkspaceDql = $this
+                ->getEntityManager()
                 ->createQueryBuilder()
                 ->select('w4.id')
                 ->from(\App\Entity\Workspace::class, 'w4')
@@ -347,8 +351,11 @@ class ChannelRepository extends ServiceEntityRepository
     /**
      * @param list<string> $providerGroupIdentifiers
      */
-    private function buildGroupAccessConditions(\Doctrine\ORM\QueryBuilder $qb, array $providerGroupIdentifiers, string $channelAlias = 'c'): \Doctrine\ORM\Query\Expr\Orx
-    {
+    private function buildGroupAccessConditions(
+        \Doctrine\ORM\QueryBuilder $qb,
+        array $providerGroupIdentifiers,
+        string $channelAlias = 'c',
+    ): \Doctrine\ORM\Query\Expr\Orx {
         $localGroupDql = $this
             ->getEntityManager()
             ->createQueryBuilder()
@@ -385,7 +392,8 @@ class ChannelRepository extends ServiceEntityRepository
         }
 
         // 1. Exact match by slug or name (case-insensitive)
-        $exact = $this->createQueryBuilder('c')
+        $exact = $this
+            ->createQueryBuilder('c')
             ->where('LOWER(c.slug) = :query OR LOWER(c.name) = :query')
             ->setParameter('query', $normalized)
             ->setMaxResults(1)
@@ -397,7 +405,8 @@ class ChannelRepository extends ServiceEntityRepository
         }
 
         // 2. Partial match by name or slug
-        return $this->createQueryBuilder('c')
+        return $this
+            ->createQueryBuilder('c')
             ->where('LOWER(c.name) LIKE :like OR LOWER(c.slug) LIKE :like')
             ->setParameter('like', '%' . addcslashes($normalized, '%_') . '%')
             ->setMaxResults(1)

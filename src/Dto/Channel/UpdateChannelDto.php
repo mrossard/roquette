@@ -39,13 +39,10 @@ final readonly class UpdateChannelDto
     /**
      * @param array<string, mixed> $extra
      */
-    public static function fromNameDescriptionAndExtra(
-        string $name,
-        string $description,
-        array $extra = [],
-    ): self {
+    public static function fromNameDescriptionAndExtra(string $name, string $description, array $extra = []): self
+    {
         $retention = $extra['retentionMonths'] ?? null;
-        $retentionMonths = ($retention !== null && $retention !== '') ? (int) $retention : 6;
+        $retentionMonths = $retention !== null && $retention !== '' ? (int) $retention : 6;
 
         return new self(
             name: $name,

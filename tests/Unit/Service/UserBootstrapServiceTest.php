@@ -145,12 +145,14 @@ class UserBootstrapServiceTest extends TestCase
         $workspaceRepo->method('findOneBy')->willReturn($publicWorkspace);
 
         $channelRepo = $this->createMock(ChannelRepository::class);
-        $channelRepo->method('findOneBy')->willReturnCallback(static function (array $criteria) use ($generalChannel, $robotChannel) {
-            if (($criteria['workspace'] ?? null) !== null) {
-                return $generalChannel;
-            }
-            return $robotChannel;
-        });
+        $channelRepo
+            ->method('findOneBy')
+            ->willReturnCallback(static function (array $criteria) use ($generalChannel, $robotChannel) {
+                if (($criteria['workspace'] ?? null) !== null) {
+                    return $generalChannel;
+                }
+                return $robotChannel;
+            });
 
         $robotUserProvider = $this->createMock(RobotUserProvider::class);
         $robotUserProvider->method('getRobotUser')->willReturn($robotUser);

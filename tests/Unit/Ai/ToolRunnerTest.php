@@ -20,10 +20,12 @@ class ToolRunnerTest extends TestCase
         $llmService
             ->expects($this->once())
             ->method('generateStreamWithTools')
-            ->willReturn((static function () {
-                yield new TextDelta('Hello ');
-                yield new TextDelta('world!');
-            })());
+            ->willReturn(
+                (static function () {
+                    yield new TextDelta('Hello ');
+                    yield new TextDelta('world!');
+                })(),
+            );
 
         $runner = new ToolRunner($llmService, new ToolRegistry([]));
 
@@ -141,15 +143,19 @@ class ToolRunnerTest extends TestCase
         $llmService
             ->expects($this->once())
             ->method('generateStreamWithTools')
-            ->willReturn((static function () {
-                yield new ToolCallComplete([new ToolCall('1', 'confirm_tool', ['channelSlug' => 'general'])]);
-            })());
+            ->willReturn(
+                (static function () {
+                    yield new ToolCallComplete([new ToolCall('1', 'confirm_tool', ['channelSlug' => 'general'])]);
+                })(),
+            );
         $llmService
             ->expects($this->once())
             ->method('generateTextStream')
-            ->willReturn((static function () {
-                yield 'Voulez-vous confirmer cette action ?';
-            })());
+            ->willReturn(
+                (static function () {
+                    yield 'Voulez-vous confirmer cette action ?';
+                })(),
+            );
 
         $runner = new ToolRunner($llmService, new ToolRegistry([$tool]));
         $confirmationRequests = [];
@@ -164,7 +170,9 @@ class ToolRunnerTest extends TestCase
             onToolExecuted: static function (string $name, string $result) use (&$executed): void {
                 $executed[] = [$name, $result];
             },
-            onConfirmationRequired: static function (string $name, array $arguments) use (&$confirmationRequests): void {
+            onConfirmationRequired: static function (string $name, array $arguments) use (
+                &$confirmationRequests,
+            ): void {
                 $confirmationRequests[] = [$name, $arguments];
             },
         ));

@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\Channel;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -106,47 +107,41 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function getAllSortedByDisplayName(): iterable
     {
-        return $this->findAllSortedByDisplayName(withRobot: false);
+        return $this
+            ->buildSortedByDisplayNameQuery()
+            ->andWhere('u.username != :robot')
+            ->setParameter('robot', User::ROBOT_USERNAME)
+            ->getQuery()
+            ->getResult();
     }
 
     public function getAllSortedByDisplayNameWithRobot(): iterable
     {
-        return $this->findAllSortedByDisplayName(withRobot: true);
+        return $this->buildSortedByDisplayNameQuery()->getQuery()->getResult();
     }
 
-    private function findAllSortedByDisplayName(bool $withRobot): iterable
+    private function buildSortedByDisplayNameQuery(): QueryBuilder
     {
-        $qb = $this
+        return $this
             ->createQueryBuilder('u')
             ->addSelect('COALESCE(u.displayName, u.username) AS HIDDEN sortName')
             ->orderBy('sortName', 'ASC');
-
-        if (!$withRobot) {
-            $qb->andWhere('u.username != :robot')->setParameter('robot', User::ROBOT_USERNAME);
-        }
-
-        return $qb->getQuery()->getResult();
     }
 
     public function countAll(): int
     {
-        return $this->doCountAll(withRobot: false);
+        return (int) $this
+            ->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->andWhere('u.username != :robot')
+            ->setParameter('robot', User::ROBOT_USERNAME)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     public function countAllWithRobot(): int
     {
-        return $this->doCountAll(withRobot: true);
-    }
-
-    private function doCountAll(bool $withRobot): int
-    {
-        $qb = $this->createQueryBuilder('u')->select('COUNT(u.id)');
-
-        if (!$withRobot) {
-            $qb->andWhere('u.username != :robot')->setParameter('robot', User::ROBOT_USERNAME);
-        }
-
-        return (int) $qb->getQuery()->getSingleScalarResult();
+        return (int) $this->createQueryBuilder('u')->select('COUNT(u.id)')->getQuery()->getSingleScalarResult();
     }
 
     /**
@@ -154,7 +149,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
      */
     public function findPaginated(int $page, int $perPage = 25): array
     {
-        return $this->doFindPaginated($page, $perPage, withRobot: false);
+        $page = max(1, min($page, 10_000));
+        $perPage = max(1, min($perPage, 100));
+
+        return $this
+            ->buildSortedByDisplayNameQuery()
+            ->andWhere('u.username != :robot')
+            ->setParameter('robot', User::ROBOT_USERNAME)
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
     }
 
     /**
@@ -162,29 +167,15 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
      */
     public function findPaginatedWithRobot(int $page, int $perPage = 25): array
     {
-        return $this->doFindPaginated($page, $perPage, withRobot: true);
-    }
-
-    /**
-     * @return User[]
-     */
-    private function doFindPaginated(int $page, int $perPage, bool $withRobot): array
-    {
         $page = max(1, min($page, 10_000));
         $perPage = max(1, min($perPage, 100));
 
-        $qb = $this
-            ->createQueryBuilder('u')
-            ->addSelect('COALESCE(u.displayName, u.username) AS HIDDEN sortName')
-            ->orderBy('sortName', 'ASC')
+        return $this
+            ->buildSortedByDisplayNameQuery()
             ->setFirstResult(($page - 1) * $perPage)
-            ->setMaxResults($perPage);
-
-        if (!$withRobot) {
-            $qb->andWhere('u.username != :robot')->setParameter('robot', User::ROBOT_USERNAME);
-        }
-
-        return $qb->getQuery()->getResult();
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
     }
 
     /**

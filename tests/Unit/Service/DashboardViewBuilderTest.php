@@ -28,7 +28,8 @@ final class DashboardViewBuilderTest extends TestCase
         $message = new Message();
 
         $sidebarDataProvider = $this->createMock(SidebarDataProvider::class);
-        $sidebarDataProvider->expects(static::once())
+        $sidebarDataProvider
+            ->expects(static::once())
             ->method('getSidebarData')
             ->with($currentUser)
             ->willReturn([
@@ -39,7 +40,8 @@ final class DashboardViewBuilderTest extends TestCase
             ]);
 
         $feedContextService = $this->createMock(MessageFeedContextService::class);
-        $feedContextService->expects(static::once())
+        $feedContextService
+            ->expects(static::once())
             ->method('buildFeedContext')
             ->with($channel, [$message], $currentUser)
             ->willReturn([
@@ -48,13 +50,15 @@ final class DashboardViewBuilderTest extends TestCase
             ]);
 
         $typingIndicatorService = $this->createMock(TypingIndicatorService::class);
-        $typingIndicatorService->expects(static::once())
+        $typingIndicatorService
+            ->expects(static::once())
             ->method('getTypingUsers')
             ->with($channel, $currentUser)
             ->willReturn(['bob']);
 
         $mercurePublisher = $this->createMock(MercurePublisher::class);
-        $mercurePublisher->expects(static::once())
+        $mercurePublisher
+            ->expects(static::once())
             ->method('getChannelTopic')
             ->with($channel)
             ->willReturn('https://example.com/hub/topics/channel-42');
@@ -86,15 +90,14 @@ final class DashboardViewBuilderTest extends TestCase
         $resolved = new ResolvedChannelContext($channel, isMember: false);
 
         $sidebarDataProvider = $this->createMock(SidebarDataProvider::class);
-        $sidebarDataProvider->expects(static::once())
+        $sidebarDataProvider
+            ->expects(static::once())
             ->method('getSidebarData')
             ->with($currentUser)
             ->willReturn(['unreadCounts' => []]);
 
         $feedContextService = $this->createMock(MessageFeedContextService::class);
-        $feedContextService->expects(static::once())
-            ->method('buildFeedContext')
-            ->willReturn(['replyCounts' => []]);
+        $feedContextService->expects(static::once())->method('buildFeedContext')->willReturn(['replyCounts' => []]);
 
         $typingIndicatorService = $this->createMock(TypingIndicatorService::class);
         $typingIndicatorService->expects(static::never())->method('getTypingUsers');
@@ -123,7 +126,8 @@ final class DashboardViewBuilderTest extends TestCase
         $ref->setValue($channel, 99);
 
         $sidebarDataProvider = $this->createMock(SidebarDataProvider::class);
-        $sidebarDataProvider->expects(static::once())
+        $sidebarDataProvider
+            ->expects(static::once())
             ->method('getSidebarData')
             ->with($currentUser)
             ->willReturn([

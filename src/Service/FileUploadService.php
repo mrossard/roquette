@@ -92,10 +92,7 @@ class FileUploadService
         $cleanSvg = new Sanitizer()->sanitize((string) $dirtySvg);
 
         if ($cleanSvg === false || $cleanSvg === null || $cleanSvg === '') {
-            $this->logger->warning(sprintf(
-                'File upload rejected: SVG file "%s" could not be sanitized.',
-                $fileName,
-            ));
+            $this->logger->warning(sprintf('File upload rejected: SVG file "%s" could not be sanitized.', $fileName));
             throw new \InvalidArgumentException($this->translator->trans(
                 'Le fichier SVG est invalide ou a été rejeté après analyse.',
             ));

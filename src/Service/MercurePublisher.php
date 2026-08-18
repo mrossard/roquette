@@ -152,7 +152,8 @@ class MercurePublisher
         $content = $this->buildContentSummary($message);
 
         $authorDisplayName = $author->getDisplayName();
-        $displayName = ($authorDisplayName !== null && $authorDisplayName !== '') ? $authorDisplayName : $author->getUsername();
+        $displayName =
+            $authorDisplayName !== null && $authorDisplayName !== '' ? $authorDisplayName : $author->getUsername();
 
         $notificationData = [
             'channelSlug' => $channel->getSlug(),

@@ -50,9 +50,18 @@ final readonly class ScheduleReminderTool extends AbstractAiTool
         return [
             'type' => 'object',
             'properties' => [
-                'channelSlug' => ['type' => 'string', 'description' => "Le slug du canal où publier le rappel (ex: 'assistant' pour un rappel personnel)."],
-                'reminderText' => ['type' => 'string', 'description' => "Le texte exact du rappel : l'action ou le sujet brut, sans les mots 'rappel' ni le délai."],
-                'delayMinutes' => ['type' => 'integer', 'description' => 'Le délai en minutes avant de poster le rappel (minimum 1).'],
+                'channelSlug' => [
+                    'type' => 'string',
+                    'description' => "Le slug du canal où publier le rappel (ex: 'assistant' pour un rappel personnel).",
+                ],
+                'reminderText' => [
+                    'type' => 'string',
+                    'description' => "Le texte exact du rappel : l'action ou le sujet brut, sans les mots 'rappel' ni le délai.",
+                ],
+                'delayMinutes' => [
+                    'type' => 'integer',
+                    'description' => 'Le délai en minutes avant de poster le rappel (minimum 1).',
+                ],
             ],
             'required' => ['channelSlug', 'reminderText', 'delayMinutes'],
         ];
@@ -72,9 +81,11 @@ final readonly class ScheduleReminderTool extends AbstractAiTool
         ?int $authorUserId = null,
         ?int $workspaceId = null,
     ): string {
-        $user = $this->resolveUser($this->userRepository, $authorUserId)
-            ?? $this->robotUserProvider->getRobotUser()
-            ?? $this->userRepository->findOneBy([]);
+        $user =
+            $this->resolveUser(
+                $this->userRepository,
+                $authorUserId,
+            ) ?? $this->robotUserProvider->getRobotUser() ?? $this->userRepository->findOneBy([]);
 
         // Si aucun canal valide n'est fourni ou s'il s'agit d'un rappel personnel, viser en priorité le DM avec l'assistant (User::ROBOT_USERNAME)
         $dmSlug = $user !== null ? $this->robotUserProvider->getDmChannelSlug($user) : null;
@@ -121,7 +132,7 @@ final readonly class ScheduleReminderTool extends AbstractAiTool
             $delayMinutes = 1;
         }
 
-        $scheduledAt = new \DateTimeImmutable(sprintf("+%d minutes", $delayMinutes));
+        $scheduledAt = new \DateTimeImmutable(sprintf('+%d minutes', $delayMinutes));
 
         $reminder = new Reminder();
         $reminder->setUser($user);
@@ -135,16 +146,13 @@ final readonly class ScheduleReminderTool extends AbstractAiTool
 
         // Convertir le délai de minutes en milli-secondes pour DelayStamp de Symfony Messenger
         $delayMs = $delayMinutes * 60 * 1000;
-        $this->bus->dispatch(
-            new SendReminderMessage($reminder->getId()),
-            [new DelayStamp($delayMs)]
-        );
+        $this->bus->dispatch(new SendReminderMessage($reminder->getId()), [new DelayStamp($delayMs)]);
 
         return sprintf(
             "C'est noté ! J'ai programmé votre rappel pour le canal #%s à %s (dans %d minutes).",
             $channel->getName(),
             $scheduledAt->format('H:i'),
-            $delayMinutes
+            $delayMinutes,
         );
     }
 }

@@ -32,11 +32,7 @@ final class ActivitySubscriberTest extends TestCase
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->mercurePublisher = $this->createMock(MercurePublisher::class);
 
-        $this->subscriber = new ActivitySubscriber(
-            $this->security,
-            $this->entityManager,
-            $this->mercurePublisher,
-        );
+        $this->subscriber = new ActivitySubscriber($this->security, $this->entityManager, $this->mercurePublisher);
     }
 
     private function createMainEvent(Request $request): RequestEvent
@@ -104,9 +100,7 @@ final class ActivitySubscriberTest extends TestCase
 
         $this->security->expects($this->once())->method('getUser')->willReturn($user);
         $this->entityManager->expects($this->once())->method('flush');
-        $this->mercurePublisher->expects($this->once())
-            ->method('publishUserStatus')
-            ->with($user);
+        $this->mercurePublisher->expects($this->once())->method('publishUserStatus')->with($user);
 
         $this->subscriber->onKernelRequest($event);
 

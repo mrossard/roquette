@@ -37,16 +37,20 @@ final readonly class DashboardViewBuilder
 
         $feedContext = $this->feedContextService->buildFeedContext($resolved->channel, $messages, $currentUser);
 
-        return array_merge([
-            'activeChannel' => $resolved->channel,
-            'messages' => $messages,
-            'topic_url' => $this->mercurePublisher->getChannelTopic($resolved->channel),
-            'firstUnreadMessageId' => $firstUnreadMessageId,
-            'usersToInvite' => [],
-            'isMember' => $resolved->isMember,
-            'notificationsEnabled' => $notificationsEnabled,
-            'typingUsers' => $typingUsers,
-        ], $feedContext, $sidebarData);
+        return array_merge(
+            [
+                'activeChannel' => $resolved->channel,
+                'messages' => $messages,
+                'topic_url' => $this->mercurePublisher->getChannelTopic($resolved->channel),
+                'firstUnreadMessageId' => $firstUnreadMessageId,
+                'usersToInvite' => [],
+                'isMember' => $resolved->isMember,
+                'notificationsEnabled' => $notificationsEnabled,
+                'typingUsers' => $typingUsers,
+            ],
+            $feedContext,
+            $sidebarData,
+        );
     }
 
     /**

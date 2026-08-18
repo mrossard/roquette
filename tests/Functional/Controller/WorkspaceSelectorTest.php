@@ -35,9 +35,11 @@ final class WorkspaceSelectorTest extends WebTestCase
 
     private function cleanup(): void
     {
-        $users = $this->entityManager->getRepository(User::class)->findBy([
-            'username' => ['test_ws_sel_user', 'test_ws_sel_author'],
-        ]);
+        $users = $this->entityManager
+            ->getRepository(User::class)
+            ->findBy([
+                'username' => ['test_ws_sel_user', 'test_ws_sel_author'],
+            ]);
 
         foreach ($users as $user) {
             $channels = $this->entityManager->getRepository(Channel::class)->findBy(['creator' => $user]);

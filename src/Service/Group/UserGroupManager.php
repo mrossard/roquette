@@ -44,11 +44,7 @@ class UserGroupManager
         $userGroup->setGroupIdentifier($groupIdentifier);
 
         // Auto-create official workspace
-        $workspace = $this->workspaceManager->create(
-            $name,
-            'Espace de travail officiel du groupe ' . $name,
-            $creator,
-        );
+        $workspace = $this->workspaceManager->create($name, 'Espace de travail officiel du groupe ' . $name, $creator);
         $userGroup->setWorkspace($workspace);
         $workspace->setUserGroup($userGroup);
 
@@ -77,7 +73,9 @@ class UserGroupManager
 
         $existing = $this->userGroupRepository->findOneBy(['groupIdentifier' => $identifier]);
         if ($existing !== null) {
-            throw new InvalidArgumentException($this->translator->trans('Ce groupe est déjà importé dans l\'application.'));
+            throw new InvalidArgumentException($this->translator->trans(
+                'Ce groupe est déjà importé dans l\'application.',
+            ));
         }
 
         $userGroup = new UserGroup();
@@ -85,11 +83,7 @@ class UserGroupManager
         $userGroup->setGroupIdentifier($identifier);
 
         // Auto-create official workspace
-        $workspace = $this->workspaceManager->create(
-            $name,
-            'Espace de travail officiel du groupe ' . $name,
-            $creator,
-        );
+        $workspace = $this->workspaceManager->create($name, 'Espace de travail officiel du groupe ' . $name, $creator);
         $userGroup->setWorkspace($workspace);
         $workspace->setUserGroup($userGroup);
 
@@ -213,7 +207,9 @@ class UserGroupManager
     public function removeAdministrator(UserGroup $userGroup, User $user): void
     {
         if ($userGroup->getAdministrators()->count() <= 1 && $userGroup->getAdministrators()->contains($user)) {
-            throw new InvalidArgumentException($this->translator->trans('Impossible de retirer le dernier administrateur du groupe.'));
+            throw new InvalidArgumentException($this->translator->trans(
+                'Impossible de retirer le dernier administrateur du groupe.',
+            ));
         }
 
         $userGroup->removeAdministrator($user);

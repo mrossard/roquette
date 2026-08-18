@@ -34,16 +34,15 @@ class ChannelMembersDataProviderTest extends TestCase
         $this->userGroupRepository = $this->createStub(UserGroupRepository::class);
         $this->userRepository = $this->createStub(UserRepository::class);
 
-        $this->entityManager->method('getRepository')->willReturnCallback(fn(string $className) => match ($className) {
-            UserGroup::class => $this->userGroupRepository,
-            User::class => $this->userRepository,
-            default => throw new \InvalidArgumentException("Unexpected class {$className}"),
-        });
+        $this->entityManager
+            ->method('getRepository')
+            ->willReturnCallback(fn(string $className) => match ($className) {
+                UserGroup::class => $this->userGroupRepository,
+                User::class => $this->userRepository,
+                default => throw new \InvalidArgumentException("Unexpected class {$className}"),
+            });
 
-        $this->provider = new ChannelMembersDataProvider(
-            $this->groupProvider,
-            $this->entityManager,
-        );
+        $this->provider = new ChannelMembersDataProvider($this->groupProvider, $this->entityManager);
     }
 
     #[Test]
@@ -91,11 +90,9 @@ class ChannelMembersDataProviderTest extends TestCase
         $localGroup->addMember($groupUser1);
         $localGroup->addMember($groupUser2);
 
-        $this->userGroupRepository->method('findOneBy')
-            ->willReturn($localGroup);
+        $this->userGroupRepository->method('findOneBy')->willReturn($localGroup);
 
-        $this->groupProvider->method('getGroupByIdentifier')
-            ->willReturn(new GroupDTO('devs', 'Developers'));
+        $this->groupProvider->method('getGroupByIdentifier')->willReturn(new GroupDTO('devs', 'Developers'));
 
         $data = $this->provider->getMembersModalData($channel);
 
@@ -124,22 +121,20 @@ class ChannelMembersDataProviderTest extends TestCase
         $sub->setIsGroupChannel(false);
         $channel->addGroupSubscription($sub);
 
-        $this->userGroupRepository->method('findOneBy')
-            ->willReturn(null);
+        $this->userGroupRepository->method('findOneBy')->willReturn(null);
 
-        $this->groupProvider->method('getGroupByIdentifier')
+        $this->groupProvider
+            ->method('getGroupByIdentifier')
             ->willReturn(new GroupDTO('ldap-marketing', 'Marketing LDAP'));
 
-        $this->groupProvider->method('getGroupMembers')
-            ->willReturn(['registered_user', 'unregistered_user']);
+        $this->groupProvider->method('getGroupMembers')->willReturn(['registered_user', 'unregistered_user']);
 
         $registeredUser = new User();
         $this->setEntityId($registeredUser, 10);
         $registeredUser->setUsername('registered_user');
         $registeredUser->setDisplayName('Zoé Marketing');
 
-        $this->userRepository->method('findBy')
-            ->willReturn([$registeredUser]);
+        $this->userRepository->method('findBy')->willReturn([$registeredUser]);
 
         $data = $this->provider->getMembersModalData($channel);
 

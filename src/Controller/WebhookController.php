@@ -174,8 +174,10 @@ final class WebhookController extends AbstractController
         return $channel;
     }
 
-    private function renderWebhooksResponse(\App\Entity\Channel $channel, WebhookRepository $webhookRepository): Response
-    {
+    private function renderWebhooksResponse(
+        \App\Entity\Channel $channel,
+        WebhookRepository $webhookRepository,
+    ): Response {
         return $this->render('dashboard/_channel_webhooks.html.twig', [
             'activeChannel' => $channel,
             'webhooks' => $webhookRepository->findBy(['channel' => $channel], ['createdAt' => 'ASC']),

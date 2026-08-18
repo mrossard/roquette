@@ -453,7 +453,9 @@ class Message
 
     public function setModerationStatus(ModerationStatus|string|null $moderationStatus): static
     {
-        $this->moderationStatus = $moderationStatus instanceof ModerationStatus ? $moderationStatus->value : $moderationStatus;
+        $this->moderationStatus = $moderationStatus instanceof ModerationStatus
+            ? $moderationStatus->value
+            : $moderationStatus;
 
         return $this;
     }
@@ -482,4 +484,3 @@ class Message
         return $this;
     }
 }
-

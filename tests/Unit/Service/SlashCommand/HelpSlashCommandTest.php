@@ -76,7 +76,8 @@ class HelpSlashCommandTest extends TestCase
         $userRef->setValue($user, 1);
 
         $this->llmRateLimiter->method('consume')->willReturn(true);
-        $this->messageBus->expects($this->once())
+        $this->messageBus
+            ->expects($this->once())
             ->method('dispatch')
             ->with($this->isInstanceOf(LlmQueryMessage::class))
             ->willReturn(new Envelope(new \stdClass()));
@@ -98,9 +99,9 @@ class HelpSlashCommandTest extends TestCase
 
         $this->llmRateLimiter->method('consume')->willReturn(false);
         $this->messageBus->expects($this->never())->method('dispatch');
-        $this->rateLimitedRenderer->method('render')->willReturn(
-            new \Symfony\Component\HttpFoundation\Response('', 429),
-        );
+        $this->rateLimitedRenderer
+            ->method('render')
+            ->willReturn(new \Symfony\Component\HttpFoundation\Response('', 429));
 
         $result = $this->command->execute('How do I create a channel?', $channel, $user);
 

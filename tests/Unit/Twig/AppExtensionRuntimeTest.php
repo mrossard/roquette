@@ -131,17 +131,22 @@ class AppExtensionRuntimeTest extends TestCase
         $channel2->method('isDm')->willReturn(true);
 
         $this->channelRepository->method('findAllForUser')->willReturn([$channel1, $channel2]);
-        $this->ucrRepository->method('getUnreadCounts')->willReturn([
-            1 => ['notificationsEnabled' => true],
-            2 => ['notificationsEnabled' => false],
-        ]);
+        $this->ucrRepository
+            ->method('getUnreadCounts')
+            ->willReturn([
+                1 => ['notificationsEnabled' => true],
+                2 => ['notificationsEnabled' => false],
+            ]);
 
         $map = $this->runtime->getUserChannelNotificationsMap($user);
 
-        static::assertSame([
-            'general' => true,
-            'dm-1-2' => false,
-        ], $map);
+        static::assertSame(
+            [
+                'general' => true,
+                'dm-1-2' => false,
+            ],
+            $map,
+        );
     }
 
     #[Test]
@@ -155,7 +160,11 @@ class AppExtensionRuntimeTest extends TestCase
     #[Test]
     public function getCachedLinkPreviewDelegatesToService(): void
     {
-        $this->linkPreviewService->expects(self::once())->method('getCachedPreview')->with('https://example.com')->willReturn(['title' => 'Example']);
+        $this->linkPreviewService
+            ->expects(self::once())
+            ->method('getCachedPreview')
+            ->with('https://example.com')
+            ->willReturn(['title' => 'Example']);
 
         static::assertSame(['title' => 'Example'], $this->runtime->getCachedLinkPreview('https://example.com'));
     }

@@ -49,9 +49,10 @@ final class MessageController extends AbstractController
 
         if ($content === '') {
             $requestContent = $request->request->get('content');
-            $content = $requestContent !== null && (string) $requestContent !== ''
-                ? (string) $requestContent
-                : (string) $request->request->get('message', '');
+            $content =
+                $requestContent !== null && (string) $requestContent !== ''
+                    ? (string) $requestContent
+                    : (string) $request->request->get('message', '');
         }
 
         $content = $slashCommandHandler->processPreview($content);
@@ -88,10 +89,11 @@ final class MessageController extends AbstractController
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             $message = $messageRepository->find($id);
             if ($message !== null) {
-                return $this->render('dashboard/_feed_item.html.twig', array_merge(
-                    $this->messageRenderer->feedItemParams($message),
-                    ['no_fade' => true],
-                ), new Response(status: $e->getStatusCode()));
+                return $this->render(
+                    'dashboard/_feed_item.html.twig',
+                    array_merge($this->messageRenderer->feedItemParams($message), ['no_fade' => true]),
+                    new Response(status: $e->getStatusCode()),
+                );
             }
 
             return new Response($e->getMessage(), $e->getStatusCode());
@@ -101,11 +103,8 @@ final class MessageController extends AbstractController
     }
 
     #[Route('/messages/{id}/edit', name: 'app_message_edit', methods: ['POST'])]
-    public function editMessage(
-        int $id,
-        Request $request,
-        MessageEditor $messageEditor,
-    ): Response {
+    public function editMessage(int $id, Request $request, MessageEditor $messageEditor): Response
+    {
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
@@ -114,10 +113,14 @@ final class MessageController extends AbstractController
 
         if (!$result->success) {
             if ($result->message !== null) {
-                return $this->render('dashboard/_edit_form.html.twig', [
-                    'message' => $result->message,
-                    'error' => $result->error,
-                ], new Response(status: $result->statusCode));
+                return $this->render(
+                    'dashboard/_edit_form.html.twig',
+                    [
+                        'message' => $result->message,
+                        'error' => $result->error,
+                    ],
+                    new Response(status: $result->statusCode),
+                );
             }
 
             return new Response($result->error ?? '', $result->statusCode);
@@ -155,10 +158,8 @@ final class MessageController extends AbstractController
     }
 
     #[Route('/messages/{id}/replies', name: 'app_message_replies', methods: ['GET'])]
-    public function replies(
-        int $id,
-        MessageRepository $messageRepository,
-    ): Response {
+    public function replies(int $id, MessageRepository $messageRepository): Response
+    {
         $message = $messageRepository->find($id);
         if (!$message) {
             throw $this->createNotFoundException($this->translator->trans('Message non trouvé.'));

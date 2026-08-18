@@ -25,7 +25,6 @@ class KanbanManager
         private readonly \Twig\Environment $twig,
     ) {}
 
-
     public function initializeDefaultColumns(Channel $channel): void
     {
         if (!$channel->isTodoList()) {
@@ -55,8 +54,13 @@ class KanbanManager
         $this->entityManager->flush();
     }
 
-    public function createColumn(Channel $channel, string $name, ?string $color, ?int $position, User $currentUser): KanbanColumn
-    {
+    public function createColumn(
+        Channel $channel,
+        string $name,
+        ?string $color,
+        ?int $position,
+        User $currentUser,
+    ): KanbanColumn {
         $this->assertCanManageKanban($channel, $currentUser);
 
         $column = new KanbanColumn();
@@ -136,12 +140,14 @@ class KanbanManager
         $this->assertCanAccessKanban($channel, $currentUser);
 
         if ($column !== null && $column->getChannel()->getId() !== $channel->getId()) {
-            throw new AccessDeniedHttpException($this->translator->trans('Cette colonne n\'appartient pas à ce canal.'));
+            throw new AccessDeniedHttpException($this->translator->trans(
+                'Cette colonne n\'appartient pas à ce canal.',
+            ));
         }
 
         $message->setKanbanColumn($column);
 
-        $isCompleted = ($column !== null && in_array($column->getName(), ['Terminé', 'Done'], true));
+        $isCompleted = $column !== null && in_array($column->getName(), ['Terminé', 'Done'], true);
         $message->setIsCompleted($isCompleted);
 
         $isCompleted
@@ -258,8 +264,14 @@ class KanbanManager
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
         }
 
-        $isWorkspaceCreator = $channel->getWorkspace() !== null && $channel->getWorkspace()->getCreator()?->getId() === $user->getId();
-        if (!$user->isAdmin() && !$channel->isAdministrator($user) && !$isWorkspaceCreator && !($channel->getCreator()?->getId() === $user->getId())) {
+        $isWorkspaceCreator =
+            $channel->getWorkspace() !== null && $channel->getWorkspace()->getCreator()?->getId() === $user->getId();
+        if (
+            !$user->isAdmin()
+            && !$channel->isAdministrator($user)
+            && !$isWorkspaceCreator
+            && !($channel->getCreator()?->getId() === $user->getId())
+        ) {
             throw new AccessDeniedHttpException($this->translator->trans(
                 'Seuls les administrateurs peuvent gérer les colonnes du tableau.',
             ));
@@ -275,10 +287,14 @@ class KanbanManager
 
     private function publishKanbanUpdate(Channel $channel): void
     {
-        $this->mercurePublisher->publishToChannel($channel, [
-            'type' => 'kanban_columns_changed',
-            'channelSlug' => $channel->getSlug(),
-        ], 'kanban_columns_changed');
+        $this->mercurePublisher->publishToChannel(
+            $channel,
+            [
+                'type' => 'kanban_columns_changed',
+                'channelSlug' => $channel->getSlug(),
+            ],
+            'kanban_columns_changed',
+        );
     }
 
     private function publishKanbanCardMoved(Message $message, ?KanbanColumn $column): void
@@ -292,14 +308,18 @@ class KanbanManager
             'channel' => $channel,
         ]);
 
-        $this->mercurePublisher->publishToChannel($channel, [
-            'type' => 'kanban_card_moved',
-            'messageId' => $message->getId(),
-            'columnId' => $column?->getId(),
-            'html' => $renderedHtml,
-            'htmlOob' => $renderedHtmlOob,
-            'kanbanCardHtml' => $renderedKanbanCard,
-        ], 'kanban_card_moved');
+        $this->mercurePublisher->publishToChannel(
+            $channel,
+            [
+                'type' => 'kanban_card_moved',
+                'messageId' => $message->getId(),
+                'columnId' => $column?->getId(),
+                'html' => $renderedHtml,
+                'htmlOob' => $renderedHtmlOob,
+                'kanbanCardHtml' => $renderedKanbanCard,
+            ],
+            'kanban_card_moved',
+        );
     }
 
     private function publishKanbanCardUpdated(Message $message): void
@@ -312,11 +332,15 @@ class KanbanManager
             'channel' => $channel,
         ]);
 
-        $this->mercurePublisher->publishToChannel($channel, [
-            'type' => 'kanban_card_updated',
-            'messageId' => $message->getId(),
-            'htmlOob' => $renderedHtmlOob,
-            'kanbanCardHtml' => $renderedKanbanCard,
-        ], 'kanban_card_updated');
+        $this->mercurePublisher->publishToChannel(
+            $channel,
+            [
+                'type' => 'kanban_card_updated',
+                'messageId' => $message->getId(),
+                'htmlOob' => $renderedHtmlOob,
+                'kanbanCardHtml' => $renderedKanbanCard,
+            ],
+            'kanban_card_updated',
+        );
     }
 }
