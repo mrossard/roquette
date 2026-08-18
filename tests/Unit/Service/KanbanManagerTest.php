@@ -78,7 +78,10 @@ class KanbanManagerTest extends TestCase
             ->with($channel)
             ->willReturn([]);
 
-        $this->entityManager->expects(static::exactly(3))->method('persist')->with(static::isInstanceOf(KanbanColumn::class));
+        $this->entityManager
+            ->expects(static::exactly(3))
+            ->method('persist')
+            ->with(static::isInstanceOf(KanbanColumn::class));
         $this->entityManager->expects(static::once())->method('flush');
 
         $this->manager->initializeDefaultColumns($channel);

@@ -29,6 +29,7 @@ cyclomatic-complexity = { threshold = 100 }
 too-many-methods = { threshold = 45 }
 excessive-parameter-list = { threshold = 25 }
 too-many-properties = { threshold = 35 }
+no-boolean-flag-parameter = { enabled = false }
 
 [analyzer]
 plugins = []

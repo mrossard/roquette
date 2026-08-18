@@ -74,7 +74,9 @@ class EmailVerificationServiceTest extends TestCase
             ->method('generate')
             ->with(
                 'app_verify_email',
-                static::callback(static fn(array $params) => is_string($params['token']) && strlen($params['token']) === 64),
+                static::callback(
+                    static fn(array $params) => is_string($params['token']) && strlen($params['token']) === 64,
+                ),
                 UrlGeneratorInterface::ABSOLUTE_URL,
             )
             ->willReturn('https://roquette.test/verify-email/abcdef1234567890');
@@ -83,21 +85,31 @@ class EmailVerificationServiceTest extends TestCase
             ->expects(static::exactly(2))
             ->method('render')
             ->willReturnMap([
-                ['emails/verify_email.html.twig', [
-                    'user' => $user,
-                    'verificationUrl' => 'https://roquette.test/verify-email/abcdef1234567890',
-                ], '<p>Vérifiez votre email</p>'],
-                ['emails/verify_email.txt.twig', [
-                    'user' => $user,
-                    'verificationUrl' => 'https://roquette.test/verify-email/abcdef1234567890',
-                ], 'Vérifiez votre email'],
+                [
+                    'emails/verify_email.html.twig',
+                    [
+                        'user' => $user,
+                        'verificationUrl' => 'https://roquette.test/verify-email/abcdef1234567890',
+                    ],
+                    '<p>Vérifiez votre email</p>',
+                ],
+                [
+                    'emails/verify_email.txt.twig',
+                    [
+                        'user' => $user,
+                        'verificationUrl' => 'https://roquette.test/verify-email/abcdef1234567890',
+                    ],
+                    'Vérifiez votre email',
+                ],
             ]);
 
         $this->mailer
             ->expects(static::once())
             ->method('send')
-            ->with(static::callback(static fn(Email $email) => $email->getTo()[0]->getAddress() === 'alice@example.com'
-                && str_contains((string) $email->getHtmlBody(), 'Vérifiez votre email')));
+            ->with(static::callback(
+                static fn(Email $email) => $email->getTo()[0]->getAddress() === 'alice@example.com'
+                && str_contains((string) $email->getHtmlBody(), 'Vérifiez votre email'),
+            ));
 
         $this->logger->expects(static::once())->method('info');
 
@@ -114,9 +126,7 @@ class EmailVerificationServiceTest extends TestCase
         $user->setUsername('bob');
         $user->setEmail('bob@example.com');
 
-        $this->urlGenerator
-            ->method('generate')
-            ->willReturn('https://roquette.test/verify-email/testtoken');
+        $this->urlGenerator->method('generate')->willReturn('https://roquette.test/verify-email/testtoken');
 
         $this->mailer
             ->expects(static::once())
