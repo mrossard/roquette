@@ -218,6 +218,38 @@ class FileStreamResponseFactory
     }
 
     /**
+     * Reads a limited text preview of a message file with truncation handling.
+     */
+    public function readTextPreview(
+        Message $message,
+        FileUploadService $fileUploadService,
+        int $maxBytes = 10_000,
+    ): string {
+        $filePath = (string) $message->getFilePath();
+        if (!$fileUploadService->exists($filePath)) {
+            throw new NotFoundHttpException($this->translator->trans('Le fichier n\'existe pas.'));
+        }
+
+        $stream = $fileUploadService->readStream($filePath);
+        $text = stream_get_contents($stream, $maxBytes);
+
+        $isTruncated = is_resource($stream) && fgetc($stream) !== false;
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
+        if ($isTruncated) {
+            $text .=
+                "\n\n... ["
+                . $this->translator->trans('Contenu tronqué, téléchargez le fichier pour le lire en entier')
+                . ']';
+        }
+
+        return (string) $text;
+    }
+
+    /**
      * Determines whether the file is unsafe for inline preview in the browser.
      */
     public static function isUnsafeForInlinePreview(Message $message): bool

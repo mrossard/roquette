@@ -76,29 +76,7 @@ final class FileController extends AbstractController
     ): Response {
         $message = $this->findAndAuthorizeFileMessage($id, $messageRepository);
 
-        if (!$fileUploadService->exists((string) $message->getFilePath())) {
-            throw $this->createNotFoundException($this->translator->trans('Le fichier n\'existe pas.'));
-        }
-
-        $stream = $fileUploadService->readStream((string) $message->getFilePath());
-        $text = stream_get_contents($stream, 10_000);
-
-        $isTruncated = false;
-        if (fgetc($stream) !== false) {
-            $isTruncated = true;
-        }
-
-        if (is_resource($stream)) {
-            fclose($stream);
-        }
-
-        if ($isTruncated) {
-            $text .=
-                "\n\n... ["
-                . $this->translator->trans('Contenu tronqué, téléchargez le fichier pour le lire en entier')
-                . ']';
-        }
-
+        $text = $this->fileResponseFactory->readTextPreview($message, $fileUploadService);
         $fileExt = pathinfo((string) $message->getFileName(), PATHINFO_EXTENSION);
         $raw = $request->query->getBoolean('raw');
 

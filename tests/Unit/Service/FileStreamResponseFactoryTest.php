@@ -127,4 +127,50 @@ final class FileStreamResponseFactoryTest extends TestCase
         static::assertSame('application/zip', $response->headers->get('Content-Type'));
         static::assertStringContainsString('attachment', (string) $response->headers->get('Content-Disposition'));
     }
+
+    public function testReadTextPreviewNonExistingFileThrows(): void
+    {
+        $message = new Message();
+        $message->setFilePath('uploads/nonexistent.txt');
+
+        $this->fileUploadService->expects(self::once())->method('exists')->with('uploads/nonexistent.txt')->willReturn(false);
+        $this->translator->method('trans')->willReturn('Le fichier n\'existe pas.');
+
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
+        $this->factory->readTextPreview($message, $this->fileUploadService);
+    }
+
+    public function testReadTextPreviewShortFile(): void
+    {
+        $message = new Message();
+        $message->setFilePath('uploads/sample.txt');
+
+        $this->fileUploadService->expects(self::once())->method('exists')->with('uploads/sample.txt')->willReturn(true);
+        $stream = fopen('php://memory', 'r+');
+        fwrite($stream, 'Short file content');
+        rewind($stream);
+        $this->fileUploadService->expects(self::once())->method('readStream')->with('uploads/sample.txt')->willReturn($stream);
+
+        $result = $this->factory->readTextPreview($message, $this->fileUploadService);
+
+        static::assertSame('Short file content', $result);
+    }
+
+    public function testReadTextPreviewTruncated(): void
+    {
+        $message = new Message();
+        $message->setFilePath('uploads/long.txt');
+
+        $this->fileUploadService->expects(self::once())->method('exists')->with('uploads/long.txt')->willReturn(true);
+        $stream = fopen('php://memory', 'r+');
+        fwrite($stream, str_repeat('A', 100));
+        rewind($stream);
+        $this->fileUploadService->expects(self::once())->method('readStream')->with('uploads/long.txt')->willReturn($stream);
+        $this->translator->method('trans')->willReturn('Contenu tronqué');
+
+        $result = $this->factory->readTextPreview($message, $this->fileUploadService, 50);
+
+        static::assertStringStartsWith(str_repeat('A', 50), $result);
+        static::assertStringContainsString('Contenu tronqué', $result);
+    }
 }
