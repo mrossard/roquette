@@ -9,19 +9,27 @@ use App\Entity\ChannelExport;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Enum\AuditAction;
+use App\Service\Export\ArchiveExporterInterface;
+use App\Service\Export\TarArchiveExporter;
+use App\Service\Export\ZipArchiveExporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 readonly class ChannelExportService
 {
+    private ArchiveExporterInterface $archiveExporter;
+
     public function __construct(
         private FileUploadService $fileUploadService,
         private EntityManagerInterface $entityManager,
         private AuditLoggerService $auditLogger,
         private TranslatorInterface $translator,
         private Environment $twig,
-    ) {}
+        ?ArchiveExporterInterface $archiveExporter = null,
+    ) {
+        $this->archiveExporter = $archiveExporter ?? $this->resolveDefaultExporter();
+    }
 
     public function generate(Channel $channel, User $currentUser): ChannelExport
     {
@@ -29,6 +37,81 @@ readonly class ChannelExportService
             'createdAt' => 'ASC',
         ]);
 
+        $exportData = $this->buildExportData($channel, $currentUser, $messages);
+
+        $htmlContent = $this->twig->render('dashboard/export.html.twig', [
+            'channel' => $channel,
+            'messages' => $messages,
+            'exportData' => $exportData,
+        ]);
+
+        $stringEntries = [
+            'channel.json' => (string) json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+            'channel.html' => $htmlContent,
+        ];
+
+        $streamEntries = $this->collectAttachmentStreams($messages);
+
+        try {
+            $tempArchivePath = $this->archiveExporter->createArchive($stringEntries, $streamEntries);
+        } finally {
+            $this->closeStreams($streamEntries);
+        }
+
+        try {
+            $filename = $channel->getSlug() . '-export.' . $this->archiveExporter->getExtension();
+            return $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $tempArchivePath, $this->archiveExporter->getExtension());
+        } finally {
+            if (file_exists($tempArchivePath)) {
+                unlink($tempArchivePath);
+            }
+        }
+    }
+
+    /**
+     * @param Message[] $messages
+     * @return array<string, resource> relative path => stream
+     */
+    private function collectAttachmentStreams(array $messages): array
+    {
+        $streams = [];
+        foreach ($messages as $msg) {
+            $filePath = $msg->getFilePath();
+            if (!$filePath || !$this->fileUploadService->exists($filePath)) {
+                continue;
+            }
+
+            try {
+                $fileStream = $this->fileUploadService->readStream($filePath);
+                if (is_resource($fileStream)) {
+                    $streams['files/' . basename($filePath)] = $fileStream;
+                }
+            } catch (\Exception) {
+                // Continue with other attachments if one stream fails
+            }
+        }
+
+        return $streams;
+    }
+
+    /**
+     * @param array<string, resource> $streams
+     */
+    private function closeStreams(array $streams): void
+    {
+        foreach ($streams as $stream) {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+    }
+
+    /**
+     * @param Message[] $messages
+     * @return array<string, mixed>
+     */
+    private function buildExportData(Channel $channel, User $currentUser, array $messages): array
+    {
         $exportData = [
             'channel' => [
                 'id' => $channel->getId(),
@@ -62,163 +145,24 @@ readonly class ChannelExportService
                     'name' => $msg->getFileName(),
                     'size' => $msg->getFileSize(),
                     'mimeType' => $msg->getMimeType(),
-                    'path' => 'files/' . basename($msg->getFilePath()),
+                    'path' => 'files/' . basename((string) $msg->getFilePath()),
                 ];
             }
 
             $exportData['messages'][] = $msgData;
         }
 
-        $htmlContent = $this->twig->render('dashboard/export.html.twig', [
-            'channel' => $channel,
-            'messages' => $messages,
-            'exportData' => $exportData,
-        ]);
-
-        if (class_exists(\ZipArchive::class)) {
-            return $this->generateZip($channel, $currentUser, $exportData, $htmlContent, $messages);
-        }
-
-        return $this->generateTar($channel, $currentUser, $exportData, $htmlContent, $messages);
+        return $exportData;
     }
 
-    private function generateZip(
-        Channel $channel,
-        User $currentUser,
-        array $exportData,
-        string $htmlContent,
-        array $messages,
-    ): ChannelExport {
-        $zip = new \ZipArchive();
-        $tempFile = tempnam(sys_get_temp_dir(), 'export-');
-        $zipFile = $tempFile . '.zip';
-        if ($tempFile !== false && file_exists($tempFile)) {
-            unlink($tempFile);
-        }
-        if ($zipFile === false || $zip->open($zipFile, \ZipArchive::CREATE) !== true) {
-            throw new \RuntimeException($this->translator->trans('Impossible de créer l\'archive ZIP.'));
+    private function resolveDefaultExporter(): ArchiveExporterInterface
+    {
+        $zipExporter = new ZipArchiveExporter($this->translator);
+        if ($zipExporter->isSupported()) {
+            return $zipExporter;
         }
 
-        $zip->addFromString('channel.json', json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        $zip->addFromString('channel.html', $htmlContent);
-
-        $tmpFiles = [];
-        try {
-            foreach ($messages as $msg) {
-                $filePath = $msg->getFilePath();
-                if (!$filePath) {
-                    continue;
-                }
-                try {
-                    if ($this->fileUploadService->exists($filePath)) {
-                        $fileStream = $this->fileUploadService->readStream($filePath);
-                        $tmpFile = tempnam(sys_get_temp_dir(), 'attach-');
-                        $tmpStream = fopen($tmpFile, 'wb');
-                        stream_copy_to_stream($fileStream, $tmpStream);
-                        fclose($tmpStream);
-                        if (is_resource($fileStream)) {
-                            fclose($fileStream);
-                        }
-                        if ($zip->addFile($tmpFile, 'files/' . basename($filePath)) !== true) {
-                            throw new \RuntimeException('Failed to add attachment to ZIP: ' . $tmpFile);
-                        }
-                        $tmpFiles[] = $tmpFile;
-                    }
-                } catch (\Exception $e) {
-                    throw new \RuntimeException('Error adding file to ZIP: ' . $e->getMessage(), 0, $e);
-                }
-            }
-        } finally {
-            // Cleanup phase
-        }
-
-        $status = $zip->getStatusString();
-        $closed = $zip->close();
-        if (!$closed) {
-            throw new \RuntimeException('ZipArchive::close() failed. Status: ' . $status);
-        }
-
-        if (!file_exists($zipFile)) {
-            throw new \RuntimeException('Zip file does not exist after closing: ' . $zipFile);
-        }
-
-        $filename = $channel->getSlug() . '-export.zip';
-
-        $export = $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $zipFile, 'zip');
-
-        // Cleanup
-        foreach ($tmpFiles as $tmpFile) {
-            if (!file_exists($tmpFile)) {
-                continue;
-            }
-
-            unlink($tmpFile);
-        }
-        if (file_exists($zipFile)) {
-            unlink($zipFile);
-        }
-
-        return $export;
-    }
-
-    private function generateTar(
-        Channel $channel,
-        User $currentUser,
-        array $exportData,
-        string $htmlContent,
-        array $messages,
-    ): ChannelExport {
-        $tarFile = tempnam(sys_get_temp_dir(), 'export-') . '.tar';
-        $tar = new \PharData($tarFile);
-
-        $tar->addFromString('channel.json', json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        $tar->addFromString('channel.html', $htmlContent);
-
-        $tmpFiles = [];
-        try {
-            foreach ($messages as $msg) {
-                $filePath = $msg->getFilePath();
-                if (!$filePath) {
-                    continue;
-                }
-                try {
-                    if ($this->fileUploadService->exists($filePath)) {
-                        $fileStream = $this->fileUploadService->readStream($filePath);
-                        $tmpFile = tempnam(sys_get_temp_dir(), 'attach-');
-                        $tmpStream = fopen($tmpFile, 'wb');
-                        stream_copy_to_stream($fileStream, $tmpStream);
-                        fclose($tmpStream);
-                        if (is_resource($fileStream)) {
-                            fclose($fileStream);
-                        }
-                        $tar->addFile($tmpFile, 'files/' . basename($filePath));
-                        $tmpFiles[] = $tmpFile;
-                    }
-                } catch (\Exception) {
-                    continue;
-                }
-            }
-        } finally {
-            unset($tar);
-        }
-
-        $filename = $channel->getSlug() . '-export.tar';
-
-        $export = $this->saveAndCreateExportEntity($channel, $currentUser, $filename, $tarFile, 'tar');
-
-        // Cleanup
-        foreach ($tmpFiles as $tmpFile) {
-            if (!file_exists($tmpFile)) {
-                continue;
-            }
-
-            unlink($tmpFile);
-        }
-        if (file_exists($tarFile)) {
-            unlink($tarFile);
-        }
-
-        return $export;
+        return new TarArchiveExporter();
     }
 
     private function saveAndCreateExportEntity(
@@ -245,7 +189,7 @@ readonly class ChannelExportService
         $export->setExportedBy($currentUser);
         $export->setFileName($filename);
         $export->setFilePath($storagePath);
-        $export->setFileSize(filesize($tempFilePath));
+        $export->setFileSize((int) filesize($tempFilePath));
         $export->setChannelName($channel->getName());
 
         $this->entityManager->persist($export);
