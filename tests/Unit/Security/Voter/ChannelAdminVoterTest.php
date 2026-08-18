@@ -86,4 +86,42 @@ class ChannelAdminVoterTest extends TestCase
         $result = $this->voter->vote($token, $channel, [ChannelAdminVoter::EDIT]);
         static::assertSame(ChannelAdminVoter::ACCESS_DENIED, $result);
     }
+
+    public function testGrantedForInviteAttribute(): void
+    {
+        $user = new User();
+        $this->setUserEntityId($user, 1);
+
+        $channel = new Channel();
+        $channel->setCreator($user);
+
+        $token = $this->createMock(TokenInterface::class);
+        $token->method('getUser')->willReturn($user);
+
+        $this->security->expects(static::once())->method('isGranted')->with('ROLE_ADMIN')->willReturn(false);
+
+        $result = $this->voter->vote($token, $channel, [ChannelAdminVoter::INVITE]);
+        static::assertSame(ChannelAdminVoter::ACCESS_GRANTED, $result);
+    }
+
+    public function testGrantedForWorkspaceCreatorOnChannel(): void
+    {
+        $user = new User();
+        $this->setUserEntityId($user, 1);
+
+        $workspace = new \App\Entity\Workspace();
+        $this->setUserEntityId($user, 1);
+        $workspace->setCreator($user);
+
+        $channel = new Channel();
+        $channel->setWorkspace($workspace);
+
+        $token = $this->createMock(TokenInterface::class);
+        $token->method('getUser')->willReturn($user);
+
+        $this->security->expects(static::once())->method('isGranted')->with('ROLE_ADMIN')->willReturn(false);
+
+        $result = $this->voter->vote($token, $channel, [ChannelAdminVoter::INVITE]);
+        static::assertSame(ChannelAdminVoter::ACCESS_GRANTED, $result);
+    }
 }

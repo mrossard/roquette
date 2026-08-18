@@ -122,6 +122,8 @@ final class ChannelActionController extends AbstractController
             return $this->redirectToRoute('app_dashboard');
         }
 
+        $this->denyAccessUnlessGranted('DELETE', $channel);
+
         try {
             $redirectSlug = $channelManager->delete($channel, $currentUser);
         } catch (HttpExceptionInterface $e) {
@@ -227,6 +229,8 @@ final class ChannelActionController extends AbstractController
             return $this->redirectToRoute('app_dashboard');
         }
 
+        $this->denyAccessUnlessGranted('EDIT', $channel);
+
         $retention = $request->request->get('messageRetentionMonths');
         $retentionVal = null;
         if ($retention !== null && $retention !== '') {
@@ -257,6 +261,8 @@ final class ChannelActionController extends AbstractController
         } catch (NotFoundHttpException) {
             return $this->redirectToRoute('app_dashboard');
         }
+
+        $this->denyAccessUnlessGranted('EDIT', $channel);
 
         $name = trim($request->request->get('name', ''));
         $description = trim($request->request->get('description', ''));

@@ -44,7 +44,7 @@ final class InvitationController extends AbstractController
             return new Response($this->translator->trans('Opération non autorisée pour un message direct.'), 403);
         }
 
-        if ($activeChannel->getCreator() !== $currentUser) {
+        if (!$this->isGranted('INVITE', $activeChannel)) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 
@@ -87,11 +87,7 @@ final class InvitationController extends AbstractController
             return new Response($this->translator->trans('Opération non autorisée pour un message direct.'), 403);
         }
 
-        $workspace = $activeChannel->getWorkspace();
-        $isWorkspaceDenied = $workspace !== null && $workspace->getCreator() !== $currentUser;
-        $isChannelDenied = $workspace === null && $activeChannel->getCreator() !== $currentUser;
-
-        if ($isWorkspaceDenied || $isChannelDenied) {
+        if (!$this->isGranted('INVITE', $activeChannel)) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 

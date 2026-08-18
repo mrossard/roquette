@@ -46,7 +46,7 @@ trait ChannelAccessTrait
     {
         $channel = $message->getChannel();
         if ($channel === null) {
-            throw new AccessDeniedHttpException($this->trans('Non autorisé.'));
+            throw new AccessDeniedHttpException('Non autorisé.');
         }
 
         $this->authorizeChannelAccess($channel);
