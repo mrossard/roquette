@@ -10,12 +10,20 @@ use Symfony\AI\Platform\Result\Stream\Delta\TextDelta;
 use Symfony\AI\Platform\Result\Stream\Delta\ToolCallComplete;
 use Symfony\AI\Platform\Result\ToolCall;
 
+use function array_key_exists;
+use function is_array;
+use function is_string;
+use function microtime;
+use function sprintf;
+use function trim;
+use function implode;
+
 /**
  * Executes the model tool-calling loop and streams the final answer.
  */
 final readonly class ToolRunner
 {
-    private const MAX_TOOL_ITERATIONS = 3;
+    private const int MAX_TOOL_ITERATIONS = 3;
 
     public function __construct(
         private LlmService $llmService,
@@ -50,32 +58,8 @@ final readonly class ToolRunner
         $executedCalls = [];
 
         for ($i = 0; $i < self::MAX_TOOL_ITERATIONS; $i++) {
-            $toolCalls = null;
-            $textDeltas = [];
-            $textBuffer = '';
+            [$toolCalls, $textDeltas] = $this->consumeIterationStream($currentPrompt, $systemPrompt, $tools);
 
-            foreach ($this->llmService->generateStreamWithTools($currentPrompt, $systemPrompt, $tools) as $delta) {
-                if ($delta instanceof ToolCallComplete) {
-                    $toolCalls = $delta->getToolCalls();
-                    break;
-                }
-
-                if ($delta instanceof TextDelta) {
-                    $textDeltas[] = $delta->getText();
-                    $textBuffer .= $delta->getText();
-                }
-            }
-
-            // Fallback: if native tool calls were not received, attempt to parse pseudo-JSON tool calls from textBuffer
-            if (($toolCalls === null || [] === $toolCalls) && '' !== trim($textBuffer)) {
-                $parsedToolCall = $this->parsePseudoToolCall($textBuffer);
-                if ($parsedToolCall !== null) {
-                    $toolCalls = [$parsedToolCall];
-                    $textDeltas = []; // Clear textDeltas so the raw JSON is not yielded to the user
-                }
-            }
-
-            // Yield accumulated text deltas if it was not a tool call JSON
             foreach ($textDeltas as $textChunk) {
                 if ('' !== trim($textChunk)) {
                     $producedText = true;
@@ -87,70 +71,32 @@ final readonly class ToolRunner
                 return;
             }
 
-            // Deduplicate tool calls to prevent repeating identical actions (e.g. creating 3 identical reminders)
-            $newCalls = [];
-            foreach ($toolCalls as $call) {
-                $callKey = $call->getName() . ':' . json_encode($call->getArguments());
-                if (\array_key_exists($callKey, $executedCalls)) {
-                    continue;
-                }
-                $executedCalls[$callKey] = true;
-                $newCalls[] = $call;
-            }
-
+            $newCalls = $this->filterNewCalls($toolCalls, $executedCalls);
             if ([] === $newCalls) {
                 if (!$producedText && $allExecutedResults !== []) {
                     yield implode("\n", $allExecutedResults);
-                    $producedText = true;
                 }
                 return;
             }
 
-            $confirmationPending = false;
-            $results = [];
-            foreach ($newCalls as $call) {
-                if ($onConfirmationRequired !== null && $this->toolRegistry->get($call->getName())?->requiresConfirmation()) {
-                    $confirmationPending = true;
-                    $this->logger?->info('Tool action requires user confirmation', [
-                        'tool' => $call->getName(),
-                        'arguments' => $call->getArguments(),
-                        'authorUserId' => $authorUserId,
-                    ]);
-                    $onConfirmationRequired($call->getName(), $call->getArguments());
-                    $results[] = sprintf(
-                        "L'action de l'outil '%s' nécessite une confirmation de l'utilisateur.\n"
-                        . "N'appelle plus aucun outil et demande à l'utilisateur de confirmer l'action soit via le bouton de confirmation, soit en répondant simplement 'ok'.",
-                        $call->getName(),
-                    );
-                    continue;
-                }
+            [$results, $confirmationPending] = $this->executeToolBatch(
+                $newCalls,
+                $authorUserId,
+                $workspaceId,
+                $onToolExecuted,
+                $onConfirmationRequired,
+            );
 
-                $startedAt = microtime(true);
-                $result = $this->toolRegistry->execute($call, $authorUserId, $workspaceId);
-                $this->logger?->info('Tool executed', [
-                    'tool' => $call->getName(),
-                    'durationMs' => (int) ((microtime(true) - $startedAt) * 1000),
-                    'authorUserId' => $authorUserId,
-                ]);
-                if ($onToolExecuted !== null) {
-                    $onToolExecuted($call->getName(), $result);
-                }
-                $results[] = $result;
-                $allExecutedResults[] = $result;
+            foreach ($results as $res) {
+                $allExecutedResults[] = $res;
             }
 
             if ($confirmationPending) {
-                $currentPrompt = "Une action demandée nécessite une confirmation de l'utilisateur :\n"
-                    . implode("\n", $results)
-                    . "\n\nRéponds maintenant brièvement à l'utilisateur : explique l'action demandée et demande-lui de la confirmer (via le bouton ou en répondant simplement 'ok'). N'appelle aucun outil.\n"
-                    . $prompt;
+                $currentPrompt = $this->buildConfirmationPrompt($prompt, $results);
                 break;
             }
 
-            $currentPrompt = "Résultats des outils exécutés :\n"
-                . implode("\n", $results)
-                . "\n\nRéponds maintenant brièvement à l'utilisateur pour confirmer l'action réalisée en utilisant exactement l'information de confirmation ci-dessus :\n"
-                . $prompt;
+            $currentPrompt = $this->buildToolExecutionPrompt($prompt, $results);
         }
 
         foreach ($this->llmService->generateTextStream($currentPrompt, $systemPrompt) as $chunk) {
@@ -166,26 +112,147 @@ final readonly class ToolRunner
     }
 
     /**
+     * @param list<array{type: string, function: array<string, mixed>}> $tools
+     * @return array{0: ?array<ToolCall>, 1: list<string>}
+     */
+    private function consumeIterationStream(
+        string $currentPrompt,
+        ?string $systemPrompt,
+        array $tools,
+    ): array {
+        $toolCalls = null;
+        $textDeltas = [];
+        $textBuffer = '';
+
+        foreach ($this->llmService->generateStreamWithTools($currentPrompt, $systemPrompt, $tools) as $delta) {
+            if ($delta instanceof ToolCallComplete) {
+                $toolCalls = $delta->getToolCalls();
+                break;
+            }
+
+            if ($delta instanceof TextDelta) {
+                $textDeltas[] = $delta->getText();
+                $textBuffer .= $delta->getText();
+            }
+        }
+
+        if (($toolCalls === null || [] === $toolCalls) && '' !== trim($textBuffer)) {
+            $parsedToolCall = $this->parsePseudoToolCall($textBuffer);
+            if ($parsedToolCall !== null) {
+                $toolCalls = [$parsedToolCall];
+                $textDeltas = [];
+            }
+        }
+
+        return [$toolCalls, $textDeltas];
+    }
+
+    /**
+     * @param array<ToolCall> $toolCalls
+     * @param array<string, bool> $executedCalls
+     * @return list<ToolCall>
+     */
+    private function filterNewCalls(array $toolCalls, array &$executedCalls): array
+    {
+        $newCalls = [];
+        foreach ($toolCalls as $call) {
+            $callKey = $call->getName() . ':' . json_encode($call->getArguments());
+            if (array_key_exists($callKey, $executedCalls)) {
+                continue;
+            }
+            $executedCalls[$callKey] = true;
+            $newCalls[] = $call;
+        }
+
+        return $newCalls;
+    }
+
+    /**
+     * @param list<ToolCall> $calls
+     * @return array{0: list<string>, 1: bool}
+     */
+    private function executeToolBatch(
+        array $calls,
+        ?int $authorUserId,
+        ?int $workspaceId,
+        ?callable $onToolExecuted,
+        ?callable $onConfirmationRequired,
+    ): array {
+        $confirmationPending = false;
+        $results = [];
+
+        foreach ($calls as $call) {
+            if ($onConfirmationRequired !== null && $this->toolRegistry->get($call->getName())?->requiresConfirmation()) {
+                $confirmationPending = true;
+                $this->logger?->info('Tool action requires user confirmation', [
+                    'tool' => $call->getName(),
+                    'arguments' => $call->getArguments(),
+                    'authorUserId' => $authorUserId,
+                ]);
+                $onConfirmationRequired($call->getName(), $call->getArguments());
+                $results[] = sprintf(
+                    "L'action de l'outil '%s' nécessite une confirmation de l'utilisateur.\n"
+                    . "N'appelle plus aucun outil et demande à l'utilisateur de confirmer l'action soit via le bouton de confirmation, soit en répondant simplement 'ok'.",
+                    $call->getName(),
+                );
+                continue;
+            }
+
+            $startedAt = microtime(true);
+            $result = $this->toolRegistry->execute($call, $authorUserId, $workspaceId);
+            $this->logger?->info('Tool executed', [
+                'tool' => $call->getName(),
+                'durationMs' => (int) ((microtime(true) - $startedAt) * 1000),
+                'authorUserId' => $authorUserId,
+            ]);
+            if ($onToolExecuted !== null) {
+                $onToolExecuted($call->getName(), $result);
+            }
+            $results[] = $result;
+        }
+
+        return [$results, $confirmationPending];
+    }
+
+    /**
+     * @param list<string> $results
+     */
+    private function buildConfirmationPrompt(string $originalPrompt, array $results): string
+    {
+        return "Une action demandée nécessite une confirmation de l'utilisateur :\n"
+            . implode("\n", $results)
+            . "\n\nRéponds maintenant brièvement à l'utilisateur : explique l'action demandée et demande-lui de la confirmer (via le bouton ou en répondant simplement 'ok'). N'appelle aucun outil.\n"
+            . $originalPrompt;
+    }
+
+    /**
+     * @param list<string> $results
+     */
+    private function buildToolExecutionPrompt(string $originalPrompt, array $results): string
+    {
+        return "Résultats des outils exécutés :\n"
+            . implode("\n", $results)
+            . "\n\nRéponds maintenant brièvement à l'utilisateur pour confirmer l'action réalisée en utilisant exactement l'information de confirmation ci-dessus :\n"
+            . $originalPrompt;
+    }
+
+    /**
      * Attempts to parse raw JSON emitted in response text into a ToolCall object.
-     * Handles formats like:
-     * {"tool": "schedule_reminder", "action": {"channelSlug": "...", ...}}
-     * {"name": "schedule_reminder", "arguments": {...}}
-     * {"function": "schedule_reminder", "parameters": {...}}
      */
     private function parsePseudoToolCall(string $text): ?ToolCall
     {
         $data = JsonExtractor::extractArray($text);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return null;
         }
 
         $name = $data['tool'] ?? $data['name'] ?? $data['function'] ?? null;
-        if (!\is_string($name) || '' === $name) {
+        if (!is_string($name) || '' === $name) {
             return null;
         }
 
         $args = $data['action'] ?? $data['arguments'] ?? $data['parameters'] ?? $data['args'] ?? [];
-        if (!\is_array($args)) {
+        if (!is_array($args)) {
             $args = [];
         }
 
