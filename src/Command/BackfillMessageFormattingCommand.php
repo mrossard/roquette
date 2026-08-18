@@ -60,11 +60,9 @@ class BackfillMessageFormattingCommand extends Command
         while ($processed < $total) {
             $qbFetch = $this->em->createQueryBuilder();
             $qbFetch->select('m')->from(Message::class, 'm');
-            if (!$force) {
-                $qbFetch->where('m.formattedContent IS NULL');
-            } else {
-                $qbFetch->setFirstResult($processed);
-            }
+            $force
+                ? $qbFetch->setFirstResult($processed)
+                : $qbFetch->where('m.formattedContent IS NULL');
             $qbFetch->setMaxResults($batchSize);
 
             /** @var Message[] $messages */
@@ -78,14 +76,17 @@ class BackfillMessageFormattingCommand extends Command
                 $content = $message->getContent();
                 if ($content === null || $content === '') {
                     $message->setFormattedContent('');
-                } else {
-                    if (str_starts_with($content, '/me ') || $content === '/me') {
-                        $meContent = $content === '/me' ? '' : substr($content, 4);
-                        $message->setFormattedContent($this->formatter->format($meContent));
-                    } else {
-                        $message->setFormattedContent($this->formatter->format($content));
-                    }
+                    $processed++;
+                    continue;
                 }
+
+                $raw = match (true) {
+                    $content === '/me' => '',
+                    str_starts_with($content, '/me ') => substr($content, 4),
+                    default => $content,
+                };
+
+                $message->setFormattedContent($this->formatter->format($raw));
                 $processed++;
             }
 

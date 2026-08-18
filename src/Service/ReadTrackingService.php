@@ -79,15 +79,14 @@ class ReadTrackingService
             'id' => 'DESC',
         ]);
 
-        if ($activeRead) {
-            $activeRead->setLastReadMessage($latestMessage);
-        } else {
+        if ($activeRead === null) {
             $activeRead = new UserChannelRead();
             $activeRead->setUser($user);
             $activeRead->setChannel($channel);
-            $activeRead->setLastReadMessage($latestMessage);
             $this->entityManager->persist($activeRead);
         }
+
+        $activeRead->setLastReadMessage($latestMessage);
         $this->entityManager->flush();
     }
 }

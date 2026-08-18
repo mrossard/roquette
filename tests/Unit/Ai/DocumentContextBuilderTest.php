@@ -17,15 +17,24 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 #[AllowMockObjectsWithoutExpectations]
 final class DocumentContextBuilderTest extends TestCase
 {
-    private function buildContext(?iterable $retrieved, bool $throw = false): string
+    private function buildContext(?iterable $retrieved): string
     {
         $retriever = $this->createMock(RetrieverInterface::class);
-        if ($throw) {
-            $retriever->method('retrieve')->willThrowException(new \RuntimeException('store down'));
-        } else {
-            $retriever->method('retrieve')->willReturn($retrieved ?? []);
-        }
+        $retriever->method('retrieve')->willReturn($retrieved ?? []);
 
+        return $this->executeBuilder($retriever);
+    }
+
+    private function buildContextWithFailure(): string
+    {
+        $retriever = $this->createMock(RetrieverInterface::class);
+        $retriever->method('retrieve')->willThrowException(new \RuntimeException('store down'));
+
+        return $this->executeBuilder($retriever);
+    }
+
+    private function executeBuilder(RetrieverInterface $retriever): string
+    {
         $chunker = new DocChunker();
         $projectDir = sys_get_temp_dir() . '/doc_ctx_' . uniqid();
         mkdir($projectDir);
@@ -88,7 +97,7 @@ final class DocumentContextBuilderTest extends TestCase
 
     public function testFallsBackToChunkedDocOnFailure(): void
     {
-        $context = $this->buildContext(null, throw: true);
+        $context = $this->buildContextWithFailure();
 
         static::assertStringContainsString('Intro du guide.', $context);
     }

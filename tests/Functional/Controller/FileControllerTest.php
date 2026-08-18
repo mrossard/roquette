@@ -100,17 +100,23 @@ class FileControllerTest extends WebTestCase
         return $other;
     }
 
-    private function mockFileUploadService(bool $exists, string $content = 'file content'): void
+    private function mockExistingFileUpload(string $content = 'file content'): void
     {
         $mock = $this->createMock(FileUploadService::class);
-        $mock->method('exists')->willReturn($exists);
+        $mock->method('exists')->willReturn(true);
 
-        if ($exists) {
-            $stream = fopen('php://memory', 'r+');
-            fwrite($stream, $content);
-            rewind($stream);
-            $mock->method('readStream')->willReturn($stream);
-        }
+        $stream = fopen('php://memory', 'r+');
+        fwrite($stream, $content);
+        rewind($stream);
+        $mock->method('readStream')->willReturn($stream);
+
+        $this->client->getContainer()->set(FileUploadService::class, $mock);
+    }
+
+    private function mockMissingFileUpload(): void
+    {
+        $mock = $this->createMock(FileUploadService::class);
+        $mock->method('exists')->willReturn(false);
 
         $this->client->getContainer()->set(FileUploadService::class, $mock);
     }
@@ -123,7 +129,7 @@ class FileControllerTest extends WebTestCase
     public function testDownloadSuccess(): void
     {
         $message = $this->createMessageWithFile();
-        $this->mockFileUploadService(true, 'fake pdf content');
+        $this->mockExistingFileUpload('fake pdf content');
 
         $this->client->request('GET', sprintf('/messages/%d/download', $message->getId()));
 
@@ -146,7 +152,7 @@ class FileControllerTest extends WebTestCase
         $this->entityManager->persist($message);
         $this->entityManager->flush();
 
-        $this->mockFileUploadService(true, 'fake pdf content');
+        $this->mockExistingFileUpload('fake pdf content');
 
         $this->client->request('GET', sprintf('/messages/%d/download', $message->getId()));
 
@@ -187,7 +193,7 @@ class FileControllerTest extends WebTestCase
     public function testDownloadFileNotInStorage(): void
     {
         $message = $this->createMessageWithFile();
-        $this->mockFileUploadService(false);
+        $this->mockMissingFileUpload();
 
         $this->client->request('GET', sprintf('/messages/%d/download', $message->getId()));
 
@@ -231,7 +237,7 @@ class FileControllerTest extends WebTestCase
     public function testPreviewSuccess(): void
     {
         $message = $this->createMessageWithFile();
-        $this->mockFileUploadService(true, 'image data');
+        $this->mockExistingFileUpload('image data');
 
         $this->client->request('GET', sprintf('/messages/%d/preview', $message->getId()));
 
@@ -269,7 +275,7 @@ class FileControllerTest extends WebTestCase
     public function testPreviewJavaScriptServedAsTextPlainAttachment(): void
     {
         $message = $this->createMessageWithMime('evil.js', 'application/javascript');
-        $this->mockFileUploadService(true, 'alert(1)');
+        $this->mockExistingFileUpload('alert(1)');
 
         $this->client->request('GET', sprintf('/messages/%d/preview', $message->getId()));
 
@@ -287,7 +293,7 @@ class FileControllerTest extends WebTestCase
     public function testPreviewHtmlServedAsTextPlainAttachment(): void
     {
         $message = $this->createMessageWithMime('page.html', 'text/html');
-        $this->mockFileUploadService(true, '<script>alert(1)</script>');
+        $this->mockExistingFileUpload('<script>alert(1)</script>');
 
         $this->client->request('GET', sprintf('/messages/%d/preview', $message->getId()));
 
@@ -303,7 +309,7 @@ class FileControllerTest extends WebTestCase
     public function testPreviewSvgServedAsOctetStreamAttachment(): void
     {
         $message = $this->createMessageWithMime('image.svg', 'image/svg+xml');
-        $this->mockFileUploadService(true, '<svg></svg>');
+        $this->mockExistingFileUpload('<svg></svg>');
 
         $this->client->request('GET', sprintf('/messages/%d/preview', $message->getId()));
 
@@ -316,7 +322,7 @@ class FileControllerTest extends WebTestCase
     public function testPreviewJsonServedAsTextPlainAttachment(): void
     {
         $message = $this->createMessageWithMime('data.json', 'application/json');
-        $this->mockFileUploadService(true, '{"x":1}');
+        $this->mockExistingFileUpload('{"x":1}');
 
         $this->client->request('GET', sprintf('/messages/%d/preview', $message->getId()));
 
@@ -335,7 +341,7 @@ class FileControllerTest extends WebTestCase
     public function testTextPreviewSuccess(): void
     {
         $message = $this->createMessageWithFile();
-        $this->mockFileUploadService(true, 'Hello this is a text file');
+        $this->mockExistingFileUpload('Hello this is a text file');
 
         $this->client->request('GET', sprintf('/messages/%d/text-preview', $message->getId()));
 
@@ -350,7 +356,7 @@ class FileControllerTest extends WebTestCase
         $message = $this->createMessageWithFile();
         // Content longer than 10000 chars
         $longContent = str_repeat('A', 10_001);
-        $this->mockFileUploadService(true, $longContent);
+        $this->mockExistingFileUpload($longContent);
 
         $this->client->request('GET', sprintf('/messages/%d/text-preview', $message->getId()));
 

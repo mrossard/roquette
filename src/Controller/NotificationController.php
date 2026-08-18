@@ -103,11 +103,9 @@ final class NotificationController extends AbstractController
             $isTyping = filter_var($data['isTyping'] ?? false, FILTER_VALIDATE_BOOLEAN);
         }
 
-        if ($isTyping) {
-            $this->typingIndicatorService->startTyping($activeChannel, $currentUser);
-        } else {
-            $this->typingIndicatorService->stopTyping($activeChannel, $currentUser);
-        }
+        $isTyping
+            ? $this->typingIndicatorService->startTyping($activeChannel, $currentUser)
+            : $this->typingIndicatorService->stopTyping($activeChannel, $currentUser);
         $this->mercurePublisher->publishToChannel($activeChannel, 'ping', 'typing_' . $activeChannel->getSlug());
 
         return $this->typingIndicator($slug);

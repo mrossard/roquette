@@ -248,26 +248,29 @@ readonly class LdapGroupProvider implements GroupProviderInterface
             $memberVal = $members[$i];
 
             if ($this->config['group_membership_value'] === 'dn') {
-                $username = null;
-                if (function_exists('ldap_explode_dn')) {
-                    $exploded = ldap_explode_dn($memberVal, 1);
-                    if ($exploded && array_key_exists(0, $exploded)) {
-                        $username = $exploded[0];
-                    }
-                }
-                if ($username === null) {
-                    if (preg_match('/^(?:uid|cn)=([^,]+)/i', $memberVal, $matches)) {
-                        $username = $matches[1];
-                    } else {
-                        $username = $memberVal;
-                    }
-                }
-                $usernames[] = $username;
-            } else {
-                $usernames[] = $memberVal;
+                $usernames[] = $this->parseMemberDn($memberVal);
+                continue;
             }
+
+            $usernames[] = $memberVal;
         }
 
         return $usernames;
+    }
+
+    private function parseMemberDn(string $memberVal): string
+    {
+        if (function_exists('ldap_explode_dn')) {
+            $exploded = ldap_explode_dn($memberVal, 1);
+            if ($exploded && array_key_exists(0, $exploded)) {
+                return $exploded[0];
+            }
+        }
+
+        if (preg_match('/^(?:uid|cn)=([^,]+)/i', $memberVal, $matches)) {
+            return $matches[1];
+        }
+
+        return $memberVal;
     }
 }

@@ -54,8 +54,8 @@ class MessageEditor
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé à modifier ce message.'));
         }
 
-        if ($message->isPoll()) {
-            if ($message->getPoll()?->getTotalVotes() > 0) {
+        if ($message->getPoll() !== null) {
+            if ($message->getPoll()->getTotalVotes() > 0) {
                 return EditResult::error(
                     $this->translator->trans('Impossible de modifier un sondage qui a déjà des votes.'),
                     $message,
@@ -73,7 +73,9 @@ class MessageEditor
             } catch (\InvalidArgumentException $e) {
                 return EditResult::error($this->translator->trans($e->getMessage()), $message, 400);
             }
-        } else {
+        }
+
+        if ($message->getPoll() === null) {
             $newContent = $dto->content;
             if (trim((string) $newContent) === '' && !$message->getFilePath()) {
                 return EditResult::error($this->translator->trans('Le message ne peut pas être vide.'), $message, 400);

@@ -43,11 +43,7 @@ class MessageFormatterTest extends TestCase
                     $user = $this->createStub(\App\Entity\User::class);
                     $user->method('getUsername')->willReturn($username);
                     $user->method('getUserIdentifier')->willReturn($username);
-                    if ($username === 'alice') {
-                        $user->method('getDisplayName')->willReturn('Alice de Merveilles');
-                    } else {
-                        $user->method('getDisplayName')->willReturn(null);
-                    }
+                    $user->method('getDisplayName')->willReturn($username === 'alice' ? 'Alice de Merveilles' : null);
                     return $user;
                 }
                 return null;
@@ -68,11 +64,7 @@ class MessageFormatterTest extends TestCase
                     $user = $this->createStub(\App\Entity\User::class);
                     $user->method('getUsername')->willReturn($username);
                     $user->method('getUserIdentifier')->willReturn($username);
-                    if ($username === 'alice') {
-                        $user->method('getDisplayName')->willReturn('Alice de Merveilles');
-                    } else {
-                        $user->method('getDisplayName')->willReturn(null);
-                    }
+                    $user->method('getDisplayName')->willReturn($username === 'alice' ? 'Alice de Merveilles' : null);
                     $users[] = $user;
                 }
                 return $users;

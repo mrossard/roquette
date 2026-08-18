@@ -93,17 +93,19 @@ class PollFactory
         foreach ($optionsData as $idx => $optText) {
             $trimmedText = trim($optText);
             if (array_key_exists($idx, $existingOptions)) {
-                if ($existingOptions[$idx]->getText() !== $trimmedText) {
-                    $existingOptions[$idx]->setText($trimmedText);
-                    $existingOptions[$idx]->getVotes()->clear();
+                $existingOpt = $existingOptions[$idx];
+                if ($existingOpt->getText() !== $trimmedText) {
+                    $existingOpt->setText($trimmedText);
+                    $existingOpt->getVotes()->clear();
                 }
-                $existingOptions[$idx]->setPosition($position++);
-            } else {
-                $newOption = new PollOption();
-                $newOption->setText($trimmedText);
-                $newOption->setPosition($position++);
-                $poll->addOption($newOption);
+                $existingOpt->setPosition($position++);
+                continue;
             }
+
+            $newOption = new PollOption();
+            $newOption->setText($trimmedText);
+            $newOption->setPosition($position++);
+            $poll->addOption($newOption);
         }
 
         for ($i = count($optionsData); $i < count($existingOptions); $i++) {

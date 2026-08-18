@@ -218,13 +218,9 @@ class MessageRepository extends ServiceEntityRepository
         }
 
         if ($fileType !== null && $fileType !== '') {
-            if ($fileType === 'pdf') {
-                $qb->andWhere('m.mime_type = :fileType')
-                    ->setParameter('fileType', 'application/pdf');
-            } else {
-                $qb->andWhere('m.mime_type LIKE :fileType')
-                    ->setParameter('fileType', $fileType . '/%');
-            }
+            $isPdf = $fileType === 'pdf';
+            $qb->andWhere($isPdf ? 'm.mime_type = :fileType' : 'm.mime_type LIKE :fileType')
+                ->setParameter('fileType', $isPdf ? 'application/pdf' : $fileType . '/%');
         }
 
         if ($textQuery !== null && trim($textQuery) !== '') {

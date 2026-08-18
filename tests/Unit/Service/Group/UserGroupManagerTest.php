@@ -73,9 +73,7 @@ class UserGroupManagerTest extends TestCase
         $this->auditLogger
             ->expects(static::once())
             ->method('log')
-            ->with(AuditAction::GROUP_CREATE, $creator, static::callback(function (array $context) {
-                return $context['group_name'] === 'Dev Team' && str_starts_with($context['group_identifier'], 'local-group-');
-            }));
+            ->with(AuditAction::GROUP_CREATE, $creator, static::callback(static fn(array $context): bool => $context['group_name'] === 'Dev Team' && str_starts_with($context['group_identifier'], 'local-group-')));
 
         $group = $this->manager->createLocalGroup('Dev Team', $creator);
 
@@ -112,11 +110,9 @@ class UserGroupManagerTest extends TestCase
         $this->auditLogger
             ->expects(static::once())
             ->method('log')
-            ->with(AuditAction::GROUP_CREATE, $creator, static::callback(function (array $context) {
-                return $context['group_name'] === 'LDAP Devs'
+            ->with(AuditAction::GROUP_CREATE, $creator, static::callback(static fn(array $context): bool => $context['group_name'] === 'LDAP Devs'
                     && $context['group_identifier'] === 'ldap-devs'
-                    && ($context['imported'] ?? false) === true;
-            }));
+                    && ($context['imported'] ?? false) === true));
 
         $group = $this->manager->importGroup('ldap-devs', 'LDAP Devs', $creator);
 
@@ -150,9 +146,7 @@ class UserGroupManagerTest extends TestCase
         $this->auditLogger
             ->expects(static::once())
             ->method('log')
-            ->with(AuditAction::GROUP_DELETE, $user, static::callback(function (array $context) {
-                return $context['group_name'] === 'Marketing' && $context['group_identifier'] === 'local-group-123';
-            }));
+            ->with(AuditAction::GROUP_DELETE, $user, static::callback(static fn(array $context): bool => $context['group_name'] === 'Marketing' && $context['group_identifier'] === 'local-group-123'));
 
         $this->manager->deleteGroup($group, $user);
     }

@@ -18,58 +18,67 @@ class PollManager
     public function toggleVote(PollOption $option, User $user): void
     {
         $poll = $option->getPoll();
+        if (!$poll->isAllowMultiple()) {
+            $this->toggleSingleChoiceVote($option, $user);
+            $this->entityManager->flush();
+            return;
+        }
+
+        $this->toggleMultipleChoiceVote($option, $user);
+        $this->entityManager->flush();
+    }
+
+    private function toggleSingleChoiceVote(PollOption $option, User $user): void
+    {
+        $poll = $option->getPoll();
+        $voteRepo = $this->entityManager->getRepository(PollVote::class);
+        $userVotes = $voteRepo
+            ->createQueryBuilder('v')
+            ->join('v.option', 'o')
+            ->where('o.poll = :poll')
+            ->andWhere('v.user = :user')
+            ->setParameter('poll', $poll)
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getResult();
+
+        $wasVotedOnTarget = false;
+        foreach ($userVotes as $vote) {
+            if ($vote->getOption()->getId() === $option->getId()) {
+                $wasVotedOnTarget = true;
+            }
+            $vote->getOption()->removeVote($vote);
+            $this->entityManager->remove($vote);
+        }
+
+        if (!$wasVotedOnTarget) {
+            $this->createVote($option, $user);
+        }
+    }
+
+    private function toggleMultipleChoiceVote(PollOption $option, User $user): void
+    {
         $voteRepo = $this->entityManager->getRepository(PollVote::class);
         $existingVote = $voteRepo->findOneBy([
             'option' => $option,
             'user' => $user,
         ]);
 
-        if (!$poll->isAllowMultiple()) {
-            $userVotes = $voteRepo
-                ->createQueryBuilder('v')
-                ->join('v.option', 'o')
-                ->where('o.poll = :poll')
-                ->andWhere('v.user = :user')
-                ->setParameter('poll', $poll)
-                ->setParameter('user', $user)
-                ->getQuery()
-                ->getResult();
-
-            $wasVotedOnTarget = false;
-            foreach ($userVotes as $vote) {
-                if ($vote->getOption()->getId() === $option->getId()) {
-                    $wasVotedOnTarget = true;
-                }
-                $vote->getOption()->removeVote($vote);
-                $this->entityManager->remove($vote);
-            }
-
-            if (!$wasVotedOnTarget) {
-                $newVote = new PollVote();
-                $newVote->setUser($user);
-                $newVote->setOption($option);
-                $option->addVote($newVote);
-                $this->entityManager->persist($newVote);
-            }
-        } else {
-            if ($existingVote) {
-                $option->removeVote($existingVote);
-                $this->entityManager->remove($existingVote);
-            } else {
-                $newVote = new PollVote();
-                $newVote->setUser($user);
-                $newVote->setOption($option);
-                $option->addVote($newVote);
-                $this->entityManager->persist($newVote);
-            }
+        if ($existingVote !== null) {
+            $option->removeVote($existingVote);
+            $this->entityManager->remove($existingVote);
+            return;
         }
 
-        $this->entityManager->flush();
+        $this->createVote($option, $user);
+    }
 
-        //        $this->entityManager->refresh($poll->getMessage());
-        //        $this->entityManager->refresh($poll);
-        //        foreach ($poll->getOptions() as $opt) {
-        //            $this->entityManager->refresh($opt);
-        //        }
+    private function createVote(PollOption $option, User $user): void
+    {
+        $newVote = new PollVote();
+        $newVote->setUser($user);
+        $newVote->setOption($option);
+        $option->addVote($newVote);
+        $this->entityManager->persist($newVote);
     }
 }

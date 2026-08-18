@@ -56,15 +56,12 @@ final readonly class ChannelSummaryBuilder
         $unreadMessages = $this->messageRepository->findUnreadInChannel($targetChannel, $user, $lastReadMessageId);
         $isFallback = false;
 
-        if ($unreadMessages === []) {
-            $isFallback = true;
-            $finalMessages = $this->messageRepository->findRecentInChannel($targetChannel, $this->maxSummaryMessages);
-        } else {
-            $readMessages = $lastReadMessageId !== null
-                ? $this->messageRepository->findRecentReadBefore($targetChannel, $lastReadMessageId, 5)
-                : [];
-            $finalMessages = array_merge($readMessages, $unreadMessages);
-        }
+        $readMessages = ($unreadMessages !== [] && $lastReadMessageId !== null)
+            ? $this->messageRepository->findRecentReadBefore($targetChannel, $lastReadMessageId, 5)
+            : [];
+        $finalMessages = $unreadMessages === []
+            ? $this->messageRepository->findRecentInChannel($targetChannel, $this->maxSummaryMessages)
+            : array_merge($readMessages, $unreadMessages);
 
         $structuredMessages = $this->structureMessages($finalMessages);
 

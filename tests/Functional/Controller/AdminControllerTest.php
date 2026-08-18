@@ -94,19 +94,17 @@ class AdminControllerTest extends WebTestCase
         $this->entityManager->flush();
     }
 
-    private function mockFileUploadService(bool $exists, string $content = 'file content'): void
+    private function mockExistingFileUpload(string $content = 'file content'): void
     {
         $this->client->disableReboot();
 
         $mock = $this->createMock(FileUploadService::class);
-        $mock->method('exists')->willReturn($exists);
+        $mock->method('exists')->willReturn(true);
 
-        if ($exists) {
-            $stream = fopen('php://memory', 'r+');
-            fwrite($stream, $content);
-            rewind($stream);
-            $mock->method('readStream')->willReturn($stream);
-        }
+        $stream = fopen('php://memory', 'r+');
+        fwrite($stream, $content);
+        rewind($stream);
+        $mock->method('readStream')->willReturn($stream);
 
         $this->client->getContainer()->set(FileUploadService::class, $mock);
     }
@@ -206,7 +204,7 @@ class AdminControllerTest extends WebTestCase
         $this->entityManager->persist($export);
         $this->entityManager->flush();
 
-        $this->mockFileUploadService(true, 'zipped_data');
+        $this->mockExistingFileUpload('zipped_data');
 
         $this->client->request('GET', sprintf('/admin/exports/%d/download', $export->getId()));
         $this->assertResponseIsSuccessful();
@@ -233,7 +231,7 @@ class AdminControllerTest extends WebTestCase
 
         $exportId = $export->getId();
 
-        $this->mockFileUploadService(true);
+        $this->mockExistingFileUpload();
 
         $this->client->request('POST', sprintf('/admin/exports/%d/delete', $exportId));
         $this->assertResponseRedirects('/admin/exports');

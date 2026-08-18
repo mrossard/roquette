@@ -57,7 +57,9 @@ class ScanFileMessageHandler
             if ($isClean) {
                 $dbMessage->setVirusScanStatus('clean');
                 $this->logger->info(sprintf('File "%s" (message %d) is clean.', $dbMessage->getFileName(), $messageId));
-            } else {
+            }
+
+            if (!$isClean) {
                 $dbMessage->setVirusScanStatus('infected');
                 $this->logger->warning(sprintf(
                     'Virus detected in "%s" (message %d). Deleting file.',

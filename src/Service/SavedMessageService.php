@@ -30,11 +30,9 @@ class SavedMessageService
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
         }
 
-        if ($currentUser->getSavedMessages()->contains($message)) {
-            $currentUser->removeSavedMessage($message);
-        } else {
-            $currentUser->addSavedMessage($message);
-        }
+        $currentUser->getSavedMessages()->contains($message)
+            ? $currentUser->removeSavedMessage($message)
+            : $currentUser->addSavedMessage($message);
 
         $this->entityManager->flush();
 

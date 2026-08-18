@@ -88,11 +88,10 @@ final class InvitationController extends AbstractController
         }
 
         $workspace = $activeChannel->getWorkspace();
-        if ($workspace !== null) {
-            if ($workspace->getCreator() !== $currentUser) {
-                return new Response($this->translator->trans('Non autorisé.'), 403);
-            }
-        } elseif ($activeChannel->getCreator() !== $currentUser) {
+        $isWorkspaceDenied = $workspace !== null && $workspace->getCreator() !== $currentUser;
+        $isChannelDenied = $workspace === null && $activeChannel->getCreator() !== $currentUser;
+
+        if ($isWorkspaceDenied || $isChannelDenied) {
             return new Response($this->translator->trans('Non autorisé.'), 403);
         }
 

@@ -60,12 +60,8 @@ final class OAuthController extends AbstractController
             'code_challenge_method' => 'S256',
         ]);
 
-        $url = $this->authUrl;
-        if (str_contains($url, '?')) {
-            $url .= '&' . $queryParams;
-        } else {
-            $url .= '?' . $queryParams;
-        }
+        $separator = str_contains($this->authUrl, '?') ? '&' : '?';
+        $url = $this->authUrl . $separator . $queryParams;
 
         return new RedirectResponse($url);
     }

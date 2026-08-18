@@ -64,9 +64,11 @@ final class ReactionController extends AbstractController
             'emoji' => $emoji,
         ]);
 
-        if ($existingReaction) {
+        if ($existingReaction !== null) {
             $entityManager->remove($existingReaction);
-        } else {
+        }
+
+        if ($existingReaction === null) {
             $reaction = new Reaction();
             $reaction->setMessage($message);
             $reaction->setUser($currentUser);

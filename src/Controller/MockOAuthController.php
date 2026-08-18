@@ -76,11 +76,8 @@ final class MockOAuthController extends AbstractController
                 'state' => $state,
             ]);
 
-            if (str_contains($url, '?')) {
-                $url .= '&' . $queryParams;
-            } else {
-                $url .= '?' . $queryParams;
-            }
+            $separator = str_contains($url, '?') ? '&' : '?';
+            $url .= $separator . $queryParams;
 
             return new RedirectResponse($url);
         }
@@ -165,7 +162,9 @@ final class MockOAuthController extends AbstractController
 
         if ($authHeader && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
             $accessToken = $matches[1];
-        } else {
+        }
+
+        if ($accessToken === null) {
             $accessToken = $request->query->get('access_token');
         }
 

@@ -392,11 +392,8 @@ class ChannelControllerTest extends WebTestCase
         $dlContent = $this->client->getInternalResponse()->getContent();
         static::assertSame('zipped_data', $dlContent);
 
-        if (class_exists(\ZipArchive::class)) {
-            static::assertSame('application/zip', $response->headers->get('Content-Type'));
-        } else {
-            static::assertSame('application/x-tar', $response->headers->get('Content-Type'));
-        }
+        $expectedContentType = class_exists(\ZipArchive::class) ? 'application/zip' : 'application/x-tar';
+        static::assertSame($expectedContentType, $response->headers->get('Content-Type'));
 
         static::assertStringContainsString(
             $this->channel->getSlug() . '-export',

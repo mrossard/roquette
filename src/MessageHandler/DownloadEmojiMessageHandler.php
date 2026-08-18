@@ -52,40 +52,7 @@ class DownloadEmojiMessageHandler
             $response = $this->httpClient->request('GET', $url, [
                 'timeout' => 5.0,
             ]);
-            if ($response->getStatusCode() === 200) {
-                $content = $response->getContent();
-                $this->defaultStorage->write($storagePath, $content);
-                $this->cache->delete('emojis_filesystem_list');
-
-                // Derive code and filename
-                $noExt = substr($path, 0, -4);
-                $parts = explode('/', $noExt);
-                $filePart = (string) array_pop($parts);
-                if (\count($parts) === 0) {
-                    $code = $filePart;
-                    $filename = $filePart . '.gif';
-                } else {
-                    $dir = implode('/', $parts);
-                    $code = $filePart . ':' . $dir;
-                    $filename = $dir . '/' . $filePart . '.gif';
-                }
-
-                $customEmojiRepo = $this->entityManager->getRepository(\App\Entity\CustomEmoji::class);
-                $customEmoji = $customEmojiRepo->findOneBy(['code' => $code]);
-                if (!$customEmoji) {
-                    $customEmoji = new \App\Entity\CustomEmoji();
-                    $customEmoji->setCode($code);
-                    $customEmoji->setFilename($filename);
-                    $customEmoji->setTags([]);
-                    $this->entityManager->persist($customEmoji);
-                    $this->entityManager->flush();
-                }
-
-                $this->logger->info(sprintf(
-                    'Emoji "%s" saved successfully to local storage and registered in DB.',
-                    $path,
-                ));
-            } else {
+            if ($response->getStatusCode() !== 200) {
                 // Save empty content as negative cache
                 $this->defaultStorage->write($storagePath, '');
                 $this->cache->delete('emojis_filesystem_list');
@@ -94,7 +61,37 @@ class DownloadEmojiMessageHandler
                     $path,
                     $response->getStatusCode(),
                 ));
+
+                return;
             }
+
+            $content = $response->getContent();
+            $this->defaultStorage->write($storagePath, $content);
+            $this->cache->delete('emojis_filesystem_list');
+
+            // Derive code and filename
+            $noExt = substr($path, 0, -4);
+            $parts = explode('/', $noExt);
+            $filePart = (string) array_pop($parts);
+            $dir = implode('/', $parts);
+            $code = \count($parts) === 0 ? $filePart : $filePart . ':' . $dir;
+            $filename = \count($parts) === 0 ? $filePart . '.gif' : $dir . '/' . $filePart . '.gif';
+
+            $customEmojiRepo = $this->entityManager->getRepository(\App\Entity\CustomEmoji::class);
+            $customEmoji = $customEmojiRepo->findOneBy(['code' => $code]);
+            if (!$customEmoji) {
+                $customEmoji = new \App\Entity\CustomEmoji();
+                $customEmoji->setCode($code);
+                $customEmoji->setFilename($filename);
+                $customEmoji->setTags([]);
+                $this->entityManager->persist($customEmoji);
+                $this->entityManager->flush();
+            }
+
+            $this->logger->info(sprintf(
+                'Emoji "%s" saved successfully to local storage and registered in DB.',
+                $path,
+            ));
         } catch (\Exception $e) {
             $this->logger->error(sprintf('Exception while downloading emoji "%s": %s', $path, $e->getMessage()));
         }

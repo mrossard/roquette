@@ -224,11 +224,10 @@ class LinkPreviewService
 
         // 1. Titre
         $titleNode = $crawler->filter('meta[property="og:title"], meta[name="twitter:title"]');
-        if ($titleNode->count() > 0) {
-            $title = $titleNode->first()->attr('content') ?? '';
-        } else {
-            $titleNode = $crawler->filter('title');
-            $title = $titleNode->count() > 0 ? $titleNode->first()->text() : '';
+        $title = $titleNode->count() > 0 ? (string) $titleNode->first()->attr('content') : '';
+        if ($title === '') {
+            $titleFallbackNode = $crawler->filter('title');
+            $title = $titleFallbackNode->count() > 0 ? $titleFallbackNode->first()->text() : '';
         }
         $title = html_entity_decode(trim(strip_tags($title)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
@@ -250,13 +249,12 @@ class LinkPreviewService
             if (($parsedUrl['port'] ?? null) !== null) {
                 $base .= ':' . $parsedUrl['port'];
             }
-            if (str_starts_with($image, '/')) {
-                $image = $base . $image;
-            } else {
-                $path = $parsedUrl['path'] ?? '';
-                $dir = dirname($path);
-                $image = $base . ($dir === '/' ? '' : $dir) . '/' . $image;
-            }
+            $path = $parsedUrl['path'] ?? '';
+            $dir = dirname($path);
+            $dirPrefix = $dir === '/' ? '' : $dir;
+            $image = str_starts_with($image, '/')
+                ? $base . $image
+                : $base . $dirPrefix . '/' . $image;
         }
 
         // 4. Nom du site

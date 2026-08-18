@@ -134,4 +134,9 @@ class Poll
         }
         return $total;
     }
+
+    public function hasVotes(): bool
+    {
+        return $this->getTotalVotes() > 0;
+    }
 }
