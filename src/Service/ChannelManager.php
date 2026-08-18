@@ -347,33 +347,43 @@ class ChannelManager
         }
 
         $dmChannel = $this->channelRepository->findDmBetween($currentUser, $partner);
-
-        if (!$dmChannel) {
-            $dmChannel = new Channel();
-            $dmChannel->setIsPrivate(true);
-            $dmChannel->setIsDm(true);
-
-            $slug = $this->generateDmSlug($currentUser, $partner);
-            $dmChannel->setSlug($slug);
-            $dmChannel->setName(sprintf('%s & %s', $currentUser->getUsername(), $partner->getUsername()));
-            $dmChannel->setDescription(sprintf(
-                'Conversation privée entre %s et %s',
-                $currentUser->getUsername(),
-                $partner->getUsername(),
-            ));
-
-            $dmChannel->setCreator($currentUser);
-            $dmChannel->addMember($currentUser);
-            $dmChannel->addMember($partner);
-
-            $this->entityManager->persist($dmChannel);
-            $this->entityManager->flush();
-        } elseif (!$dmChannel->getMembers()->contains($currentUser)) {
-            $dmChannel->addMember($currentUser);
-            $this->entityManager->flush();
+        if ($dmChannel === null) {
+            return $this->createDmChannel($currentUser, $partner);
         }
 
+        $this->ensureMemberInDm($dmChannel, $currentUser);
+
         return $dmChannel;
+    }
+
+    private function createDmChannel(User $currentUser, User $partner): Channel
+    {
+        $dmChannel = new Channel();
+        $dmChannel->setIsPrivate(true);
+        $dmChannel->setIsDm(true);
+        $dmChannel->setSlug($this->generateDmSlug($currentUser, $partner));
+        $dmChannel->setName(sprintf('%s & %s', $currentUser->getUsername(), $partner->getUsername()));
+        $dmChannel->setDescription(sprintf(
+            'Conversation privée entre %s et %s',
+            $currentUser->getUsername(),
+            $partner->getUsername(),
+        ));
+        $dmChannel->setCreator($currentUser);
+        $dmChannel->addMember($currentUser);
+        $dmChannel->addMember($partner);
+
+        $this->entityManager->persist($dmChannel);
+        $this->entityManager->flush();
+
+        return $dmChannel;
+    }
+
+    private function ensureMemberInDm(Channel $dmChannel, User $user): void
+    {
+        if (!$dmChannel->getMembers()->contains($user)) {
+            $dmChannel->addMember($user);
+            $this->entityManager->flush();
+        }
     }
 
     public function generateDmSlug(User $user1, User $user2): string
