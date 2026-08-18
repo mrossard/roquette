@@ -47,7 +47,16 @@ class WorkspaceContextTest extends TestCase
     }
 
     #[Test]
-    public function getCurrentWorkspaceFallsBackToPublicWorkspaceWhenSessionEmpty(): void
+    public function getCurrentWorkspaceReturnsNullWhenSessionEmpty(): void
+    {
+        $this->session->method('get')->willReturn(null);
+        $this->workspaceRepository->expects(self::never())->method('findPublicWorkspace');
+
+        static::assertNull($this->context->getCurrentWorkspace());
+    }
+
+    #[Test]
+    public function getCurrentWorkspaceOrPublicFallsBackToPublicWorkspaceWhenSessionEmpty(): void
     {
         $publicWorkspace = $this->createMock(Workspace::class);
         $publicWorkspace->method('getId')->willReturn(1);
@@ -56,20 +65,11 @@ class WorkspaceContextTest extends TestCase
         $this->workspaceRepository->method('findPublicWorkspace')->willReturn($publicWorkspace);
         $this->session->expects(self::once())->method('set')->with(WorkspaceContext::SESSION_KEY, 1);
 
-        static::assertSame($publicWorkspace, $this->context->getCurrentWorkspace());
+        static::assertSame($publicWorkspace, $this->context->getCurrentWorkspaceOrPublic());
     }
 
     #[Test]
-    public function getCurrentWorkspaceReturnsNullWhenNoFallback(): void
-    {
-        $this->session->method('get')->willReturn(null);
-        $this->workspaceRepository->expects(self::never())->method('findPublicWorkspace');
-
-        static::assertNull($this->context->getCurrentWorkspace(fallbackToPublic: false));
-    }
-
-    #[Test]
-    public function getCurrentWorkspaceHandlesMissingSessionGracefully(): void
+    public function getCurrentWorkspaceOrPublicHandlesMissingSessionGracefully(): void
     {
         $emptyStack = new RequestStack();
         $contextWithoutSession = new WorkspaceContext($emptyStack, $this->workspaceRepository);
@@ -77,27 +77,7 @@ class WorkspaceContextTest extends TestCase
         $publicWorkspace = $this->createMock(Workspace::class);
         $this->workspaceRepository->method('findPublicWorkspace')->willReturn($publicWorkspace);
 
-        static::assertSame($publicWorkspace, $contextWithoutSession->getCurrentWorkspace());
-    }
-
-    #[Test]
-    public function getCurrentWorkspaceIdReturnsDirectInteger(): void
-    {
-        $this->session->method('get')->willReturn(10);
-
-        static::assertSame(10, $this->context->getCurrentWorkspaceId());
-    }
-
-    #[Test]
-    public function getCurrentWorkspaceIdFallsBackWhenMissing(): void
-    {
-        $publicWorkspace = $this->createMock(Workspace::class);
-        $publicWorkspace->method('getId')->willReturn(7);
-
-        $this->session->method('get')->willReturn(null);
-        $this->workspaceRepository->method('findPublicWorkspace')->willReturn($publicWorkspace);
-
-        static::assertSame(7, $this->context->getCurrentWorkspaceId());
+        static::assertSame($publicWorkspace, $contextWithoutSession->getCurrentWorkspaceOrPublic());
     }
 
     #[Test]

@@ -84,7 +84,7 @@ final class DashboardController extends AbstractController
         $currentUser = $this->getUser();
 
         $sidebarData = $this->sidebarDataProvider->getSidebarData($currentUser);
-        $currentWorkspace = $this->workspaceContext->getCurrentWorkspace();
+        $currentWorkspace = $this->workspaceContext->getCurrentWorkspaceOrPublic();
 
         $allPublicChannels = $currentWorkspace
             ? $channelRepository->findPublicForWorkspace($currentWorkspace)
@@ -109,7 +109,7 @@ final class DashboardController extends AbstractController
         UserRepository $userRepository,
     ): Response {
         $currentUser = $this->getUser();
-        $currentWorkspace = $this->workspaceContext->getCurrentWorkspace();
+        $currentWorkspace = $this->workspaceContext->getCurrentWorkspaceOrPublic();
 
         $etag = md5(sprintf('directory-%s-%s-%s', $type, $currentWorkspace?->getId() ?? 'none', $currentUser?->getUserIdentifier() ?? 'guest'));
         $response = new Response();

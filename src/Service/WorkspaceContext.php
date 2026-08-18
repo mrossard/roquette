@@ -25,55 +25,37 @@ class WorkspaceContext
     ) {}
 
     /**
-     * Gets the currently active workspace from the session or falls back to public workspace.
+     * Gets the currently active workspace from the session without fallback.
      */
-    public function getCurrentWorkspace(bool $fallbackToPublic = true): ?Workspace
+    public function getCurrentWorkspace(): ?Workspace
     {
         $session = $this->getSession();
         $workspaceId = $session?->get(self::SESSION_KEY);
 
         if (is_int($workspaceId) || (is_string($workspaceId) && ctype_digit($workspaceId))) {
-            $workspace = $this->workspaceRepository->find((int) $workspaceId);
-            if ($workspace !== null) {
-                return $workspace;
-            }
+            return $this->workspaceRepository->find((int) $workspaceId);
         }
 
-        if (!$fallbackToPublic) {
-            return null;
+        return null;
+    }
+
+    /**
+     * Gets the currently active workspace from session or falls back to public workspace.
+     */
+    public function getCurrentWorkspaceOrPublic(): ?Workspace
+    {
+        $workspace = $this->getCurrentWorkspace();
+        if ($workspace !== null) {
+            return $workspace;
         }
 
         $publicWorkspace = $this->workspaceRepository->findPublicWorkspace();
+        $session = $this->getSession();
         if ($publicWorkspace !== null && $session !== null) {
             $session->set(self::SESSION_KEY, $publicWorkspace->getId());
         }
 
         return $publicWorkspace;
-    }
-
-    /**
-     * Gets the currently active workspace ID.
-     */
-    public function getCurrentWorkspaceId(bool $fallbackToPublic = true): ?int
-    {
-        $session = $this->getSession();
-        $workspaceId = $session?->get(self::SESSION_KEY);
-
-        if (is_int($workspaceId)) {
-            return $workspaceId;
-        }
-
-        if (is_string($workspaceId) && ctype_digit($workspaceId)) {
-            return (int) $workspaceId;
-        }
-
-        if (!$fallbackToPublic) {
-            return null;
-        }
-
-        $workspace = $this->getCurrentWorkspace(fallbackToPublic: true);
-
-        return $workspace?->getId();
     }
 
     /**
@@ -116,7 +98,7 @@ class WorkspaceContext
             return $workspace;
         }
 
-        return $this->getCurrentWorkspace();
+        return $this->getCurrentWorkspaceOrPublic();
     }
 
     private function getSession(): ?SessionInterface

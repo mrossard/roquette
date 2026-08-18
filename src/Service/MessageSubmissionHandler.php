@@ -66,7 +66,7 @@ class MessageSubmissionHandler
             return $this->renderForm($channel);
         }
 
-        $workspaceId = $this->workspaceContext->getCurrentWorkspaceId();
+        $workspaceId = $this->workspaceContext->getCurrentWorkspaceOrPublic()?->getId();
 
         // Handle slash commands that return a direct Response
         if (!$isPoll && !$uploadedFile && str_starts_with(trim($messageText), '/')) {

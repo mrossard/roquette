@@ -52,7 +52,7 @@ final class ChannelActionController extends AbstractController
 
         $helpMessageId = 'summary-modal-stream-' . uniqid();
         $promptText = 'résume le canal ' . $channel->getName();
-        $workspaceId = $this->workspaceContext->getCurrentWorkspaceId();
+        $workspaceId = $this->workspaceContext->getCurrentWorkspaceOrPublic()?->getId();
 
         $messageBus->dispatch(new LlmQueryMessage(
             question: $promptText,
