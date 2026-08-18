@@ -66,11 +66,9 @@ class ChannelManager
             $channel->setIsPrivate(true);
 
             if ($dto->groupIdentifier !== '') {
-                $groupSub = $this->groupSubscriptionManager->attachGroupSubscription(
-                    $channel,
-                    $dto->groupIdentifier,
-                    $dto->isGroupChannel,
-                );
+                $groupSub = $dto->isGroupChannel
+                    ? $this->groupSubscriptionManager->attachOfficialGroupSubscription($channel, $dto->groupIdentifier)
+                    : $this->groupSubscriptionManager->attachGroupSubscription($channel, $dto->groupIdentifier);
                 $this->entityManager->persist($groupSub);
             }
         }

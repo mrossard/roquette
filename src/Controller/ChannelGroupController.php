@@ -36,7 +36,9 @@ final class ChannelGroupController extends AbstractController
             $isOfficial = $request->request->getBoolean('newGroupIsOfficial', false);
 
             try {
-                $this->groupSubscriptionManager->subscribe($channel, $newGroupIdentifier, $isOfficial);
+                $isOfficial
+                    ? $this->groupSubscriptionManager->subscribeOfficial($channel, $newGroupIdentifier)
+                    : $this->groupSubscriptionManager->subscribe($channel, $newGroupIdentifier);
             } catch (InvalidArgumentException $e) {
                 $this->addFlash('error', $e->getMessage());
             }

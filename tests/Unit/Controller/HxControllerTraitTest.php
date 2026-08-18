@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Controller;
 
-use App\Controller\HxControllerTrait;
+use App\Controller\Trait\HxControllerTrait;
 use App\Entity\Channel;
 use App\Repository\ChannelRepository;
 use PHPUnit\Framework\Attributes\Test;

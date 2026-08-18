@@ -171,7 +171,7 @@ class UserGroupManager
             return [];
         }
 
-        $allUsers = $this->userRepository->getAllSortedByDisplayName(false);
+        $allUsers = $this->userRepository->getAllSortedByDisplayName();
         $currentMemberIds = array_map(static fn(User $u) => $u->getId(), $userGroup->getMembers()->toArray());
 
         $matches = [];

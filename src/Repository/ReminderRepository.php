@@ -18,21 +18,15 @@ class ReminderRepository extends ServiceEntityRepository
         parent::__construct($registry, Reminder::class);
     }
 
-    public function save(Reminder $entity, bool $flush = false): void
+    public function save(Reminder $entity): void
     {
         $this->getEntityManager()->persist($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
-        }
+        $this->getEntityManager()->flush();
     }
 
-    public function remove(Reminder $entity, bool $flush = false): void
+    public function remove(Reminder $entity): void
     {
         $this->getEntityManager()->remove($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
-        }
+        $this->getEntityManager()->flush();
     }
 }

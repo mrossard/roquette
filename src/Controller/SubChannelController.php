@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\HxControllerTrait;
 use App\Repository\MessageRepository;
 use App\Service\SubChannelManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

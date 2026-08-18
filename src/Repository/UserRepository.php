@@ -104,7 +104,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getResult();
     }
 
-    public function getAllSortedByDisplayName(bool $withRobot): iterable
+    public function getAllSortedByDisplayName(): iterable
+    {
+        return $this->findAllSortedByDisplayName(withRobot: false);
+    }
+
+    public function getAllSortedByDisplayNameWithRobot(): iterable
+    {
+        return $this->findAllSortedByDisplayName(withRobot: true);
+    }
+
+    private function findAllSortedByDisplayName(bool $withRobot): iterable
     {
         $qb = $this
             ->createQueryBuilder('u')
@@ -118,7 +128,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $qb->getQuery()->getResult();
     }
 
-    public function countAll(bool $withRobot = false): int
+    public function countAll(): int
+    {
+        return $this->doCountAll(withRobot: false);
+    }
+
+    public function countAllWithRobot(): int
+    {
+        return $this->doCountAll(withRobot: true);
+    }
+
+    private function doCountAll(bool $withRobot): int
     {
         $qb = $this->createQueryBuilder('u')->select('COUNT(u.id)');
 
@@ -132,7 +152,23 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     /**
      * @return User[]
      */
-    public function findPaginated(int $page, int $perPage = 25, bool $withRobot = false): array
+    public function findPaginated(int $page, int $perPage = 25): array
+    {
+        return $this->doFindPaginated($page, $perPage, withRobot: false);
+    }
+
+    /**
+     * @return User[]
+     */
+    public function findPaginatedWithRobot(int $page, int $perPage = 25): array
+    {
+        return $this->doFindPaginated($page, $perPage, withRobot: true);
+    }
+
+    /**
+     * @return User[]
+     */
+    private function doFindPaginated(int $page, int $perPage, bool $withRobot): array
     {
         $page = max(1, min($page, 10_000));
         $perPage = max(1, min($perPage, 100));

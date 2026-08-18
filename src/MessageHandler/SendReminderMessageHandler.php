@@ -47,7 +47,7 @@ final readonly class SendReminderMessageHandler
         );
 
         $reminder->setStatus('delivered');
-        $this->reminderRepository->save($reminder, flush: true);
+        $this->reminderRepository->save($reminder);
     }
 }
 

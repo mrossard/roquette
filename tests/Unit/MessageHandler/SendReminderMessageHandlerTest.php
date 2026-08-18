@@ -51,7 +51,7 @@ final class SendReminderMessageHandlerTest extends TestCase
             ->method('publish')
             ->with($channel, $robotUser, '⏰ **Rappel pour @john** : Finir le rapport');
 
-        $reminderRepository->expects(self::once())->method('save')->with($reminder, true);
+        $reminderRepository->expects(self::once())->method('save')->with($reminder);
 
         $handler = new SendReminderMessageHandler($reminderRepository, $userRepository, $messagePublishService, $robotUserProvider);
 

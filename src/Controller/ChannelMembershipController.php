@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
+use App\Controller\Trait\HxControllerTrait;
 use App\Entity\User;
 use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;

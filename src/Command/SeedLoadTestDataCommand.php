@@ -104,41 +104,8 @@ class SeedLoadTestDataCommand extends Command
         $outputMapping = $input->getOption('output-mapping');
         $force = (bool) $input->getOption('force');
 
-        if (!$force) {
-            $existing = (int) $this->em
-                ->getRepository(User::class)
-                ->createQueryBuilder('u')
-                ->where('u.username LIKE :prefix')
-                ->setParameter('prefix', 'loadtest_%')
-                ->select('COUNT(u.id)')
-                ->getQuery()
-                ->getSingleScalarResult();
-
-            if ($existing > 0) {
-                $io->warning('Des données de test existent déjà. Utilisez --force pour les supprimer et les recréer.');
-
-                return Command::FAILURE;
-            }
-        }
-
-        if ($force) {
-            $io->note('Suppression des données de test existantes...');
-            $this->em
-                ->getConnection()
-                ->executeStatement(
-                    'DELETE FROM "message" WHERE author_id IN (SELECT id FROM "user" WHERE username LIKE \'loadtest_%\')',
-                );
-            $this->em
-                ->getConnection()
-                ->executeStatement(
-                    'DELETE FROM "channel_user" WHERE channel_id IN (SELECT id FROM "channel" WHERE slug LIKE \'private-channel-%\' OR slug LIKE \'dm-%\')',
-                );
-            $this->em
-                ->getConnection()
-                ->executeStatement('DELETE FROM "channel" WHERE slug LIKE \'private-channel-%\' OR slug LIKE \'dm-%\'');
-            $this->em->getConnection()->executeStatement('DELETE FROM "user" WHERE username LIKE \'loadtest_%\'');
-            $this->em->clear();
-            $io->info('Données de test supprimées.');
+        if (!$this->checkAndPurgeExistingData($force, $io)) {
+            return Command::FAILURE;
         }
 
         $io->section('Phase 1 : Création des utilisateurs');
@@ -168,6 +135,58 @@ class SeedLoadTestDataCommand extends Command
             $this->writeMappingFile($outputMapping, array_keys($users), $privateChannelData, $dmData, $io);
         }
 
+        $this->displaySummary($io, $numUsers, $password, $numPrivateChannels, $numDms, $numDmMessages, $numChannelMessages);
+
+        return Command::SUCCESS;
+    }
+
+    private function checkAndPurgeExistingData(bool $force, SymfonyStyle $io): bool
+    {
+        if (!$force) {
+            $existing = (int) $this->em
+                ->getRepository(User::class)
+                ->createQueryBuilder('u')
+                ->where('u.username LIKE :prefix')
+                ->setParameter('prefix', 'loadtest_%')
+                ->select('COUNT(u.id)')
+                ->getQuery()
+                ->getSingleScalarResult();
+
+            if ($existing > 0) {
+                $io->warning('Des données de test existent déjà. Utilisez --force pour les supprimer et les recréer.');
+
+                return false;
+            }
+        }
+
+        if ($force) {
+            $io->note('Suppression des données de test existantes...');
+            $conn = $this->em->getConnection();
+            $conn->executeStatement(
+                'DELETE FROM "message" WHERE author_id IN (SELECT id FROM "user" WHERE username LIKE \'loadtest_%\')',
+            );
+            $conn->executeStatement(
+                'DELETE FROM "channel_user" WHERE channel_id IN (SELECT id FROM "channel" WHERE slug LIKE \'private-channel-%\' OR slug LIKE \'dm-%\')',
+            );
+            $conn->executeStatement('DELETE FROM "channel" WHERE slug LIKE \'private-channel-%\' OR slug LIKE \'dm-%\'');
+            $conn->executeStatement('DELETE FROM "user" WHERE username LIKE \'loadtest_%\'');
+            $this->em->clear();
+            $io->info('Données de test supprimées.');
+        }
+
+        return true;
+    }
+
+    private function displaySummary(
+        SymfonyStyle $io,
+        int $numUsers,
+        #[\SensitiveParameter]
+        string $password,
+        int $numPrivateChannels,
+        int $numDms,
+        int $numDmMessages,
+        int $numChannelMessages,
+    ): void {
         $io->success('Génération des données de test terminée avec succès !');
         $io->table(['Ressource', 'Quantité', 'Détail'], [
             ['Utilisateurs', (string) $numUsers, sprintf('loadtest_1 … loadtest_%d / %s', $numUsers, $password)],
@@ -185,8 +204,6 @@ class SeedLoadTestDataCommand extends Command
             ],
             ['Messages canaux', number_format($numChannelMessages), 'répartis dans tous les canaux'],
         ]);
-
-        return Command::SUCCESS;
     }
 
     /**

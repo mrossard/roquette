@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\HxControllerTrait;
 use App\Entity\User;
 use App\Repository\InvitationRepository;
 use App\Repository\UserRepository;

@@ -18,9 +18,22 @@ readonly class GroupSubscriptionManager
     ) {}
 
     /**
-     * Attaches a group subscription to a channel after validating that official group channels are unique.
+     * Attaches a standard group subscription to a channel.
      */
-    public function attachGroupSubscription(Channel $channel, string $groupIdentifier, bool $isGroupChannel): GroupSubscription
+    public function attachGroupSubscription(Channel $channel, string $groupIdentifier): GroupSubscription
+    {
+        return $this->doAttachGroupSubscription($channel, $groupIdentifier, false);
+    }
+
+    /**
+     * Attaches an official group subscription to a channel after validating uniqueness.
+     */
+    public function attachOfficialGroupSubscription(Channel $channel, string $groupIdentifier): GroupSubscription
+    {
+        return $this->doAttachGroupSubscription($channel, $groupIdentifier, true);
+    }
+
+    private function doAttachGroupSubscription(Channel $channel, string $groupIdentifier, bool $isGroupChannel): GroupSubscription
     {
         if ($groupIdentifier === '') {
             throw new InvalidArgumentException($this->translator->trans('Identifiant de groupe invalide.'));
@@ -49,7 +62,17 @@ readonly class GroupSubscriptionManager
         return $groupSubscription;
     }
 
-    public function subscribe(Channel $channel, string $groupIdentifier, bool $isOfficial): ?GroupSubscription
+    public function subscribe(Channel $channel, string $groupIdentifier): ?GroupSubscription
+    {
+        return $this->doSubscribe($channel, $groupIdentifier, false);
+    }
+
+    public function subscribeOfficial(Channel $channel, string $groupIdentifier): ?GroupSubscription
+    {
+        return $this->doSubscribe($channel, $groupIdentifier, true);
+    }
+
+    private function doSubscribe(Channel $channel, string $groupIdentifier, bool $isOfficial): ?GroupSubscription
     {
         $groupIdentifier = trim($groupIdentifier);
         if ($groupIdentifier === '') {
@@ -67,7 +90,7 @@ readonly class GroupSubscriptionManager
             return $existingSub;
         }
 
-        $sub = $this->attachGroupSubscription($channel, $groupIdentifier, $isOfficial);
+        $sub = $this->doAttachGroupSubscription($channel, $groupIdentifier, $isOfficial);
         $this->entityManager->persist($sub);
         $this->entityManager->flush();
 

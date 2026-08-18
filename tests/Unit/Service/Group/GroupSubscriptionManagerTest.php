@@ -42,7 +42,7 @@ final class GroupSubscriptionManagerTest extends TestCase
         $channel = new Channel();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->manager->attachGroupSubscription($channel, '', false);
+        $this->manager->attachGroupSubscription($channel, '');
     }
 
     #[Test]
@@ -62,14 +62,14 @@ final class GroupSubscriptionManagerTest extends TestCase
             ->willReturn($repo);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->manager->attachGroupSubscription($channel, 'group-tech', true);
+        $this->manager->attachOfficialGroupSubscription($channel, 'group-tech');
     }
 
     #[Test]
     public function subscribeReturnsNullOnEmptyIdentifier(): void
     {
         $channel = new Channel();
-        $this->assertNull($this->manager->subscribe($channel, '   ', false));
+        $this->assertNull($this->manager->subscribe($channel, '   '));
     }
 
     #[Test]
@@ -92,7 +92,7 @@ final class GroupSubscriptionManagerTest extends TestCase
 
         $this->entityManager->expects($this->never())->method('persist');
 
-        $result = $this->manager->subscribe($channel, 'group-sales', false);
+        $result = $this->manager->subscribe($channel, 'group-sales');
         $this->assertSame($existing, $result);
     }
 
@@ -115,7 +115,7 @@ final class GroupSubscriptionManagerTest extends TestCase
         $this->entityManager->expects($this->once())->method('persist')->with($this->isInstanceOf(GroupSubscription::class));
         $this->entityManager->expects($this->once())->method('flush');
 
-        $result = $this->manager->subscribe($channel, 'group-marketing', false);
+        $result = $this->manager->subscribe($channel, 'group-marketing');
         $this->assertNotNull($result);
         $this->assertSame('group-marketing', $result->getGroupIdentifier());
         $this->assertFalse($result->isGroupChannel());

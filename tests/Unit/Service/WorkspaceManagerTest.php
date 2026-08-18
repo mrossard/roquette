@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Service;
 
 use App\Dto\Workspace\UpdateWorkspaceDto;
-use App\Entity\Channel;
 use App\Entity\User;
 use App\Entity\Workspace;
 use App\Repository\ChannelRepository;

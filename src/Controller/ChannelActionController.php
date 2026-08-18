@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
+use App\Controller\Trait\HxControllerTrait;
 use App\Dto\Channel\CreateChannelDto;
 use App\Dto\Channel\UpdateChannelDto;
 use App\Entity\User;
