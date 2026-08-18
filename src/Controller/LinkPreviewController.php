@@ -22,10 +22,12 @@ final class LinkPreviewController extends AbstractController
     #[Route('/api/link-preview', name: 'app_api_link_preview', methods: ['GET'])]
     public function getPreview(Request $request): Response
     {
-        $url = $request->query->get('url');
-        if (!$url) {
+        $url = (string) $request->query->get('url');
+        if ($url === '') {
             return new JsonResponse(['error' => 'URL parameter is missing'], 400);
         }
+
+        $dto = $this->linkPreviewService->getPreviewDto($url);
 
         $response = match (true) {
             $dto === null => new Response('', 200),

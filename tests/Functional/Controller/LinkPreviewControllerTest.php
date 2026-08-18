@@ -8,13 +8,14 @@ use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 #[AllowMockObjectsWithoutExpectations]
 class LinkPreviewControllerTest extends WebTestCase
 {
     private EntityManagerInterface $entityManager;
-    private $client;
+    private KernelBrowser $client;
 
     protected function setUp(): void
     {
@@ -43,15 +44,7 @@ class LinkPreviewControllerTest extends WebTestCase
         $this->entityManager->flush();
     }
 
-    #[Test]
-    public function testGetPreviewRequiresAuthentication(): void
-    {
-        $this->client->request('GET', '/api/link-preview?url=https://github.com');
-        $this->assertResponseRedirects('/login');
-    }
-
-    #[Test]
-    public function testGetPreviewMissingUrl(): void
+    private function createAndLoginUser(): User
     {
         $user = new User();
         $user->setUsername('test_preview_user');
@@ -65,8 +58,45 @@ class LinkPreviewControllerTest extends WebTestCase
 
         $this->client->loginUser($user);
 
+        return $user;
+    }
+
+    #[Test]
+    public function testGetPreviewRequiresAuthentication(): void
+    {
+        $this->client->request('GET', '/api/link-preview?url=https://github.com');
+        $this->assertResponseRedirects('/login');
+    }
+
+    #[Test]
+    public function testGetPreviewMissingUrl(): void
+    {
+        $this->createAndLoginUser();
+
         $this->client->request('GET', '/api/link-preview');
         $this->assertResponseStatusCodeSame(400);
         static::assertJson($this->client->getResponse()->getContent());
+    }
+
+    #[Test]
+    public function testGetPreviewDirectImageUrl(): void
+    {
+        $this->createAndLoginUser();
+
+        $this->client->request('GET', '/api/link-preview?url=https://example.com/photo.png');
+        $this->assertResponseIsSuccessful();
+        static::assertStringContainsString('image-preview-container', (string) $this->client->getResponse()->getContent());
+        static::assertStringContainsString('photo.png', (string) $this->client->getResponse()->getContent());
+    }
+
+    #[Test]
+    public function testGetPreviewInvalidOrUnreachableUrlReturnsEmpty200(): void
+    {
+        $this->createAndLoginUser();
+
+        // 127.0.0.1 is blocked by UrlSafetyValidator (SSRF protection) so getPreviewDto returns null
+        $this->client->request('GET', '/api/link-preview?url=http://127.0.0.1/secret');
+        $this->assertResponseIsSuccessful();
+        static::assertSame('', $this->client->getResponse()->getContent());
     }
 }

@@ -5,69 +5,61 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Security;
 
 use App\Entity\User;
-use App\Repository\UserRepository;
+use App\Security\OAuth\OAuthClient;
+use App\Security\OAuth\OAuthUserAttributes;
+use App\Security\OAuth\OAuthUserExtractor;
+use App\Security\OAuth\OAuthUserManager;
 use App\Security\OAuth2Authenticator;
-use App\Service\RobotUserProvider;
-use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Contracts\HttpClient\ResponseInterface;
 
 #[AllowMockObjectsWithoutExpectations]
 class OAuth2AuthenticatorTest extends TestCase
 {
-    private HttpClientInterface $httpClient;
+    private OAuthClient $oauthClient;
+    private OAuthUserExtractor $oauthUserExtractor;
+    private OAuthUserManager $oauthUserManager;
     private UrlGeneratorInterface $urlGenerator;
-    private UserRepository $userRepository;
-    private EntityManagerInterface $entityManager;
-    private UserPasswordHasherInterface $passwordHasher;
     private LoggerInterface $logger;
     private OAuth2Authenticator $authenticator;
 
     protected function setUp(): void
     {
-        $this->httpClient = $this->createMock(HttpClientInterface::class);
+        $this->oauthClient = $this->createMock(OAuthClient::class);
+        $this->oauthUserExtractor = $this->createMock(OAuthUserExtractor::class);
+        $this->oauthUserManager = $this->createMock(OAuthUserManager::class);
         $this->urlGenerator = $this->createMock(UrlGeneratorInterface::class);
-        $this->userRepository = $this->createMock(UserRepository::class);
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->passwordHasher = $this->createMock(UserPasswordHasherInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->authenticator = new OAuth2Authenticator(
-            $this->httpClient,
+            $this->oauthClient,
+            $this->oauthUserExtractor,
+            $this->oauthUserManager,
             $this->urlGenerator,
-            $this->userRepository,
-            $this->entityManager,
-            $this->passwordHasher,
             $this->logger,
-            'client_id',
-            'client_secret',
-            'http://oauth/auth',
-            'http://oauth/token',
-            'http://oauth/userinfo',
-            'username',
-            'http://redirect',
-            'name',
             true,
-            $this->createMock(RobotUserProvider::class),
         );
     }
 
-    private function createMockRequest(string $state = 'test_state'): Request
+    private function createMockRequest(string $state = 'test_state', ?string $codeVerifier = 'verifier_123'): Request
     {
         $session = $this->createMock(SessionInterface::class);
         $session
             ->method('get')
-            ->willReturnCallback(static function (string $name) use ($state) {
+            ->willReturnCallback(static function (string $name) use ($state, $codeVerifier) {
                 if ($name === 'oauth2state') {
                     return $state;
+                }
+                if ($name === 'oauth2code_verifier') {
+                    return $codeVerifier;
                 }
                 return null;
             });
@@ -78,118 +70,113 @@ class OAuth2AuthenticatorTest extends TestCase
         return $request;
     }
 
-    public function testAuthenticateThrowsExceptionWhenExistingUserHasDifferentOauthId(): void
+    public function testSupportsReturnsTrueWhenEnabledAndValidPath(): void
     {
-        $request = $this->createMockRequest();
+        $request = Request::create('/oauth/check?code=123');
+        static::assertTrue($this->authenticator->supports($request));
+    }
 
-        $tokenResponse = $this->createMock(ResponseInterface::class);
-        $tokenResponse->method('toArray')->willReturn(['access_token' => 'token_123']);
+    public function testSupportsReturnsFalseWhenDisabled(): void
+    {
+        $authenticator = new OAuth2Authenticator(
+            $this->oauthClient,
+            $this->oauthUserExtractor,
+            $this->oauthUserManager,
+            $this->urlGenerator,
+            $this->logger,
+            false,
+        );
 
-        $userInfoResponse = $this->createMock(ResponseInterface::class);
-        $userInfoResponse
-            ->method('toArray')
-            ->willReturn([
-                'id' => 'new_oauth_id',
-                'username' => 'john_doe',
-            ]);
+        $request = Request::create('/oauth/check?code=123');
+        static::assertFalse($authenticator->supports($request));
+    }
 
-        $this->httpClient->method('request')->willReturnOnConsecutiveCalls($tokenResponse, $userInfoResponse);
-
-        // 1. Search by OAuth ID -> not found
-        // 2. Search by username -> found user with DIFFERENT oauthId
-        $existingUser = new User();
-        $existingUser->setUsername('john_doe');
-        $existingUser->setOauthId('old_different_oauth_id');
-
-        $this->userRepository
-            ->method('findOneBy')
-            ->willReturnCallback(static function (array $criteria) use ($existingUser) {
-                if (($criteria['oauthId'] ?? null) === 'new_oauth_id') {
-                    return null;
-                }
-                if (($criteria['username'] ?? null) === 'john_doe') {
-                    return $existingUser;
-                }
-                return null;
-            });
+    public function testAuthenticateThrowsWhenStateMismatch(): void
+    {
+        $request = $this->createMockRequest('state_A');
+        // change state in request to cause mismatch
+        $request->query->set('state', 'state_B');
 
         $this->expectException(CustomUserMessageAuthenticationException::class);
-        $this->expectExceptionMessage('Ce nom d\'utilisateur est déjà lié à un autre compte OAuth.');
+        $this->expectExceptionMessage('La validation de l\'état de sécurité (CSRF) a échoué. Veuillez réessayer.');
 
         $this->authenticator->authenticate($request);
     }
 
-    public function testAuthenticateAllowsLinkingWhenExistingUserHasMatchingOauthId(): void
+    public function testAuthenticateOrchestratesFlowSuccessfully(): void
     {
         $request = $this->createMockRequest();
 
-        $tokenResponse = $this->createMock(ResponseInterface::class);
-        $tokenResponse->method('toArray')->willReturn(['access_token' => 'token_123']);
+        $this->oauthClient
+            ->expects(static::once())
+            ->method('fetchAccessToken')
+            ->with('valid_code', 'verifier_123')
+            ->willReturn('access_token_xyz');
 
-        $userInfoResponse = $this->createMock(ResponseInterface::class);
-        $userInfoResponse
-            ->method('toArray')
-            ->willReturn([
-                'id' => 'same_oauth_id',
-                'username' => 'john_doe',
-            ]);
+        $userData = ['id' => '123', 'username' => 'alice'];
+        $this->oauthClient
+            ->expects(static::once())
+            ->method('fetchUserInfo')
+            ->with('access_token_xyz')
+            ->willReturn($userData);
 
-        $this->httpClient->method('request')->willReturnOnConsecutiveCalls($tokenResponse, $userInfoResponse);
+        $attributes = new OAuthUserAttributes(
+            oauthId: '123',
+            username: 'alice',
+            displayName: 'Alice',
+            email: 'alice@example.com',
+        );
+        $this->oauthUserExtractor
+            ->expects(static::once())
+            ->method('extract')
+            ->with($userData)
+            ->willReturn($attributes);
 
-        $existingUser = new User();
-        $existingUser->setUsername('john_doe');
-        $existingUser->setOauthId('same_oauth_id');
-
-        $this->userRepository
-            ->method('findOneBy')
-            ->willReturnCallback(static function (array $criteria) use ($existingUser) {
-                if (($criteria['oauthId'] ?? null) === 'same_oauth_id') {
-                    return $existingUser;
-                }
-                return null;
-            });
+        $user = new User();
+        $user->setUsername('alice');
+        $this->oauthUserManager
+            ->expects(static::once())
+            ->method('findOrCreateUser')
+            ->with('123', 'alice', 'Alice', 'alice@example.com')
+            ->willReturn($user);
 
         $passport = $this->authenticator->authenticate($request);
-        static::assertSame($existingUser, $passport->getUser());
+        static::assertSame($user, $passport->getUser());
     }
 
-    public function testAuthenticateAllowsLinkingWhenExistingUserHasNullOauthId(): void
+    public function testOnAuthenticationSuccessRedirectsToDashboard(): void
     {
-        $request = $this->createMockRequest();
+        $request = new Request();
+        $token = $this->createMock(TokenInterface::class);
+        $token->method('getUserIdentifier')->willReturn('alice');
 
-        $tokenResponse = $this->createMock(ResponseInterface::class);
-        $tokenResponse->method('toArray')->willReturn(['access_token' => 'token_123']);
+        $this->urlGenerator
+            ->expects(static::once())
+            ->method('generate')
+            ->with('app_dashboard')
+            ->willReturn('/dashboard');
 
-        $userInfoResponse = $this->createMock(ResponseInterface::class);
-        $userInfoResponse
-            ->method('toArray')
-            ->willReturn([
-                'id' => 'new_oauth_id',
-                'username' => 'john_doe',
-            ]);
+        $response = $this->authenticator->onAuthenticationSuccess($request, $token, 'main');
+        static::assertInstanceOf(RedirectResponse::class, $response);
+        static::assertSame('/dashboard', $response->getTargetUrl());
+    }
 
-        $this->httpClient->method('request')->willReturnOnConsecutiveCalls($tokenResponse, $userInfoResponse);
+    public function testOnAuthenticationFailureRedirectsToLogin(): void
+    {
+        $session = $this->createMock(SessionInterface::class);
+        $session->expects(static::once())->method('set');
 
-        $existingUser = new User();
-        $existingUser->setUsername('john_doe');
-        $existingUser->setOauthId(null);
+        $request = new Request();
+        $request->setSession($session);
 
-        $this->userRepository
-            ->method('findOneBy')
-            ->willReturnCallback(static function (array $criteria) use ($existingUser) {
-                if (($criteria['oauthId'] ?? null) === 'new_oauth_id') {
-                    return null;
-                }
-                if (($criteria['username'] ?? null) === 'john_doe') {
-                    return $existingUser;
-                }
-                return null;
-            });
+        $this->urlGenerator
+            ->expects(static::once())
+            ->method('generate')
+            ->with('app_login')
+            ->willReturn('/login');
 
-        $this->entityManager->expects(static::once())->method('flush');
-
-        $passport = $this->authenticator->authenticate($request);
-        static::assertSame($existingUser, $passport->getUser());
-        static::assertSame('new_oauth_id', $existingUser->getOauthId());
+        $response = $this->authenticator->onAuthenticationFailure($request, new AuthenticationException('Invalid'));
+        static::assertInstanceOf(RedirectResponse::class, $response);
+        static::assertSame('/login', $response->getTargetUrl());
     }
 }
