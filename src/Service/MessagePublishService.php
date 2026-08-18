@@ -51,27 +51,19 @@ class MessagePublishService
             return PublishResult::empty($channel);
         }
 
-        if (!$isPoll && $file === null && $messageText !== '') {
-            $confirmationResult = $this->robotInteractionService->tryHandleConfirmation($currentUser, $channel, $messageText);
-            if ($confirmationResult !== null) {
-                return $confirmationResult;
+        if ($isPoll && !$this->pollFactory->hasValidOptions($pollOptions)) {
+            return PublishResult::error(
+                error: $this->translator->trans(PollFactory::ERROR_MIN_OPTIONS),
+                channel: $channel,
+                statusCode: 400,
+            );
+        }
+
+        if (!$isPoll) {
+            $robotResult = $this->checkRobotInteractions($channel, $currentUser, $messageText, $file, $workspaceId);
+            if ($robotResult !== null) {
+                return $robotResult;
             }
-        }
-
-        $pollValidation = $this->validatePoll($isPoll, $pollOptions, $channel);
-        if ($pollValidation !== null) {
-            return $pollValidation;
-        }
-
-        $isDmWithRobot = $this->robotInteractionService->isRobotDm($channel, $currentUser);
-
-        if ($this->robotInteractionService->isRobotMentioned($messageText) && !$isDmWithRobot) {
-            return $this->robotInteractionService->handleRobotMentionInChannel($channel, $currentUser, $messageText, $workspaceId);
-        }
-
-        $llmLimitCheck = $this->robotInteractionService->checkRobotDmLlmRateLimit($isDmWithRobot, $isPoll, $file !== null, $currentUser, $channel);
-        if ($llmLimitCheck !== null) {
-            return $llmLimitCheck;
         }
 
         try {
@@ -93,70 +85,71 @@ class MessagePublishService
             $message,
             $channel,
             $currentUser,
-            $file !== null,
-            $isPoll,
-            $pollQuestion,
             $messageText,
-            $isDmWithRobot,
             $workspaceId,
         );
 
         return PublishResult::ok($channel, $message, $renderedHtml);
     }
 
-    private function persistAndBroadcast(
-        Message $message,
+    private function checkRobotInteractions(
         Channel $channel,
         User $currentUser,
-        bool $hasFile,
-        bool $isPoll,
-        ?string $pollQuestion,
         string $messageText,
-        bool $isDmWithRobot,
+        ?UploadedFile $file,
         ?int $workspaceId,
-    ): string {
-        $this->entityManager->persist($message);
-        $this->entityManager->flush();
+    ): ?PublishResult {
+        if ($file === null && $messageText !== '') {
+            $confirmationResult = $this->robotInteractionService->tryHandleConfirmation($currentUser, $channel, $messageText);
+            if ($confirmationResult !== null) {
+                return $confirmationResult;
+            }
+        }
 
-        $this->dispatchPostPublishAsyncTasks($message, $hasFile, $isPoll, $channel->isDm(), $isDmWithRobot, $messageText, $workspaceId);
+        $isDmWithRobot = $this->robotInteractionService->isRobotDm($channel, $currentUser);
 
-        return $this->renderAndBroadcastMessage($channel, $message, $currentUser, $isPoll, $pollQuestion, $messageText);
-    }
+        if ($this->robotInteractionService->isRobotMentioned($messageText) && !$isDmWithRobot) {
+            return $this->robotInteractionService->handleRobotMentionInChannel($channel, $currentUser, $messageText, $workspaceId);
+        }
 
-    /**
-     * @param array<int, string>|null $pollOptions
-     */
-    private function validatePoll(bool $isPoll, ?array $pollOptions, Channel $channel): ?PublishResult
-    {
-        if ($isPoll && !$this->pollFactory->hasValidOptions($pollOptions)) {
-            return PublishResult::error(
-                error: $this->translator->trans(PollFactory::ERROR_MIN_OPTIONS),
-                channel: $channel,
-                statusCode: 400,
-            );
+        if ($file === null) {
+            return $this->robotInteractionService->checkRobotDmLlmRateLimit($currentUser, $channel);
         }
 
         return null;
     }
 
+    private function persistAndBroadcast(
+        Message $message,
+        Channel $channel,
+        User $currentUser,
+        string $messageText,
+        ?int $workspaceId,
+    ): string {
+        $this->entityManager->persist($message);
+        $this->entityManager->flush();
+
+        $this->dispatchPostPublishAsyncTasks($message, $channel, $currentUser, $messageText, $workspaceId);
+
+        return $this->renderAndBroadcastMessage($channel, $message, $currentUser, $messageText);
+    }
+
     private function dispatchPostPublishAsyncTasks(
         Message $message,
-        bool $hasFile,
-        bool $isPoll,
-        bool $isDm,
-        bool $isDmWithRobot,
+        Channel $channel,
+        User $currentUser,
         string $messageText,
         ?int $workspaceId,
     ): void {
-        if ($hasFile) {
-            $this->messageBus->dispatch(new ScanFileMessage($message->getId()));
+        if ($message->getFilePath() !== null) {
+            $this->messageBus->dispatch(new ScanFileMessage((int) $message->getId()));
         }
 
-        if ($message->getContent() !== null && !$isPoll && !$isDm) {
-            $this->messageBus->dispatch(new ModerateMessageMessage($message->getId()));
+        if ($message->getContent() !== null && !$message->isPoll() && !$channel->isDm()) {
+            $this->messageBus->dispatch(new ModerateMessageMessage((int) $message->getId()));
         }
 
-        if ($isDmWithRobot && !$isPoll && !$hasFile) {
+        if (!$message->isPoll() && $message->getFilePath() === null && $this->robotInteractionService->isRobotDm($channel, $currentUser)) {
             $this->robotInteractionService->dispatchRobotDmQuery($message, $messageText, $workspaceId);
         }
     }
@@ -165,8 +158,6 @@ class MessagePublishService
         Channel $channel,
         Message $message,
         User $currentUser,
-        bool $isPoll,
-        ?string $pollQuestion,
         string $messageText,
     ): string {
         $renderedHtml = $this->messageRenderer->renderFeedItem($message);
@@ -176,11 +167,15 @@ class MessagePublishService
             $renderedHtml = $this->maybePrependDaySeparator($previousMessage, $message, $renderedHtml);
         }
 
+        $notificationText = $message->isPoll()
+            ? 'Sondage : ' . ($message->getPoll()?->getQuestion() ?? '')
+            : $messageText;
+
         $this->mercurePublisher->publishNewMessage(
             $channel,
             $message,
             $currentUser,
-            $isPoll ? 'Sondage : ' . $pollQuestion : $messageText,
+            $notificationText,
             $renderedHtml,
         );
 

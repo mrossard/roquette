@@ -47,7 +47,13 @@ class RobotInteractionServiceTest extends TestCase
     #[Test]
     public function checkRobotDmLlmRateLimitReturnsErrorWhenExceeded(): void
     {
+        $user = new User();
+        $channel = new Channel();
+        $channel->setSlug('dm-robot-user');
+
         $robotUserProvider = $this->createStub(RobotUserProvider::class);
+        $robotUserProvider->method('getDmChannelSlug')->willReturn('dm-robot-user');
+
         $llmRateLimiter = $this->createMock(LlmRateLimiter::class);
         $llmRateLimiter->expects($this->once())->method('consume')->willReturn(false);
 
@@ -59,10 +65,7 @@ class RobotInteractionServiceTest extends TestCase
 
         $service = new RobotInteractionService($robotUserProvider, $llmRateLimiter, $messageBus, $twig, $translator, $pendingConfirmationService);
 
-        $channel = new Channel();
-        $user = new User();
-
-        $result = $service->checkRobotDmLlmRateLimit(true, false, false, $user, $channel);
+        $result = $service->checkRobotDmLlmRateLimit($user, $channel);
 
         $this->assertNotNull($result);
         $this->assertFalse($result->success);

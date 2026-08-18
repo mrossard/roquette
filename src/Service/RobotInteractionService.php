@@ -49,13 +49,10 @@ class RobotInteractionService
     }
 
     public function checkRobotDmLlmRateLimit(
-        bool $isDmWithRobot,
-        bool $isPoll,
-        bool $hasFile,
         User $currentUser,
         Channel $channel,
     ): ?PublishResult {
-        if ($isDmWithRobot && !$isPoll && !$hasFile && !$this->llmRateLimiter->consume($currentUser)) {
+        if ($this->isRobotDm($channel, $currentUser) && !$this->llmRateLimiter->consume($currentUser)) {
             return PublishResult::error(
                 error: $this->translator->trans(LlmRateLimiter::MESSAGE_KEY),
                 channel: $channel,
