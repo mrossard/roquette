@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
+use App\Dto\Channel\ResolvedChannelContext;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
@@ -63,7 +64,9 @@ final class ChannelController extends AbstractController
         if ($resolved instanceof Response) {
             return $resolved;
         }
-        [$activeChannel, $isMember] = $resolved;
+
+        $activeChannel = $resolved->channel;
+        $isMember = $resolved->isMember;
 
         $this->workspaceContext->syncFromChannel($activeChannel);
 
@@ -81,8 +84,8 @@ final class ChannelController extends AbstractController
             );
         }
 
-        $notificationsEnabled = $this->resolveNotificationSetting($activeChannel, $isMember, $sidebarData['unreadCounts']);
-        $typingUsers = $this->getTypingUsers($activeChannel, $currentUser, $isMember, $typingIndicatorService);
+        $notificationsEnabled = $resolved->resolveNotificationSetting($sidebarData['unreadCounts']);
+        $typingUsers = $this->getTypingUsers($resolved, $currentUser, $typingIndicatorService);
         $feedContext = $this->feedContextService->buildFeedContext($activeChannel, $messages, $currentUser);
 
         return $this->render('dashboard/index.html.twig', array_merge([
@@ -221,32 +224,33 @@ final class ChannelController extends AbstractController
         return $this->mercurePublisher->getChannelTopic($channel);
     }
 
+    /**
+     * @return list<string>
+     */
     private function getTypingUsers(
-        ?Channel $channel,
+        ResolvedChannelContext $resolvedContext,
         User $currentUser,
-        bool $isMember,
         \App\Service\TypingIndicatorService $typingIndicatorService,
     ): array {
-        if (!$isMember || !$channel) {
+        if (!$resolvedContext->isMember) {
             return [];
         }
 
-        return $typingIndicatorService->getTypingUsers($channel, $currentUser);
+        return $typingIndicatorService->getTypingUsers($resolvedContext->channel, $currentUser);
     }
 
     /**
      * @param Channel[] $channels
-     * @return array{0: Channel, 1: bool}|Response
      */
     private function resolveActiveChannel(
         string $slug,
         array $channels,
         User $currentUser,
         ChannelRepository $channelRepository,
-    ): array|Response {
+    ): ResolvedChannelContext|Response {
         foreach ($channels as $channel) {
             if ($channel->getSlug() === $slug) {
-                return [$channel, true];
+                return new ResolvedChannelContext($channel, true);
             }
         }
 
@@ -268,7 +272,7 @@ final class ChannelController extends AbstractController
             ? $this->isGranted('VIEW', $existingChannel->getWorkspace())
             : $existingChannel->getMembers()->contains($currentUser);
 
-        return [$existingChannel, $isMember];
+        return new ResolvedChannelContext($existingChannel, $isMember);
     }
 
     /**
@@ -319,21 +323,5 @@ final class ChannelController extends AbstractController
                 $this->readTrackingService->markChannelAsRead($currentUser, $previousChannel);
             }
         }
-    }
-
-    /**
-     * @param array<int, array{notificationsEnabled?: ?bool}> $unreadCounts
-     */
-    private function resolveNotificationSetting(Channel $activeChannel, bool $isMember, array $unreadCounts): bool
-    {
-        if ($isMember) {
-            $activeUnread = $unreadCounts[$activeChannel->getId()] ?? null;
-            $notificationsEnabled = $activeUnread['notificationsEnabled'] ?? null;
-            if ($notificationsEnabled !== null) {
-                return (bool) $notificationsEnabled;
-            }
-        }
-
-        return $activeChannel->isDm();
     }
 }
