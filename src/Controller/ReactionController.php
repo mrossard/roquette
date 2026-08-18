@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
-use App\Entity\Reaction;
 use App\Repository\MessageRepository;
 use App\Repository\ReactionRepository;
-use App\Service\KanbanManager;
-use App\Service\MessageBroadcaster;
 use App\Service\MessageRenderer;
+use App\Service\ReactionManager;
 use App\Service\SidebarDataProvider;
-use Doctrine\ORM\EntityManagerInterface;
+use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,7 +25,7 @@ final class ReactionController extends AbstractController
 
     public function __construct(
         private readonly TranslatorInterface $translator,
-        private readonly KanbanManager $kanbanManager,
+        private readonly ReactionManager $reactionManager,
         private readonly MessageRenderer $messageRenderer,
         private readonly SidebarDataProvider $sidebarDataProvider,
     ) {}
@@ -37,8 +35,6 @@ final class ReactionController extends AbstractController
         int $id,
         string $emoji,
         MessageRepository $messageRepository,
-        EntityManagerInterface $entityManager,
-        MessageBroadcaster $messageBroadcaster,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -47,41 +43,16 @@ final class ReactionController extends AbstractController
 
         $this->authorizeMessageAccess($message);
 
-        $channel = $message->getChannel();
-
-        // Allow any emoji/character sequence as long as it is short enough to fit in the DB and prevent abuse
-        if (mb_strlen($emoji) < 1 || mb_strlen($emoji) > 16) {
-            return new Response($this->translator->trans('Emoji non supporté.'), 400);
-        }
-
         /** @var \App\Entity\User $currentUser */
         $currentUser = $this->getUser();
 
-        $reactionRepo = $entityManager->getRepository(Reaction::class);
-        $existingReaction = $reactionRepo->findOneBy([
-            'message' => $message,
-            'user' => $currentUser,
-            'emoji' => $emoji,
-        ]);
-
-        if ($existingReaction !== null) {
-            $entityManager->remove($existingReaction);
+        try {
+            $this->reactionManager->toggleReaction($message, $currentUser, $emoji);
+        } catch (InvalidArgumentException) {
+            return new Response($this->translator->trans('Emoji non supporté.'), 400);
         }
-
-        if ($existingReaction === null) {
-            $reaction = new Reaction();
-            $reaction->setMessage($message);
-            $reaction->setUser($currentUser);
-            $reaction->setEmoji($emoji);
-            $entityManager->persist($reaction);
-        }
-
-        $entityManager->flush();
-
-        $this->kanbanManager->syncCompletionFromReaction($message, $currentUser, $emoji);
 
         $renderedHtml = $this->messageRenderer->renderFeedItem($message, ['no_fade' => true]);
-        $messageBroadcaster->broadcastMessageUpdate($message);
 
         return new Response($renderedHtml);
     }

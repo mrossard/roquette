@@ -6,8 +6,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\MessageRepository;
-use App\Service\MessageBroadcaster;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\ChannelManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -19,14 +18,13 @@ final class MessagePinController extends AbstractController
 {
     public function __construct(
         private readonly TranslatorInterface $translator,
+        private readonly ChannelManager $channelManager,
     ) {}
 
     #[Route('/messages/{id}/pin', name: 'app_message_pin', methods: ['POST'])]
     public function pinMessage(
         int $id,
         MessageRepository $messageRepository,
-        EntityManagerInterface $entityManager,
-        MessageBroadcaster $messageBroadcaster,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -37,16 +35,12 @@ final class MessagePinController extends AbstractController
         $channel = $message->getChannel();
         $this->denyAccessUnlessGranted('EDIT', $channel);
 
-        $previousPinnedMessage = $channel->getPinnedMessage();
-        $channel->setPinnedMessage($message);
-        $entityManager->flush();
-
         $bannerHtml = $this->renderView('dashboard/_pinned_banner.html.twig', [
             'pinnedMessage' => $message,
             'activeChannel' => $channel,
         ]);
 
-        $messageBroadcaster->broadcastPin($channel, $message, $previousPinnedMessage, $bannerHtml);
+        $this->channelManager->pinMessage($message, $bannerHtml);
 
         return new Response($bannerHtml);
     }
@@ -55,8 +49,6 @@ final class MessagePinController extends AbstractController
     public function unpinMessage(
         int $id,
         MessageRepository $messageRepository,
-        EntityManagerInterface $entityManager,
-        MessageBroadcaster $messageBroadcaster,
     ): Response {
         $message = $messageRepository->find($id);
         if (!$message) {
@@ -67,12 +59,7 @@ final class MessagePinController extends AbstractController
         $channel = $message->getChannel();
         $this->denyAccessUnlessGranted('EDIT', $channel);
 
-        if ($channel->getPinnedMessage() === $message) {
-            $channel->setPinnedMessage(null);
-            $entityManager->flush();
-
-            $messageBroadcaster->broadcastUnpin($channel, $message);
-        }
+        $this->channelManager->unpinMessage($message);
 
         return new Response('');
     }

@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Service;
 
 use App\Dto\Channel\CreateChannelDto;
 use App\Entity\Channel;
+use App\Entity\Message;
 use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Service\AuditLoggerService;
@@ -13,6 +14,7 @@ use App\Service\ChannelManager;
 use App\Service\Group\GroupSubscriptionManager;
 use App\Service\KanbanManager;
 use App\Service\MercurePublisher;
+use App\Service\MessageBroadcaster;
 use App\Service\UniqueSlugGenerator;
 use App\Service\WorkspaceManager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -30,6 +32,7 @@ final class ChannelManagerTest extends TestCase
     private ChannelRepository $channelRepository;
     private TranslatorInterface $translator;
     private UniqueSlugGenerator $slugGenerator;
+    private MessageBroadcaster $messageBroadcaster;
     private ChannelManager $channelManager;
 
     protected function setUp(): void
@@ -37,6 +40,7 @@ final class ChannelManagerTest extends TestCase
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->channelRepository = $this->createMock(ChannelRepository::class);
         $this->slugGenerator = $this->createMock(UniqueSlugGenerator::class);
+        $this->messageBroadcaster = $this->createMock(MessageBroadcaster::class);
         $this->translator = $this->createStub(TranslatorInterface::class);
         $this->translator->method('trans')->willReturnArgument(0);
 
@@ -52,6 +56,7 @@ final class ChannelManagerTest extends TestCase
             $this->createStub(KanbanManager::class),
             $this->createStub(WorkspaceManager::class),
             $this->createStub(GroupSubscriptionManager::class),
+            $this->messageBroadcaster,
         );
     }
 
@@ -90,5 +95,44 @@ final class ChannelManagerTest extends TestCase
 
         $result = $this->channelManager->findChannelBySlug('test-channel');
         $this->assertSame($channel, $result);
+    }
+
+    #[Test]
+    public function pinMessageSetsPinnedAndBroadcasts(): void
+    {
+        $channel = new Channel();
+        $message = new Message();
+        $message->setChannel($channel);
+
+        $this->entityManager->expects($this->once())->method('flush');
+
+        $this->messageBroadcaster
+            ->expects($this->once())
+            ->method('broadcastPin')
+            ->with($channel, $message, null, '<div class="banner"></div>');
+
+        $this->channelManager->pinMessage($message, '<div class="banner"></div>');
+
+        $this->assertSame($message, $channel->getPinnedMessage());
+    }
+
+    #[Test]
+    public function unpinMessageResetsPinnedAndBroadcasts(): void
+    {
+        $channel = new Channel();
+        $message = new Message();
+        $message->setChannel($channel);
+        $channel->setPinnedMessage($message);
+
+        $this->entityManager->expects($this->once())->method('flush');
+
+        $this->messageBroadcaster
+            ->expects($this->once())
+            ->method('broadcastUnpin')
+            ->with($channel, $message);
+
+        $this->channelManager->unpinMessage($message);
+
+        $this->assertNull($channel->getPinnedMessage());
     }
 }

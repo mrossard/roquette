@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Dto\Channel\CreateChannelDto;
 use App\Dto\Channel\UpdateChannelDto;
 use App\Entity\Channel;
+use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\Workspace;
 use App\Enum\AuditAction;
@@ -33,6 +34,7 @@ class ChannelManager
         private readonly KanbanManager $kanbanManager,
         private readonly WorkspaceManager $workspaceManager,
         private readonly GroupSubscriptionManager $groupSubscriptionManager,
+        private readonly MessageBroadcaster $messageBroadcaster,
     ) {}
 
     public function create(CreateChannelDto $dto, User $user): Channel
@@ -216,6 +218,35 @@ class ChannelManager
 
         $channel->setMessageRetentionMonths($retentionMonths === 0 ? null : $retentionMonths);
         $this->entityManager->flush();
+    }
+
+    public function pinMessage(Message $message, string $bannerHtml): void
+    {
+        $channel = $message->getChannel();
+        if ($channel === null) {
+            return;
+        }
+
+        $previousPinnedMessage = $channel->getPinnedMessage();
+        $channel->setPinnedMessage($message);
+        $this->entityManager->flush();
+
+        $this->messageBroadcaster->broadcastPin($channel, $message, $previousPinnedMessage, $bannerHtml);
+    }
+
+    public function unpinMessage(Message $message): void
+    {
+        $channel = $message->getChannel();
+        if ($channel === null) {
+            return;
+        }
+
+        if ($channel->getPinnedMessage() === $message) {
+            $channel->setPinnedMessage(null);
+            $this->entityManager->flush();
+
+            $this->messageBroadcaster->broadcastUnpin($channel, $message);
+        }
     }
 
     public function findChannelBySlug(string $slug): Channel
