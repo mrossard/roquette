@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Webhook\CreateWebhookDto;
+use App\Dto\Webhook\IncomingWebhookPayloadDto;
 use App\Entity\Channel;
 use App\Entity\User;
 use App\Entity\Webhook;
@@ -21,8 +23,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class WebhookController extends AbstractController
 {
-    private const MAX_PAYLOAD_SIZE = 100_000;
-
     #[Route('/api/webhooks/incoming/{token}', name: 'app_webhook_incoming', methods: ['POST'])]
     public function incoming(
         #[\SensitiveParameter]
@@ -43,8 +43,8 @@ final class WebhookController extends AbstractController
             return new JsonResponse(['error' => 'Too many requests'], Response::HTTP_TOO_MANY_REQUESTS);
         }
 
-        $contentLength = (int) $request->headers->get('Content-Length', '0');
-        if ($contentLength > self::MAX_PAYLOAD_SIZE) {
+        $payload = IncomingWebhookPayloadDto::fromRequest($request);
+        if ($payload->isPayloadTooLarge) {
             return new JsonResponse(['error' => 'Payload too large'], Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
         }
 
@@ -58,28 +58,17 @@ final class WebhookController extends AbstractController
             return new JsonResponse(['error' => 'Webhook is inactive'], Response::HTTP_FORBIDDEN);
         }
 
-        $rawBody = $request->getContent();
-        if (strlen($rawBody) > self::MAX_PAYLOAD_SIZE) {
-            return new JsonResponse(['error' => 'Payload too large'], Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
-        }
-
-        $data = json_decode($rawBody, true) ?? [];
-
-        $content = $data['text'] ?? $data['content'] ?? null;
-        if (null === $content || trim((string) $content) === '') {
+        if (!$payload->hasValidContent()) {
             return new JsonResponse([
                 'error' => 'Missing message content ("text" or "content")',
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        $customName = $data['username'] ?? $data['customAuthorName'] ?? null;
-        $customAvatar = $data['avatar_url'] ?? $data['customAuthorAvatar'] ?? null;
-
         $message = $webhookManager->processIncomingWebhook(
             $webhook,
-            (string) $content,
-            $customName ? (string) $customName : null,
-            $customAvatar ? (string) $customAvatar : null,
+            (string) $payload->content,
+            $payload->customAuthorName,
+            $payload->customAuthorAvatar,
         );
 
         return new JsonResponse([
@@ -103,13 +92,13 @@ final class WebhookController extends AbstractController
 
         $this->denyAccessUnlessGranted('MANAGE', $channel);
 
-        $name = trim((string) $request->request->get('name', ''));
-        if ($name === '') {
+        $dto = CreateWebhookDto::fromRequest($request);
+        if (!$dto->isValid()) {
             return new Response('Le nom du webhook est requis', Response::HTTP_BAD_REQUEST);
         }
 
         $webhook = new Webhook();
-        $webhook->setName($name);
+        $webhook->setName($dto->name);
         $webhook->setChannel($channel);
         $webhook->setCreator($currentUser);
 
