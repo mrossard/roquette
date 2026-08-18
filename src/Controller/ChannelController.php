@@ -13,7 +13,6 @@ use App\Entity\UserChannelRead;
 use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Service\ChannelManager;
-use App\Service\MercurePublisher;
 use App\Service\MessageFeedContextService;
 use App\Service\ReadTrackingService;
 use App\Service\SidebarDataProvider;
@@ -33,7 +32,6 @@ final class ChannelController extends AbstractController
     use HxControllerTrait;
 
     public function __construct(
-        private readonly MercurePublisher $mercurePublisher,
         private readonly ReadTrackingService $readTrackingService,
         private readonly CacheInterface $cache,
         private readonly TranslatorInterface $translator,
@@ -41,6 +39,7 @@ final class ChannelController extends AbstractController
         private readonly SidebarDataProvider $sidebarDataProvider,
         private readonly MessageFeedContextService $feedContextService,
         private readonly \App\Service\WorkspaceContext $workspaceContext,
+        private readonly \App\Service\DashboardViewBuilder $dashboardViewBuilder,
     ) {}
 
     #[Route('/channels/{slug}', name: 'app_channel', requirements: [
@@ -52,7 +51,6 @@ final class ChannelController extends AbstractController
         ChannelRepository $channelRepository,
         MessageRepository $messageRepository,
         EntityManagerInterface $entityManager,
-        \App\Service\TypingIndicatorService $typingIndicatorService,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -84,20 +82,14 @@ final class ChannelController extends AbstractController
             );
         }
 
-        $notificationsEnabled = $resolved->resolveNotificationSetting($sidebarData['unreadCounts']);
-        $typingUsers = $this->getTypingUsers($resolved, $currentUser, $typingIndicatorService);
-        $feedContext = $this->feedContextService->buildFeedContext($activeChannel, $messages, $currentUser);
+        $viewContext = $this->dashboardViewBuilder->buildChannelViewContext(
+            $currentUser,
+            $resolved,
+            $messages,
+            $firstUnreadMessageId,
+        );
 
-        return $this->render('dashboard/index.html.twig', array_merge([
-            'activeChannel' => $activeChannel,
-            'messages' => $messages,
-            'topic_url' => $this->getChannelTopicUrl($activeChannel),
-            'firstUnreadMessageId' => $firstUnreadMessageId,
-            'usersToInvite' => [],
-            'isMember' => $isMember,
-            'notificationsEnabled' => $notificationsEnabled,
-            'typingUsers' => $typingUsers,
-        ], $feedContext, $sidebarData));
+        return $this->render('dashboard/index.html.twig', $viewContext);
     }
 
     #[Route('/channels/{slug}/more', name: 'app_channel_load_more', methods: ['GET'])]
@@ -217,26 +209,6 @@ final class ChannelController extends AbstractController
             'lastMessages' => $lastMessages,
             'workspaces' => $workspaces,
         ]);
-    }
-
-    private function getChannelTopicUrl(Channel $channel): string
-    {
-        return $this->mercurePublisher->getChannelTopic($channel);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function getTypingUsers(
-        ResolvedChannelContext $resolvedContext,
-        User $currentUser,
-        \App\Service\TypingIndicatorService $typingIndicatorService,
-    ): array {
-        if (!$resolvedContext->isMember) {
-            return [];
-        }
-
-        return $typingIndicatorService->getTypingUsers($resolvedContext->channel, $currentUser);
     }
 
     /**

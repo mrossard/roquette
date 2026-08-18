@@ -17,7 +17,6 @@ use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use App\Service\ChannelManager;
 use App\Service\KanbanManager;
-use App\Service\SidebarDataProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -39,7 +38,7 @@ final class KanbanController extends AbstractController
         private readonly ChannelManager $channelManager,
         private readonly UserRepository $userRepository,
         private readonly EntityManagerInterface $entityManager,
-        private readonly SidebarDataProvider $sidebarDataProvider,
+        private readonly \App\Service\DashboardViewBuilder $dashboardViewBuilder,
     ) {}
 
     #[Route('/channels/{slug}/kanban', name: 'app_channel_kanban', methods: ['GET'])]
@@ -70,29 +69,15 @@ final class KanbanController extends AbstractController
             ]);
         }
 
-        // Full page render: reuse channel controller data
-        $sidebarData = $this->sidebarDataProvider->getSidebarData($currentUser);
-        $unreadCounts = $sidebarData['unreadCounts'];
-        $activeRead = $unreadCounts[$channel->getId()] ?? null;
-        $notificationsEnabled = $activeRead['notificationsEnabled'] ?? $channel->isDm();
+        $viewContext = $this->dashboardViewBuilder->buildKanbanViewContext(
+            $currentUser,
+            $channel,
+            $columns,
+            $untriagedMessages,
+            $members,
+        );
 
-        return $this->render('dashboard/index.html.twig', array_merge([
-            'activeChannel' => $channel,
-            'messages' => [],
-            'topic_url' => '',
-            'firstUnreadMessageId' => null,
-            'usersToInvite' => [],
-            'isMember' => true,
-            'notificationsEnabled' => $notificationsEnabled,
-            'typingUsers' => [],
-            'replyCounts' => [],
-            'subchannelByParentMessageId' => [],
-            'lastMessages' => [],
-            'kanbanView' => true,
-            'kanbanColumns' => $columns,
-            'untriagedMessages' => $untriagedMessages,
-            'kanbanMembers' => $members,
-        ], $sidebarData));
+        return $this->render('dashboard/index.html.twig', $viewContext);
     }
 
     #[Route('/kanban/columns', name: 'app_kanban_column_create', methods: ['POST'])]
