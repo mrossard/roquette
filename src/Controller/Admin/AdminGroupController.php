@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Dto\Group\CreateAdminGroupDto;
+use App\Dto\Group\ImportAdminGroupDto;
 use App\Entity\User;
 use App\Entity\UserGroup;
 use App\Repository\UserGroupRepository;
@@ -84,12 +86,18 @@ final class AdminGroupController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-        $name = trim((string) $request->request->get('name', ''));
+        $dto = CreateAdminGroupDto::fromRequest($request);
+        if (!$dto->isValid()) {
+            $this->addFlash('error', $this->translator->trans('Le nom du groupe ne peut pas être vide.'));
+
+            return $this->redirectToRoute('app_admin_groups');
+        }
+
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         try {
-            $userGroup = $this->userGroupManager->createLocalGroup($name, $currentUser);
+            $userGroup = $this->userGroupManager->createLocalGroup($dto->name, $currentUser);
             $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été créé avec son espace de travail.', [
                 '%name%' => $userGroup->getName(),
             ]));
@@ -105,13 +113,18 @@ final class AdminGroupController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-        $identifier = (string) $request->request->get('identifier', '');
-        $name = (string) $request->request->get('name', '');
+        $dto = ImportAdminGroupDto::fromRequest($request);
+        if (!$dto->isValid()) {
+            $this->addFlash('error', $this->translator->trans('L\'identifiant et le nom du groupe sont requis.'));
+
+            return $this->redirectToRoute('app_admin_groups');
+        }
+
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
         try {
-            $userGroup = $this->userGroupManager->importGroup($identifier, $name, $currentUser);
+            $userGroup = $this->userGroupManager->importGroup($dto->identifier, $dto->name, $currentUser);
             $this->addFlash('success', $this->translator->trans('Le groupe "%name%" a été importé avec son espace de travail.', [
                 '%name%' => $userGroup->getName(),
             ]));
@@ -180,12 +193,9 @@ final class AdminGroupController extends AbstractController
     {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
-        $userId = $request->request->getInt('userId');
-        $user = $userRepository->find($userId);
-
+        $user = $this->findUserOrNull($request->request->getInt('userId'), $userRepository);
         if (!$user) {
-            $this->addFlash('error', $this->translator->trans('Utilisateur non trouvé.'));
-            return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
+            return $this->userNotFoundResponse($userGroup);
         }
 
         $this->userGroupManager->addMember($userGroup, $user);
@@ -202,11 +212,9 @@ final class AdminGroupController extends AbstractController
     {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
-        $user = $userRepository->find($userId);
-
+        $user = $this->findUserOrNull($userId, $userRepository);
         if (!$user) {
-            $this->addFlash('error', $this->translator->trans('Utilisateur non trouvé.'));
-            return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
+            return $this->userNotFoundResponse($userGroup);
         }
 
         $this->userGroupManager->removeMember($userGroup, $user);
@@ -223,12 +231,9 @@ final class AdminGroupController extends AbstractController
     {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
-        $userId = $request->request->getInt('userId');
-        $user = $userRepository->find($userId);
-
+        $user = $this->findUserOrNull($request->request->getInt('userId'), $userRepository);
         if (!$user) {
-            $this->addFlash('error', $this->translator->trans('Utilisateur non trouvé.'));
-            return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
+            return $this->userNotFoundResponse($userGroup);
         }
 
         $this->userGroupManager->addAdministrator($userGroup, $user);
@@ -249,11 +254,9 @@ final class AdminGroupController extends AbstractController
     {
         $this->denyAccessUnlessGranted(UserGroupVoter::MANAGE, $userGroup);
 
-        $user = $userRepository->find($userId);
-
+        $user = $this->findUserOrNull($userId, $userRepository);
         if (!$user) {
-            $this->addFlash('error', $this->translator->trans('Utilisateur non trouvé.'));
-            return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
+            return $this->userNotFoundResponse($userGroup);
         }
 
         try {
@@ -264,6 +267,18 @@ final class AdminGroupController extends AbstractController
         } catch (InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());
         }
+
+        return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
+    }
+
+    private function findUserOrNull(int $userId, UserRepository $userRepository): ?User
+    {
+        return $userId > 0 ? $userRepository->find($userId) : null;
+    }
+
+    private function userNotFoundResponse(UserGroup $userGroup): Response
+    {
+        $this->addFlash('error', $this->translator->trans('Utilisateur non trouvé.'));
 
         return $this->redirectToRoute('app_admin_group_members', ['id' => $userGroup->getId()]);
     }

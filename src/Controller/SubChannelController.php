@@ -30,26 +30,12 @@ final class SubChannelController extends AbstractController
         MessageRepository $messageRepository,
         SubChannelManager $subChannelManager,
     ): Response {
-        $parentMessage = $messageRepository->find($id);
-        if (!$parentMessage) {
-            return new Response($this->translator->trans('Message non trouvé.'), 404);
-        }
-
-        try {
-            /** @var \App\Entity\User $currentUser */
-            $currentUser = $this->getUser();
-            $channel = $subChannelManager->createSubChannel($parentMessage, $currentUser);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
-            return new Response($e->getMessage(), $e->getStatusCode());
-        }
-
-        $this->addFlash('success', $this->translator->trans('Discussion "%channelName%" créée.', [
-            '%channelName%' => $channel->getName(),
-        ]));
-
-        $url = $this->generateUrl('app_channel', ['slug' => $channel->getSlug()]);
-
-        return $this->redirectOrHxRedirect($request, $url);
+        return $this->handleSubChannelCreation(
+            $id,
+            $request,
+            $messageRepository,
+            $subChannelManager->createSubChannel(...),
+        );
     }
 
     #[Route('/messages/{id}/sub-channel-todo', name: 'app_message_create_subchannel_todo', methods: ['POST'])]
@@ -59,15 +45,33 @@ final class SubChannelController extends AbstractController
         MessageRepository $messageRepository,
         SubChannelManager $subChannelManager,
     ): Response {
+        return $this->handleSubChannelCreation(
+            $id,
+            $request,
+            $messageRepository,
+            $subChannelManager->createTodoListSubChannel(...),
+        );
+    }
+
+    /**
+     * @param callable(\App\Entity\Message, \App\Entity\User): \App\Entity\Channel $creator
+     */
+    private function handleSubChannelCreation(
+        int $id,
+        Request $request,
+        MessageRepository $messageRepository,
+        callable $creator,
+    ): Response {
         $parentMessage = $messageRepository->find($id);
         if (!$parentMessage) {
-            return new Response($this->translator->trans('Message non trouvé.'), 404);
+            return new Response($this->translator->trans('Message non trouvé.'), Response::HTTP_NOT_FOUND);
         }
 
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+
         try {
-            /** @var \App\Entity\User $currentUser */
-            $currentUser = $this->getUser();
-            $channel = $subChannelManager->createTodoListSubChannel($parentMessage, $currentUser);
+            $channel = $creator($parentMessage, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
