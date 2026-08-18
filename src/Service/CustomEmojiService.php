@@ -86,8 +86,17 @@ class CustomEmojiService
         $storagePath = 'emojis/' . $filename;
 
         try {
-            $content = file_get_contents($file->getPathname());
-            $this->defaultStorage->write($storagePath, $content);
+            $stream = fopen($file->getPathname(), 'rb');
+            if ($stream === false) {
+                throw new \RuntimeException('Impossible de lire le fichier émoji.');
+            }
+            try {
+                $this->defaultStorage->writeStream($storagePath, $stream);
+            } finally {
+                if (\is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
             $this->cache->delete(self::FILESYSTEM_CACHE_KEY);
 
             $tags = array_map('trim', explode(',', $tagsString));

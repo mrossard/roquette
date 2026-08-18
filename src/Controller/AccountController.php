@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Account\ChangePasswordDto;
+use App\Dto\Account\UpdateNotificationPreferencesDto;
+use App\Dto\Account\UpdateProfileDto;
 use App\Entity\User;
 use App\Repository\ChannelRepository;
 use App\Service\MercurePublisher;
@@ -47,28 +50,22 @@ final class AccountController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $displayName = trim((string) $request->request->get('displayName', ''));
-        $hue = $request->request->get('hue');
-        $statusOverride = $request->request->get('statusOverride');
+        $dto = UpdateProfileDto::fromRequest($request);
 
-        $currentUser->setDisplayName($displayName === '' ? null : $displayName);
+        $currentUser->setDisplayName($dto->displayName);
 
-        if ($hue !== null) {
-            $hueVal = (int) $hue;
-            if ($hueVal >= 0 && $hueVal <= 360) {
-                $currentUser->setCustomHue($hueVal);
-            }
+        if ($dto->hue !== null) {
+            $currentUser->setCustomHue($dto->hue);
         }
 
-        if (\in_array($statusOverride, ['auto', 'online', 'away', 'busy', 'offline'], true)) {
-            $currentUser->setStatusOverride($statusOverride === 'auto' ? null : $statusOverride);
+        if ($dto->statusOverride !== null || $request->request->get('statusOverride') === 'auto') {
+            $currentUser->setStatusOverride($dto->statusOverride);
         }
 
-        $locale = $request->request->get('locale');
-        if (\in_array($locale, ['fr', 'en'], true)) {
-            $currentUser->setLocale($locale);
-            $request->getSession()->set('_locale', $locale);
-            $request->setLocale($locale);
+        if ($dto->locale !== null) {
+            $currentUser->setLocale($dto->locale);
+            $request->getSession()->set('_locale', $dto->locale);
+            $request->setLocale($dto->locale);
         }
 
         $entityManager->flush();
@@ -88,8 +85,8 @@ final class AccountController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $mentionNotificationsEnabled = (bool) $request->request->get('mentionNotificationsEnabled');
-        $currentUser->setMentionNotificationsEnabled($mentionNotificationsEnabled);
+        $dto = UpdateNotificationPreferencesDto::fromRequest($request);
+        $currentUser->setMentionNotificationsEnabled($dto->mentionNotificationsEnabled);
 
         $entityManager->flush();
 
@@ -110,11 +107,9 @@ final class AccountController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $currentPassword = (string) $request->request->get('currentPassword', '');
-        $newPassword = (string) $request->request->get('newPassword', '');
-        $confirmPassword = (string) $request->request->get('confirmPassword', '');
+        $dto = ChangePasswordDto::fromRequest($request);
 
-        if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
+        if (!$dto->isFilled()) {
             $this->addFlash(
                 'error',
                 $this->translator->trans('Tous les champs de mot de passe sont obligatoires.'),
@@ -122,12 +117,12 @@ final class AccountController extends AbstractController
             return $this->redirectToRoute('app_account');
         }
 
-        if (!$passwordHasher->isPasswordValid($currentUser, $currentPassword)) {
+        if (!$passwordHasher->isPasswordValid($currentUser, $dto->currentPassword)) {
             $this->addFlash('error', $this->translator->trans('Le mot de passe actuel est incorrect.'));
             return $this->redirectToRoute('app_account');
         }
 
-        if (!hash_equals($newPassword, $confirmPassword)) {
+        if (!$dto->arePasswordsMatching()) {
             $this->addFlash(
                 'error',
                 $this->translator->trans('Le nouveau mot de passe et sa confirmation ne correspondent pas.'),
@@ -135,7 +130,7 @@ final class AccountController extends AbstractController
             return $this->redirectToRoute('app_account');
         }
 
-        if (mb_strlen($newPassword) < 6) {
+        if (!$dto->isLengthValid(6)) {
             $this->addFlash(
                 'error',
                 $this->translator->trans('Le nouveau mot de passe doit faire au moins 6 caractères.'),
@@ -143,7 +138,7 @@ final class AccountController extends AbstractController
             return $this->redirectToRoute('app_account');
         }
 
-        $hashed = $passwordHasher->hashPassword($currentUser, $newPassword);
+        $hashed = $passwordHasher->hashPassword($currentUser, $dto->newPassword);
         $currentUser->setPassword($hashed);
         $entityManager->flush();
         $this->addFlash(

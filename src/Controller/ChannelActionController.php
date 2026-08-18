@@ -147,21 +147,9 @@ final class ChannelActionController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $data = json_decode($request->getContent(), true);
-        $order = $data['order'] ?? null;
-        if (!is_array($order)) {
-            $order = $request->request->all('order');
-            if ($order === null || $order === '') {
-                $order = $request->request->all();
-                if (is_array($order) && array_key_exists('order', $order)) {
-                    $order = $order['order'];
-                }
-            }
-        }
-
-        if (is_array($order)) {
-            $order = array_map('intval', $order);
-            $currentUser->setChannelOrder($order);
+        $dto = \App\Dto\Channel\ReorderChannelsDto::fromRequest($request);
+        if ($dto->isValid()) {
+            $currentUser->setChannelOrder($dto->order);
             $entityManager->flush();
 
             return $this->json(['success' => true]);
