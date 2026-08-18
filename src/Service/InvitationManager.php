@@ -81,7 +81,13 @@ class InvitationManager
 
     public function inviteToWorkspace(Workspace $workspace, User $inviter, User $invitee): Invitation
     {
-        return $this->workspaceManager->inviteUser($workspace, $inviter, $invitee);
+        $invitation = new Invitation();
+        $invitation->setInvitee($invitee);
+        $invitation->setWorkspace($workspace);
+        $this->entityManager->persist($invitation);
+        $this->entityManager->flush();
+
+        return $invitation;
     }
 
     /**
@@ -97,7 +103,9 @@ class InvitationManager
 
         $workspace = $invitation->getWorkspace();
         if ($workspace !== null) {
-            $this->workspaceManager->acceptInvitation($invitation, $currentUser);
+            $workspace->addMember($currentUser);
+            $this->entityManager->remove($invitation);
+            $this->entityManager->flush();
 
             $this->logger->info(sprintf(
                 'User "%s" accepted invitation to workspace "%s" (slug: "%s")',
@@ -141,7 +149,8 @@ class InvitationManager
 
         $workspace = $invitation->getWorkspace();
         if ($workspace !== null) {
-            $this->workspaceManager->rejectInvitation($invitation);
+            $this->entityManager->remove($invitation);
+            $this->entityManager->flush();
 
             $this->logger->info(sprintf(
                 'User "%s" rejected invitation to workspace "%s" (slug: "%s")',

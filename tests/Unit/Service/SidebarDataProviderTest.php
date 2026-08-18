@@ -15,9 +15,9 @@ use App\Repository\InvitationRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserChannelReadRepository;
 use App\Repository\WorkspaceRepository;
-use App\Service\ChannelManager;
 use App\Service\ReadTrackingService;
 use App\Service\SidebarDataProvider;
+use App\Service\SubChannelManager;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
@@ -31,7 +31,7 @@ class SidebarDataProviderTest extends TestCase
     private WorkspaceRepository&MockObject $workspaceRepository;
     private InvitationRepository&MockObject $invitationRepository;
     private MessageRepository&MockObject $messageRepository;
-    private ChannelManager&MockObject $channelManager;
+    private SubChannelManager&MockObject $subChannelManager;
     private EntityManagerInterface&MockObject $entityManager;
     private ReadTrackingService&MockObject $readTrackingService;
     private SidebarDataProvider $provider;
@@ -42,7 +42,7 @@ class SidebarDataProviderTest extends TestCase
         $this->workspaceRepository = $this->createMock(WorkspaceRepository::class);
         $this->invitationRepository = $this->createMock(InvitationRepository::class);
         $this->messageRepository = $this->createMock(MessageRepository::class);
-        $this->channelManager = $this->createMock(ChannelManager::class);
+        $this->subChannelManager = $this->createMock(SubChannelManager::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->readTrackingService = $this->createMock(ReadTrackingService::class);
 
@@ -51,7 +51,7 @@ class SidebarDataProviderTest extends TestCase
             $this->workspaceRepository,
             $this->invitationRepository,
             $this->messageRepository,
-            $this->channelManager,
+            $this->subChannelManager,
             $this->entityManager,
             $this->readTrackingService,
         );
@@ -115,7 +115,7 @@ class SidebarDataProviderTest extends TestCase
             ->with(UserChannelRead::class)
             ->willReturn($ucrRepo);
 
-        $this->channelManager
+        $this->subChannelManager
             ->expects($this->once())
             ->method('buildSubChannelsByParent')
             ->with($channels)

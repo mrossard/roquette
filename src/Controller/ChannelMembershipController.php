@@ -32,7 +32,7 @@ final class ChannelMembershipController extends AbstractController
     public function openDm(
         string $username,
         UserRepository $userRepository,
-        ChannelManager $channelManager,
+        \App\Service\DmManager $dmManager,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -45,7 +45,7 @@ final class ChannelMembershipController extends AbstractController
         }
 
         try {
-            $dmChannel = $channelManager->getOrCreateDm($currentUser, $partner);
+            $dmChannel = $dmManager->getOrCreateDm($currentUser, $partner);
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());
 

@@ -36,6 +36,7 @@ final class ChannelController extends AbstractController
         private readonly CacheInterface $cache,
         private readonly TranslatorInterface $translator,
         private readonly ChannelManager $channelManager,
+        private readonly \App\Service\SubChannelManager $subChannelManager,
         private readonly SidebarDataProvider $sidebarDataProvider,
         private readonly MessageFeedContextService $feedContextService,
         private readonly \App\Service\WorkspaceContext $workspaceContext,
@@ -192,7 +193,7 @@ final class ChannelController extends AbstractController
             );
         }
 
-        $subChannelsByParent = $this->channelManager->buildSubChannelsByParent($channels);
+        $subChannelsByParent = $this->subChannelManager->buildSubChannelsByParent($channels);
 
         $ucrRepo = $entityManager->getRepository(UserChannelRead::class);
         $unreadCounts = $ucrRepo->getUnreadCounts($currentUser);

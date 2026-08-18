@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Workspace\UpdateWorkspaceDto;
 use App\Entity\Channel;
-use App\Entity\Invitation;
 use App\Entity\User;
 use App\Entity\Workspace;
 use App\Enum\AuditAction;
@@ -13,6 +13,7 @@ use App\Repository\ChannelRepository;
 use App\Repository\WorkspaceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -28,6 +29,7 @@ class WorkspaceManager
         private readonly TranslatorInterface $translator,
         private readonly UniqueSlugGenerator $slugGenerator,
         private readonly \App\Service\Group\GroupProviderInterface $groupProvider,
+        private readonly FileUploadService $fileUploadService,
     ) {}
 
     public function isUserMember(Workspace $workspace, User $user): bool
@@ -126,13 +128,28 @@ class WorkspaceManager
         $this->entityManager->flush();
     }
 
-    public function update(Workspace $workspace, string $name, ?string $description): void
+    public function update(Workspace $workspace, UpdateWorkspaceDto $dto): void
     {
-        $workspace->setName($name);
-        $workspace->setDescription($description !== '' ? $description : null);
+        $workspace->setName($dto->name);
+        $workspace->setDescription($dto->description !== '' ? $dto->description : null);
+
+        if ($dto->deleteAvatar) {
+            if ($workspace->getAvatarPath()) {
+                $this->fileUploadService->delete($workspace->getAvatarPath());
+                $workspace->setAvatarPath(null);
+            }
+        }
+
+        if ($dto->avatarFile instanceof UploadedFile) {
+            if ($workspace->getAvatarPath()) {
+                $this->fileUploadService->delete($workspace->getAvatarPath());
+            }
+            $meta = $this->fileUploadService->upload($dto->avatarFile);
+            $workspace->setAvatarPath($meta->filePath);
+        }
 
         $newSlug = $this->slugGenerator->generate(
-            $name,
+            $dto->name,
             'workspace',
             fn(string $s) => (
                 ($existing = $this->workspaceRepository->findOneBy(['slug' => $s])) !== null
@@ -148,6 +165,10 @@ class WorkspaceManager
     {
         if ($workspace->isPublic()) {
             throw new \RuntimeException($this->translator->trans('Impossible de supprimer le workspace public.'));
+        }
+
+        if ($workspace->getAvatarPath()) {
+            $this->fileUploadService->delete($workspace->getAvatarPath());
         }
 
         $channels = $workspace->getChannels();
@@ -201,34 +222,5 @@ class WorkspaceManager
     public function findWorkspaceBySlugOrNull(string $slug): ?Workspace
     {
         return $this->workspaceRepository->findOneBy(['slug' => $slug]);
-    }
-
-    public function inviteUser(Workspace $workspace, User $invitedBy, User $invitee): Invitation
-    {
-        $invitation = new Invitation();
-        $invitation->setInvitee($invitee);
-        $invitation->setWorkspace($workspace);
-        $this->entityManager->persist($invitation);
-        $this->entityManager->flush();
-
-        return $invitation;
-    }
-
-    public function acceptInvitation(Invitation $invitation, User $user): void
-    {
-        $workspace = $invitation->getWorkspace();
-        if (!$workspace) {
-            throw new \RuntimeException('Invitation invalide.');
-        }
-
-        $workspace->addMember($user);
-        $this->entityManager->remove($invitation);
-        $this->entityManager->flush();
-    }
-
-    public function rejectInvitation(Invitation $invitation): void
-    {
-        $this->entityManager->remove($invitation);
-        $this->entityManager->flush();
     }
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Repository\MessageRepository;
-use App\Service\ChannelManager;
+use App\Service\SubChannelManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,7 +27,7 @@ final class SubChannelController extends AbstractController
         int $id,
         Request $request,
         MessageRepository $messageRepository,
-        ChannelManager $channelManager,
+        SubChannelManager $subChannelManager,
     ): Response {
         $parentMessage = $messageRepository->find($id);
         if (!$parentMessage) {
@@ -37,7 +37,7 @@ final class SubChannelController extends AbstractController
         try {
             /** @var \App\Entity\User $currentUser */
             $currentUser = $this->getUser();
-            $channel = $channelManager->createSubChannel($parentMessage, $currentUser);
+            $channel = $subChannelManager->createSubChannel($parentMessage, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
@@ -56,7 +56,7 @@ final class SubChannelController extends AbstractController
         int $id,
         Request $request,
         MessageRepository $messageRepository,
-        ChannelManager $channelManager,
+        SubChannelManager $subChannelManager,
     ): Response {
         $parentMessage = $messageRepository->find($id);
         if (!$parentMessage) {
@@ -66,7 +66,7 @@ final class SubChannelController extends AbstractController
         try {
             /** @var \App\Entity\User $currentUser */
             $currentUser = $this->getUser();
-            $channel = $channelManager->createTodoListSubChannel($parentMessage, $currentUser);
+            $channel = $subChannelManager->createTodoListSubChannel($parentMessage, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }

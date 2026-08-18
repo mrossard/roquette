@@ -143,10 +143,8 @@ class InvitationManagerTest extends TestCase
         $invitation->setInvitee($user);
         $invitation->setWorkspace($workspace);
 
-        $this->workspaceManager
-            ->expects(static::once())
-            ->method('acceptInvitation')
-            ->with($invitation, $user);
+        $this->entityManager->expects(static::once())->method('remove')->with($invitation);
+        $this->entityManager->expects(static::once())->method('flush');
 
         $this->workspaceManager
             ->expects(static::once())
@@ -157,6 +155,7 @@ class InvitationManagerTest extends TestCase
         $result = $this->manager->acceptInvitation($invitation, $user);
 
         static::assertSame(['type' => 'channel', 'slug' => 'general'], $result);
+        static::assertTrue($workspace->getMembers()->contains($user));
     }
 
     public function testAcceptInvitationForbiddenForAnotherUser(): void
@@ -199,10 +198,8 @@ class InvitationManagerTest extends TestCase
         $invitation->setInvitee($user);
         $invitation->setWorkspace($workspace);
 
-        $this->workspaceManager
-            ->expects(static::once())
-            ->method('rejectInvitation')
-            ->with($invitation);
+        $this->entityManager->expects(static::once())->method('remove')->with($invitation);
+        $this->entityManager->expects(static::once())->method('flush');
 
         $this->manager->rejectInvitation($invitation, $user);
     }

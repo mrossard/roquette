@@ -20,7 +20,7 @@ class SidebarDataProvider
         private readonly WorkspaceRepository $workspaceRepository,
         private readonly InvitationRepository $invitationRepository,
         private readonly MessageRepository $messageRepository,
-        private readonly ChannelManager $channelManager,
+        private readonly SubChannelManager $subChannelManager,
         private readonly EntityManagerInterface $entityManager,
         private readonly ReadTrackingService $readTrackingService,
     ) {}
@@ -40,7 +40,7 @@ class SidebarDataProvider
         $unreadCounts = $ucrRepo->getUnreadCounts($user);
 
         $workspaceUnreadCounts = $this->computeWorkspaceUnreadCounts($channels, $unreadCounts);
-        $subChannelsByParent = $this->channelManager->buildSubChannelsByParent($channels);
+        $subChannelsByParent = $this->subChannelManager->buildSubChannelsByParent($channels);
 
         $channelIds = array_map(static fn($c) => $c->getId(), $channels);
         $lastMessages = $this->messageRepository->findLastMessagesForChannels($channelIds);

@@ -7,7 +7,6 @@ namespace App\Service;
 use App\Dto\Channel\CreateChannelDto;
 use App\Dto\Channel\UpdateChannelDto;
 use App\Entity\Channel;
-use App\Entity\Message;
 use App\Entity\User;
 use App\Entity\Workspace;
 use App\Enum\AuditAction;
@@ -25,7 +24,6 @@ class ChannelManager
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ChannelRepository $channelRepository,
-        private readonly ChannelAccessService $channelAccessService,
         private readonly MercurePublisher $mercurePublisher,
         private readonly AuditLoggerService $auditLogger,
         private readonly LoggerInterface $logger,
@@ -35,7 +33,6 @@ class ChannelManager
         private readonly KanbanManager $kanbanManager,
         private readonly WorkspaceManager $workspaceManager,
         private readonly GroupSubscriptionManager $groupSubscriptionManager,
-        private readonly ?RobotUserProvider $robotUserProvider = null,
     ) {}
 
     public function create(CreateChannelDto $dto, User $user): Channel
@@ -228,179 +225,6 @@ class ChannelManager
         }
 
         return $channel;
-    }
-
-    public function buildSubChannelsByParent(array $subChannels): array
-    {
-        $map = [];
-        foreach ($subChannels as $ch) {
-            if (!$ch->isSubChannel() || !$ch->getParentMessage()) {
-                continue;
-            }
-
-            $parentId = $ch->getParentMessage()->getChannel()->getId();
-            $map[$parentId][] = $ch;
-        }
-
-        return $map;
-    }
-
-    public function createSubChannel(Message $parentMessage, User $currentUser): Channel
-    {
-        $existingSubChannel = $this->channelRepository->findOneBy(['parentMessage' => $parentMessage]);
-        if ($existingSubChannel) {
-            return $existingSubChannel;
-        }
-
-        $channel = $this->buildSubChannel($parentMessage, $currentUser);
-        $this->saveSubChannel($channel, $parentMessage, $currentUser);
-
-        return $channel;
-    }
-
-    public function createTodoListSubChannel(Message $parentMessage, User $currentUser): Channel
-    {
-        $existingSubChannel = $this->channelRepository->findOneBy(['parentMessage' => $parentMessage]);
-        if ($existingSubChannel) {
-            return $existingSubChannel;
-        }
-
-        $channel = $this->buildSubChannel($parentMessage, $currentUser);
-        $channel->setIsTodoList(true);
-        $this->saveSubChannel($channel, $parentMessage, $currentUser);
-        $this->kanbanManager->initializeDefaultColumns($channel);
-
-        return $channel;
-    }
-
-    private function buildSubChannel(Message $parentMessage, User $currentUser): Channel
-    {
-        $parentChannel = $parentMessage->getChannel();
-        if ($parentChannel->isSubChannel() && !$parentChannel->isTodoList()) {
-            throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
-        }
-
-        if (!$this->channelAccessService->canUserAccess($parentChannel, $currentUser)) {
-            throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
-        }
-
-        $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Discussion';
-        $name = mb_substr(trim((string) preg_replace('/\s+/', ' ', $content)), 0, 40);
-
-        $slug = $this->slugGenerator->generate(
-            'sc-' . $name,
-            'sc-discussion',
-            fn(string $s) => $this->channelRepository->findOneBy(['slug' => $s]) !== null,
-        );
-
-        $channel = new Channel();
-        $channel->setName($name);
-        $channel->setSlug($slug);
-        $channel->setDescription($this->translator->trans('Discussion créée depuis un message.'));
-        $channel->setParentMessage($parentMessage);
-        $channel->setCreator($currentUser);
-        $channel->setIsPrivate($parentChannel->isPrivate());
-        $channel->setMessageRetentionMonths($parentChannel->getMessageRetentionMonths());
-        if ($parentChannel->getWorkspace()) {
-            $channel->setWorkspace($parentChannel->getWorkspace());
-        }
-
-        foreach ($parentChannel->getMembers() as $member) {
-            $channel->addMember($member);
-        }
-
-        return $channel;
-    }
-
-    private function saveSubChannel(Channel $channel, Message $parentMessage, User $currentUser): void
-    {
-        $parentChannel = $parentMessage->getChannel();
-
-        $this->entityManager->persist($channel);
-        $this->entityManager->flush();
-
-        $this->auditLogger->log(AuditAction::CHANNEL_CREATE, $currentUser, [
-            'channel_id' => $channel->getId(),
-            'channel_name' => $channel->getName(),
-            'slug' => $channel->getSlug(),
-            'is_private' => $channel->isPrivate(),
-            'parent_channel_id' => $parentChannel->getId(),
-            'parent_message_id' => $parentMessage->getId(),
-        ]);
-
-        $this->logger->info(sprintf(
-            'Sub-channel created: "%s" (slug: "%s", todo: %s) from message #%d by user "%s"',
-            $channel->getName(),
-            $channel->getSlug(),
-            $channel->isTodoList() ? 'yes' : 'no',
-            $parentMessage->getId(),
-            $currentUser->getUsername(),
-        ));
-    }
-
-    public function getOrCreateDm(User $currentUser, User $partner): Channel
-    {
-        if ($partner->getId() === $currentUser->getId()) {
-            throw new \InvalidArgumentException($this->translator->trans(
-                'Vous ne pouvez pas envoyer de message direct à vous-même.',
-            ));
-        }
-
-        $dmChannel = $this->channelRepository->findDmBetween($currentUser, $partner);
-        if ($dmChannel === null) {
-            return $this->createDmChannel($currentUser, $partner);
-        }
-
-        $this->ensureMemberInDm($dmChannel, $currentUser);
-
-        return $dmChannel;
-    }
-
-    private function createDmChannel(User $currentUser, User $partner): Channel
-    {
-        $dmChannel = new Channel();
-        $dmChannel->setIsPrivate(true);
-        $dmChannel->setIsDm(true);
-        $dmChannel->setSlug($this->generateDmSlug($currentUser, $partner));
-        $dmChannel->setName(sprintf('%s & %s', $currentUser->getUsername(), $partner->getUsername()));
-        $dmChannel->setDescription(sprintf(
-            'Conversation privée entre %s et %s',
-            $currentUser->getUsername(),
-            $partner->getUsername(),
-        ));
-        $dmChannel->setCreator($currentUser);
-        $dmChannel->addMember($currentUser);
-        $dmChannel->addMember($partner);
-
-        $this->entityManager->persist($dmChannel);
-        $this->entityManager->flush();
-
-        return $dmChannel;
-    }
-
-    private function ensureMemberInDm(Channel $dmChannel, User $user): void
-    {
-        if (!$dmChannel->getMembers()->contains($user)) {
-            $dmChannel->addMember($user);
-            $this->entityManager->flush();
-        }
-    }
-
-    public function generateDmSlug(User $user1, User $user2): string
-    {
-        if ($this->robotUserProvider !== null) {
-            if ($this->robotUserProvider->isRobotUser($user1)) {
-                return $this->robotUserProvider->getDmChannelSlug($user2);
-            }
-            if ($this->robotUserProvider->isRobotUser($user2)) {
-                return $this->robotUserProvider->getDmChannelSlug($user1);
-            }
-        }
-
-        $minId = min((int) $user1->getId(), (int) $user2->getId());
-        $maxId = max((int) $user1->getId(), (int) $user2->getId());
-
-        return sprintf('dm-%d-%d', $minId, $maxId);
     }
 
     private function isCurrentUserAdmin(): bool

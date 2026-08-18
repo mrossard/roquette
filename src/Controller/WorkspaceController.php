@@ -133,15 +133,8 @@ final class WorkspaceController extends AbstractController
     }
 
     #[Route('/workspaces/{slug}/edit', name: 'app_workspace_edit', methods: ['POST'])]
-    public function edit(
-        string $slug,
-        Request $request,
-        EntityManagerInterface $entityManager,
-        FileUploadService $fileUploadService,
-    ): Response {
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-
+    public function edit(string $slug, Request $request): Response
+    {
         $workspace = $this->workspaceManager->findWorkspaceBySlugOrNull($slug);
         if (!$workspace) {
             return $this->redirectToRoute('app_workspaces');
@@ -156,32 +149,13 @@ final class WorkspaceController extends AbstractController
             return $this->redirectToRoute('app_workspace_switch', ['workspaceSlug' => $slug]);
         }
 
-        // Delete avatar if requested
-        if ($dto->deleteAvatar) {
-            if ($workspace->getAvatarPath()) {
-                $fileUploadService->delete($workspace->getAvatarPath());
-                $workspace->setAvatarPath(null);
-            }
+        try {
+            $this->workspaceManager->update($workspace, $dto);
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
+
+            return $this->redirectToRoute('app_workspace_switch', ['workspaceSlug' => $slug]);
         }
-
-        // Handle file upload
-        if ($dto->avatarFile instanceof UploadedFile) {
-            try {
-                // Delete old avatar first if it exists
-                if ($workspace->getAvatarPath()) {
-                    $fileUploadService->delete($workspace->getAvatarPath());
-                }
-                $meta = $fileUploadService->upload($dto->avatarFile);
-                $workspace->setAvatarPath($meta->filePath);
-            } catch (\InvalidArgumentException $e) {
-                $this->addFlash('error', $e->getMessage());
-
-                return $this->redirectToRoute('app_workspace_switch', ['workspaceSlug' => $slug]);
-            }
-        }
-
-        $this->workspaceManager->update($workspace, $dto->name, $dto->description);
-        $entityManager->flush();
 
         $this->addFlash('success', $this->translator->trans('Les paramètres du workspace ont été modifiés.'));
 
@@ -189,10 +163,8 @@ final class WorkspaceController extends AbstractController
     }
 
     #[Route('/workspaces/{slug}/delete', name: 'app_workspace_delete', methods: ['POST'])]
-    public function delete(
-        string $slug,
-        FileUploadService $fileUploadService,
-    ): Response {
+    public function delete(string $slug): Response
+    {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
@@ -202,10 +174,6 @@ final class WorkspaceController extends AbstractController
         }
 
         $this->denyAccessUnlessGranted('DELETE', $workspace);
-
-        if ($workspace->getAvatarPath()) {
-            $fileUploadService->delete($workspace->getAvatarPath());
-        }
 
         try {
             $this->workspaceManager->delete($workspace, $currentUser);
