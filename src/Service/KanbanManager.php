@@ -226,6 +226,31 @@ class KanbanManager
         $this->publishKanbanCardUpdated($message);
     }
 
+    public function syncCompletionFromReaction(Message $message, User $currentUser, string $emoji): void
+    {
+        $channel = $message->getChannel();
+        if ($channel === null || !$channel->isTodoList() || $emoji !== '✅') {
+            return;
+        }
+
+        $this->assertCanAccessKanban($channel, $currentUser);
+
+        $hasCheck = false;
+        foreach ($message->getReactions() as $reaction) {
+            if ($reaction->getEmoji() !== '✅') {
+                continue;
+            }
+
+            $hasCheck = true;
+            break;
+        }
+
+        $message->setIsCompleted($hasCheck);
+        $this->entityManager->flush();
+
+        $this->publishKanbanCardUpdated($message);
+    }
+
     private function addCompletionReaction(Message $message, User $currentUser): void
     {
         $reactionRepo = $this->entityManager->getRepository(\App\Entity\Reaction::class);

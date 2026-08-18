@@ -78,21 +78,7 @@ final class ReactionController extends AbstractController
 
         $entityManager->flush();
 
-        // Sync completion state for todo channels
-        if ($channel->isTodoList() && $emoji === '✅') {
-            $hasCheck = false;
-            foreach ($message->getReactions() as $r) {
-                if ($r->getEmoji() !== '✅') {
-                    continue;
-                }
-
-                $hasCheck = true;
-                break;
-            }
-            $hasCheck
-                ? $this->kanbanManager->markAsCompleted($message, $currentUser)
-                : $this->kanbanManager->markAsIncomplete($message, $currentUser);
-        }
+        $this->kanbanManager->syncCompletionFromReaction($message, $currentUser, $emoji);
 
         $renderedHtml = $this->messageRenderer->renderFeedItem($message, ['no_fade' => true]);
         $messageBroadcaster->broadcastMessageUpdate($message);
