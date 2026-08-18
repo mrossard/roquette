@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\ChannelAccessTrait;
+use App\Dto\Kanban\CreateKanbanColumnDto;
+use App\Dto\Kanban\ReorderKanbanColumnsDto;
+use App\Dto\Kanban\UpdateKanbanCardDto;
+use App\Dto\Kanban\UpdateKanbanColumnDto;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
@@ -97,22 +101,19 @@ final class KanbanController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $channelId = (int) $request->request->get('channelId');
-        $channel = $this->entityManager->getRepository(Channel::class)->find($channelId);
+        $dto = CreateKanbanColumnDto::fromRequest($request);
+
+        $channel = $this->entityManager->getRepository(Channel::class)->find($dto->channelId);
         if (!$channel) {
             return new Response($this->translator->trans('Canal non trouvé.'), 404);
         }
 
-        $name = trim($request->request->get('name', ''));
-        if ($name === '') {
+        if ($dto->name === '') {
             return new Response($this->translator->trans('Le nom de la colonne est requis.'), 400);
         }
 
-        $rawColor = (string) $request->request->get('color', '');
-        $color = $rawColor !== '' ? $rawColor : null;
-
         try {
-            $this->kanbanManager->createColumn($channel, $name, $color, null, $currentUser);
+            $this->kanbanManager->createColumn($channel, $dto->name, $dto->color, null, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
@@ -131,13 +132,13 @@ final class KanbanController extends AbstractController
             return new Response($this->translator->trans('Colonne non trouvée.'), 404);
         }
 
-        $name = trim($request->request->get('name', ''));
-        if ($name === '') {
+        $dto = UpdateKanbanColumnDto::fromRequest($request);
+        if (!$dto->isValid()) {
             return new Response($this->translator->trans('Le nom de la colonne est requis.'), 400);
         }
 
         try {
-            $this->kanbanManager->renameColumn($column, $name, $currentUser);
+            $this->kanbanManager->renameColumn($column, $dto->name, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
@@ -176,13 +177,13 @@ final class KanbanController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $columnIds = $request->request->all('columnIds');
-        if (!is_array($columnIds) || $columnIds === []) {
+        $dto = ReorderKanbanColumnsDto::fromRequest($request);
+        if (!$dto->isValid()) {
             return new Response($this->translator->trans('Paramètres invalides.'), 400);
         }
 
         try {
-            $this->kanbanManager->reorderColumns(array_map('intval', $columnIds), $currentUser);
+            $this->kanbanManager->reorderColumns($dto->columnIds, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
@@ -196,11 +197,8 @@ final class KanbanController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $columnId = $request->request->get('columnId');
-        $column = null;
-        if ($columnId !== null && $columnId !== '' && $columnId !== 'null') {
-            $column = $this->kanbanColumnRepository->find((int) $columnId);
-        }
+        $columnId = UpdateKanbanCardDto::parseColumnId($request);
+        $column = $columnId !== null ? $this->kanbanColumnRepository->find($columnId) : null;
 
         try {
             $this->kanbanManager->moveMessageToColumn($message, $column, $currentUser);
@@ -217,11 +215,8 @@ final class KanbanController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $userId = $request->request->get('userId');
-        $user = null;
-        if ($userId !== null && $userId !== '' && $userId !== 'null') {
-            $user = $this->userRepository->find((int) $userId);
-        }
+        $userId = UpdateKanbanCardDto::parseUserId($request);
+        $user = $userId !== null ? $this->userRepository->find($userId) : null;
 
         try {
             $this->kanbanManager->assignMessage($message, $user, $currentUser);
@@ -238,12 +233,7 @@ final class KanbanController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $dueAtStr = $request->request->get('dueAt');
-        $dueAt = null;
-        if ($dueAtStr !== null && (string) $dueAtStr !== '') {
-            $parsedDate = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $dueAtStr);
-            $dueAt = $parsedDate !== false ? $parsedDate : null;
-        }
+        $dueAt = UpdateKanbanCardDto::parseDueDate($request);
 
         try {
             $this->kanbanManager->setDueDate($message, $dueAt, $currentUser);
@@ -260,8 +250,7 @@ final class KanbanController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $rawPriority = (string) $request->request->get('priority', '');
-        $priority = $rawPriority !== '' ? $rawPriority : null;
+        $priority = UpdateKanbanCardDto::parsePriority($request);
 
         try {
             $this->kanbanManager->setPriority($message, $priority, $currentUser);
@@ -278,16 +267,10 @@ final class KanbanController extends AbstractController
         /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        $labelsReq = $request->request->get('labels');
-        $labels = match (true) {
-            is_array($labelsReq) => $labelsReq,
-            is_string($labelsReq) && trim($labelsReq) !== '' => explode(',', $labelsReq),
-            default => [],
-        };
-        $labels = array_values(array_filter(array_map('trim', $labels)));
+        $labels = UpdateKanbanCardDto::parseLabels($request);
 
         try {
-            $this->kanbanManager->setLabels($message, $labels !== [] ? $labels : null, $currentUser);
+            $this->kanbanManager->setLabels($message, $labels, $currentUser);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             return new Response($e->getMessage(), $e->getStatusCode());
         }
