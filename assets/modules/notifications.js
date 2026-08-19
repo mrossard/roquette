@@ -1,4 +1,5 @@
 import { getFreshCsrfToken, fetchWithCsrf } from './csrf.js';
+import { logger } from './logger.js';
 
 const trans = (key) => (window.AppTranslations && window.AppTranslations[key]) || key;
 
@@ -437,7 +438,7 @@ export function updateSettingsPageUI() {
 }
 
 export function handleGlobalNotification(data) {
-    console.log('[Notification] Handling global notification payload:', data);
+    logger.log('[Notification] Handling global notification payload:', data);
     if (!data || !data.channelSlug) return;
     if (isCurrentUserBusy()) return;
     const statusBadge = document.getElementById('mercure-status');
@@ -448,7 +449,7 @@ export function handleGlobalNotification(data) {
     const currentUsername = statusBadge.getAttribute('data-current-username');
     const isMentionNotificationAllowed = statusBadge.getAttribute('data-mention-notifications-enabled') !== 'false';
 
-    console.log(`[Notification] Active channel: "${activeChannelSlug}", Message channel: "${data.channelSlug}", Author: "${data.author}", CurrentUser: "${currentUsername}"`);
+    logger.log(`[Notification] Active channel: "${activeChannelSlug}", Message channel: "${data.channelSlug}", Author: "${data.author}", CurrentUser: "${currentUsername}"`);
 
     if (data.author === currentUsername) {
         // Ignore messages authored by the current user
@@ -461,7 +462,7 @@ export function handleGlobalNotification(data) {
             window.processedNotificationMessageIds = new Set();
         }
         if (window.processedNotificationMessageIds.has(data.messageId)) {
-            console.log(`[Notification] Skipping duplicate notification for messageId ${data.messageId}`);
+            logger.log(`[Notification] Skipping duplicate notification for messageId ${data.messageId}`);
             return;
         }
         window.processedNotificationMessageIds.add(data.messageId);

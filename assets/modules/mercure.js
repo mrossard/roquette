@@ -1,18 +1,6 @@
 import htmx from 'htmx.org';
 import { wasAtBottom } from './scroll.js';
-
-const isProd = document.querySelector('meta[name="app-env"]')?.getAttribute('content') === 'prod';
-const console = {
-    log: (...args) => {
-        if (!isProd) window.console.log(...args);
-    },
-    warn: (...args) => {
-        if (!isProd) window.console.warn(...args);
-    },
-    error: (...args) => {
-        if (!isProd) window.console.error(...args);
-    }
-};
+import { logger } from './logger.js';
 
 let isRedirecting = false;
 let offlineBannerTimer = null;
@@ -31,7 +19,7 @@ function isSameOriginUrl(url) {
 function safeRedirectToLogin(reason = '') {
     if (isRedirecting) return;
     isRedirecting = true;
-    console.log(`Redirecting to login due to: ${reason}`);
+    logger.log(`Redirecting to login due to: ${reason}`);
     showOfflineBanner(true, window.trans('Votre session a expiré. Redirection vers la page de connexion dans 5 secondes...'));
 
     const reconnectBtn = document.querySelector('.offline-reconnect-btn');
@@ -430,7 +418,7 @@ export function handleSseEvent(type, data) {
         }
     }
 
-    console.log(`[Mercure SSE] Event received: type="${type}"`, data);
+    logger.log(`[Mercure SSE] Event received: type="${type}"`, data);
 
     if (type === 'help_stream_update') {
         try {
@@ -512,14 +500,14 @@ export function handleSseEvent(type, data) {
                 }
             }
         } catch (err) {
-            console.error('Error handling help stream update:', err);
+            logger.error('Error handling help stream update:', err);
         }
         return;
     }
 
     // Ignore non-JSON payload SSE events (raw HTML for messages or "ping" for typing indicators)
     if (type.startsWith('message_') || type.startsWith('typing_')) {
-        console.log(`[Mercure SSE] Passing raw event "${type}" directly to HTMX handlers`);
+        logger.log(`[Mercure SSE] Passing raw event "${type}" directly to HTMX handlers`);
         return;
     }
 
