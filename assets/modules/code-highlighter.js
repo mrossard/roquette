@@ -6,10 +6,20 @@ import hljs from 'highlight.js';
  * @param {HTMLElement|Document} container
  */
 export function highlightAllCodeBlocks(container = document) {
-    const blocks = container.querySelectorAll('pre code');
+    if (!container) return;
+
+    const blocks = [];
+    if (container.matches && container.matches('pre code:not([data-highlighted="yes"])')) {
+        blocks.push(container);
+    }
+    if (container.querySelectorAll) {
+        blocks.push(...container.querySelectorAll('pre code:not([data-highlighted="yes"])'));
+    }
+
     if (blocks.length === 0) return;
 
     blocks.forEach(block => {
+        if (block.dataset.highlighted === 'yes') return;
         hljs.highlightElement(block);
     });
 }
@@ -23,7 +33,17 @@ const COPY_DONE_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="non
  * @param {HTMLElement|Document} container
  */
 export function initCodeBlockCopyButtons(container = document) {
-    const pres = container.querySelectorAll('pre.message-code-block, pre:has(.text-preview-code)');
+    if (!container) return;
+
+    const pres = [];
+    const selector = 'pre.message-code-block, pre:has(.text-preview-code)';
+    if (container.matches && container.matches(selector)) {
+        pres.push(container);
+    }
+    if (container.querySelectorAll) {
+        pres.push(...container.querySelectorAll(selector));
+    }
+
     pres.forEach(pre => {
         if (pre.closest('.code-block-wrapper')) return;
 

@@ -193,8 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // SSE message appended to #live-feed
         if (target && target.id === 'live-feed') {
             if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
-            if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
-            if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons();
+            if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks(target);
+            if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons(target);
             if (window.initEmojiPickers) window.initEmojiPickers();
             return;
         }
@@ -214,8 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Single feed-item swap (edit/view/reaction)
         if (target && target.classList.contains('feed-item')) {
             if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
-            if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
-            if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons();
+            if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks(target);
+            if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons(target);
             if (window.initEmojiPickers) window.initEmojiPickers();
             return;
         }
