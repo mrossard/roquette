@@ -46,10 +46,6 @@ initDialogHelpers();
 initReactionPicker();
 initFileUploadUi();
 
-function initAutoResizeTextarea() {
-    // Managed natively by CSS field-sizing: content
-}
-
 function checkJumpToMessage() {
     const urlParams = new URLSearchParams(window.location.search);
     const jumpTo = urlParams.get('jumpTo');
@@ -60,6 +56,31 @@ function checkJumpToMessage() {
             window.history.replaceState({}, document.title, cleanUrl);
         }, 300);
     }
+}
+
+/**
+ * Re-initialise les composants communs du DOM après chargement ou swap HTMX.
+ */
+function reinitCommonComponents(container = document) {
+    if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
+    if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks(container);
+    if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons(container);
+    if (window.initEmojiPickers) window.initEmojiPickers();
+    if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
+    if (window.initFileUpload) window.initFileUpload();
+    if (window.setupNotificationHeaderButton) window.setupNotificationHeaderButton();
+    if (window.updateSettingsPageUI) window.updateSettingsPageUI();
+    if (window.initTypingIndicator) window.initTypingIndicator();
+    if (window.initChannelReordering) window.initChannelReordering();
+    if (window.initUnreadFilter) window.initUnreadFilter();
+    if (window.initSidebarToggles) window.initSidebarToggles();
+    if (window.initHideCompletedTasks) window.initHideCompletedTasks();
+    if (window.initSubChannelsSidebar) window.initSubChannelsSidebar();
+    if (window.initFilesSidebar) window.initFilesSidebar();
+    if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
+    if (window.renderChannelOfflineMessages) window.renderChannelOfflineMessages();
+    if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
+    if (window.initKanbanBoard) window.initKanbanBoard();
 }
 
 // ── HTMX Global Event Listeners ──────────────────────────────────────────────
@@ -140,29 +161,12 @@ document.body.addEventListener('htmx:responseError', async (evt) => {
 document.addEventListener('DOMContentLoaded', () => {
     // Initial global setup
     if (window.connectMercure) window.connectMercure();
-    if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
-    if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
-    if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons();
-    if (window.initEmojiPickers) window.initEmojiPickers();
-    if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
-    initAutoResizeTextarea();
-    if (window.initFileUpload) window.initFileUpload();
-    if (window.setupNotificationHeaderButton) window.setupNotificationHeaderButton();
-    if (window.updateSettingsPageUI) window.updateSettingsPageUI();
-    if (window.initTypingIndicator) window.initTypingIndicator();
-    if (window.initChannelReordering) window.initChannelReordering();
-    if (window.initUnreadFilter) window.initUnreadFilter();
-    if (window.initSidebarToggles) window.initSidebarToggles();
-    if (window.initHideCompletedTasks) window.initHideCompletedTasks();
-    if (window.initSubChannelsSidebar) window.initSubChannelsSidebar();
-    if (window.initFilesSidebar) window.initFilesSidebar();
     if (window.initConfirmModals) window.initConfirmModals();
-    if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
     if (window.initOfflineQueue) window.initOfflineQueue();
     if (window.initGlobalSearch) window.initGlobalSearch();
     if (window.initMobileSidebar) window.initMobileSidebar();
-    if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
-    if (window.initKanbanBoard) window.initKanbanBoard();
+
+    reinitCommonComponents();
 
     // Focus message input on load (unless on mobile)
     const messageInput = document.getElementById('message');
@@ -199,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Form morph after sending a message
         if (target && target.classList.contains('chat-message-form')) {
-            initAutoResizeTextarea();
             if (window.initFileUpload) window.initFileUpload();
             if (window.initTypingIndicator) window.initTypingIndicator();
             if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
@@ -235,26 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // General reinitialization
-        if (window.updateEditButtonsVisibility) window.updateEditButtonsVisibility();
-        if (window.highlightAllCodeBlocks) window.highlightAllCodeBlocks();
-        if (window.initCodeBlockCopyButtons) window.initCodeBlockCopyButtons();
-        if (window.initEmojiPickers) window.initEmojiPickers();
-        if (window.initEmojiAutocomplete) window.initEmojiAutocomplete();
-        initAutoResizeTextarea();
-        if (window.initFileUpload) window.initFileUpload();
-        if (window.setupNotificationHeaderButton) window.setupNotificationHeaderButton();
-        if (window.updateSettingsPageUI) window.updateSettingsPageUI();
-        if (window.initTypingIndicator) window.initTypingIndicator();
-        if (window.initChannelReordering) window.initChannelReordering();
-        if (window.initUnreadFilter) window.initUnreadFilter();
-        if (window.initSidebarToggles) window.initSidebarToggles();
-        if (window.initHideCompletedTasks) window.initHideCompletedTasks();
-        if (window.initSubChannelsSidebar) window.initSubChannelsSidebar();
-        if (window.initFilesSidebar) window.initFilesSidebar();
-        if (window.initMessageHistoryCapture) window.initMessageHistoryCapture();
-        if (window.renderChannelOfflineMessages) window.renderChannelOfflineMessages();
-        if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
-        if (window.initKanbanBoard) window.initKanbanBoard();
+        reinitCommonComponents();
 
         // Refocus input and restore draft after channel switches
         if (isChannelSwitch) {
