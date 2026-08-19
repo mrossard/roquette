@@ -22,6 +22,7 @@ import { initDialogHelpers } from './modules/dialog.js';
 import { initReactionPicker } from './modules/reaction-picker.js';
 import { initFileUploadUi } from './modules/file-upload-ui.js';
 import { initMetricsCharts } from './modules/metrics-charts.js';
+import { initToastNotifications } from './modules/toast.js';
 
 // Expose htmx globally
 window.htmx = htmx;
@@ -45,6 +46,7 @@ initDialogHelpers();
 initReactionPicker();
 initFileUploadUi();
 initMetricsCharts();
+initToastNotifications();
 
 function checkJumpToMessage() {
     const urlParams = new URLSearchParams(window.location.search);

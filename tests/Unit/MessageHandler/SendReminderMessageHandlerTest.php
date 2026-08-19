@@ -87,4 +87,81 @@ final class SendReminderMessageHandlerTest extends TestCase
 
         $handler(new SendReminderMessage(42));
     }
+
+    public function testInvokePublishesMessageReminderWithQuoteAndLink(): void
+    {
+        $reminderRepository = $this->createMock(ReminderRepository::class);
+        $userRepository = $this->createMock(UserRepository::class);
+        $messagePublishService = $this->createMock(MessagePublishService::class);
+        $dmManager = $this->createMock(\App\Service\DmManager::class);
+
+        $user = new User();
+        $user->setUsername('alice');
+
+        $author = new User();
+        $author->setUsername('bob');
+
+        $channel = new Channel();
+        $channel->setName('dev-team');
+        $channel->setSlug('dev-team');
+
+        $targetMsg = new \App\Entity\Message();
+        $targetMsg->setContent('Check the server logs please');
+        $targetMsg->setAuthor($author);
+        $targetMsg->setChannel($channel);
+
+        // Reflection to set ID
+        $refl = new \ReflectionProperty(\App\Entity\Message::class, 'id');
+        $refl->setValue($targetMsg, 99);
+
+        $dmChannel = new Channel();
+        $dmChannel->setName('robot-roquette & alice');
+        $dmChannel->setSlug('dm-robot-roquette-alice');
+
+        $reminder = new Reminder();
+        $reminder->setUser($user);
+        $reminder->setChannel($channel);
+        $reminder->setTargetMessage($targetMsg);
+        $reminder->setMessage('Check the server logs please');
+        $reminder->setStatus('pending');
+
+        $robotUser = new User();
+        $robotUser->setUsername('robot-roquette');
+
+        $reminderRepository->expects(self::once())->method('find')->with(101)->willReturn($reminder);
+
+        $robotUserProvider = $this->createMock(RobotUserProvider::class);
+        $robotUserProvider->method('getRobotUser')->willReturn($robotUser);
+
+        $dmManager->expects(self::once())->method('getOrCreateDm')->with($user, $robotUser)->willReturn($dmChannel);
+
+        $messagePublishService
+            ->expects(self::once())
+            ->method('publish')
+            ->with(
+                $dmChannel,
+                $robotUser,
+                static::callback(
+                    static fn(string $text) => (
+                        str_contains($text, 'Check the server logs please')
+                        && str_contains($text, '@bob')
+                        && str_contains($text, '/channels/dev-team?jumpTo=99')
+                    ),
+                ),
+            );
+
+        $reminderRepository->expects(self::once())->method('save')->with($reminder);
+
+        $handler = new SendReminderMessageHandler(
+            $reminderRepository,
+            $userRepository,
+            $messagePublishService,
+            $robotUserProvider,
+            $dmManager,
+        );
+
+        $handler(new SendReminderMessage(101));
+
+        static::assertSame('delivered', $reminder->getStatus());
+    }
 }

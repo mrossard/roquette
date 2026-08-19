@@ -19,6 +19,39 @@ export function scrollToMessage(messageId) {
     }
 }
 
+// Expose globally
+window.scrollToMessage = scrollToMessage;
+
+// Intercept clicks on jumpTo links within the same channel to scroll without reloading
+document.addEventListener('click', (e) => {
+    const link = e.target.closest('a[href*="jumpTo="]');
+    if (!link) return;
+
+    const href = link.getAttribute('href');
+    if (!href) return;
+
+    try {
+        const url = new URL(href, window.location.origin);
+        const jumpTo = url.searchParams.get('jumpTo');
+        if (!jumpTo) return;
+
+        // If on the same channel/page:
+        if (url.pathname === window.location.pathname) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const modal = link.closest('dialog[open]');
+            if (modal && typeof modal.close === 'function') {
+                modal.close();
+            }
+
+            scrollToMessage(jumpTo);
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
+    } catch (_) {}
+});
+
 function toggleMessageActionsFromEvent(e) {
     const button = e.target.closest('.btn-actions-toggle');
     if (!button) return;
@@ -35,8 +68,50 @@ function toggleMessageActionsFromEvent(e) {
     actionsList.classList.toggle('show');
 }
 
+export function toggleReminderDropdown(button, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    const wrapper = button.closest('.reminder-dropdown-wrapper');
+    const dropdown = wrapper?.querySelector('.reminder-picker-dropdown');
+    if (!dropdown) return;
+
+    const isShown = dropdown.classList.contains('show');
+    document.querySelectorAll('.reminder-picker-dropdown.show').forEach(d => d.classList.remove('show', 'open-up'));
+
+    if (!isShown) {
+        dropdown.classList.add('show');
+        // Smart positioning: check if there is enough space below
+        const rect = button.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        if (spaceBelow < 260) {
+            dropdown.classList.add('open-up');
+        } else {
+            dropdown.classList.remove('open-up');
+        }
+    }
+}
+
+// Expose globally for inline onclick
+window.toggleReminderDropdown = toggleReminderDropdown;
+
 // Menu contextuel des messages
-document.addEventListener('click', toggleMessageActionsFromEvent);
+document.addEventListener('click', (e) => {
+    toggleMessageActionsFromEvent(e);
+
+    const reminderToggle = e.target.closest('.btn-reminder-toggle');
+    if (reminderToggle) {
+        toggleReminderDropdown(reminderToggle, e);
+        return;
+    }
+
+    // Close open reminder pickers if clicking outside
+    if (!e.target.closest('.reminder-dropdown-wrapper')) {
+        document.querySelectorAll('.reminder-picker-dropdown.show').forEach(d => d.classList.remove('show', 'open-up'));
+    }
+});
 
 // Barre d'outils de formatage Markdown pour les zones de texte des messages
 document.addEventListener('click', (e) => {

@@ -45,6 +45,7 @@ when@test:
                 'App\Message\AuditLogMessage': sync
                 'App\Message\PushNotificationMessage': sync
                 'App\Message\ChannelNotificationMessage': sync
+                'App\Message\SendReminderMessage': sync
                 'App\Message\LlmQueryMessage': sync
                 'App\Message\ScanFileMessage': sync
                 'App\Message\ModerateMessageMessage': sync

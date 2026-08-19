@@ -26,6 +26,10 @@ class Reminder
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Channel $channel = null;
 
+    #[ORM\ManyToOne(targetEntity: Message::class)]
+    #[ORM\JoinColumn(name: 'target_message_id', referencedColumnName: 'id', nullable: true, onDelete: 'CASCADE')]
+    private ?Message $targetMessage = null;
+
     #[ORM\Column(type: 'text')]
     private ?string $message = null;
 
@@ -104,6 +108,18 @@ class Reminder
     public function setCreatedAt(\DateTimeImmutable $createdAt): self
     {
         $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getTargetMessage(): ?Message
+    {
+        return $this->targetMessage;
+    }
+
+    public function setTargetMessage(?Message $targetMessage): self
+    {
+        $this->targetMessage = $targetMessage;
 
         return $this;
     }

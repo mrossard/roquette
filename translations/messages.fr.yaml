@@ -837,6 +837,29 @@ Espaces: Espaces
 "Documents / PDF": "Documents / PDF"
 "Vidéos": "Vidéos"
 "Autres": "Autres"
+"Message introuvable.": "Message introuvable."
+"Date de rappel invalide ou passée.": "Date de rappel invalide ou passée."
+"Rappel programmé avec succès.": "Rappel programmé avec succès."
+"Rappel introuvable.": "Rappel introuvable."
+"Rappel annulé.": "Rappel annulé."
+"Mes rappels programmés": "Mes rappels programmés"
+"Vous n'avez aucun rappel en attente.": "Vous n'avez aucun rappel en attente."
+"Utilisez le bouton \"⏰ Rappeler\" sur n'importe quel message pour planifier un rappel.": "Utilisez le bouton \"⏰ Rappeler\" sur n'importe quel message pour planifier un rappel."
+"Me rappeler ce message": "Me rappeler ce message"
+"Me rappeler dans...": "Me rappeler dans..."
+"Annuler le rappel prévu": "Annuler le rappel prévu"
+"Annuler ce rappel": "Annuler ce rappel"
+"20 minutes": "20 minutes"
+"1 heure": "1 heure"
+"3 heures": "3 heures"
+"Demain matin (09:00)": "Demain matin (09:00)"
+"Lundi matin (09:00)": "Lundi matin (09:00)"
+"Rappel": "Rappel"
+"Rappeler": "Rappeler"
+"Rappel programmé": "Rappel programmé"
+"Annuler le rappel prévu le %date%": "Annuler le rappel prévu le %date%"
+
+
 
 
 

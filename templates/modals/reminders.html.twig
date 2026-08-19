@@ -1,0 +1,61 @@
+{% embed 'partials/_modal_layout.html.twig' with {
+    id: 'user-reminders-modal',
+    title: '⏰ ' ~ 'Mes rappels programmés'|trans
+} %}
+    {% block modal_body %}
+        <div id="reminders-modal-content">
+            {% if reminders is empty %}
+                <div class="empty-state-block" style="padding: 2rem 1rem; text-align: center; color: var(--text-muted);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">⏰</div>
+                    <p>{{ 'Vous n\'avez aucun rappel en attente.'|trans }}</p>
+                    <p style="font-size: 0.8rem; margin-top: 0.25rem;">
+                        {{ 'Utilisez le bouton "⏰ Rappeler" sur n\'importe quel message pour planifier un rappel.'|trans }}
+                    </p>
+                </div>
+            {% else %}
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 60vh; overflow-y: auto;">
+                    {% for reminder in reminders %}
+                        <div id="user-reminder-item-{{ reminder.id }}"
+                             style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); border-radius: 8px;">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem; flex-grow: 1; min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; font-weight: 600; font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px;">
+                                        ⏰ {{ reminder.scheduledAt|date('d/m/Y H:i') }}
+                                    </span>
+                                    {% if reminder.channel %}
+                                        <span class="text-muted" style="font-size: 0.8rem;">
+                                            #{{ reminder.channel.name }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div style="font-size: 0.85rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    "{{ reminder.message }}"
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+                                {% if reminder.targetMessage and reminder.channel %}
+                                    <a href="{{ path('app_channel', {slug: reminder.channel.slug, jumpTo: reminder.targetMessage.id}) }}"
+                                       class="btn-reply-subtle"
+                                       hx-boost="false"
+                                       style="opacity: 1; text-decoration: none; padding: 0.35rem 0.6rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px;"
+                                       title="{{ 'Voir le message'|trans }}">
+                                        👉
+                                    </a>
+                                {% endif %}
+                                <button type="button"
+                                        class="btn-reply-subtle"
+                                        style="opacity: 1; color: var(--accent-red, #ff5b5b); padding: 0.35rem 0.6rem; background: rgba(239, 68, 68, 0.1); border-radius: 4px;"
+                                        hx-post="{{ path('app_reminder_cancel', {id: reminder.id}) }}"
+                                        hx-target="#user-reminder-item-{{ reminder.id }}"
+                                        hx-swap="outerHTML"
+                                        title="{{ 'Annuler ce rappel'|trans }}">
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    {% endblock %}
+{% endembed %}

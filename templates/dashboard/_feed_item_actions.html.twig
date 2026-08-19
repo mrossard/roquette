@@ -115,6 +115,7 @@
                       style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">⭐</span>
                 <span>{{ isSaved ? 'Enregistré'|trans : 'Enregistrer'|trans }}</span>
             </button>
+            {% include 'dashboard/_reminder_action.html.twig' %}
         {% endif %}
     </div>
 </div>

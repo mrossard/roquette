@@ -837,6 +837,29 @@ Espaces: Workspaces
 "Documents / PDF": "Documents / PDF"
 "Vidéos": "Videos"
 "Autres": "Others"
+"Message introuvable.": "Message not found."
+"Date de rappel invalide ou passée.": "Invalid or past reminder date."
+"Rappel programmé avec succès.": "Reminder scheduled successfully."
+"Rappel introuvable.": "Reminder not found."
+"Rappel annulé.": "Reminder cancelled."
+"Mes rappels programmés": "My scheduled reminders"
+"Vous n'avez aucun rappel en attente.": "You have no pending reminders."
+"Utilisez le bouton \"⏰ Rappeler\" sur n'importe quel message pour planifier un rappel.": "Use the \"⏰ Remind\" button on any message to schedule a reminder."
+"Me rappeler ce message": "Remind me about this message"
+"Me rappeler dans...": "Remind me in..."
+"Annuler le rappel prévu": "Cancel scheduled reminder"
+"Annuler ce rappel": "Cancel this reminder"
+"20 minutes": "20 minutes"
+"1 heure": "1 hour"
+"3 heures": "3 hours"
+"Demain matin (09:00)": "Tomorrow morning (09:00)"
+"Lundi matin (09:00)": "Next Monday morning (09:00)"
+"Rappel": "Reminder"
+"Rappeler": "Remind"
+"Rappel programmé": "Reminder scheduled"
+"Annuler le rappel prévu le %date%": "Cancel reminder scheduled for %date%"
+
+
 
 
 

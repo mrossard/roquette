@@ -1,0 +1,66 @@
+<div class="reminder-action-container" id="reminder-action-{{ message_id }}">
+    {% if activeReminder is defined and activeReminder and activeReminder.status == 'pending' %}
+        <button type="button"
+                class="btn-reply-subtle btn-reminder-active"
+                hx-post="{{ path('app_reminder_cancel', {id: activeReminder.id}) }}"
+                hx-target="#reminder-action-{{ message_id }}"
+                hx-swap="outerHTML"
+                title="{{ 'Annuler le rappel prévu le %date%'|trans({'%date%': activeReminder.scheduledAt|date('d/m/Y H:i')}) }}">
+            <span class="action-icon" style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">⏰</span>
+            <span>{{ activeReminder.scheduledAt|date('d/m H:i') }} ✕</span>
+        </button>
+    {% else %}
+        <div class="reminder-dropdown-wrapper">
+            <button type="button"
+                    class="btn-reply-subtle btn-reminder-toggle"
+                    title="{{ 'Me rappeler ce message'|trans }}"
+                    onclick="if (window.toggleReminderDropdown) { window.toggleReminderDropdown(this, event); } else { this.nextElementSibling.classList.toggle('show'); event.stopPropagation(); }">
+                <span class="action-icon" style="font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 11px; height: 11px;">⏰</span>
+                <span>{{ 'Rappeler'|trans }}</span>
+            </button>
+            <div class="reminder-picker-dropdown">
+                <div class="reminder-picker-header">{{ 'Me rappeler dans...'|trans }}</div>
+                <button type="button"
+                        class="reminder-preset-btn"
+                        hx-post="{{ path('app_message_remind', {id: message_id}) }}"
+                        hx-vals='{"preset": "20m"}'
+                        hx-target="#reminder-action-{{ message_id }}"
+                        hx-swap="outerHTML">
+                    ⏱️ {{ '20 minutes'|trans }}
+                </button>
+                <button type="button"
+                        class="reminder-preset-btn"
+                        hx-post="{{ path('app_message_remind', {id: message_id}) }}"
+                        hx-vals='{"preset": "1h"}'
+                        hx-target="#reminder-action-{{ message_id }}"
+                        hx-swap="outerHTML">
+                    ⏱️ {{ '1 heure'|trans }}
+                </button>
+                <button type="button"
+                        class="reminder-preset-btn"
+                        hx-post="{{ path('app_message_remind', {id: message_id}) }}"
+                        hx-vals='{"preset": "3h"}'
+                        hx-target="#reminder-action-{{ message_id }}"
+                        hx-swap="outerHTML">
+                    ⏱️ {{ '3 heures'|trans }}
+                </button>
+                <button type="button"
+                        class="reminder-preset-btn"
+                        hx-post="{{ path('app_message_remind', {id: message_id}) }}"
+                        hx-vals='{"preset": "tomorrow_9am"}'
+                        hx-target="#reminder-action-{{ message_id }}"
+                        hx-swap="outerHTML">
+                    🌅 {{ 'Demain matin (09:00)'|trans }}
+                </button>
+                <button type="button"
+                        class="reminder-preset-btn"
+                        hx-post="{{ path('app_message_remind', {id: message_id}) }}"
+                        hx-vals='{"preset": "next_monday_9am"}'
+                        hx-target="#reminder-action-{{ message_id }}"
+                        hx-swap="outerHTML">
+                    📅 {{ 'Lundi matin (09:00)'|trans }}
+                </button>
+            </div>
+        </div>
+    {% endif %}
+</div>

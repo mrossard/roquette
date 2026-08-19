@@ -42,6 +42,21 @@ class HtmlDecoratorTest extends TestCase
         );
     }
 
+    public function testPreservesInternalLinksWithoutTargetBlank(): void
+    {
+        $decorator = new HtmlDecorator();
+
+        $html = '<p><a href="/channels/general?jumpTo=42">Message</a> and <a href="#feed-item-42">Anchor</a></p>';
+        $decorated = $decorator->decorate($html);
+
+        static::assertStringContainsString(
+            '<a href="/channels/general?jumpTo=42" hx-boost="false">Message</a>',
+            $decorated,
+        );
+        static::assertStringContainsString('<a href="#feed-item-42" hx-boost="false">Anchor</a>', $decorated);
+        static::assertStringNotContainsString('target="_blank"', $decorated);
+    }
+
     public function testDecoratesInlineImagesForLightbox(): void
     {
         $decorator = new HtmlDecorator();

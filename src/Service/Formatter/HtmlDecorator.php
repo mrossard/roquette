@@ -30,10 +30,24 @@ final readonly class HtmlDecorator
             static function ($matches) {
                 $url = $matches[1];
                 $extra = $matches[2];
-                if (!str_contains($extra, 'target=')) {
-                    return '<a href="' . $url . '" target="_blank" rel="noopener noreferrer"' . $extra . '>';
+                if (str_contains($extra, 'target=')) {
+                    return $matches[0];
                 }
-                return $matches[0];
+
+                // Internal/relative links stay in the current tab
+                $isInternal =
+                    str_starts_with($url, '/')
+                    || str_starts_with($url, '#')
+                    || !str_starts_with($url, 'http://')
+                    && !str_starts_with($url, 'https://')
+                    && !str_starts_with($url, '//');
+
+                if ($isInternal) {
+                    $boostAttr = !str_contains($extra, 'hx-boost=') ? ' hx-boost="false"' : '';
+                    return '<a href="' . $url . '"' . $boostAttr . $extra . '>';
+                }
+
+                return '<a href="' . $url . '" target="_blank" rel="noopener noreferrer"' . $extra . '>';
             },
             $html,
         );
