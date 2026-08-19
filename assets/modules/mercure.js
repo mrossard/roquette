@@ -1,3 +1,4 @@
+import htmx from 'htmx.org';
 import { wasAtBottom } from './scroll.js';
 
 const isProd = document.querySelector('meta[name="app-env"]')?.getAttribute('content') === 'prod';
@@ -215,11 +216,18 @@ export function initTypingIndicator() {
 }
 
 export function sendTypingStatus(channelSlug, isTyping) {
-    htmx.ajax('POST', `/channel/${channelSlug}/typing`, {
-        values: {isTyping: isTyping ? '1' : '0'},
-        target: document.getElementById('typing-indicator'),
-        swap: 'outerHTML',
-    });
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    const headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+    };
+    if (tokenMeta) {
+        headers['X-CSRF-Token'] = tokenMeta.content;
+    }
+    fetch(`/channel/${channelSlug}/typing`, {
+        method: 'POST',
+        headers,
+        body: new URLSearchParams({ isTyping: isTyping ? '1' : '0' }),
+    }).catch(() => {});
 }
 
 
@@ -306,7 +314,43 @@ export function manualReconnect(button) {
 }
 
 // HTMX SSE connection event listeners
-document.body.addEventListener('htmx:sseOpen', () => {
+export const APP_MERCURE_EVENTS = [
+    'user_status_changed',
+    'moderation_count_changed',
+    'personal_notification',
+    'channel_notification',
+    'invitation_received',
+    'channel_deleted',
+    'kanban_columns_changed',
+    'kanban_card_moved',
+    'kanban_card_updated',
+    'help_stream_update',
+];
+
+export function attachMercureEventSourceListeners(source) {
+    if (!source || source._mercureAttached) return;
+    source._mercureAttached = true;
+
+    for (const eventName of APP_MERCURE_EVENTS) {
+        source.addEventListener(eventName, (event) => {
+            handleSseEvent(eventName, event.data);
+        });
+    }
+}
+
+if (htmx) {
+    const originalCreateEventSource = htmx.createEventSource || ((url) => new EventSource(url, { withCredentials: true }));
+    htmx.createEventSource = function(url) {
+        const source = originalCreateEventSource(url);
+        attachMercureEventSourceListeners(source);
+        return source;
+    };
+}
+
+document.body.addEventListener('htmx:sseOpen', (event) => {
+    if (event.detail?.source) {
+        attachMercureEventSourceListeners(event.detail.source);
+    }
     if (offlineBannerTimer) {
         window.clearTimeout(offlineBannerTimer);
         offlineBannerTimer = null;
@@ -366,9 +410,7 @@ document.body.addEventListener('htmx:sseError', () => {
 
 const recentSseEvents = new Map();
 
-document.body.addEventListener('htmx:sseMessage', (event) => {
-    const type = event.detail?.type;
-    const data = event.detail?.data;
+export function handleSseEvent(type, data) {
     if (!type) return;
 
     // Deduplicate identical SSE events that bubble up from multiple trigger elements in the DOM
@@ -393,7 +435,7 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
     if (type === 'help_stream_update') {
         try {
             const parser = new DOMParser();
-            const doc = parser.parseFromString(event.detail.data, 'text/html');
+            const doc = parser.parseFromString(data, 'text/html');
             const oobElem = doc.querySelector('[hx-swap-oob]');
             if (oobElem) {
                 const channelSlug = oobElem.getAttribute('data-channel-slug');
@@ -482,17 +524,17 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
     }
 
     try {
-        const data = JSON.parse(event.detail.data);
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
         if (type === 'user_status_changed') {
-            handleUserStatusChanged(data);
+            handleUserStatusChanged(parsed);
         } else if (type === 'moderation_count_changed') {
-            handleModerationCountChanged(data);
+            handleModerationCountChanged(parsed);
         } else if (type === 'personal_notification' || type === 'channel_notification') {
             if (window.handleGlobalNotification) {
-                window.handleGlobalNotification(data);
+                window.handleGlobalNotification(parsed);
             }
             if (window.updateChannelLastMessageDate) {
-                window.updateChannelLastMessageDate(data.channelSlug);
+                window.updateChannelLastMessageDate(parsed.channelSlug);
             }
 
             // Auto-refresh Kanban board if a new message (task) is added to the active channel
@@ -500,29 +542,27 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                 const board = document.getElementById('kanban-board');
                 const statusBadge = document.getElementById('mercure-status');
                 const activeChannelSlug = statusBadge ? statusBadge.getAttribute('data-active-channel-slug') : null;
-                if (board && activeChannelSlug === data.channelSlug) {
+                if (board && activeChannelSlug === parsed.channelSlug) {
                     htmx.ajax('GET', `/channels/${activeChannelSlug}/kanban`, {
                         target: '#live-feed',
                         swap: 'innerHTML transition:false',
                     });
                 }
             }
-        } else if (type === 'personal_notification' || type === 'channel_notification') {
-            // Already handled above, keep signature
         } else if (type === 'invitation_received') {
             if (window.handleInvitationNotification) {
-                window.handleInvitationNotification(data);
+                window.handleInvitationNotification(parsed);
             }
         } else if (type === 'channel_deleted') {
             const channelLink = document.querySelector(
-                `.channel-link[data-channel-slug="${data.channelSlug}"]`,
+                `.channel-link[data-channel-slug="${parsed.channelSlug}"]`,
             );
             if (channelLink) {
                 channelLink.remove();
             }
 
             const sidebarItem = document.querySelector(
-                `.subchannels-sidebar-item[href*="/${data.channelSlug}"]`,
+                `.subchannels-sidebar-item[href*="/${parsed.channelSlug}"]`,
             );
             if (sidebarItem) {
                 sidebarItem.remove();
@@ -531,22 +571,22 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
             const statusBadge = document.getElementById('mercure-status');
             if (statusBadge) {
                 const activeChannelSlug = statusBadge.getAttribute('data-active-channel-slug');
-                if (data.channelSlug === activeChannelSlug) {
-                    window.location.href = isSameOriginUrl(data.redirectUrl) ? data.redirectUrl : '/';
+                if (parsed.channelSlug === activeChannelSlug) {
+                    window.location.href = isSameOriginUrl(parsed.redirectUrl) ? parsed.redirectUrl : '/';
                 }
             }
         } else if (type === 'kanban_columns_changed') {
             const board = document.getElementById('kanban-board');
             if (board) {
-                htmx.ajax('GET', `/channels/${data.channelSlug}/kanban`, {
+                htmx.ajax('GET', `/channels/${parsed.channelSlug}/kanban`, {
                     target: '#live-feed',
                     swap: 'innerHTML transition:false',
                 });
             }
         } else if (type === 'kanban_card_moved' || type === 'kanban_card_updated') {
-            if (data.htmlOob) {
+            if (parsed.htmlOob) {
                 const parser = new DOMParser();
-                const doc = parser.parseFromString(data.htmlOob, 'text/html');
+                const doc = parser.parseFromString(parsed.htmlOob, 'text/html');
                 const oobElem = doc.querySelector('[hx-swap-oob]');
                 if (oobElem) {
                     const id = oobElem.id;
@@ -557,9 +597,9 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
                 }
             }
 
-            if (data.kanbanCardHtml) {
+            if (parsed.kanbanCardHtml) {
                 const parser = new DOMParser();
-                const doc = parser.parseFromString(data.kanbanCardHtml, 'text/html');
+                const doc = parser.parseFromString(parsed.kanbanCardHtml, 'text/html');
                 const cardElem = doc.querySelector('.kanban-card');
                 if (cardElem) {
                     const id = cardElem.id;
@@ -573,9 +613,9 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
             if (type === 'kanban_card_moved') {
                 const board = document.getElementById('kanban-board');
                 if (board) {
-                    const card = document.getElementById(`kanban-card-${data.messageId}`);
+                    const card = document.getElementById(`kanban-card-${parsed.messageId}`);
                     if (card) {
-                        const colId = data.columnId !== null && data.columnId !== undefined ? data.columnId : 'null';
+                        const colId = parsed.columnId !== null && parsed.columnId !== undefined ? parsed.columnId : 'null';
                         const targetCol = board.querySelector(`.kanban-column-body[data-column-id="${colId}"]`);
                         if (targetCol && card.parentElement !== targetCol) {
                             targetCol.appendChild(card);
@@ -596,6 +636,13 @@ document.body.addEventListener('htmx:sseMessage', (event) => {
     } catch (err) {
         // Expected for message HTML payloads
     }
+}
+
+document.body.addEventListener('htmx:sseMessage', (event) => {
+    const type = event.detail?.type;
+    const data = event.detail?.data;
+    if (!type) return;
+    handleSseEvent(type, data);
 });
 
 

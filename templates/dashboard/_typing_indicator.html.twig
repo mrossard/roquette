@@ -1,7 +1,7 @@
 <div id="typing-indicator" class="typing-indicator"
      hx-trigger="sse:typing_{{ activeChannel.slug }}"
      hx-get="{{ path('app_channel_typing_indicator', {'slug': activeChannel.slug}) }}"
-     hx-swap="outerHTML"
+     hx-swap="morph:outerHTML transition:false"
      {% if typingUsers|length == 0 %}style="visibility: hidden;"{% endif %}>
     {% if typingUsers|length > 0 %}
         <div class="typing-dots-container">

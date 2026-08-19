@@ -131,19 +131,6 @@
             {% include 'modals/_busy_status_modal.html.twig' %}
             {% include 'partials/_confirmation_dialogs.html.twig' %}
             <div id="modal-container" hx-target="this" hx-swap="innerHTML"></div>
-            <div id="global-sse-triggers" style="display:none;">
-                <div hx-trigger="sse:moderation_count_changed"></div>
-                <div hx-trigger="sse:user_status_changed"></div>
-                <div hx-trigger="sse:personal_notification"></div>
-                <div hx-trigger="sse:channel_notification"></div>
-                <div hx-trigger="sse:invitation_received"></div>
-                <div hx-trigger="sse:channel_deleted"></div>
-                <div hx-trigger="sse:user_typing"></div>
-                <div hx-trigger="sse:help_stream_update"></div>
-                <div hx-trigger="sse:kanban_card_moved"></div>
-                <div hx-trigger="sse:kanban_card_updated"></div>
-                <div hx-trigger="sse:kanban_columns_changed"></div>
-            </div>
             <div hx-post="{{ path('app_user_ping') }}"
                  hx-trigger="load delay:1s, every 60s"
                  hx-swap="none"

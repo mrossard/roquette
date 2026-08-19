@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target && (target.id === 'load-more-trigger' || target.classList.contains('load-more-container'))) {
             return;
         }
-        if (target && target.id === 'typing-indicator') {
+        if (target && (target.id === 'typing-indicator' || (target.querySelector && target.querySelector('#typing-indicator') && !target.querySelector('#live-feed'))) || evt.detail.requestConfig?.path?.includes('/typing')) {
             return;
         }
 
