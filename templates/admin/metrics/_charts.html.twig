@@ -1,0 +1,45 @@
+<div class="metrics-charts-grid">
+    {# Chart 1: Activity Timeline #}
+    <div class="metrics-chart-card">
+        <div class="metrics-chart-card-header">
+            <span>📈 {{ 'Activité temporelle'|trans }}</span>
+            <span class="text-muted" style="font-size: 0.8rem; font-weight: normal;">
+                {{ 'Messages et membres actifs'|trans }}
+            </span>
+        </div>
+        <div class="metrics-chart-wrapper">
+            <canvas id="activity-timeline-chart" data-timeline="{{ timeline|json_encode }}"></canvas>
+        </div>
+    </div>
+
+    {# Chart 2: Storage Breakdown #}
+    <div class="metrics-chart-card">
+        <div class="metrics-chart-card-header">
+            <span>🗂️ {{ 'Répartition du stockage'|trans }}</span>
+            <span class="text-muted" style="font-size: 0.8rem; font-weight: normal;">
+                {{ kpis.total_storage_bytes|format_bytes }}
+            </span>
+        </div>
+        <div class="metrics-chart-wrapper" style="height: 180px;">
+            <canvas id="storage-breakdown-chart" data-storage="{{ storageBreakdown|json_encode }}"></canvas>
+        </div>
+        <div class="metrics-storage-list">
+            {% for item in storageBreakdown %}
+                <div class="metrics-storage-item">
+                    <div class="metrics-storage-item-header">
+                        <span>
+                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {{ item.color }}; margin-right: 4px;"></span>
+                            {{ item.label|trans }}
+                        </span>
+                        <span class="text-muted">
+                            {{ item.bytes|format_bytes }} ({{ item.percentage }}%)
+                        </span>
+                    </div>
+                    <div class="metrics-storage-bar-bg">
+                        <div class="metrics-storage-bar-fill" style="width: {{ item.percentage }}%; background: {{ item.color }};"></div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

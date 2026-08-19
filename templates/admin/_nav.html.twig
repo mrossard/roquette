@@ -49,6 +49,12 @@
            class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
             Audit Log
         </a>
+
+        {% set is_active = current_route starts with 'app_admin_metrics' %}
+        <a href="{{ path('app_admin_metrics') }}"
+           class="{{ is_active ? 'admin-nav-tab--active' : 'admin-nav-tab--inactive' }}">
+            📊 {{ 'Métriques'|trans }}
+        </a>
     {% endif %}
 </div>
 

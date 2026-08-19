@@ -1,0 +1,56 @@
+<div class="metrics-container" id="metrics-content">
+    <div class="metrics-header-controls">
+        <div class="metrics-filter-group">
+            <label for="metrics-workspace-select" class="text-muted" style="font-size: 0.85rem; font-weight: 500;">
+                {{ 'Espace de travail :'|trans }}
+            </label>
+            <select id="metrics-workspace-select"
+                    name="workspace_id"
+                    class="metrics-select"
+                    hx-get="{{ path('app_admin_metrics') }}"
+                    hx-target="#metrics-dashboard-container"
+                    hx-trigger="change"
+                    hx-include="[name='period']">
+                <option value="" {% if workspaceId is null %}selected{% endif %}>
+                    🌐 {{ 'Tous les espaces de travail'|trans }}
+                </option>
+                {% for ws in allWorkspaces %}
+                    <option value="{{ ws.id }}" {% if workspaceId == ws.id %}selected{% endif %}>
+                        {{ ws.name }} {% if ws.public %}({{ 'Public'|trans }}){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="metrics-filter-group">
+            <input type="hidden" name="period" value="{{ period }}">
+            <div class="metrics-period-pills">
+                {% set periods = [
+                    {'key': '7d', 'label': '7 jours'|trans},
+                    {'key': '30d', 'label': '30 jours'|trans},
+                    {'key': '90d', 'label': '90 jours'|trans},
+                    {'key': '1y', 'label': '1 an'|trans}
+                ] %}
+                {% for p in periods %}
+                    <button type="button"
+                            class="metrics-period-pill {% if period == p.key %}metrics-period-pill--active{% endif %}"
+                            hx-get="{{ path('app_admin_metrics', {'workspace_id': workspaceId, 'period': p.key}) }}"
+                            hx-target="#metrics-dashboard-container">
+                        {{ p.label }}
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% include 'admin/metrics/_kpis.html.twig' %}
+
+    {% include 'admin/metrics/_charts.html.twig' %}
+
+    <div class="metrics-tables-grid">
+        {% include 'admin/metrics/_top_channels.html.twig' %}
+        {% include 'admin/metrics/_dormant_channels.html.twig' %}
+    </div>
+
+    {% include 'admin/metrics/_ai_usage.html.twig' %}
+</div>

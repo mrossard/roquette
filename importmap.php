@@ -10,28 +10,26 @@
  *     be used as an "entrypoint" (and passed to the importmap() Twig function).
  *
  * The "importmap:require" command can be used to add new entries to this file.
+ *
+ * @return array<string, array{    // Import name as key, description of the imported file as value
+ *     path: string,               // Logical, relative or absolute path to the file
+ *     type?: 'js'|'css'|'json',   // Type of the file, defaults to 'js'
+ *     entrypoint?: bool,          // Whether the file is an entrypoint, for 'js' only
+ * }|array{
+ *     version: string,            // Version of the remote package
+ *     package_specifier?: string, // Remote "package-name/path" specifier, defaults to the import name
+ *     type?: 'js'|'css'|'json',
+ *     entrypoint?: bool,
+ * }>
  */
 return [
-    'app' => [
-        'path' => './assets/app.js',
-        'entrypoint' => true,
-    ],
-    'htmx.org' => [
-        'version' => '2.0.7',
-    ],
-    'highlight.js' => [
-        'version' => '11.11.1',
-    ],
-    'idiomorph' => [
-        'version' => '0.7.4',
-    ],
-    'frankenphp-hot-reload' => [
-        'version' => '1.0.1',
-    ],
-    'htmx-ext-sse' => [
-        'version' => '2.2.4',
-    ],
-    'sortablejs' => [
-        'version' => '1.15.7',
-    ],
+    'app' => ['path' => './assets/app.js', 'entrypoint' => true],
+    'htmx.org' => ['version' => '2.0.7'],
+    'highlight.js' => ['version' => '11.11.1'],
+    'idiomorph' => ['version' => '0.7.4'],
+    'frankenphp-hot-reload' => ['version' => '1.0.1'],
+    'htmx-ext-sse' => ['version' => '2.2.4'],
+    'sortablejs' => ['version' => '1.15.7'],
+    'chart.js/auto' => ['version' => '4.5.1'],
+    '@kurkle/color' => ['version' => '0.3.4'],
 ];

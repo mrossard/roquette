@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'Administration — Métriques'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+    <div class="app-container admin-layout" hx-boost="true">
+        <header class="app-header">
+            <div class="logo-area">
+                <button id="mobile-sidebar-toggle" class="btn-mobile-toggle" aria-label="{{ 'Afficher le menu'|trans }}">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+                <span class="logo-rocket">🚀</span>
+                <div class="logo-text">
+                    <h1>Roquette</h1>
+                    <p class="subtitle">{{ 'Administration'|trans }}</p>
+                </div>
+            </div>
+
+            {% include 'dashboard/_header_controls.html.twig' with {'show_back_button': true} %}
+        </header>
+
+        <main class="dashboard-grid" id="main-content">
+            <section class="card glass-panel settings-panel">
+                <div class="card-header">
+                    <div>
+                        <h2>📊 {{ 'Métriques & Activité'|trans }}</h2>
+                    </div>
+                    {% include 'admin/_nav.html.twig' %}
+                </div>
+
+                <div class="card-body" id="metrics-dashboard-container">
+                    {% include 'admin/metrics/_content.html.twig' %}
+                </div>
+            </section>
+        </main>
+    </div>
+{% endblock %}

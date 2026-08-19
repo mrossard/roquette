@@ -1,0 +1,55 @@
+<div class="metrics-table-card">
+    <div class="metrics-chart-card-header">
+        <span>💤 {{ 'Canaux dormants'|trans }}</span>
+        <span class="text-muted" style="font-size: 0.8rem; font-weight: normal;">
+            {{ 'Inactifs depuis > 30 jours'|trans }}
+        </span>
+    </div>
+
+    {% if dormantChannels is empty %}
+        <div class="empty-state-block" style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+            {{ 'Tous les canaux sont actifs !'|trans }}
+        </div>
+    {% else %}
+        <div class="admin-table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'Canal'|trans }}</th>
+                        <th class="th--right">{{ 'Dernière activité'|trans }}</th>
+                        <th class="th--right">{{ 'Inactivité'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ch in dormantChannels %}
+                        <tr>
+                            <td>
+                                <strong>
+                                    {% if ch.is_todo_list %}📋{% elseif ch.is_private %}🔒{% else %}#️⃣{% endif %}
+                                    <a href="{{ path('app_channel', {'slug': ch.slug}) }}" style="color: var(--text-primary); text-decoration: none;">
+                                        {{ ch.name }}
+                                    </a>
+                                </strong>
+                                {% if ch.workspace_name and workspaceId is null %}
+                                    <div class="text-muted" style="font-size: 0.75rem;">{{ ch.workspace_name }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="td--right text-muted">
+                                {% if ch.last_activity_at %}
+                                    {{ ch.last_activity_at|date('d/m/Y') }}
+                                {% else %}
+                                    {{ 'Aucun message'|trans }}
+                                {% endif %}
+                            </td>
+                            <td class="td--right">
+                                <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; font-weight: 500; padding: 0.15rem 0.4rem; border-radius: 4px;">
+                                    {{ ch.days_inactive }} {{ 'jours'|trans }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>

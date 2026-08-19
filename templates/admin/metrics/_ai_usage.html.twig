@@ -1,0 +1,27 @@
+<div class="metrics-table-card" style="grid-column: 1 / -1;">
+    <div class="metrics-chart-card-header">
+        <span>🤖 {{ 'Adoption de l\'Assistant IA & Automatisation'|trans }}</span>
+        <span class="text-muted" style="font-size: 0.8rem; font-weight: normal;">
+            {{ 'Statistiques d\'usage sur la période'|trans }}
+        </span>
+    </div>
+
+    <div class="metrics-ai-stats-list">
+        <div class="metrics-ai-stat-box">
+            <span class="metrics-ai-stat-number" style="color: #60a5fa;">{{ aiStats.robot_messages }}</span>
+            <span class="metrics-ai-stat-label">{{ 'Réponses générées'|trans }}</span>
+        </div>
+        <div class="metrics-ai-stat-box">
+            <span class="metrics-ai-stat-number" style="color: #34d399;">{{ aiStats.polls_created }}</span>
+            <span class="metrics-ai-stat-label">{{ 'Sondages créés'|trans }}</span>
+        </div>
+        <div class="metrics-ai-stat-box">
+            <span class="metrics-ai-stat-number" style="color: #fbbf24;">{{ aiStats.reminders_scheduled }}</span>
+            <span class="metrics-ai-stat-label">{{ 'Rappels programmés'|trans }}</span>
+        </div>
+        <div class="metrics-ai-stat-box">
+            <span class="metrics-ai-stat-number" style="color: #c084fc;">{{ aiStats.total_ai_interactions }}</span>
+            <span class="metrics-ai-stat-label">{{ 'Total interactions'|trans }}</span>
+        </div>
+    </div>
+</div>

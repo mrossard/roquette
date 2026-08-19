@@ -1,0 +1,68 @@
+<div class="metrics-kpi-grid">
+    {# Card 1: Messages #}
+    <div class="metrics-kpi-card">
+        <div class="metrics-kpi-card-header">
+            <span>{{ 'Messages échangés'|trans }}</span>
+            <span class="metrics-kpi-icon">💬</span>
+        </div>
+        <div class="metrics-kpi-value-row">
+            <span class="metrics-kpi-value">{{ kpis.total_messages|number_format(0, ',', ' ') }}</span>
+            {% if kpis.messages_trend > 0 %}
+                <span class="metrics-kpi-trend metrics-kpi-trend--positive">
+                    ↗ +{{ kpis.messages_trend }}%
+                </span>
+            {% elseif kpis.messages_trend < 0 %}
+                <span class="metrics-kpi-trend metrics-kpi-trend--negative">
+                    ↘ {{ kpis.messages_trend }}%
+                </span>
+            {% else %}
+                <span class="metrics-kpi-trend metrics-kpi-trend--neutral">
+                    — 0%
+                </span>
+            {% endif %}
+        </div>
+        <span class="metrics-kpi-subtitle">{{ 'par rapport à la période précédente'|trans }}</span>
+    </div>
+
+    {# Card 2: Utilisateurs actifs #}
+    <div class="metrics-kpi-card">
+        <div class="metrics-kpi-card-header">
+            <span>{{ 'Utilisateurs actifs'|trans }}</span>
+            <span class="metrics-kpi-icon">👥</span>
+        </div>
+        <div class="metrics-kpi-value-row">
+            <span class="metrics-kpi-value">{{ kpis.active_users }}</span>
+            <span class="metrics-kpi-trend metrics-kpi-trend--positive">
+                {{ kpis.active_users_ratio }}%
+            </span>
+        </div>
+        <span class="metrics-kpi-subtitle">{{ 'sur %total% inscrits'|trans({'%total%': kpis.total_users}) }}</span>
+    </div>
+
+    {# Card 3: Stockage & Fichiers #}
+    <div class="metrics-kpi-card">
+        <div class="metrics-kpi-card-header">
+            <span>{{ 'Stockage consommé'|trans }}</span>
+            <span class="metrics-kpi-icon">💾</span>
+        </div>
+        <div class="metrics-kpi-value-row">
+            <span class="metrics-kpi-value">{{ kpis.total_storage_bytes|format_bytes }}</span>
+        </div>
+        <span class="metrics-kpi-subtitle">{{ '%count% fichier(s) partagé(s)'|trans({'%count%': kpis.total_files}) }}</span>
+    </div>
+
+    {# Card 4: Tâches Kanban #}
+    <div class="metrics-kpi-card">
+        <div class="metrics-kpi-card-header">
+            <span>{{ 'Tâches Kanban'|trans }}</span>
+            <span class="metrics-kpi-icon">📋</span>
+        </div>
+        <div class="metrics-kpi-value-row">
+            <span class="metrics-kpi-value">{{ kpis.kanban_completed_tasks }} / {{ kpis.kanban_total_tasks }}</span>
+            <span class="metrics-kpi-trend {% if kpis.kanban_completion_rate >= 50 %}metrics-kpi-trend--positive{% else %}metrics-kpi-trend--neutral{% endif %}">
+                {{ kpis.kanban_completion_rate }}%
+            </span>
+        </div>
+        <span class="metrics-kpi-subtitle">{{ 'taux de complétion'|trans }}</span>
+    </div>
+</div>

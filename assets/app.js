@@ -21,6 +21,7 @@ import { initDraftPersistence, restoreDraftForActiveChannel } from './modules/dr
 import { initDialogHelpers } from './modules/dialog.js';
 import { initReactionPicker } from './modules/reaction-picker.js';
 import { initFileUploadUi } from './modules/file-upload-ui.js';
+import { initMetricsCharts } from './modules/metrics-charts.js';
 
 // Expose htmx globally
 window.htmx = htmx;
@@ -43,6 +44,7 @@ initDraftPersistence();
 initDialogHelpers();
 initReactionPicker();
 initFileUploadUi();
+initMetricsCharts();
 
 function checkJumpToMessage() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -79,6 +81,7 @@ function reinitCommonComponents(container = document) {
     if (window.renderChannelOfflineMessages) window.renderChannelOfflineMessages();
     if (window.initFaviconNotificationBadge) window.initFaviconNotificationBadge();
     if (window.initKanbanBoard) window.initKanbanBoard();
+    if (window.initMetricsCharts) window.initMetricsCharts();
 }
 
 // ── HTMX Global Event Listeners ──────────────────────────────────────────────

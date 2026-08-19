@@ -1,0 +1,51 @@
+<div class="metrics-table-card">
+    <div class="metrics-chart-card-header">
+        <span>🏆 {{ 'Canaux les plus actifs'|trans }}</span>
+        <span class="text-muted" style="font-size: 0.8rem; font-weight: normal;">
+            {{ 'Top 10 sur la période'|trans }}
+        </span>
+    </div>
+
+    {% if topChannels is empty %}
+        <div class="empty-state-block" style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+            {{ 'Aucun message enregistré sur cette période.'|trans }}
+        </div>
+    {% else %}
+        <div class="admin-table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'Canal'|trans }}</th>
+                        <th class="th--right">{{ 'Messages'|trans }}</th>
+                        <th class="th--right">{{ 'Membres actifs'|trans }}</th>
+                        <th class="th--right">{{ 'Stockage'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ch in topChannels %}
+                        <tr>
+                            <td>
+                                <strong>
+                                    {% if ch.is_todo_list %}📋{% elseif ch.is_private %}🔒{% else %}#️⃣{% endif %}
+                                    <a href="{{ path('app_channel', {'slug': ch.slug}) }}" style="color: var(--text-primary); text-decoration: none;">
+                                        {{ ch.name }}
+                                    </a>
+                                </strong>
+                                {% if ch.workspace_name and workspaceId is null %}
+                                    <div class="text-muted" style="font-size: 0.75rem;">{{ ch.workspace_name }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="td--right">
+                                <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 4px;">
+                                    {{ ch.message_count|number_format(0, ',', ' ') }}
+                                </span>
+                            </td>
+                            <td class="td--right">{{ ch.active_members }}</td>
+                            <td class="td--right text-muted">{{ ch.storage_bytes|format_bytes }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
