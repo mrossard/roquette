@@ -30,9 +30,28 @@ class MercurePublisher
     // Topic helpers
     // -------------------------------------------------------------------------
 
+    public function getPublicChannelsTemplateTopic(): string
+    {
+        return $this->mercureTopicPrefix . '/public/{slug}';
+    }
+
+    public function isChannelPrivate(Channel $channel): bool
+    {
+        $isPrivate = $channel->isDm() || $channel->isPrivate();
+        if (!$isPrivate && $channel->isWorkspaceChannel() && $channel->getWorkspace() !== null && !$channel->getWorkspace()->isPublic()) {
+            $isPrivate = true;
+        }
+
+        return $isPrivate;
+    }
+
     public function getChannelTopic(Channel $channel): string
     {
-        return $this->mercureTopicPrefix . '/channels/' . $channel->getSlug();
+        if ($this->isChannelPrivate($channel)) {
+            return $this->mercureTopicPrefix . '/private/' . $channel->getSlug();
+        }
+
+        return $this->mercureTopicPrefix . '/public/' . $channel->getSlug();
     }
 
     public function getUserTopic(User $user): string
@@ -67,14 +86,34 @@ class MercurePublisher
     // Generic publish helpers
     // -------------------------------------------------------------------------
 
-    public function publishToChannel(Channel $channel, array|string $payload, ?string $type = null): void
+    /**
+     * @return iterable<User>
+     */
+    public function getChannelRecipients(Channel $channel): iterable
     {
-        $isPrivate = $channel->isDm() || $channel->isPrivate();
-        if (!$isPrivate && $channel->isWorkspaceChannel() && !$channel->getWorkspace()->isPublic()) {
-            $isPrivate = true;
+        $members = $channel->getMembers();
+        if ($members->count() > 0) {
+            return $members;
         }
 
-        $this->publishToTopic($this->getChannelTopic($channel), $payload, $isPrivate, $type);
+        if ($channel->isWorkspaceChannel() && $channel->getWorkspace() !== null) {
+            return $channel->getWorkspace()->getMembers();
+        }
+
+        return $members;
+    }
+
+    public function publishToChannel(Channel $channel, array|string $payload, ?string $type = null): void
+    {
+        if ($this->isChannelPrivate($channel)) {
+            foreach ($this->getChannelRecipients($channel) as $member) {
+                $this->publishToUser($member, $payload, $type);
+            }
+
+            return;
+        }
+
+        $this->publishToTopic($this->getChannelTopic($channel), $payload, false, $type);
     }
 
     public function publishToUser(User $user, array|string $payload, ?string $type = null): void
@@ -172,7 +211,18 @@ class MercurePublisher
         ];
 
         $this->publishToChannel($channel, $renderedHtml, 'message_' . $channel->getSlug());
-        $this->publishToChannel($channel, $notificationData, 'channel_notification');
+        if ($this->isChannelPrivate($channel)) {
+            foreach ($this->getChannelRecipients($channel) as $member) {
+                if ($member->getId() === $author->getId()) {
+                    continue;
+                }
+                $this->publishToUser($member, $notificationData, 'channel_notification');
+            }
+        }
+
+        if (!$this->isChannelPrivate($channel)) {
+            $this->publishToChannel($channel, $notificationData, 'channel_notification');
+        }
 
         $title = $channelName;
         $body = $displayName . ': ' . $content;

@@ -90,12 +90,11 @@ class AppExtensionRuntimeTest extends TestCase
         $adminUser->method('getUsername')->willReturn('admin');
         $adminUser->method('getRoles')->willReturn(['ROLE_USER', 'ROLE_ADMIN']);
 
-        $this->channelRepository->method('findAllForUser')->willReturn([]);
-
         $topics = $this->runtime->getUserMercureTopics($adminUser);
 
         static::assertContains('roquette/users/admin', $topics);
         static::assertContains('roquette/users/status', $topics);
+        static::assertContains('roquette/public/{slug}', $topics);
         static::assertContains('roquette/admin/moderation', $topics);
     }
 
@@ -106,12 +105,11 @@ class AppExtensionRuntimeTest extends TestCase
         $user->method('getUsername')->willReturn('regular');
         $user->method('getRoles')->willReturn(['ROLE_USER']);
 
-        $this->channelRepository->method('findAllForUser')->willReturn([]);
-
         $topics = $this->runtime->getUserMercureTopics($user);
 
         static::assertContains('roquette/users/regular', $topics);
         static::assertContains('roquette/users/status', $topics);
+        static::assertContains('roquette/public/{slug}', $topics);
         static::assertNotContains('roquette/admin/moderation', $topics);
     }
 

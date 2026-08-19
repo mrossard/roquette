@@ -32,12 +32,32 @@ class MercurePublisherTest extends TestCase
     }
 
     #[Test]
-    public function getChannelTopicReturnsCorrectTopic(): void
+    public function getPublicChannelsTemplateTopicReturnsCorrectTopic(): void
+    {
+        $this->assertSame('http://test-mercure/public/{slug}', $this->publisher->getPublicChannelsTemplateTopic());
+    }
+
+    #[Test]
+    public function getChannelTopicReturnsCorrectTopicForPublicChannel(): void
     {
         $channel = $this->createMock(Channel::class);
         $channel->method('getSlug')->willReturn('general-channel');
+        $channel->method('isPrivate')->willReturn(false);
+        $channel->method('isDm')->willReturn(false);
+        $channel->method('isWorkspaceChannel')->willReturn(false);
 
-        $this->assertSame('http://test-mercure/channels/general-channel', $this->publisher->getChannelTopic($channel));
+        $this->assertSame('http://test-mercure/public/general-channel', $this->publisher->getChannelTopic($channel));
+    }
+
+    #[Test]
+    public function getChannelTopicReturnsCorrectTopicForPrivateChannel(): void
+    {
+        $channel = $this->createMock(Channel::class);
+        $channel->method('getSlug')->willReturn('secret-channel');
+        $channel->method('isPrivate')->willReturn(true);
+        $channel->method('isDm')->willReturn(false);
+
+        $this->assertSame('http://test-mercure/private/secret-channel', $this->publisher->getChannelTopic($channel));
     }
 
     #[Test]
@@ -81,11 +101,13 @@ class MercurePublisherTest extends TestCase
     }
 
     #[Test]
-    public function publishToChannelDispatchesUpdate(): void
+    public function publishToChannelDispatchesUpdateToPublicTopicForPublicChannel(): void
     {
         $channel = $this->createMock(Channel::class);
         $channel->method('getSlug')->willReturn('general-channel');
-        $channel->method('isPrivate')->willReturn(true);
+        $channel->method('isPrivate')->willReturn(false);
+        $channel->method('isDm')->willReturn(false);
+        $channel->method('isWorkspaceChannel')->willReturn(false);
 
         $payload = ['foo' => 'bar'];
 
@@ -94,14 +116,49 @@ class MercurePublisherTest extends TestCase
             ->method('dispatch')
             ->with($this->callback(
                 static fn(Update $update) => (
-                    $update->getTopics() === ['http://test-mercure/channels/general-channel']
+                    $update->getTopics() === ['http://test-mercure/public/general-channel']
                     && $update->getData() === json_encode($payload)
-                    && $update->isPrivate() === true
+                    && $update->isPrivate() === false
                 ),
             ))
             ->willReturn(new Envelope(new \stdClass()));
 
         $this->publisher->publishToChannel($channel, $payload);
+    }
+
+    #[Test]
+    public function publishToChannelDispatchesToMemberTopicsForPrivateChannel(): void
+    {
+        $user1 = $this->createMock(User::class);
+        $user1->method('getUsername')->willReturn('alice');
+
+        $user2 = $this->createMock(User::class);
+        $user2->method('getUsername')->willReturn('bob');
+
+        $channel = $this->createMock(Channel::class);
+        $channel->method('getSlug')->willReturn('dm-alice-bob');
+        $channel->method('isPrivate')->willReturn(true);
+        $channel->method('isDm')->willReturn(true);
+        $channel->method('getMembers')->willReturn(new ArrayCollection([$user1, $user2]));
+
+        $payload = ['foo' => 'bar'];
+
+        $dispatchedTopics = [];
+        $this->bus
+            ->expects($this->exactly(2))
+            ->method('dispatch')
+            ->with($this->callback(static function (Update $update) use (&$dispatchedTopics, $payload) {
+                $dispatchedTopics[] = $update->getTopics()[0];
+                return $update->getData() === json_encode($payload) && $update->isPrivate() === true;
+            }))
+            ->willReturn(new Envelope(new \stdClass()));
+
+        $this->publisher->publishToChannel($channel, $payload);
+
+        $this->assertSame([
+            'http://test-mercure/users/alice',
+            'http://test-mercure/users/bob',
+        ], $dispatchedTopics);
     }
 
     #[Test]
@@ -182,7 +239,7 @@ class MercurePublisherTest extends TestCase
             ->method('publish')
             ->with($this->callback(
                 static fn(Update $update) => (
-                    $update->getTopics() === ['http://test-mercure/channels/general-channel']
+                    $update->getTopics() === ['http://test-mercure/public/general-channel']
                     && $update->getData() === 'test-data'
                 ),
             ));

@@ -81,15 +81,11 @@ class AppExtensionRuntime implements RuntimeExtensionInterface
         $topics = [
             $this->mercurePublisher->getUserTopic($user),
             $this->mercurePublisher->getStatusTopic(),
+            $this->mercurePublisher->getPublicChannelsTemplateTopic(),
         ];
 
         if (in_array('ROLE_ADMIN', $user->getRoles(), true)) {
             $topics[] = $this->mercurePublisher->getAdminModerationTopic();
-        }
-
-        $channels = $this->channelRepository->findAllForUser($user);
-        foreach ($channels as $ch) {
-            $topics[] = $this->mercurePublisher->getChannelTopic($ch);
         }
 
         return $topics;

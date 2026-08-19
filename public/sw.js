@@ -64,14 +64,23 @@ self.addEventListener('push', (event) => {
     }
 
     event.waitUntil(
-        self.registration.showNotification(data.title, {
-            body: data.body,
-            icon: '/favicon.ico',
-            badge: '/favicon.ico',
-            data: { url: data.url },
-            tag: data.tag || 'roquette-default',
-            renotify: true,
-            vibrate: [200, 100, 200],
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            const hasFocusedClient = clientList.some(
+                (client) => client.focused && client.visibilityState === 'visible'
+            );
+            if (hasFocusedClient) {
+                return;
+            }
+
+            return self.registration.showNotification(data.title, {
+                body: data.body,
+                icon: '/favicon.ico',
+                badge: '/favicon.ico',
+                data: { url: data.url },
+                tag: data.tag || 'roquette-default',
+                renotify: false,
+                vibrate: [200, 100, 200],
+            });
         })
     );
 });

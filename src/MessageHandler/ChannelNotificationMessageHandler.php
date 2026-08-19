@@ -26,6 +26,8 @@ class ChannelNotificationMessageHandler
             return;
         }
 
+        $tag = 'channel-' . $channel->getSlug();
+
         foreach ($channel->getMembers() as $member) {
             if ($member->getId() === $message->getAuthorId()) {
                 continue;
@@ -37,6 +39,7 @@ class ChannelNotificationMessageHandler
                     $message->getTitle(),
                     $message->getBody(),
                     $message->getUrl(),
+                    $tag,
                 );
             } catch (\Throwable $e) {
                 $this->logger->error('Failed to send push notification in channel batch', [

@@ -22,7 +22,7 @@ class PushNotificationService
         private readonly LoggerInterface $logger,
     ) {}
 
-    public function sendToUser(User $user, string $title, string $body, string $url): void
+    public function sendToUser(User $user, string $title, string $body, string $url, ?string $tag = null): void
     {
         $subscriptions = $this->subscriptionRepository->findByUser($user);
 
@@ -34,7 +34,7 @@ class PushNotificationService
             'title' => $title,
             'body' => $body,
             'url' => $url,
-            'tag' => 'roquette-message',
+            'tag' => $tag ?? 'roquette-message',
         ]);
 
         foreach ($subscriptions as $sub) {
@@ -42,10 +42,10 @@ class PushNotificationService
         }
     }
 
-    public function sendToUsers(iterable $users, string $title, string $body, string $url): void
+    public function sendToUsers(iterable $users, string $title, string $body, string $url, ?string $tag = null): void
     {
         foreach ($users as $user) {
-            $this->sendToUser($user, $title, $body, $url);
+            $this->sendToUser($user, $title, $body, $url, $tag);
         }
     }
 
