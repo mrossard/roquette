@@ -1,5 +1,3 @@
-import './styles/app.css';
-import './styles/admin.css';
 import htmx from 'htmx.org';
 import 'htmx-ext-sse';
 

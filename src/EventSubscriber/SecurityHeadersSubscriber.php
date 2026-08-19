@@ -61,7 +61,7 @@ readonly class SecurityHeadersSubscriber implements EventSubscriberInterface
         $scriptSrc = "'self' 'unsafe-inline' 'unsafe-eval' data:"; // Keep unsafe-inline for inline translations and theme scripts; unsafe-eval for HTMX hx-on:* handlers
 
         $csp = sprintf(
-            "default-src 'self'; script-src %s; worker-src 'self' data:; style-src %s; img-src %s; font-src %s; connect-src %s; media-src 'self' data:; frame-ancestors 'none'; object-src 'none';",
+            "default-src 'self' data:; script-src %s; worker-src 'self' data:; style-src %s; img-src %s; font-src %s; connect-src %s; media-src 'self' data:; frame-ancestors 'none'; object-src 'none';",
             $scriptSrc,
             $styleSrc,
             $imgSrc,

@@ -1,20 +1,16 @@
-let hljsModule = null;
+import hljs from 'highlight.js';
 
 /**
  * Applique la coloration syntaxique dynamique via highlight.js sur tous les blocs de code.
  *
  * @param {HTMLElement|Document} container
  */
-export async function highlightAllCodeBlocks(container = document) {
+export function highlightAllCodeBlocks(container = document) {
     const blocks = container.querySelectorAll('pre code');
     if (blocks.length === 0) return;
 
-    if (!hljsModule) {
-        hljsModule = (await import('highlight.js')).default;
-    }
-
     blocks.forEach(block => {
-        hljsModule.highlightElement(block);
+        hljs.highlightElement(block);
     });
 }
 

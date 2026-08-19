@@ -36,6 +36,7 @@ class SecurityHeadersSubscriberTest extends TestCase
         static::assertSame('strict-origin-when-cross-origin', $headers->get('Referrer-Policy'));
 
         $csp = $headers->get('Content-Security-Policy');
+        static::assertStringContainsString("default-src 'self' data:;", $csp);
         static::assertStringContainsString('http://localhost:3000', $csp);
         static::assertStringContainsString('http://localhost:8080', $csp);
     }
