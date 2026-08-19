@@ -28,7 +28,7 @@
             {% endif %}
         {% else %}
             <div hx-get="{{ path('app_api_link_preview', {url: link}) }}"
-                 hx-trigger="intersect once"
+                 hx-trigger="load, intersect root:#live-feed once"
                  hx-swap="outerHTML transition:false"
                  class="link-preview-placeholder">
             </div>

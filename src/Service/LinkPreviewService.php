@@ -7,7 +7,10 @@ namespace App\Service;
 use App\Dto\Link\LinkPreviewDto;
 use App\Service\Link\HtmlMetadataParser;
 use App\Service\Link\LinkExtractor;
+use App\Service\Link\OembedFetcher;
 use App\Service\Link\UrlSafetyValidator;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -17,6 +20,7 @@ class LinkPreviewService
     private readonly UrlSafetyValidator $urlSafetyValidator;
     private readonly LinkExtractor $linkExtractor;
     private readonly HtmlMetadataParser $htmlMetadataParser;
+    private readonly OembedFetcher $oembedFetcher;
 
     public function __construct(
         private readonly CacheInterface $cache,
@@ -24,10 +28,13 @@ class LinkPreviewService
         ?UrlSafetyValidator $urlSafetyValidator = null,
         ?LinkExtractor $linkExtractor = null,
         ?HtmlMetadataParser $htmlMetadataParser = null,
+        ?OembedFetcher $oembedFetcher = null,
+        private readonly LoggerInterface $logger = new NullLogger(),
     ) {
         $this->urlSafetyValidator = $urlSafetyValidator ?? new UrlSafetyValidator();
         $this->linkExtractor = $linkExtractor ?? new LinkExtractor();
         $this->htmlMetadataParser = $htmlMetadataParser ?? new HtmlMetadataParser();
+        $this->oembedFetcher = $oembedFetcher ?? new OembedFetcher($this->httpClient, $this->urlSafetyValidator, $this->logger);
     }
 
     private const MAX_REDIRECTS = 3;
@@ -107,6 +114,7 @@ class LinkPreviewService
     private function fetchPreviewData(string $url, ItemInterface $item): ?array
     {
         if (!$this->urlSafetyValidator->isSafeUrl($url)) {
+            $this->logger->debug(sprintf('Link preview skipped (unsafe URL): "%s"', $url));
             $item->expiresAfter(300);
             return null;
         }
@@ -116,9 +124,16 @@ class LinkPreviewService
             return ['type' => 'direct_image', 'url' => $url];
         }
 
+        $oembedPreview = $this->oembedFetcher->fetchPreview($url);
+        if ($oembedPreview !== null) {
+            $item->expiresAfter(86_400 * 7);
+            return $oembedPreview;
+        }
+
         try {
             return $this->downloadAndParsePreview($url, $item);
-        } catch (\Exception) {
+        } catch (\Throwable $e) {
+            $this->logger->warning(sprintf('Link preview parse failed for "%s": %s', $url, $e->getMessage()));
             $item->expiresAfter(300);
             return null;
         }
@@ -148,7 +163,7 @@ class LinkPreviewService
         }
 
         $content = '';
-        foreach ($this->httpClient->stream($response, 1.5) as $chunk) {
+        foreach ($this->httpClient->stream($response, 3.5) as $chunk) {
             $content .= $chunk->getContent();
             if (strlen($content) >= 1_048_576) {
                 $response->cancel();
@@ -182,12 +197,13 @@ class LinkPreviewService
         $current = $url;
         for ($hop = 0; $hop <= self::MAX_REDIRECTS; $hop++) {
             if (!$this->urlSafetyValidator->isSafeUrl($current)) {
+                $this->logger->debug(sprintf('URL not safe for preview fetch: "%s"', $current));
                 return null;
             }
 
             try {
                 $response = $this->httpClient->request($method, $current, [
-                    'timeout' => 1.5,
+                    'timeout' => 3.5,
                     'max_redirects' => 0,
                     'headers' => ['User-Agent' => 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)'],
                 ]);
@@ -210,7 +226,8 @@ class LinkPreviewService
                 }
 
                 return $response;
-            } catch (\Exception) {
+            } catch (\Throwable $e) {
+                $this->logger->warning(sprintf('HTTP request failed for link preview "%s": %s', $current, $e->getMessage()));
                 return null;
             }
         }

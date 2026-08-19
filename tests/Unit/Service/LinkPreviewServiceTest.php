@@ -345,4 +345,38 @@ class LinkPreviewServiceTest extends TestCase
         static::assertTrue($dto->isDirectImage());
         static::assertSame('https://example.com/photo.png', $dto->url);
     }
+
+    #[Test]
+    public function testGetPreviewSpotifyOembed(): void
+    {
+        $cache = $this->createMock(CacheInterface::class);
+        $cache
+            ->method('get')
+            ->willReturnCallback(function ($key, $callback) {
+                $item = $this->createMock(ItemInterface::class);
+                return $callback($item);
+            });
+
+        $response = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
+        $response->method('getStatusCode')->willReturn(200);
+        $response->method('toArray')->willReturn([
+            'title' => 'Never Gonna Give You Up',
+            'thumbnail_url' => 'https://image-cdn.spotifycdn.com/cover.jpg',
+            'provider_name' => 'Spotify',
+            'author_name' => 'Rick Astley',
+        ]);
+
+        $httpClient = $this->createMock(HttpClientInterface::class);
+        $httpClient
+            ->method('request')
+            ->willReturn($response);
+
+        $service = new LinkPreviewService($cache, $httpClient);
+
+        $dto = $service->getPreviewDto('https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT');
+        static::assertNotNull($dto);
+        static::assertSame('Never Gonna Give You Up', $dto->title);
+        static::assertSame('https://image-cdn.spotifycdn.com/cover.jpg', $dto->image);
+        static::assertSame('Spotify', $dto->siteName);
+    }
 }

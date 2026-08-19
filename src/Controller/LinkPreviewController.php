@@ -29,8 +29,13 @@ final class LinkPreviewController extends AbstractController
 
         $dto = $this->linkPreviewService->getPreviewDto($url);
 
+        if ($dto === null) {
+            $response = new Response('', 200);
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            return $response;
+        }
+
         $response = match (true) {
-            $dto === null => new Response('', 200),
             $dto->isDirectImage() => $this->render('dashboard/_image_preview.html.twig', [
                 'url' => $dto->url,
             ]),
