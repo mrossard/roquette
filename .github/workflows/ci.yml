@@ -68,3 +68,61 @@ jobs:
       env:
         DATABASE_URL: postgresql://app:!ChangeMePostgresPassword!@127.0.0.1:5432/roquette?serverVersion=16&charset=utf8
       run: vendor/bin/phpunit
+
+  e2e:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Docker environment
+        env:
+          MERCURE_PUBLIC_URL: http://localhost:8000/.well-known/mercure
+        run: |
+          docker compose -f compose.yaml up -d --build
+
+      - name: Wait for application readiness
+        run: |
+          echo "Waiting for Roquette web server..."
+          for i in $(seq 1 60); do
+            if curl -s -f http://127.0.0.1:8000/login > /dev/null 2>&1 || curl -s -f http://localhost:8000/login > /dev/null 2>&1; then
+              echo "Application is ready!"
+              break
+            fi
+            echo "Waiting ($i/60)..."
+            sleep 2
+          done
+
+      - name: Seed E2E test data
+        run: |
+          docker compose -f compose.yaml exec -T php bin/console app:seed-e2e-data
+
+      - name: Run Playwright E2E Tests
+        run: npm run test:e2e
+        env:
+          CI: true
+          APP_BASE_URL: http://localhost:8000
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
