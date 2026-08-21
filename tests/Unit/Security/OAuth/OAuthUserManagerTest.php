@@ -60,9 +60,7 @@ class OAuthUserManagerTest extends TestCase
         $user->setUsername('alice');
         $user->setOauthId('oauth_123');
 
-        $this->userRepository
-            ->method('findOneBy')
-            ->willReturn($user);
+        $this->userRepository->method('findOneBy')->willReturn($user);
 
         $this->entityManager->expects(static::once())->method('flush');
 
@@ -78,9 +76,7 @@ class OAuthUserManagerTest extends TestCase
         $user->setOauthId('oauth_123');
         $user->setBannedAt(new \DateTimeImmutable());
 
-        $this->userRepository
-            ->method('findOneBy')
-            ->willReturn($user);
+        $this->userRepository->method('findOneBy')->willReturn($user);
 
         $this->expectException(CustomUserMessageAuthenticationException::class);
         $this->expectExceptionMessage('Votre compte a été suspendu. Veuillez contacter un administrateur.');

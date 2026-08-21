@@ -18,10 +18,7 @@ final readonly class EmojiTagDto
         $code = (string) $request->request->get('code', '');
         $tag = trim((string) $request->request->get('tag', ''));
 
-        return new self(
-            code: $code,
-            tag: $tag,
-        );
+        return new self(code: $code, tag: $tag);
     }
 
     public function isValid(): bool

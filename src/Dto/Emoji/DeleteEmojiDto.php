@@ -14,9 +14,7 @@ final readonly class DeleteEmojiDto
 
     public static function fromRequest(Request $request): self
     {
-        return new self(
-            code: (string) $request->request->get('code', ''),
-        );
+        return new self(code: (string) $request->request->get('code', ''));
     }
 
     public function isValid(): bool

@@ -9,7 +9,6 @@ use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\Poll;
 use App\Entity\User;
-use App\Message\ModerateMessageMessage;
 use App\Repository\MessageRepository;
 use App\Service\MessageBroadcaster;
 use App\Service\MessageEditor;
@@ -127,9 +126,8 @@ class MessageEditorTest extends TestCase
             ->willReturn('<div>Nouveau contenu</div>');
         $this->broadcaster->expects($this->once())->method('broadcastMessageUpdate')->with($message);
         $this->messageBus
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('dispatch')
-            ->with($this->isInstanceOf(ModerateMessageMessage::class))
             ->willReturn(new Envelope(new \stdClass()));
 
         $dto = new EditMessageDto(content: 'Nouveau contenu');

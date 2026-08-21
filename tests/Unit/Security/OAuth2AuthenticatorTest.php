@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Security;
 
 use App\Entity\User;
+use App\Security\OAuth2Authenticator;
 use App\Security\OAuth\OAuthClient;
 use App\Security\OAuth\OAuthUserAttributes;
 use App\Security\OAuth\OAuthUserExtractor;
 use App\Security\OAuth\OAuthUserManager;
-use App\Security\OAuth2Authenticator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -126,11 +126,7 @@ class OAuth2AuthenticatorTest extends TestCase
             displayName: 'Alice',
             email: 'alice@example.com',
         );
-        $this->oauthUserExtractor
-            ->expects(static::once())
-            ->method('extract')
-            ->with($userData)
-            ->willReturn($attributes);
+        $this->oauthUserExtractor->expects(static::once())->method('extract')->with($userData)->willReturn($attributes);
 
         $user = new User();
         $user->setUsername('alice');
@@ -169,11 +165,7 @@ class OAuth2AuthenticatorTest extends TestCase
         $request = new Request();
         $request->setSession($session);
 
-        $this->urlGenerator
-            ->expects(static::once())
-            ->method('generate')
-            ->with('app_login')
-            ->willReturn('/login');
+        $this->urlGenerator->expects(static::once())->method('generate')->with('app_login')->willReturn('/login');
 
         $response = $this->authenticator->onAuthenticationFailure($request, new AuthenticationException('Invalid'));
         static::assertInstanceOf(RedirectResponse::class, $response);

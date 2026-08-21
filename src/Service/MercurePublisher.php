@@ -38,7 +38,12 @@ class MercurePublisher
     public function isChannelPrivate(Channel $channel): bool
     {
         $isPrivate = $channel->isDm() || $channel->isPrivate();
-        if (!$isPrivate && $channel->isWorkspaceChannel() && $channel->getWorkspace() !== null && !$channel->getWorkspace()->isPublic()) {
+        if (
+            !$isPrivate
+            && $channel->isWorkspaceChannel()
+            && $channel->getWorkspace() !== null
+            && !$channel->getWorkspace()->isPublic()
+        ) {
             $isPrivate = true;
         }
 

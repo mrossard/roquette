@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
+use App\Message\IndexMessageMessage;
 use App\Message\ModerateMessageMessage;
 use App\Message\ScanFileMessage;
 use App\Repository\MessageRepository;
@@ -151,6 +152,10 @@ class MessagePublishService
 
         if ($message->getContent() !== null && !$message->isPoll() && !$channel->isDm()) {
             $this->messageBus->dispatch(new ModerateMessageMessage((int) $message->getId()));
+        }
+
+        if ($message->getContent() !== null && trim($message->getContent()) !== '' && !$message->isPoll()) {
+            $this->messageBus->dispatch(new IndexMessageMessage((int) $message->getId()));
         }
 
         if (

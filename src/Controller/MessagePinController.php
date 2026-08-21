@@ -22,10 +22,8 @@ final class MessagePinController extends AbstractController
     ) {}
 
     #[Route('/messages/{id}/pin', name: 'app_message_pin', methods: ['POST'])]
-    public function pinMessage(
-        int $id,
-        MessageRepository $messageRepository,
-    ): Response {
+    public function pinMessage(int $id, MessageRepository $messageRepository): Response
+    {
         $message = $messageRepository->find($id);
         if (!$message) {
             return new Response($this->translator->trans('Message non trouvé.'), 404);
@@ -46,10 +44,8 @@ final class MessagePinController extends AbstractController
     }
 
     #[Route('/messages/{id}/unpin', name: 'app_message_unpin', methods: ['POST'])]
-    public function unpinMessage(
-        int $id,
-        MessageRepository $messageRepository,
-    ): Response {
+    public function unpinMessage(int $id, MessageRepository $messageRepository): Response
+    {
         $message = $messageRepository->find($id);
         if (!$message) {
             return new Response($this->translator->trans('Message non trouvé.'), 404);

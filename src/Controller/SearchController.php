@@ -11,6 +11,7 @@ use App\Repository\ChannelRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use App\Service\ChannelManager;
+use App\Service\HybridSearchService;
 use App\Service\MessageFeedContextService;
 use App\Service\MessageSearchParser;
 use Doctrine\ORM\EntityManagerInterface;
@@ -33,6 +34,7 @@ final class SearchController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly MessageFeedContextService $feedContextService,
         private readonly MessageSearchParser $searchParser,
+        private readonly HybridSearchService $hybridSearchService,
     ) {}
 
     #[Route('/channels/{slug}/search', name: 'app_channel_search', methods: ['GET'])]
@@ -67,7 +69,7 @@ final class SearchController extends AbstractController
             ], $feedContext));
         }
 
-        $messages = $this->messageRepository->searchInChannel($activeChannel, $query);
+        $messages = $this->hybridSearchService->searchInChannel($activeChannel, $query);
 
         $feedContext = $this->feedContextService->buildFeedContext($activeChannel, $messages);
 
@@ -105,13 +107,13 @@ final class SearchController extends AbstractController
             $users = $this->userRepository->searchByName($parsed->textQuery);
         }
 
-        $messages = $this->messageRepository->searchGlobal(
-            $currentUser,
-            $parsed->authorUsername,
-            $parsed->channelName,
-            $parsed->hasFile,
-            $parsed->fileType,
-            $parsed->textQuery,
+        $messages = $this->hybridSearchService->searchGlobal(
+            currentUser: $currentUser,
+            authorUsername: $parsed->authorUsername,
+            channelName: $parsed->channelName,
+            hasFile: $parsed->hasFile,
+            fileType: $parsed->fileType,
+            textQuery: $parsed->textQuery,
         );
 
         return $this->render('dashboard/_global_search_results.html.twig', [

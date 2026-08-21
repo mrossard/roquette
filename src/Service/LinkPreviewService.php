@@ -34,7 +34,11 @@ class LinkPreviewService
         $this->urlSafetyValidator = $urlSafetyValidator ?? new UrlSafetyValidator();
         $this->linkExtractor = $linkExtractor ?? new LinkExtractor();
         $this->htmlMetadataParser = $htmlMetadataParser ?? new HtmlMetadataParser();
-        $this->oembedFetcher = $oembedFetcher ?? new OembedFetcher($this->httpClient, $this->urlSafetyValidator, $this->logger);
+        $this->oembedFetcher = $oembedFetcher ?? new OembedFetcher(
+            $this->httpClient,
+            $this->urlSafetyValidator,
+            $this->logger,
+        );
     }
 
     private const MAX_REDIRECTS = 3;
@@ -227,7 +231,11 @@ class LinkPreviewService
 
                 return $response;
             } catch (\Throwable $e) {
-                $this->logger->warning(sprintf('HTTP request failed for link preview "%s": %s', $current, $e->getMessage()));
+                $this->logger->warning(sprintf(
+                    'HTTP request failed for link preview "%s": %s',
+                    $current,
+                    $e->getMessage(),
+                ));
                 return null;
             }
         }

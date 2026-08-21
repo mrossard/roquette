@@ -55,23 +55,22 @@ class ReactionManagerTest extends TestCase
         $this->entityManager
             ->expects(static::once())
             ->method('persist')
-            ->with(static::callback(static fn(Reaction $r): bool => $r->getMessage() === $message
-                && $r->getUser() === $user
-                && $r->getEmoji() === $emoji));
+            ->with(static::callback(
+                static fn(Reaction $r): bool => (
+                    $r->getMessage() === $message
+                    && $r->getUser() === $user
+                    && $r->getEmoji() === $emoji
+                ),
+            ));
 
-        $this->entityManager
-            ->expects(static::once())
-            ->method('flush');
+        $this->entityManager->expects(static::once())->method('flush');
 
         $this->kanbanManager
             ->expects(static::once())
             ->method('syncCompletionFromReaction')
             ->with($message, $user, $emoji);
 
-        $this->messageBroadcaster
-            ->expects(static::once())
-            ->method('broadcastMessageUpdate')
-            ->with($message);
+        $this->messageBroadcaster->expects(static::once())->method('broadcastMessageUpdate')->with($message);
 
         $this->manager->toggleReaction($message, $user, $emoji);
     }
@@ -93,24 +92,16 @@ class ReactionManagerTest extends TestCase
             ->with(['message' => $message, 'user' => $user, 'emoji' => $emoji])
             ->willReturn($existingReaction);
 
-        $this->entityManager
-            ->expects(static::once())
-            ->method('remove')
-            ->with($existingReaction);
+        $this->entityManager->expects(static::once())->method('remove')->with($existingReaction);
 
-        $this->entityManager
-            ->expects(static::once())
-            ->method('flush');
+        $this->entityManager->expects(static::once())->method('flush');
 
         $this->kanbanManager
             ->expects(static::once())
             ->method('syncCompletionFromReaction')
             ->with($message, $user, $emoji);
 
-        $this->messageBroadcaster
-            ->expects(static::once())
-            ->method('broadcastMessageUpdate')
-            ->with($message);
+        $this->messageBroadcaster->expects(static::once())->method('broadcastMessageUpdate')->with($message);
 
         $this->manager->toggleReaction($message, $user, $emoji);
     }

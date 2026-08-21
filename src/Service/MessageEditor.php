@@ -8,6 +8,7 @@ use App\Dto\Message\EditMessageDto;
 use App\Dto\Message\EditResult;
 use App\Entity\Message;
 use App\Entity\User;
+use App\Message\IndexMessageMessage;
 use App\Message\ModerateMessageMessage;
 use App\Repository\MessageRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -90,11 +91,20 @@ class MessageEditor
         $renderedHtml = $this->messageRenderer->renderFeedItem($message, ['no_fade' => true]);
         $this->messageBroadcaster->broadcastMessageUpdate($message);
 
+        $this->dispatchPostEditAsyncTasks($message);
+
+        return EditResult::ok($message, $renderedHtml);
+    }
+
+    private function dispatchPostEditAsyncTasks(Message $message): void
+    {
         if ($message->getContent() !== null && !$message->isPoll() && !$message->getChannel()?->isDm()) {
             $this->messageBus?->dispatch(new ModerateMessageMessage($message->getId()));
         }
 
-        return EditResult::ok($message, $renderedHtml);
+        if ($message->getContent() !== null && trim($message->getContent()) !== '' && !$message->isPoll()) {
+            $this->messageBus?->dispatch(new IndexMessageMessage($message->getId()));
+        }
     }
 
     private function findMessage(int $id): Message

@@ -29,11 +29,7 @@ class UserManagerTest extends TestCase
         $this->auditLogger = $this->createMock(AuditLoggerService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->userManager = new UserManager(
-            $this->entityManager,
-            $this->auditLogger,
-            $this->logger,
-        );
+        $this->userManager = new UserManager($this->entityManager, $this->auditLogger, $this->logger);
     }
 
     private function setUserProperties(User $user, int $id, string $username, bool $isAdmin = false): void
@@ -55,9 +51,7 @@ class UserManagerTest extends TestCase
         $admin = new User();
         $this->setUserProperties($admin, 1, 'admin_user', true);
 
-        $this->entityManager
-            ->expects(static::once())
-            ->method('flush');
+        $this->entityManager->expects(static::once())->method('flush');
 
         $this->auditLogger
             ->expects(static::once())
@@ -65,14 +59,16 @@ class UserManagerTest extends TestCase
             ->with(
                 AuditAction::USER_BAN,
                 $admin,
-                static::callback(static fn(array $context): bool => $context['banned_user_id'] === 2
-                    && $context['username'] === 'target_user'
-                    && $context['reason'] === 'Banni par un administrateur'),
+                static::callback(
+                    static fn(array $context): bool => (
+                        $context['banned_user_id'] === 2
+                        && $context['username'] === 'target_user'
+                        && $context['reason'] === 'Banni par un administrateur'
+                    ),
+                ),
             );
 
-        $this->logger
-            ->expects(static::once())
-            ->method('info');
+        $this->logger->expects(static::once())->method('info');
 
         $this->userManager->banUser($targetUser, $admin);
 
@@ -131,9 +127,7 @@ class UserManagerTest extends TestCase
         $admin = new User();
         $this->setUserProperties($admin, 1, 'admin_user', true);
 
-        $this->entityManager
-            ->expects(static::once())
-            ->method('flush');
+        $this->entityManager->expects(static::once())->method('flush');
 
         $this->auditLogger
             ->expects(static::once())
@@ -141,13 +135,15 @@ class UserManagerTest extends TestCase
             ->with(
                 AuditAction::USER_UNBAN,
                 $admin,
-                static::callback(static fn(array $context): bool => $context['unbanned_user_id'] === 2
-                    && $context['username'] === 'target_user'),
+                static::callback(
+                    static fn(array $context): bool => (
+                        $context['unbanned_user_id'] === 2
+                        && $context['username'] === 'target_user'
+                    ),
+                ),
             );
 
-        $this->logger
-            ->expects(static::once())
-            ->method('info');
+        $this->logger->expects(static::once())->method('info');
 
         $this->userManager->unbanUser($targetUser, $admin);
 

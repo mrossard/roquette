@@ -36,6 +36,7 @@ framework:
             'App\Message\DownloadEmojiMessage': async_low
             'Symfony\Component\Mailer\Messenger\SendEmailMessage': async_low
             'App\Message\GenerateExportMessage': async_low
+            'App\Message\IndexMessageMessage': async_low
 
 when@test:
     framework:
@@ -51,4 +52,6 @@ when@test:
                 'App\Message\ModerateMessageMessage': sync
                 'App\Message\DownloadEmojiMessage': sync
                 'App\Message\GenerateExportMessage': sync
+                'App\Message\IndexMessageMessage': sync
+
 

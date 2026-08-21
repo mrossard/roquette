@@ -359,17 +359,17 @@ class LinkPreviewServiceTest extends TestCase
 
         $response = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
         $response->method('getStatusCode')->willReturn(200);
-        $response->method('toArray')->willReturn([
-            'title' => 'Never Gonna Give You Up',
-            'thumbnail_url' => 'https://image-cdn.spotifycdn.com/cover.jpg',
-            'provider_name' => 'Spotify',
-            'author_name' => 'Rick Astley',
-        ]);
+        $response
+            ->method('toArray')
+            ->willReturn([
+                'title' => 'Never Gonna Give You Up',
+                'thumbnail_url' => 'https://image-cdn.spotifycdn.com/cover.jpg',
+                'provider_name' => 'Spotify',
+                'author_name' => 'Rick Astley',
+            ]);
 
         $httpClient = $this->createMock(HttpClientInterface::class);
-        $httpClient
-            ->method('request')
-            ->willReturn($response);
+        $httpClient->method('request')->willReturn($response);
 
         $service = new LinkPreviewService($cache, $httpClient);
 

@@ -31,11 +31,8 @@ final class ReactionController extends AbstractController
     ) {}
 
     #[Route('/messages/{id}/react/{emoji}', name: 'app_message_react', methods: ['POST'])]
-    public function react(
-        int $id,
-        string $emoji,
-        MessageRepository $messageRepository,
-    ): Response {
+    public function react(int $id, string $emoji, MessageRepository $messageRepository): Response
+    {
         $message = $messageRepository->find($id);
         if (!$message) {
             return new Response($this->translator->trans('Message non trouvé.'), 404);

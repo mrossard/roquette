@@ -21,11 +21,7 @@ final readonly class UploadEmojiDto
         $file = $request->files->get('emoji_file');
         $tags = (string) $request->request->get('tags', '');
 
-        return new self(
-            code: $code,
-            file: $file instanceof UploadedFile ? $file : null,
-            tags: $tags,
-        );
+        return new self(code: $code, file: $file instanceof UploadedFile ? $file : null, tags: $tags);
     }
 
     public function isValid(): bool

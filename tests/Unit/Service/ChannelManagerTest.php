@@ -126,10 +126,7 @@ final class ChannelManagerTest extends TestCase
 
         $this->entityManager->expects($this->once())->method('flush');
 
-        $this->messageBroadcaster
-            ->expects($this->once())
-            ->method('broadcastUnpin')
-            ->with($channel, $message);
+        $this->messageBroadcaster->expects($this->once())->method('broadcastUnpin')->with($channel, $message);
 
         $this->channelManager->unpinMessage($message);
 

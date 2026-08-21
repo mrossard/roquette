@@ -85,7 +85,10 @@ class LinkPreviewControllerTest extends WebTestCase
 
         $this->client->request('GET', '/api/link-preview?url=https://example.com/photo.png');
         $this->assertResponseIsSuccessful();
-        static::assertStringContainsString('image-preview-container', (string) $this->client->getResponse()->getContent());
+        static::assertStringContainsString(
+            'image-preview-container',
+            (string) $this->client->getResponse()->getContent(),
+        );
         static::assertStringContainsString('photo.png', (string) $this->client->getResponse()->getContent());
     }
 

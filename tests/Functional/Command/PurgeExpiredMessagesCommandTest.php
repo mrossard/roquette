@@ -139,4 +139,52 @@ class PurgeExpiredMessagesCommandTest extends KernelTestCase
         static::assertNotNull($messageRepo->find($idB));
         static::assertNotNull($messageRepo->find($idC));
     }
+
+    public function testPurgeCommandCascadesToMessageEmbedding(): void
+    {
+        $twoMonthsAgo = new \DateTimeImmutable()->modify('-2 months');
+
+        $msg = new Message();
+        $msg->setChannel($this->channel);
+        $msg->setAuthor($this->user);
+        $msg->setContent('Message to be purged with embedding');
+        $msg->setCreatedAt($twoMonthsAgo);
+        $this->entityManager->persist($msg);
+        $this->entityManager->flush();
+
+        $msgId = $msg->getId();
+
+        // Insert a dummy embedding for this message
+        $conn = $this->entityManager->getConnection();
+        $dummyVector = '[' . implode(',', array_fill(0, 768, 0.05)) . ']';
+        $conn->executeStatement(
+            'INSERT INTO message_embedding (message_id, channel_id, embedding, created_at) VALUES (:msgId, :chId, :vec::vector, NOW())',
+            [
+                'msgId' => $msgId,
+                'chId' => $this->channel->getId(),
+                'vec' => $dummyVector,
+            ],
+        );
+
+        // Verify embedding exists
+        $count = (int) $conn->fetchOne('SELECT COUNT(*) FROM message_embedding WHERE message_id = :msgId', [
+            'msgId' => $msgId,
+        ]);
+        static::assertSame(1, $count);
+
+        // Run purge command
+        $kernel = self::$kernel;
+        $application = new Application($kernel);
+        $command = $application->find('app:purge-expired-messages');
+        $commandTester = new CommandTester($command);
+        $commandTester->execute([]);
+
+        // Verify message and embedding are both gone
+        $this->entityManager->clear();
+        static::assertNull($this->entityManager->getRepository(Message::class)->find($msgId));
+        $countAfter = (int) $conn->fetchOne('SELECT COUNT(*) FROM message_embedding WHERE message_id = :msgId', [
+            'msgId' => $msgId,
+        ]);
+        static::assertSame(0, $countAfter);
+    }
 }

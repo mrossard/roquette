@@ -23,12 +23,7 @@ class OAuthUserExtractorTest extends TestCase
         $this->robotUserProvider = $this->createMock(RobotUserProvider::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->extractor = new OAuthUserExtractor(
-            $this->robotUserProvider,
-            $this->logger,
-            'username',
-            'displayName',
-        );
+        $this->extractor = new OAuthUserExtractor($this->robotUserProvider, $this->logger, 'username', 'displayName');
     }
 
     public function testExtractAttributesSuccess(): void
@@ -74,7 +69,9 @@ class OAuthUserExtractorTest extends TestCase
         ];
 
         $this->expectException(CustomUserMessageAuthenticationException::class);
-        $this->expectExceptionMessage('Les informations utilisateur retournées par le serveur OAuth2 sont incomplètes.');
+        $this->expectExceptionMessage(
+            'Les informations utilisateur retournées par le serveur OAuth2 sont incomplètes.',
+        );
 
         $this->extractor->extract($userData);
     }
@@ -86,7 +83,11 @@ class OAuthUserExtractorTest extends TestCase
             'username' => 'roquette_bot',
         ];
 
-        $this->robotUserProvider->expects(static::once())->method('isRobotUsername')->with('roquette_bot')->willReturn(true);
+        $this->robotUserProvider
+            ->expects(static::once())
+            ->method('isRobotUsername')
+            ->with('roquette_bot')
+            ->willReturn(true);
 
         $this->expectException(CustomUserMessageAuthenticationException::class);
         $this->expectExceptionMessage('Connexion impossible avec un compte système.');

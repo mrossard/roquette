@@ -50,9 +50,13 @@ class OAuthClientTest extends TestCase
             ->with(
                 'POST',
                 'https://auth.example.com/token',
-                static::callback(static fn(array $options): bool => ($options['body']['code'] ?? null) === 'auth_code'
-                    && ($options['body']['code_verifier'] ?? null) === 'verifier_abc'
-                    && ($options['body']['client_id'] ?? null) === 'my_client_id'),
+                static::callback(
+                    static fn(array $options): bool => (
+                        ($options['body']['code'] ?? null) === 'auth_code'
+                        && ($options['body']['code_verifier'] ?? null) === 'verifier_abc'
+                        && ($options['body']['client_id'] ?? null) === 'my_client_id'
+                    ),
+                ),
             )
             ->willReturn($response);
 
@@ -94,7 +98,10 @@ class OAuthClientTest extends TestCase
             ->with(
                 'GET',
                 'https://auth.example.com/userinfo',
-                static::callback(static fn(array $options): bool => hash_equals('Bearer my_token', (string) ($options['headers']['Authorization'] ?? ''))),
+                static::callback(static fn(array $options): bool => hash_equals(
+                    'Bearer my_token',
+                    (string) ($options['headers']['Authorization'] ?? ''),
+                )),
             )
             ->willReturn($response);
 

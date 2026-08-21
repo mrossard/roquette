@@ -155,10 +155,13 @@ class MercurePublisherTest extends TestCase
 
         $this->publisher->publishToChannel($channel, $payload);
 
-        $this->assertSame([
-            'http://test-mercure/users/alice',
-            'http://test-mercure/users/bob',
-        ], $dispatchedTopics);
+        $this->assertSame(
+            [
+                'http://test-mercure/users/alice',
+                'http://test-mercure/users/bob',
+            ],
+            $dispatchedTopics,
+        );
     }
 
     #[Test]

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
+use App\Dto\Group\GroupDto;
 use App\Entity\Channel;
 use App\Entity\GroupSubscription;
 use App\Entity\User;
@@ -11,7 +12,6 @@ use App\Entity\UserGroup;
 use App\Repository\UserGroupRepository;
 use App\Repository\UserRepository;
 use App\Service\ChannelMembersDataProvider;
-use App\Dto\Group\GroupDto;
 use App\Service\Group\GroupProviderInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;

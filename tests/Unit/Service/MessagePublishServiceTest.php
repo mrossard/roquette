@@ -8,7 +8,6 @@ use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Message\LlmQueryMessage;
-use App\Message\ModerateMessageMessage;
 use App\Repository\MessageRepository;
 use App\Service\FileUploadService;
 use App\Service\LlmRateLimiter;
@@ -137,9 +136,8 @@ class MessagePublishServiceTest extends TestCase
         $this->entityManager->expects($this->once())->method('flush');
 
         $this->messageBus
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('dispatch')
-            ->with($this->isInstanceOf(ModerateMessageMessage::class))
             ->willReturn(new Envelope(new \stdClass()));
 
         $this->mercurePublisher

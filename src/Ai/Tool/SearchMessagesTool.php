@@ -7,6 +7,7 @@ namespace App\Ai\Tool;
 use App\Ai\MessagePromptFormatter;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
+use App\Service\HybridSearchService;
 
 final readonly class SearchMessagesTool implements AiToolInterface
 {
@@ -18,6 +19,7 @@ final readonly class SearchMessagesTool implements AiToolInterface
         private UserRepository $userRepository,
         private MessageRepository $messageRepository,
         ?MessagePromptFormatter $messagePromptFormatter = null,
+        private ?HybridSearchService $hybridSearchService = null,
     ) {
         $this->messagePromptFormatter = $messagePromptFormatter ?? new MessagePromptFormatter();
     }
@@ -122,13 +124,23 @@ final readonly class SearchMessagesTool implements AiToolInterface
             ? (bool) $arguments['hasFile']
             : null;
 
-        $results = $this->messageRepository->searchGlobal(
-            currentUser: $user,
-            authorUsername: $author,
-            channelName: $channel,
-            hasFile: $hasFile,
-            textQuery: $query !== '' ? $query : null,
-        );
+        $results = $this->hybridSearchService !== null
+            ? $this->hybridSearchService->searchGlobal(
+                currentUser: $user,
+                authorUsername: $author,
+                channelName: $channel,
+                hasFile: $hasFile,
+                textQuery: $query !== '' ? $query : null,
+                limit: 15,
+            )
+            : $this->messageRepository->searchGlobal(
+                currentUser: $user,
+                authorUsername: $author,
+                channelName: $channel,
+                hasFile: $hasFile,
+                textQuery: $query !== '' ? $query : null,
+                limit: 15,
+            );
 
         if ([] === $results) {
             return ['result' => "Aucun message correspondant à votre recherche n'a été trouvé."];

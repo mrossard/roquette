@@ -19,17 +19,17 @@ class HtmlMetadataParserTest extends TestCase
     public function testParseOpenGraphMetadata(): void
     {
         $html = <<<HTML
-<!DOCTYPE html>
-<html>
-<head>
-    <meta property="og:title" content="OG Title &amp; More" />
-    <meta property="og:description" content="OG description of the page." />
-    <meta property="og:image" content="https://example.com/images/og.jpg" />
-    <meta property="og:site_name" content="Example Site" />
-</head>
-<body></body>
-</html>
-HTML;
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta property="og:title" content="OG Title &amp; More" />
+                <meta property="og:description" content="OG description of the page." />
+                <meta property="og:image" content="https://example.com/images/og.jpg" />
+                <meta property="og:site_name" content="Example Site" />
+            </head>
+            <body></body>
+            </html>
+            HTML;
 
         $metadata = $this->parser->parse('https://example.com/article/1', $html);
 
@@ -43,16 +43,16 @@ HTML;
     public function testParseTwitterCardsFallback(): void
     {
         $html = <<<HTML
-<!DOCTYPE html>
-<html>
-<head>
-    <meta name="twitter:title" content="Twitter Title" />
-    <meta name="twitter:description" content="Twitter description." />
-    <meta name="twitter:image" content="https://example.com/twitter.png" />
-</head>
-<body></body>
-</html>
-HTML;
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta name="twitter:title" content="Twitter Title" />
+                <meta name="twitter:description" content="Twitter description." />
+                <meta name="twitter:image" content="https://example.com/twitter.png" />
+            </head>
+            <body></body>
+            </html>
+            HTML;
 
         $metadata = $this->parser->parse('https://example.com/post', $html);
 
@@ -65,15 +65,15 @@ HTML;
     public function testParseStandardHtmlFallback(): void
     {
         $html = <<<HTML
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Standard Page Title</title>
-    <meta name="description" content="Standard meta description." />
-</head>
-<body></body>
-</html>
-HTML;
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Standard Page Title</title>
+                <meta name="description" content="Standard meta description." />
+            </head>
+            <body></body>
+            </html>
+            HTML;
 
         $metadata = $this->parser->parse('https://blog.example.org:8080/page', $html);
 
@@ -86,29 +86,29 @@ HTML;
     public function testParseResolvesRelativeImageUrls(): void
     {
         $html = <<<HTML
-<!DOCTYPE html>
-<html>
-<head>
-    <meta property="og:title" content="Relative Image Test" />
-    <meta property="og:image" content="/assets/hero.png" />
-</head>
-<body></body>
-</html>
-HTML;
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta property="og:title" content="Relative Image Test" />
+                <meta property="og:image" content="/assets/hero.png" />
+            </head>
+            <body></body>
+            </html>
+            HTML;
 
         $metadata = $this->parser->parse('https://example.com:8443/nested/path/page.html', $html);
         static::assertSame('https://example.com:8443/assets/hero.png', $metadata['image']);
 
         $htmlRelative = <<<HTML
-<!DOCTYPE html>
-<html>
-<head>
-    <meta property="og:title" content="Relative Image Test 2" />
-    <meta property="og:image" content="cover.png" />
-</head>
-<body></body>
-</html>
-HTML;
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta property="og:title" content="Relative Image Test 2" />
+                <meta property="og:image" content="cover.png" />
+            </head>
+            <body></body>
+            </html>
+            HTML;
 
         $metadataRelative = $this->parser->parse('https://example.com/nested/path/page.html', $htmlRelative);
         static::assertSame('https://example.com/nested/path/cover.png', $metadataRelative['image']);
@@ -118,15 +118,15 @@ HTML;
     {
         $longText = str_repeat('Long description word ', 20);
         $html = <<<HTML
-<!DOCTYPE html>
-<html>
-<head>
-    <meta property="og:title" content="Truncate test" />
-    <meta property="og:description" content="{$longText}" />
-</head>
-<body></body>
-</html>
-HTML;
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta property="og:title" content="Truncate test" />
+                <meta property="og:description" content="{$longText}" />
+            </head>
+            <body></body>
+            </html>
+            HTML;
 
         $metadata = $this->parser->parse('https://example.com', $html);
         static::assertLessThanOrEqual(203, mb_strlen($metadata['description']));
