@@ -23,10 +23,11 @@ class HybridSearchService
         #[Autowire(service: 'ai.vectorizer.doc_vectorizer')]
         private readonly ?VectorizerInterface $vectorizer = null,
         private readonly ?LoggerInterface $logger = null,
+        private readonly ?DocumentIndexService $documentIndexService = null,
     ) {}
 
     /**
-     * Index a message's content into pgvector for semantic search.
+     * Index a message's content and its attached document into pgvector for semantic search.
      */
     public function indexMessage(int $messageId): bool
     {
@@ -35,14 +36,47 @@ class HybridSearchService
             return false;
         }
 
+        $indexedContent = $this->indexMessageContent($message);
+        $indexedDoc = $this->indexMessageDocument($message);
+
+        return $indexedContent || $indexedDoc;
+    }
+
+    public function indexDocument(int $messageId): bool
+    {
+        return $this->documentIndexService?->indexDocument($messageId) ?? false;
+    }
+
+    public function deleteDocumentChunks(int $messageId): void
+    {
+        $this->documentIndexService?->deleteDocumentChunks($messageId);
+    }
+
+    public function deleteMessageEmbedding(int $messageId): void
+    {
+        $conn = $this->entityManager->getConnection();
+        $conn->executeStatement('DELETE FROM message_embedding WHERE message_id = :messageId', [
+            'messageId' => $messageId,
+        ]);
+        $this->deleteDocumentChunks($messageId);
+    }
+
+    public function getMatchingDocumentExcerpt(int $messageId, string $query, int $maxLength = 300): ?string
+    {
+        return $this->documentIndexService?->getMatchingDocumentExcerpt($messageId, $query, $maxLength);
+    }
+
+    private function indexMessageContent(Message $message): bool
+    {
+        $messageId = (int) $message->getId();
         $content = $message->getContent();
-        if ($content === null || trim($content) === '' || $message->isPoll()) {
-            $this->deleteMessageEmbedding($messageId);
+        $conn = $this->entityManager->getConnection();
 
-            return false;
-        }
+        if ($content === null || trim($content) === '' || $message->isPoll() || $this->vectorizer === null) {
+            $conn->executeStatement('DELETE FROM message_embedding WHERE message_id = :messageId', [
+                'messageId' => $messageId,
+            ]);
 
-        if (!$this->vectorizer) {
             return false;
         }
 
@@ -51,14 +85,13 @@ class HybridSearchService
             $vectorData = $vector->getData();
             $vectorString = '[' . implode(',', $vectorData) . ']';
 
-            $conn = $this->entityManager->getConnection();
             $conn->executeStatement(
                 'INSERT INTO message_embedding (message_id, channel_id, embedding, created_at)
                  VALUES (:messageId, :channelId, :embedding::vector, NOW())
                  ON CONFLICT (message_id) DO UPDATE
                  SET embedding = EXCLUDED.embedding, channel_id = EXCLUDED.channel_id',
                 [
-                    'messageId' => $message->getId(),
+                    'messageId' => $messageId,
                     'channelId' => $message->getChannel()?->getId(),
                     'embedding' => $vectorString,
                 ],
@@ -75,15 +108,16 @@ class HybridSearchService
         }
     }
 
-    /**
-     * Remove message embedding from database.
-     */
-    public function deleteMessageEmbedding(int $messageId): void
+    private function indexMessageDocument(Message $message): bool
     {
-        $conn = $this->entityManager->getConnection();
-        $conn->executeStatement('DELETE FROM message_embedding WHERE message_id = :messageId', [
-            'messageId' => $messageId,
-        ]);
+        $messageId = (int) $message->getId();
+        if ($message->getFilePath() === null) {
+            $this->deleteDocumentChunks($messageId);
+
+            return false;
+        }
+
+        return $this->indexDocument($messageId);
     }
 
     /**
@@ -117,7 +151,6 @@ class HybridSearchService
         }
 
         if ($ids === []) {
-            // Graceful fallback to ILIKE if FTS returned nothing (e.g. stopwords or specific punctuation)
             return $this->messageRepository->searchInChannel($channel, $query, $limit);
         }
 
@@ -140,7 +173,6 @@ class HybridSearchService
     ): array {
         $trimmedQuery = $textQuery !== null ? trim($textQuery) : null;
 
-        // If no text query, fallback directly to metadata filtering in repository
         if ($trimmedQuery === null || $trimmedQuery === '') {
             return $this->messageRepository->searchGlobal(
                 currentUser: $currentUser,
@@ -185,7 +217,6 @@ class HybridSearchService
         }
 
         if ($ids === []) {
-            // Fallback to ILIKE if FTS was too restrictive
             return $this->messageRepository->searchGlobal(
                 currentUser: $currentUser,
                 authorUsername: $authorUsername,
@@ -233,24 +264,57 @@ class HybridSearchService
         $candidateLimit = max(20, $limit * 2);
 
         $sql = <<<SQL
-                WITH fts_results AS (
+                WITH fts_candidates AS (
                     SELECT m.id,
-                           ROW_NUMBER() OVER (
-                               ORDER BY ts_rank_cd(m.search_vector, websearch_to_tsquery('french', :ftsQuery)) DESC,
-                                        m.created_at DESC
-                           ) AS rank
+                           ts_rank_cd(m.search_vector, websearch_to_tsquery('french', :ftsQuery)) AS score,
+                           m.created_at
                     FROM "message" m
                     WHERE m.channel_id = :channelId
                       AND m.search_vector @@ websearch_to_tsquery('french', :ftsQuery)
+                    UNION ALL
+                    SELECT mdc.message_id AS id,
+                           ts_rank_cd(mdc.search_vector, websearch_to_tsquery('french', :ftsQuery)) AS score,
+                           mdc.created_at
+                    FROM message_document_chunk mdc
+                    WHERE mdc.channel_id = :channelId
+                      AND mdc.search_vector @@ websearch_to_tsquery('french', :ftsQuery)
+                ),
+                fts_aggregated AS (
+                    SELECT id, MAX(score) AS max_score, MAX(created_at) AS created_at
+                    FROM fts_candidates
+                    GROUP BY id
+                ),
+                fts_results AS (
+                    SELECT id,
+                           ROW_NUMBER() OVER (
+                               ORDER BY max_score DESC, created_at DESC
+                           ) AS rank
+                    FROM fts_aggregated
                     LIMIT :candidateLimit
                 ),
-                vector_results AS (
+                vector_candidates AS (
                     SELECT me.message_id AS id,
-                           ROW_NUMBER() OVER (
-                               ORDER BY me.embedding <=> :queryVector::vector ASC
-                           ) AS rank
+                           (me.embedding <=> :queryVector::vector) AS distance
                     FROM message_embedding me
                     WHERE me.channel_id = :channelId
+                    UNION ALL
+                    SELECT mdc.message_id AS id,
+                           (mdc.embedding <=> :queryVector::vector) AS distance
+                    FROM message_document_chunk mdc
+                    WHERE mdc.channel_id = :channelId
+                      AND mdc.embedding IS NOT NULL
+                ),
+                vector_aggregated AS (
+                    SELECT id, MIN(distance) AS min_distance
+                    FROM vector_candidates
+                    GROUP BY id
+                ),
+                vector_results AS (
+                    SELECT id,
+                           ROW_NUMBER() OVER (
+                               ORDER BY min_distance ASC
+                           ) AS rank
+                    FROM vector_aggregated
                     LIMIT :candidateLimit
                 )
                 SELECT COALESCE(f.id, v.id) AS id,
@@ -284,11 +348,25 @@ class HybridSearchService
     private function executeFtsInChannel(Connection $conn, int $channelId, string $textQuery, int $limit): array
     {
         $sql = <<<SQL
-                SELECT m.id
-                FROM "message" m
-                WHERE m.channel_id = :channelId
-                  AND m.search_vector @@ websearch_to_tsquery('french', :ftsQuery)
-                ORDER BY ts_rank_cd(m.search_vector, websearch_to_tsquery('french', :ftsQuery)) DESC, m.created_at DESC
+                WITH fts_candidates AS (
+                    SELECT m.id,
+                           ts_rank_cd(m.search_vector, websearch_to_tsquery('french', :ftsQuery)) AS score,
+                           m.created_at
+                    FROM "message" m
+                    WHERE m.channel_id = :channelId
+                      AND m.search_vector @@ websearch_to_tsquery('french', :ftsQuery)
+                    UNION ALL
+                    SELECT mdc.message_id AS id,
+                           ts_rank_cd(mdc.search_vector, websearch_to_tsquery('french', :ftsQuery)) AS score,
+                           mdc.created_at
+                    FROM message_document_chunk mdc
+                    WHERE mdc.channel_id = :channelId
+                      AND mdc.search_vector @@ websearch_to_tsquery('french', :ftsQuery)
+                )
+                SELECT id
+                FROM fts_candidates
+                GROUP BY id
+                ORDER BY MAX(score) DESC, MAX(created_at) DESC
                 LIMIT :limit
             SQL;
 
@@ -308,6 +386,41 @@ class HybridSearchService
     }
 
     /**
+     * @return array{0: string, 1: array<string, mixed>}
+     */
+    private function buildFilterClauses(
+        ?string $authorUsername,
+        ?string $channelName,
+        ?bool $hasFile,
+        ?string $fileType,
+    ): array {
+        $filterSql = '';
+        $params = [];
+
+        if ($authorUsername !== null && $authorUsername !== '') {
+            $filterSql .= ' AND (LOWER(u.username) = :authorUsername OR LOWER(u.display_name) = :authorUsername)';
+            $params['authorUsername'] = mb_strtolower($authorUsername, 'UTF-8');
+        }
+
+        if ($channelName !== null && $channelName !== '') {
+            $filterSql .= ' AND (LOWER(ch.name) = :channelName OR LOWER(ch.slug) = :channelName)';
+            $params['channelName'] = mb_strtolower($channelName, 'UTF-8');
+        }
+
+        if ($hasFile) {
+            $filterSql .= ' AND m.file_name IS NOT NULL';
+        }
+
+        if ($fileType !== null && $fileType !== '') {
+            $isPdf = $fileType === 'pdf';
+            $filterSql .= $isPdf ? ' AND m.mime_type = :fileType' : ' AND m.mime_type LIKE :fileType';
+            $params['fileType'] = $isPdf ? 'application/pdf' : $fileType . '/%';
+        }
+
+        return [$filterSql, $params];
+    }
+
+    /**
      * @return int[]
      */
     private function executeHybridRrfGlobal(
@@ -322,69 +435,87 @@ class HybridSearchService
         int $limit,
     ): array {
         $candidateLimit = max(30, $limit * 2);
+        [$whereFilter, $filterParams] = $this->buildFilterClauses($authorUsername, $channelName, $hasFile, $fileType);
 
-        $whereFilterFts = '';
-        $whereFilterVec = '';
-        $params = [
+        $params = array_merge([
             'userId' => $userId,
             'ftsQuery' => $textQuery,
             'queryVector' => $vectorString,
             'candidateLimit' => $candidateLimit,
             'limit' => $limit,
-        ];
-
-        if ($authorUsername !== null && $authorUsername !== '') {
-            $whereFilterFts .= ' AND (LOWER(u.username) = :authorUsername OR LOWER(u.display_name) = :authorUsername)';
-            $whereFilterVec .= ' AND (LOWER(u.username) = :authorUsername OR LOWER(u.display_name) = :authorUsername)';
-            $params['authorUsername'] = mb_strtolower($authorUsername, 'UTF-8');
-        }
-
-        if ($channelName !== null && $channelName !== '') {
-            $whereFilterFts .= ' AND (LOWER(ch.name) = :channelName OR LOWER(ch.slug) = :channelName)';
-            $whereFilterVec .= ' AND (LOWER(ch.name) = :channelName OR LOWER(ch.slug) = :channelName)';
-            $params['channelName'] = mb_strtolower($channelName, 'UTF-8');
-        }
-
-        if ($hasFile) {
-            $whereFilterFts .= ' AND m.file_name IS NOT NULL';
-            $whereFilterVec .= ' AND m.file_name IS NOT NULL';
-        }
-
-        if ($fileType !== null && $fileType !== '') {
-            $isPdf = $fileType === 'pdf';
-            $whereFilterFts .= $isPdf ? ' AND m.mime_type = :fileType' : ' AND m.mime_type LIKE :fileType';
-            $whereFilterVec .= $isPdf ? ' AND m.mime_type = :fileType' : ' AND m.mime_type LIKE :fileType';
-            $params['fileType'] = $isPdf ? 'application/pdf' : $fileType . '/%';
-        }
+        ], $filterParams);
 
         $sql = <<<SQL
-                WITH fts_results AS (
+                WITH fts_candidates AS (
                     SELECT m.id,
-                           ROW_NUMBER() OVER (
-                               ORDER BY ts_rank_cd(m.search_vector, websearch_to_tsquery('french', :ftsQuery)) DESC,
-                                        m.created_at DESC
-                           ) AS rank
+                           ts_rank_cd(m.search_vector, websearch_to_tsquery('french', :ftsQuery)) AS score,
+                           m.created_at
                     FROM "message" m
                     JOIN "channel" ch ON ch.id = m.channel_id
                     JOIN "user" u ON u.id = m.author_id
                     LEFT JOIN channel_user cu ON cu.channel_id = ch.id AND cu.user_id = :userId
                     WHERE (ch.is_private = false OR cu.user_id IS NOT NULL)
                       AND m.search_vector @@ websearch_to_tsquery('french', :ftsQuery)
-                      {$whereFilterFts}
+                      {$whereFilter}
+                    UNION ALL
+                    SELECT mdc.message_id AS id,
+                           ts_rank_cd(mdc.search_vector, websearch_to_tsquery('french', :ftsQuery)) AS score,
+                           mdc.created_at
+                    FROM message_document_chunk mdc
+                    JOIN "message" m ON m.id = mdc.message_id
+                    JOIN "channel" ch ON ch.id = mdc.channel_id
+                    JOIN "user" u ON u.id = m.author_id
+                    LEFT JOIN channel_user cu ON cu.channel_id = ch.id AND cu.user_id = :userId
+                    WHERE (ch.is_private = false OR cu.user_id IS NOT NULL)
+                      AND mdc.search_vector @@ websearch_to_tsquery('french', :ftsQuery)
+                      {$whereFilter}
+                ),
+                fts_aggregated AS (
+                    SELECT id, MAX(score) AS max_score, MAX(created_at) AS created_at
+                    FROM fts_candidates
+                    GROUP BY id
+                ),
+                fts_results AS (
+                    SELECT id,
+                           ROW_NUMBER() OVER (
+                               ORDER BY max_score DESC, created_at DESC
+                           ) AS rank
+                    FROM fts_aggregated
                     LIMIT :candidateLimit
                 ),
-                vector_results AS (
+                vector_candidates AS (
                     SELECT me.message_id AS id,
-                           ROW_NUMBER() OVER (
-                               ORDER BY me.embedding <=> :queryVector::vector ASC
-                           ) AS rank
+                           (me.embedding <=> :queryVector::vector) AS distance
                     FROM message_embedding me
                     JOIN "message" m ON m.id = me.message_id
                     JOIN "channel" ch ON ch.id = me.channel_id
                     JOIN "user" u ON u.id = m.author_id
                     LEFT JOIN channel_user cu ON cu.channel_id = ch.id AND cu.user_id = :userId
                     WHERE (ch.is_private = false OR cu.user_id IS NOT NULL)
-                      {$whereFilterVec}
+                      {$whereFilter}
+                    UNION ALL
+                    SELECT mdc.message_id AS id,
+                           (mdc.embedding <=> :queryVector::vector) AS distance
+                    FROM message_document_chunk mdc
+                    JOIN "message" m ON m.id = mdc.message_id
+                    JOIN "channel" ch ON ch.id = mdc.channel_id
+                    JOIN "user" u ON u.id = m.author_id
+                    LEFT JOIN channel_user cu ON cu.channel_id = ch.id AND cu.user_id = :userId
+                    WHERE (ch.is_private = false OR cu.user_id IS NOT NULL)
+                      AND mdc.embedding IS NOT NULL
+                      {$whereFilter}
+                ),
+                vector_aggregated AS (
+                    SELECT id, MIN(distance) AS min_distance
+                    FROM vector_candidates
+                    GROUP BY id
+                ),
+                vector_results AS (
+                    SELECT id,
+                           ROW_NUMBER() OVER (
+                               ORDER BY min_distance ASC
+                           ) AS rank
+                    FROM vector_aggregated
                     LIMIT :candidateLimit
                 )
                 SELECT COALESCE(f.id, v.id) AS id,
@@ -419,43 +550,43 @@ class HybridSearchService
         ?string $fileType,
         int $limit,
     ): array {
-        $whereFilter = '';
-        $params = [
+        [$whereFilter, $filterParams] = $this->buildFilterClauses($authorUsername, $channelName, $hasFile, $fileType);
+
+        $params = array_merge([
             'userId' => $userId,
             'ftsQuery' => $textQuery,
             'limit' => $limit,
-        ];
-
-        if ($authorUsername !== null && $authorUsername !== '') {
-            $whereFilter .= ' AND (LOWER(u.username) = :authorUsername OR LOWER(u.display_name) = :authorUsername)';
-            $params['authorUsername'] = mb_strtolower($authorUsername, 'UTF-8');
-        }
-
-        if ($channelName !== null && $channelName !== '') {
-            $whereFilter .= ' AND (LOWER(ch.name) = :channelName OR LOWER(ch.slug) = :channelName)';
-            $params['channelName'] = mb_strtolower($channelName, 'UTF-8');
-        }
-
-        if ($hasFile) {
-            $whereFilter .= ' AND m.file_name IS NOT NULL';
-        }
-
-        if ($fileType !== null && $fileType !== '') {
-            $isPdf = $fileType === 'pdf';
-            $whereFilter .= $isPdf ? ' AND m.mime_type = :fileType' : ' AND m.mime_type LIKE :fileType';
-            $params['fileType'] = $isPdf ? 'application/pdf' : $fileType . '/%';
-        }
+        ], $filterParams);
 
         $sql = <<<SQL
-                SELECT m.id
-                FROM "message" m
-                JOIN "channel" ch ON ch.id = m.channel_id
-                JOIN "user" u ON u.id = m.author_id
-                LEFT JOIN channel_user cu ON cu.channel_id = ch.id AND cu.user_id = :userId
-                WHERE (ch.is_private = false OR cu.user_id IS NOT NULL)
-                  AND m.search_vector @@ websearch_to_tsquery('french', :ftsQuery)
-                  {$whereFilter}
-                ORDER BY ts_rank_cd(m.search_vector, websearch_to_tsquery('french', :ftsQuery)) DESC, m.created_at DESC
+                WITH fts_candidates AS (
+                    SELECT m.id,
+                           ts_rank_cd(m.search_vector, websearch_to_tsquery('french', :ftsQuery)) AS score,
+                           m.created_at
+                    FROM "message" m
+                    JOIN "channel" ch ON ch.id = m.channel_id
+                    JOIN "user" u ON u.id = m.author_id
+                    LEFT JOIN channel_user cu ON cu.channel_id = ch.id AND cu.user_id = :userId
+                    WHERE (ch.is_private = false OR cu.user_id IS NOT NULL)
+                      AND m.search_vector @@ websearch_to_tsquery('french', :ftsQuery)
+                      {$whereFilter}
+                    UNION ALL
+                    SELECT mdc.message_id AS id,
+                           ts_rank_cd(mdc.search_vector, websearch_to_tsquery('french', :ftsQuery)) AS score,
+                           mdc.created_at
+                    FROM message_document_chunk mdc
+                    JOIN "message" m ON m.id = mdc.message_id
+                    JOIN "channel" ch ON ch.id = mdc.channel_id
+                    JOIN "user" u ON u.id = m.author_id
+                    LEFT JOIN channel_user cu ON cu.channel_id = ch.id AND cu.user_id = :userId
+                    WHERE (ch.is_private = false OR cu.user_id IS NOT NULL)
+                      AND mdc.search_vector @@ websearch_to_tsquery('french', :ftsQuery)
+                      {$whereFilter}
+                )
+                SELECT id
+                FROM fts_candidates
+                GROUP BY id
+                ORDER BY MAX(score) DESC, MAX(created_at) DESC
                 LIMIT :limit
             SQL;
 
@@ -491,7 +622,6 @@ class HybridSearchService
             ->getQuery()
             ->getResult();
 
-        // Preserve ranking order from RRF/FTS
         $messageMap = [];
         foreach ($messages as $msg) {
             $messageMap[$msg->getId()] = $msg;

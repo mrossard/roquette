@@ -216,4 +216,43 @@ class MessageEditorTest extends TestCase
         $this->assertSame(400, $result->statusCode);
         $this->assertSame($message, $result->message);
     }
+
+    #[Test]
+    public function editAllowsEmptyContentWhenMessageHasAttachedFileAndDispatchesIndex(): void
+    {
+        $author = new User();
+        $channel = new Channel();
+        $channel->setSlug('general');
+
+        $message = new Message();
+        $message->setAuthor($author);
+        $message->setChannel($channel);
+        $message->setContent('Ancien texte');
+        $message->setFilePath('/uploads/doc.pdf');
+
+        $ref = new \ReflectionProperty(Message::class, 'id');
+        $ref->setValue($message, 50);
+
+        $this->messageRepo->expects($this->once())->method('find')->with(50)->willReturn($message);
+        $this->em->expects($this->once())->method('flush');
+        $this->renderer
+            ->expects($this->once())
+            ->method('renderFeedItem')
+            ->with($message, ['no_fade' => true])
+            ->willReturn('<div>Fichier seul</div>');
+        $this->broadcaster->expects($this->once())->method('broadcastMessageUpdate')->with($message);
+        $this->messageBus
+            ->expects($this->once())
+            ->method('dispatch')
+            ->with($this->isInstanceOf(\App\Message\IndexMessageMessage::class))
+            ->willReturn(new Envelope(new \stdClass()));
+
+        $dto = new EditMessageDto(content: '   ');
+        $result = $this->editor->edit(50, $author, $dto);
+
+        $this->assertTrue($result->success);
+        $this->assertNull($message->getContent());
+        $this->assertSame('<div>Fichier seul</div>', $result->renderedHtml);
+    }
 }
+

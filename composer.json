@@ -20,6 +20,7 @@
         "league/flysystem-bundle": ">=3.7",
         "minishlink/web-push": "^10.1",
         "minishlink/web-push-bundle": "^6.3.2",
+        "smalot/pdfparser": "^2.12",
         "symfony/ai-bundle": "^0.9.0",
         "symfony/ai-generic-platform": "^0.9.0",
         "symfony/ai-ollama-platform": "^0.9.0",

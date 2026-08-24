@@ -12,8 +12,7 @@ use Symfony\AI\Platform\Result\ToolCall;
 
 use function array_key_exists;
 use function implode;
-use function is_array;
-use function is_string;
+use function json_encode;
 use function microtime;
 use function sprintf;
 use function trim;
@@ -23,13 +22,16 @@ use function trim;
  */
 final readonly class ToolRunner
 {
-    private const int MAX_TOOL_ITERATIONS = 3;
+    private PseudoToolCallParser $pseudoCallParser;
 
     public function __construct(
         private LlmService $llmService,
         private ToolRegistry $toolRegistry,
         private ?LoggerInterface $logger = null,
-    ) {}
+        ?PseudoToolCallParser $pseudoCallParser = null,
+    ) {
+        $this->pseudoCallParser = $pseudoCallParser ?? new PseudoToolCallParser($toolRegistry);
+    }
 
     /**
      * Streams the assistant response, executing any tool call requested by the model.
@@ -52,62 +54,47 @@ final readonly class ToolRunner
         ?callable $onToolExecuted = null,
         ?callable $onConfirmationRequired = null,
     ): \Generator {
-        $currentPrompt = $prompt;
-        $producedText = false;
-        $allExecutedResults = [];
-        $executedCalls = [];
+        [$toolCalls, $textDeltas] = $this->consumeIterationStream($prompt, $systemPrompt, $tools);
 
-        for ($i = 0; $i < self::MAX_TOOL_ITERATIONS; $i++) {
-            [$toolCalls, $textDeltas] = $this->consumeIterationStream($currentPrompt, $systemPrompt, $tools);
-
+        // If no tool was requested, yield the direct text response
+        if ($toolCalls === null || [] === $toolCalls) {
             foreach ($textDeltas as $textChunk) {
-                if ('' !== trim($textChunk)) {
-                    $producedText = true;
-                }
                 yield $textChunk;
             }
 
-            if ($toolCalls === null || [] === $toolCalls) {
-                return;
-            }
-
-            $newCalls = $this->filterNewCalls($toolCalls, $executedCalls);
-            if ([] === $newCalls) {
-                if (!$producedText && $allExecutedResults !== []) {
-                    yield implode("\n", $allExecutedResults);
-                }
-                return;
-            }
-
-            [$results, $confirmationPending] = $this->executeToolBatch(
-                $newCalls,
-                $authorUserId,
-                $workspaceId,
-                $onToolExecuted,
-                $onConfirmationRequired,
-            );
-
-            foreach ($results as $res) {
-                $allExecutedResults[] = $res;
-            }
-
-            if ($confirmationPending) {
-                $currentPrompt = $this->buildConfirmationPrompt($prompt, $results);
-                break;
-            }
-
-            $currentPrompt = $this->buildToolExecutionPrompt($prompt, $results);
+            return;
         }
 
-        foreach ($this->llmService->generateTextStream($currentPrompt, $systemPrompt) as $chunk) {
+        $executedCalls = [];
+        $uniqueCalls = $this->filterNewCalls($toolCalls, $executedCalls);
+
+        [$results, $confirmationPending] = $this->executeToolBatch(
+            $uniqueCalls,
+            $authorUserId,
+            $workspaceId,
+            $onToolExecuted,
+            $onConfirmationRequired,
+        );
+
+        if ($confirmationPending) {
+            $confirmationPrompt = $this->buildConfirmationPrompt($prompt, $results);
+            yield from $this->llmService->generateTextStream($confirmationPrompt, $systemPrompt);
+
+            return;
+        }
+
+        $executionPrompt = $this->buildToolExecutionPrompt($prompt, $results);
+        $producedText = false;
+
+        foreach ($this->llmService->generateTextStream($executionPrompt, $systemPrompt) as $chunk) {
             if ('' !== trim($chunk)) {
                 $producedText = true;
             }
             yield $chunk;
         }
 
-        if (!$producedText && $allExecutedResults !== []) {
-            yield implode("\n", $allExecutedResults);
+        if (!$producedText && $results !== []) {
+            yield implode("\n", $results);
         }
     }
 
@@ -134,7 +121,7 @@ final readonly class ToolRunner
         }
 
         if (($toolCalls === null || [] === $toolCalls) && '' !== trim($textBuffer)) {
-            $parsedToolCall = $this->parsePseudoToolCall($textBuffer);
+            $parsedToolCall = $this->pseudoCallParser->parse($textBuffer);
             if ($parsedToolCall !== null) {
                 $toolCalls = [$parsedToolCall];
                 $textDeltas = [];
@@ -235,31 +222,8 @@ final readonly class ToolRunner
         return (
             "Résultats des outils exécutés :\n"
             . implode("\n", $results)
-            . "\n\nRéponds maintenant brièvement à l'utilisateur pour confirmer l'action réalisée en utilisant exactement l'information de confirmation ci-dessus :\n"
+            . "\n\nRéponds maintenant à l'utilisateur pour satisfaire sa demande en t'appuyant sur les résultats ci-dessus :\n"
             . $originalPrompt
         );
-    }
-
-    /**
-     * Attempts to parse raw JSON emitted in response text into a ToolCall object.
-     */
-    private function parsePseudoToolCall(string $text): ?ToolCall
-    {
-        $data = JsonExtractor::extractArray($text);
-        if (!is_array($data)) {
-            return null;
-        }
-
-        $name = $data['tool'] ?? $data['name'] ?? $data['function'] ?? null;
-        if (!is_string($name) || '' === $name) {
-            return null;
-        }
-
-        $args = $data['action'] ?? $data['arguments'] ?? $data['parameters'] ?? $data['args'] ?? [];
-        if (!is_array($args)) {
-            $args = [];
-        }
-
-        return new ToolCall(uniqid('pseudo_call_', true), $name, $args);
     }
 }

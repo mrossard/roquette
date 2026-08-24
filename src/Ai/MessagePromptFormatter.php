@@ -59,17 +59,26 @@ class MessagePromptFormatter
     }
 
     /**
-     * Formats a search reference line with channel slug and jumpTo link.
+     * Formats a search reference line with channel slug, jumpTo link, and optional document excerpt.
      */
-    public function formatSearchReference(Message $message, int $maxLength = 300): string
-    {
+    public function formatSearchReference(
+        Message $message,
+        int $maxLength = 300,
+        ?string $documentExcerpt = null,
+    ): string {
         $author = $this->resolveAuthorName($message);
         $channelSlug = $message->getChannel()?->getSlug() ?? 'general';
         $messageId = (int) ($message->getId() ?? 0);
         $date = $message->getCreatedAt()->format('d/m/Y H:i');
         $content = mb_substr(trim($message->getContent() ?? ''), 0, $maxLength);
 
-        $fileInfo = $message->getFileName() ? sprintf(' [Fichier: %s]', $message->getFileName()) : '';
+        $fileInfo = '';
+        if ($message->getFileName() !== null) {
+            $fileInfo = sprintf(' [Fichier: %s]', $message->getFileName());
+            if ($documentExcerpt !== null && $documentExcerpt !== '') {
+                $fileInfo = sprintf(' [Fichier: %s | Extrait: "%s"]', $message->getFileName(), $documentExcerpt);
+            }
+        }
 
         return sprintf(
             '[Réf: #%s?jumpTo=%d | %s] %s: %s%s',

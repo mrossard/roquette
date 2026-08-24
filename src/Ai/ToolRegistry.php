@@ -47,6 +47,11 @@ final readonly class ToolRegistry
         return $definitions;
     }
 
+    public function has(string $name): bool
+    {
+        return \array_key_exists($name, $this->tools);
+    }
+
     public function get(string $name): ?AiToolInterface
     {
         return $this->tools[$name] ?? null;
@@ -68,6 +73,12 @@ final readonly class ToolRegistry
                 $name === 'authorUserId' && $authorUserId !== null => $authorUserId,
                 $name === 'workspaceId' && $workspaceId !== null => $workspaceId,
                 \array_key_exists($name, $args) => $args[$name],
+                $name === 'channel' && \array_key_exists('channelSlug', $args) => $args['channelSlug'],
+                $name === 'channelSlug' && \array_key_exists('channel', $args) => $args['channel'],
+                $name === 'question' && \array_key_exists('pollQuestion', $args) => $args['pollQuestion'],
+                $name === 'options' && \array_key_exists('pollOptions', $args) => $args['pollOptions'],
+                $name === 'reminderText' && \array_key_exists('text', $args) => $args['text'],
+                $name === 'delayMinutes' && \array_key_exists('delay', $args) => (int) $args['delay'],
                 default => null,
             };
             if ($val !== null) {

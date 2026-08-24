@@ -165,9 +165,21 @@ final readonly class LlmQueryHandler
             $channelSlug,
             $workspace,
         );
-        $this->logger->info('Classification result:', ['classification' => $classification]);
+        $intent = $classification['intent'];
+        $targetChannelSlug = $classification['channelSlug'] ?? null;
 
-        return [$classification['intent'], $classification['channelSlug'] ?? null];
+        if ($intent === AssistantIntent::Summarize) {
+            $targetChannel = ($targetChannelSlug !== null && $targetChannelSlug !== '')
+                ? $this->channelResolver->resolveFromList($targetChannelSlug, $channels)
+                : null;
+
+            if ($targetChannel === null) {
+                $intent = AssistantIntent::Help;
+                $targetChannelSlug = null;
+            }
+        }
+
+        return [$intent, $targetChannelSlug];
     }
 
     /**
@@ -198,10 +210,17 @@ final readonly class LlmQueryHandler
         $channelName = null;
         $batchCount = 0;
 
-        if ($intent === AssistantIntent::Summarize && $targetChannelSlug !== null && $targetChannelSlug !== '') {
-            $targetChannel = $this->channelResolver->resolveFromList($targetChannelSlug, $channels);
-            $channelName = $targetChannel ? $targetChannel->getName() : $targetChannelSlug;
-            $summaryResult = $this->summaryBuilder->build($user, $channels, $targetChannelSlug);
+        $targetChannel = ($intent === AssistantIntent::Summarize && $targetChannelSlug !== null && $targetChannelSlug !== '')
+            ? $this->channelResolver->resolveFromList($targetChannelSlug, $channels)
+            : null;
+
+        if ($intent === AssistantIntent::Summarize && $targetChannel === null) {
+            $intent = AssistantIntent::Help;
+        }
+
+        if ($intent === AssistantIntent::Summarize && $targetChannel !== null) {
+            $channelName = $targetChannel->getName();
+            $summaryResult = $this->summaryBuilder->build($user, $channels, (string) $targetChannel->getSlug());
 
             $prompt = $summaryResult->prompt;
             $systemPrompt = $summaryResult->systemPrompt;
@@ -228,8 +247,8 @@ final readonly class LlmQueryHandler
 
         [$reformulation, $prefix] = match ($intent) {
             AssistantIntent::Summarize => [
-                'Résumé du canal **#' . ($channelName ?? 'inconnu') . '**... ⏳',
-                '**Résumé du canal #' . ($channelName ?? 'inconnu') . "** :\n\n",
+                'Résumé du canal **#' . ($channelName ?? $targetChannelSlug ?? '') . '**... ⏳',
+                '**Résumé du canal #' . ($channelName ?? $targetChannelSlug ?? '') . "** :\n\n",
             ],
             AssistantIntent::Poll => ['Création du sondage... ⏳', ''],
             AssistantIntent::Help => ['Traitement de la demande... ⏳', ''],

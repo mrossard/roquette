@@ -31,7 +31,7 @@ final readonly class SearchMessagesTool implements AiToolInterface
 
     public function getDescription(): string
     {
-        return "Recherche des messages ou des fichiers partagés dans tous les canaux accessibles par l'utilisateur.";
+        return "Recherche des messages ou des fichiers partagés (y compris le contenu interne des documents) dans tous les canaux accessibles par l'utilisateur.";
     }
 
     public function requiresConfirmation(): bool
@@ -49,7 +49,7 @@ final readonly class SearchMessagesTool implements AiToolInterface
             'properties' => [
                 'query' => [
                     'type' => 'string',
-                    'description' => "Terme ou texte à chercher dans les messages (ex: 'déploiement', 'lien doc').",
+                    'description' => "Terme ou texte à chercher dans les messages et documents joints (ex: 'déploiement', 'devis', 'architecture').",
                 ],
                 'author' => [
                     'type' => 'string',
@@ -116,31 +116,12 @@ final readonly class SearchMessagesTool implements AiToolInterface
             ? trim((string) $arguments['author'])
             : '';
         $author = $rawAuthor !== '' ? $rawAuthor : null;
-        $rawChannel = \array_key_exists('channel', $arguments) && $arguments['channel'] !== null
-            ? trim((string) $arguments['channel'])
-            : '';
-        $channel = $rawChannel !== '' ? $rawChannel : null;
+        $channel = $this->resolveChannelFilter($arguments);
         $hasFile = array_key_exists('hasFile', $arguments) && $arguments['hasFile'] !== null
             ? (bool) $arguments['hasFile']
             : null;
 
-        $results = $this->hybridSearchService !== null
-            ? $this->hybridSearchService->searchGlobal(
-                currentUser: $user,
-                authorUsername: $author,
-                channelName: $channel,
-                hasFile: $hasFile,
-                textQuery: $query !== '' ? $query : null,
-                limit: 15,
-            )
-            : $this->messageRepository->searchGlobal(
-                currentUser: $user,
-                authorUsername: $author,
-                channelName: $channel,
-                hasFile: $hasFile,
-                textQuery: $query !== '' ? $query : null,
-                limit: 15,
-            );
+        $results = $this->performGlobalSearch($user, $author, $channel, $hasFile, $query);
 
         if ([] === $results) {
             return ['result' => "Aucun message correspondant à votre recherche n'a été trouvé."];
@@ -150,7 +131,12 @@ final readonly class SearchMessagesTool implements AiToolInterface
         $formatted = [];
 
         foreach ($results as $msg) {
-            $formatted[] = $this->messagePromptFormatter->formatSearchReference($msg, 300);
+            $docExcerpt = null;
+            if ($msg->getFileName() !== null && $this->hybridSearchService !== null && $query !== '') {
+                $docExcerpt = $this->hybridSearchService->getMatchingDocumentExcerpt((int) $msg->getId(), $query, 800);
+            }
+
+            $formatted[] = $this->messagePromptFormatter->formatSearchReference($msg, 300, $docExcerpt);
         }
 
         return [
@@ -158,5 +144,52 @@ final readonly class SearchMessagesTool implements AiToolInterface
             'results' => implode("\n", $formatted),
             'instruction' => "Synthétise ces résultats de recherche pour répondre précisément à l'utilisateur. Pour chaque message trouvé, cite systématiquement le canal sous la forme '#slug-du-canal' (par exemple '#general' ou '#dev'), ce qui sera automatiquement converti en lien cliquable par l'application.",
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $arguments
+     */
+    private function resolveChannelFilter(array $arguments): ?string
+    {
+        $raw = (string) ($arguments['channel'] ?? $arguments['channelSlug'] ?? '');
+        $trimmed = trim($raw);
+        if ($trimmed === '' || str_starts_with($trimmed, 'dm-robot-roquette-') || $trimmed === 'assistant') {
+            return null;
+        }
+
+        return $trimmed;
+    }
+
+    /**
+     * @return \App\Entity\Message[]
+     */
+    private function performGlobalSearch(
+        \App\Entity\User $user,
+        ?string $author,
+        ?string $channel,
+        ?bool $hasFile,
+        string $query,
+    ): array {
+        $textQuery = $query !== '' ? $query : null;
+
+        if ($this->hybridSearchService !== null) {
+            return $this->hybridSearchService->searchGlobal(
+                currentUser: $user,
+                authorUsername: $author,
+                channelName: $channel,
+                hasFile: $hasFile,
+                textQuery: $textQuery,
+                limit: 15,
+            );
+        }
+
+        return $this->messageRepository->searchGlobal(
+            currentUser: $user,
+            authorUsername: $author,
+            channelName: $channel,
+            hasFile: $hasFile,
+            textQuery: $textQuery,
+            limit: 15,
+        );
     }
 }

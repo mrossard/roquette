@@ -7,7 +7,9 @@ namespace App\Tests\Unit\Service;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
+use App\Message\IndexMessageMessage;
 use App\Message\LlmQueryMessage;
+use App\Message\ScanFileMessage;
 use App\Repository\MessageRepository;
 use App\Service\FileUploadService;
 use App\Service\LlmRateLimiter;
@@ -207,4 +209,54 @@ class MessagePublishServiceTest extends TestCase
         $this->assertSame(422, $result->statusCode);
         $this->assertSame('L\'extension de fichier ".3gp" n\'est pas autorisée.', $result->error);
     }
+
+    #[Test]
+    public function publishMessageWithEmptyContentAndAttachmentDispatchesIndexMessage(): void
+    {
+        $channel = new Channel();
+        $channel->setSlug('general');
+        $user = new User();
+        $userRef = new \ReflectionProperty(User::class, 'id');
+        $userRef->setValue($user, 1);
+
+        $file = $this->createMock(\Symfony\Component\HttpFoundation\File\UploadedFile::class);
+
+        $this->fileUploadService
+            ->expects($this->once())
+            ->method('uploadAndAttachToMessage')
+            ->willReturnCallback(static function (\Symfony\Component\HttpFoundation\File\UploadedFile $f, Message $m) {
+                $m->setFilePath('/uploads/test.pdf');
+                $m->setFileName('test.pdf');
+            });
+
+        $this->entityManager
+            ->expects($this->once())
+            ->method('persist')
+            ->willReturnCallback(static function (Message $m) {
+                $ref = new \ReflectionProperty(Message::class, 'id');
+                $ref->setValue($m, 99);
+            });
+        $this->entityManager->expects($this->once())->method('flush');
+
+        $dispatchedMessages = [];
+        $this->messageBus
+            ->expects($this->exactly(2))
+            ->method('dispatch')
+            ->willReturnCallback(static function (object $msg) use (&$dispatchedMessages) {
+                $dispatchedMessages[] = get_class($msg);
+                return new Envelope(new \stdClass());
+            });
+
+        $result = $this->publishService->publish(
+            channel: $channel,
+            currentUser: $user,
+            messageText: '',
+            file: $file,
+        );
+
+        $this->assertTrue($result->success);
+        $this->assertContains(ScanFileMessage::class, $dispatchedMessages);
+        $this->assertContains(IndexMessageMessage::class, $dispatchedMessages);
+    }
 }
+

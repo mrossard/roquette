@@ -17,7 +17,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'ai:messages:index',
-    description: 'Indexe les messages textuels dans PostgreSQL pgvector pour la recherche sémantique / hybride',
+    description: 'Indexe les messages textuels et documents joints dans PostgreSQL pgvector pour la recherche sémantique / hybride',
+    aliases: ['app:ai:index-messages'],
 )]
 final class IndexMessagesCommand extends Command
 {
@@ -35,17 +36,18 @@ final class IndexMessagesCommand extends Command
                 'all',
                 null,
                 InputOption::VALUE_NONE,
-                'Réindexer tous les messages (écrase les embeddings existants)',
+                'Réindexer tous les messages et pièces jointes (écrase les embeddings existants)',
             )
             ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Nombre maximal de messages à indexer', '500')
             ->setHelp(<<<'EOF'
                 La commande <info>%command.name%</info> génère les embeddings vectoriels des messages textuels
-                avec le modèle nomic-embed-text via Ollama et les stocke dans PostgreSQL (pgvector).
+                et des documents joints (PDF, texte, DOCX, etc.) avec le modèle nomic-embed-text via Ollama
+                et les stocke dans PostgreSQL (pgvector).
 
-                Indexation des messages non encore indexés :
+                Indexation des messages et documents non encore indexés :
                     <info>php %command.full_name%</info>
 
-                Réindexation complète de tous les messages :
+                Réindexation complète :
                     <info>php %command.full_name% --all</info>
                 EOF);
     }
@@ -53,7 +55,7 @@ final class IndexMessagesCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $io->title('Indexation vectorielle des messages (pgvector + nomic-embed-text)');
+        $io->title('Indexation vectorielle des messages et documents joints (pgvector + nomic-embed-text)');
 
         $reindexAll = (bool) $input->getOption('all');
         $limit = (int) $input->getOption('limit');
@@ -66,7 +68,7 @@ final class IndexMessagesCommand extends Command
             $qb
                 ->select('m.id')
                 ->from(Message::class, 'm')
-                ->where('m.content IS NOT NULL')
+                ->where('(m.content IS NOT NULL AND m.content != \'\') OR m.filePath IS NOT NULL')
                 ->andWhere('m.poll IS NULL')
                 ->orderBy('m.id', 'ASC')
                 ->setMaxResults($limit);
@@ -75,14 +77,17 @@ final class IndexMessagesCommand extends Command
         }
 
         if (!$reindexAll) {
-            // Find messages with content that are NOT YET in message_embedding
+            // Find messages with content or attachments that are NOT YET indexed in message_embedding or message_document_chunk
             $sql = <<<SQL
-                    SELECT m.id
+                    SELECT DISTINCT m.id
                     FROM "message" m
                     LEFT JOIN message_embedding me ON me.message_id = m.id
-                    WHERE m.content IS NOT NULL
-                      AND m.content != ''
-                      AND me.message_id IS NULL
+                    LEFT JOIN message_document_chunk mdc ON mdc.message_id = m.id
+                    WHERE m.poll_id IS NULL
+                      AND (
+                          (m.content IS NOT NULL AND m.content != '' AND me.message_id IS NULL)
+                          OR (m.file_path IS NOT NULL AND mdc.message_id IS NULL)
+                      )
                     ORDER BY m.id ASC
                     LIMIT :limit
                 SQL;
@@ -93,12 +98,12 @@ final class IndexMessagesCommand extends Command
 
         $count = count($messageIds);
         if ($count === 0) {
-            $io->success('Tous les messages éligibles sont déjà indexés.');
+            $io->success('Tous les messages et documents éligibles sont déjà indexés.');
 
             return Command::SUCCESS;
         }
 
-        $io->info(sprintf('%d message(s) à vectoriser et indexer.', $count));
+        $io->info(sprintf('%d message(s) / document(s) à vectoriser et indexer.', $count));
         $progressBar = new ProgressBar($output, $count);
         $progressBar->start();
 

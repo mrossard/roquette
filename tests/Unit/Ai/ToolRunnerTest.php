@@ -38,14 +38,19 @@ class ToolRunnerTest extends TestCase
         $tool = new FakeTool();
 
         $llmService
-            ->expects($this->exactly(2))
+            ->expects($this->once())
             ->method('generateStreamWithTools')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturn(
                 (static function () {
                     yield new ToolCallComplete([new ToolCall('1', 'fake_tool', ['channelSlug' => 'general'])]);
                 })(),
+            );
+        $llmService
+            ->expects($this->once())
+            ->method('generateTextStream')
+            ->willReturn(
                 (static function () {
-                    yield new TextDelta('Voilà !');
+                    yield 'Voilà !';
                 })(),
             );
 
@@ -75,19 +80,19 @@ class ToolRunnerTest extends TestCase
         $calls = [];
 
         $llmService
-            ->expects($this->exactly(2))
+            ->expects($this->once())
             ->method('generateStreamWithTools')
+            ->willReturn(
+                (static function () {
+                    yield new ToolCallComplete([new ToolCall('1', 'missing_tool', [])]);
+                })(),
+            );
+        $llmService
+            ->expects($this->once())
+            ->method('generateTextStream')
             ->willReturnCallback(static function (string $prompt) use (&$calls): \Generator {
                 $calls[] = $prompt;
-                if (1 === count($calls)) {
-                    return (static function () {
-                        yield new ToolCallComplete([new ToolCall('1', 'missing_tool', [])]);
-                    })();
-                }
-
-                return (static function () {
-                    yield new TextDelta('Réponse finale');
-                })();
+                yield 'Réponse finale';
             });
 
         $runner = new ToolRunner($llmService, new ToolRegistry([]));
@@ -95,7 +100,7 @@ class ToolRunnerTest extends TestCase
         $chunks = iterator_to_array($runner->streamResponse('Demande', 'sys', []));
 
         static::assertSame(['Réponse finale'], $chunks);
-        static::assertStringContainsString('Outil inconnu', $calls[1]);
+        static::assertStringContainsString('Outil inconnu', $calls[0]);
     }
 
     public function testDeduplicatesIdenticalToolCalls(): void
@@ -104,17 +109,22 @@ class ToolRunnerTest extends TestCase
         $tool = new FakeTool();
 
         $llmService
-            ->expects($this->exactly(2))
+            ->expects($this->once())
             ->method('generateStreamWithTools')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturn(
                 (static function () {
                     yield new ToolCallComplete([
                         new ToolCall('1', 'fake_tool', ['channelSlug' => 'general']),
                         new ToolCall('2', 'fake_tool', ['channelSlug' => 'general']),
                     ]);
                 })(),
+            );
+        $llmService
+            ->expects($this->once())
+            ->method('generateTextStream')
+            ->willReturn(
                 (static function () {
-                    yield new TextDelta('C\'est fait !');
+                    yield 'C\'est fait !';
                 })(),
             );
 
@@ -182,4 +192,52 @@ class ToolRunnerTest extends TestCase
         static::assertSame([['confirm_tool', ['channelSlug' => 'general']]], $confirmationRequests);
         static::assertSame([], $executed);
     }
+
+    public function testParsesPseudoToolCallDirectQueryArgument(): void
+    {
+        $llmService = $this->createMock(LlmService::class);
+        $tool = new class implements \App\Ai\Tool\AiToolInterface {
+            public function getName(): string { return 'search_messages'; }
+            public function getDescription(): string { return 'Search'; }
+            public function getParametersSchema(): array { return []; }
+            public function requiresConfirmation(): bool { return false; }
+            public function __invoke(string $query, ?string $channel = null): string {
+                return 'Found previous COMEX document';
+            }
+        };
+
+        $llmService
+            ->expects($this->once())
+            ->method('generateStreamWithTools')
+            ->willReturn(
+                (static function () {
+                    yield new TextDelta("{\n  \"query\": \"COMEX précédent\",\n  \"channelSlug\": \"dm-robot-roquette-mrossard\"\n}");
+                })(),
+            );
+        $llmService
+            ->expects($this->once())
+            ->method('generateTextStream')
+            ->willReturn(
+                (static function () {
+                    yield 'Voici le résumé du COMEX précédent.';
+                })(),
+            );
+
+        $runner = new ToolRunner($llmService, new ToolRegistry([$tool]));
+        $executed = [];
+        $chunks = iterator_to_array($runner->streamResponse(
+            prompt: 'et dans le comex précédent?',
+            systemPrompt: 'sys',
+            tools: [],
+            authorUserId: 42,
+            workspaceId: 7,
+            onToolExecuted: static function (string $name, string $result) use (&$executed): void {
+                $executed[] = [$name, $result];
+            },
+        ));
+
+        static::assertSame(['Voici le résumé du COMEX précédent.'], $chunks);
+        static::assertSame('search_messages', $executed[0][0]);
+    }
 }
+

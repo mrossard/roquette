@@ -102,7 +102,9 @@ class MessageEditor
             $this->messageBus?->dispatch(new ModerateMessageMessage($message->getId()));
         }
 
-        if ($message->getContent() !== null && trim($message->getContent()) !== '' && !$message->isPoll()) {
+        $hasContent = $message->getContent() !== null && trim($message->getContent()) !== '';
+        $hasFile = $message->getFilePath() !== null;
+        if (!$message->isPoll() && ($hasContent || $hasFile)) {
             $this->messageBus?->dispatch(new IndexMessageMessage($message->getId()));
         }
     }
