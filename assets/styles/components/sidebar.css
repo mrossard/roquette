@@ -282,12 +282,12 @@
 
     @keyframes pulse-mention-badge {
         0% {
-            box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+            opacity: 0.85;
             transform: scale(1);
         }
         100% {
-            box-shadow: 0 0 16px rgba(168, 85, 247, 0.9), 0 0 0 2px rgba(168, 85, 247, 0.2);
-            transform: scale(1.05);
+            opacity: 1;
+            transform: scale(1.06);
         }
     }
 
@@ -719,10 +719,12 @@
 
     @keyframes filter-pulse-glow {
         0% {
-            box-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
+            opacity: 0.82;
+            transform: scale(0.98);
         }
         100% {
-            box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+            opacity: 1;
+            transform: scale(1);
         }
     }
 

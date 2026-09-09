@@ -111,19 +111,18 @@
         backdrop-filter: blur(8px);
         border: 3px dashed var(--accent-cyan);
         border-radius: 1.25rem;
-        display: flex;
+        display: none;
         align-items: center;
         justify-content: center;
         z-index: 999;
         opacity: 0;
-        visibility: hidden;
         pointer-events: none;
-        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .drag-drop-overlay.active {
+        display: flex;
         opacity: 1;
-        visibility: visible;
         pointer-events: auto;
     }
 
@@ -144,15 +143,22 @@
         height: 80px;
         border-radius: 50%;
         background: linear-gradient(135deg, var(--accent-cyan-glow), var(--accent-purple-glow));
-        border: 1px solid rgba(0, 229, 255, 0.3);
+        border: 1px solid rgba(0, 229, 255, 0.4);
+        box-shadow: 0 0 25px rgba(0, 229, 255, 0.25), 0 0 35px rgba(168, 85, 247, 0.15);
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .drag-drop-overlay.active .drag-drop-icon-wrapper {
         animation: dragDropPulseGlow 2s infinite ease-in-out;
     }
 
     .drag-drop-icon {
         font-size: 2.5rem;
+    }
+
+    .drag-drop-overlay.active .drag-drop-icon {
         animation: dragDropFloatIcon 3s infinite ease-in-out;
     }
 
@@ -175,12 +181,12 @@
 
     @keyframes dragDropPulseGlow {
         0%, 100% {
-            box-shadow: 0 0 10px rgba(0, 229, 255, 0.1), 0 0 20px rgba(168, 85, 247, 0.05);
-            border-color: rgba(0, 229, 255, 0.2);
+            opacity: 0.75;
+            transform: scale(0.96);
         }
         50% {
-            box-shadow: 0 0 25px rgba(0, 229, 255, 0.3), 0 0 40px rgba(168, 85, 247, 0.2);
-            border-color: rgba(0, 229, 255, 0.6);
+            opacity: 1;
+            transform: scale(1.04);
         }
     }
 

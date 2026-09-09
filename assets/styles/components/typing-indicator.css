@@ -8,12 +8,15 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        contain: layout style;
+        isolation: isolate;
     }
 
     .typing-dots-container {
         display: inline-flex;
         align-items: center;
         gap: 3px;
+        contain: paint;
     }
 
     .typing-dot {
@@ -23,6 +26,9 @@
         border-radius: 50%;
         opacity: 0.6;
         animation: typing-bounce 1.4s infinite ease-in-out both;
+        will-change: transform, opacity;
+        transform: translateZ(0);
+        backface-visibility: hidden;
     }
 
     .typing-dot:nth-child(1) { animation-delay: -0.32s; }
@@ -30,8 +36,8 @@
     .typing-dot:nth-child(3) { animation-delay: 0s; }
 
     @keyframes typing-bounce {
-        0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-        40% { transform: scale(1.1); opacity: 1; }
+        0%, 80%, 100% { transform: scale(0.6) translateZ(0); opacity: 0.4; }
+        40% { transform: scale(1.1) translateZ(0); opacity: 1; }
     }
 
     .typing-text {
