@@ -6,6 +6,26 @@
         min-height: 0;
         padding: 1.5rem;
         overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+
+    .subchannels-sidebar-panel::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .subchannels-sidebar-panel::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .subchannels-sidebar-panel::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: 999px;
+    }
+
+    .subchannels-sidebar-panel::-webkit-scrollbar-thumb:hover {
+        background: var(--scrollbar-thumb-hover);
     }
 
     .subchannels-sidebar-header {
@@ -115,6 +135,20 @@
     @media (min-width: 1200px) {
         .dashboard-grid.show-subchannels {
             grid-template-columns: 280px 1fr 300px;
+        }
+
+        .app-container.has-sidebar:has(.show-subchannels),
+        .app-container.has-sidebar.show-subchannels,
+        .app-container:has(.sidebar-panel):has(.show-subchannels) {
+            grid-template-columns: 280px 1fr 300px;
+        }
+
+        .app-container.has-sidebar .subchannels-sidebar-panel,
+        .app-container:has(.sidebar-panel) .subchannels-sidebar-panel {
+            grid-column: 3;
+            grid-row: 2;
+            height: 100%;
+            min-height: 0;
         }
     }
 

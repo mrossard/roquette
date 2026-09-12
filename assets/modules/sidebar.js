@@ -324,15 +324,18 @@ export function initSubChannelsSidebar() {
     const panel = document.getElementById('subchannels-sidebar-panel');
     const grid = document.getElementById('main-content');
     if (panel && grid) {
+        const container = grid.closest('.app-container');
         const isOpen = localStorage.getItem('subchannels_sidebar_open') === 'true';
         if (isOpen) {
             panel.style.display = 'flex';
             panel.classList.add('open');
             grid.classList.add('show-subchannels');
+            if (container) container.classList.add('show-subchannels');
         } else {
             panel.style.display = 'none';
             panel.classList.remove('open');
             grid.classList.remove('show-subchannels');
+            if (container) container.classList.remove('show-subchannels');
         }
     }
 }
@@ -344,10 +347,12 @@ export function toggleSubChannelsSidebar() {
     const panel = document.getElementById('subchannels-sidebar-panel');
     const grid = document.getElementById('main-content');
     if (panel && grid) {
+        const container = grid.closest('.app-container');
         if (panel.style.display === 'none' || panel.style.display === '') {
             panel.style.display = 'flex';
             panel.classList.add('open');
             grid.classList.add('show-subchannels');
+            if (container) container.classList.add('show-subchannels');
             localStorage.setItem('subchannels_sidebar_open', 'true');
 
             // Close files sidebar if open
@@ -356,12 +361,14 @@ export function toggleSubChannelsSidebar() {
                 filesPanel.style.display = 'none';
                 filesPanel.classList.remove('open');
                 grid.classList.remove('show-files');
+                if (container) container.classList.remove('show-files');
                 localStorage.setItem('files_sidebar_open', 'false');
             }
         } else {
             panel.style.display = 'none';
             panel.classList.remove('open');
             grid.classList.remove('show-subchannels');
+            if (container) container.classList.remove('show-subchannels');
             localStorage.setItem('subchannels_sidebar_open', 'false');
         }
     }
@@ -374,11 +381,13 @@ export function initFilesSidebar() {
     const panel = document.getElementById('files-sidebar-panel');
     const grid = document.getElementById('main-content');
     if (panel && grid) {
+        const container = grid.closest('.app-container');
         const isOpen = localStorage.getItem('files_sidebar_open') === 'true';
         if (isOpen) {
             panel.style.display = 'flex';
             panel.classList.add('open');
             grid.classList.add('show-files');
+            if (container) container.classList.add('show-files');
             const contentContainer = document.getElementById('files-sidebar-list-container');
             if (contentContainer && !contentContainer.querySelector('[data-loaded="true"]')) {
                 if (window.htmx) window.htmx.trigger(contentContainer, 'load-files');
@@ -387,6 +396,7 @@ export function initFilesSidebar() {
             panel.style.display = 'none';
             panel.classList.remove('open');
             grid.classList.remove('show-files');
+            if (container) container.classList.remove('show-files');
         }
     }
 }
@@ -399,6 +409,7 @@ export function toggleFilesSidebar() {
     const subchannelsPanel = document.getElementById('subchannels-sidebar-panel');
     const grid = document.getElementById('main-content');
     if (filesPanel && grid) {
+        const container = grid.closest('.app-container');
         const isOpening = filesPanel.style.display === 'none' || filesPanel.style.display === '';
 
         // Close other sidebar
@@ -406,6 +417,7 @@ export function toggleFilesSidebar() {
             subchannelsPanel.style.display = 'none';
             subchannelsPanel.classList.remove('open');
             grid.classList.remove('show-subchannels');
+            if (container) container.classList.remove('show-subchannels');
             localStorage.setItem('subchannels_sidebar_open', 'false');
         }
 
@@ -413,6 +425,7 @@ export function toggleFilesSidebar() {
             filesPanel.style.display = 'flex';
             filesPanel.classList.add('open');
             grid.classList.add('show-files');
+            if (container) container.classList.add('show-files');
             localStorage.setItem('files_sidebar_open', 'true');
             const contentContainer = document.getElementById('files-sidebar-list-container');
             if (contentContainer && !contentContainer.querySelector('[data-loaded="true"]')) {
@@ -422,6 +435,7 @@ export function toggleFilesSidebar() {
             filesPanel.style.display = 'none';
             filesPanel.classList.remove('open');
             grid.classList.remove('show-files');
+            if (container) container.classList.remove('show-files');
             localStorage.setItem('files_sidebar_open', 'false');
         }
     }

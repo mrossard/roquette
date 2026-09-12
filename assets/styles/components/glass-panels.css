@@ -58,5 +58,25 @@
         min-height: 0;
         gap: 0.75rem;
         overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+
+    .card-body::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .card-body::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .card-body::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: 999px;
+    }
+
+    .card-body::-webkit-scrollbar-thumb:hover {
+        background: var(--scrollbar-thumb-hover);
     }
 }

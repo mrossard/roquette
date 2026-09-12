@@ -16,7 +16,7 @@
             {% set activeSubChannels = activeSubChannels|merge([sub]) %}
         {% endif %}
     {% endfor %}
-    <div class="app-container" hx-boost="true">
+    <div class="app-container has-sidebar" hx-boost="true">
     {% include 'dashboard/_header.html.twig' with {
         'channels': channels,
         'activeChannel': activeChannel

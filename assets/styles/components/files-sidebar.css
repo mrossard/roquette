@@ -6,6 +6,26 @@
         min-height: 0;
         padding: 1.5rem;
         overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+
+    .files-sidebar-panel::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .files-sidebar-panel::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .files-sidebar-panel::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: 999px;
+    }
+
+    .files-sidebar-panel::-webkit-scrollbar-thumb:hover {
+        background: var(--scrollbar-thumb-hover);
     }
 
     .files-sidebar-header {
@@ -83,6 +103,26 @@
         gap: 0.75rem;
         flex-grow: 1;
         overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+
+    .files-sidebar-list::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .files-sidebar-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .files-sidebar-list::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: 999px;
+    }
+
+    .files-sidebar-list::-webkit-scrollbar-thumb:hover {
+        background: var(--scrollbar-thumb-hover);
     }
 
     .files-sidebar-item {
@@ -228,6 +268,20 @@
     @media (min-width: 1200px) {
         .dashboard-grid.show-files {
             grid-template-columns: 280px 1fr 300px;
+        }
+
+        .app-container.has-sidebar:has(.show-files),
+        .app-container.has-sidebar.show-files,
+        .app-container:has(.sidebar-panel):has(.show-files) {
+            grid-template-columns: 280px 1fr 300px;
+        }
+
+        .app-container.has-sidebar .files-sidebar-panel,
+        .app-container:has(.sidebar-panel) .files-sidebar-panel {
+            grid-column: 3;
+            grid-row: 2;
+            height: 100%;
+            min-height: 0;
         }
     }
 
