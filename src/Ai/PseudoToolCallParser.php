@@ -50,7 +50,9 @@ final readonly class PseudoToolCallParser
             return [$fn['name'] ?? null, $fn['arguments'] ?? $fn['parameters'] ?? []];
         }
 
-        $nameCandidate = $data['tool'] ?? $data['name'] ?? $data['function'] ?? $data['tool_name'] ?? $data['action'] ?? $data['call'] ?? null;
+        $nameCandidate =
+            $data['tool'] ?? $data['name'] ?? $data['function'] ?? $data['tool_name'] ?? $data['action'] ?? $data['call']
+                ?? null;
         if (is_string($nameCandidate) && $this->toolRegistry->has($nameCandidate)) {
             return [$nameCandidate, $this->extractNamedCandidateArgs($data, $nameCandidate)];
         }
@@ -78,8 +80,16 @@ final readonly class PseudoToolCallParser
     private function extractNamedCandidateArgs(array $data, string $nameCandidate): mixed
     {
         $args = $data['arguments'] ?? $data['parameters'] ?? $data['params'] ?? $data['args'] ?? $data['action'] ?? [];
-        if ((!is_array($args) && !is_string($args)) || $args === [] || $args === $nameCandidate) {
-            return array_diff_key($data, array_flip(['tool', 'name', 'function', 'tool_name', 'action', 'call', 'type']));
+        if (!is_array($args) && !is_string($args) || $args === [] || $args === $nameCandidate) {
+            return array_diff_key($data, array_flip([
+                'tool',
+                'name',
+                'function',
+                'tool_name',
+                'action',
+                'call',
+                'type',
+            ]));
         }
 
         return $args;
@@ -96,10 +106,17 @@ final readonly class PseudoToolCallParser
         if (array_key_exists('reminderText', $data) || array_key_exists('delayMinutes', $data)) {
             return 'schedule_reminder';
         }
-        if (array_key_exists('pollQuestion', $data) || (array_key_exists('question', $data) && array_key_exists('options', $data))) {
+        if (
+            array_key_exists('pollQuestion', $data)
+            || array_key_exists('question', $data) && array_key_exists('options', $data)
+        ) {
             return 'create_poll';
         }
-        if (array_key_exists('channelSlug', $data) && !array_key_exists('query', $data) && !array_key_exists('reminderText', $data)) {
+        if (
+            array_key_exists('channelSlug', $data)
+            && !array_key_exists('query', $data)
+            && !array_key_exists('reminderText', $data)
+        ) {
             return 'summarize_channel';
         }
 

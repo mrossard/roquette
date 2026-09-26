@@ -34,7 +34,7 @@ class MercurePublisherTest extends TestCase
     #[Test]
     public function getPublicChannelsTemplateTopicReturnsCorrectTopic(): void
     {
-        $this->assertSame('http://test-mercure/public/{slug}', $this->publisher->getPublicChannelsTemplateTopic());
+        $this->assertSame('http://test-mercure/public/:slug', $this->publisher->getPublicChannelsTemplateTopic());
     }
 
     #[Test]

@@ -3,7 +3,13 @@ mercure:
         default:
             url: '%env(default::MERCURE_URL)%'
             public_url: '%env(default::MERCURE_PUBLIC_URL)%'
+            protocol_version: '1.0'
+            cookie_name: '%env(default::MERCURE_COOKIE_NAME)%'
             jwt:
                 secret: '%env(MERCURE_JWT_SECRET)%'
                 publish: '*'
+                claims:
+                    iss: '%env(default::MERCURE_PUBLIC_URL)%'
+                    sub: 'roquette'
+                    client_id: 'roquette'
 

@@ -32,7 +32,7 @@ class MercurePublisher
 
     public function getPublicChannelsTemplateTopic(): string
     {
-        return $this->mercureTopicPrefix . '/public/{slug}';
+        return $this->mercureTopicPrefix . '/public/:slug';
     }
 
     public function isChannelPrivate(Channel $channel): bool

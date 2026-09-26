@@ -12,12 +12,12 @@ class HubStub implements RemoteHubInterface
 {
     public function getUrl(): string
     {
-        return 'http://localhost/.well-known/mercure';
+        return 'https://localhost/.well-known/mercure';
     }
 
     public function getPublicUrl(): string
     {
-        return 'http://localhost/.well-known/mercure';
+        return 'https://localhost/.well-known/mercure';
     }
 
     public function getFactory(): ?TokenFactoryInterface
@@ -28,5 +28,15 @@ class HubStub implements RemoteHubInterface
     public function publish(Update $update): string
     {
         return 'mocked-update-id';
+    }
+
+    public function getProtocolVersion(): \Symfony\Component\Mercure\ProtocolVersion
+    {
+        return \Symfony\Component\Mercure\ProtocolVersion::V1;
+    }
+
+    public function getCookieName(): string
+    {
+        return '__Secure-mercure_access_token';
     }
 }

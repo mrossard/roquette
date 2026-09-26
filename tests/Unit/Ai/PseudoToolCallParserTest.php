@@ -14,19 +14,57 @@ final class PseudoToolCallParserTest extends TestCase
     private function createRegistry(): ToolRegistry
     {
         $searchTool = new class implements AiToolInterface {
-            public function getName(): string { return 'search_messages'; }
-            public function getDescription(): string { return ''; }
-            public function getParametersSchema(): array { return []; }
-            public function requiresConfirmation(): bool { return false; }
-            public function __invoke(string $query, ?string $channel = null): string { return ''; }
+            public function getName(): string
+            {
+                return 'search_messages';
+            }
+
+            public function getDescription(): string
+            {
+                return '';
+            }
+
+            public function getParametersSchema(): array
+            {
+                return [];
+            }
+
+            public function requiresConfirmation(): bool
+            {
+                return false;
+            }
+
+            public function __invoke(string $query, ?string $channel = null): string
+            {
+                return '';
+            }
         };
 
         $reminderTool = new class implements AiToolInterface {
-            public function getName(): string { return 'schedule_reminder'; }
-            public function getDescription(): string { return ''; }
-            public function getParametersSchema(): array { return []; }
-            public function requiresConfirmation(): bool { return true; }
-            public function __invoke(string $reminderText, int $delayMinutes): string { return ''; }
+            public function getName(): string
+            {
+                return 'schedule_reminder';
+            }
+
+            public function getDescription(): string
+            {
+                return '';
+            }
+
+            public function getParametersSchema(): array
+            {
+                return [];
+            }
+
+            public function requiresConfirmation(): bool
+            {
+                return true;
+            }
+
+            public function __invoke(string $reminderText, int $delayMinutes): string
+            {
+                return '';
+            }
         };
 
         return new ToolRegistry([$searchTool, $reminderTool]);
@@ -35,7 +73,9 @@ final class PseudoToolCallParserTest extends TestCase
     public function testParsesDirectParameterDictionary(): void
     {
         $parser = new PseudoToolCallParser($this->createRegistry());
-        $call = $parser->parse("{\n  \"query\": \"COMEX précédent\",\n  \"channelSlug\": \"dm-robot-roquette-mrossard\"\n}");
+        $call = $parser->parse(
+            "{\n  \"query\": \"COMEX précédent\",\n  \"channelSlug\": \"dm-robot-roquette-mrossard\"\n}",
+        );
 
         static::assertNotNull($call);
         static::assertSame('search_messages', $call->getName());

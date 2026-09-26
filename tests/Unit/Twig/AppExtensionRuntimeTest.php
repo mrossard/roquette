@@ -92,10 +92,10 @@ class AppExtensionRuntimeTest extends TestCase
 
         $topics = $this->runtime->getUserMercureTopics($adminUser);
 
-        static::assertContains('roquette/users/admin', $topics);
-        static::assertContains('roquette/users/status', $topics);
-        static::assertContains('roquette/public/{slug}', $topics);
-        static::assertContains('roquette/admin/moderation', $topics);
+        static::assertContains('roquette/users/admin', $topics['exact']);
+        static::assertContains('roquette/users/status', $topics['exact']);
+        static::assertContains('roquette/admin/moderation', $topics['exact']);
+        static::assertContains('roquette/public/:slug', $topics['urlpattern']);
     }
 
     #[Test]
@@ -107,10 +107,10 @@ class AppExtensionRuntimeTest extends TestCase
 
         $topics = $this->runtime->getUserMercureTopics($user);
 
-        static::assertContains('roquette/users/regular', $topics);
-        static::assertContains('roquette/users/status', $topics);
-        static::assertContains('roquette/public/{slug}', $topics);
-        static::assertNotContains('roquette/admin/moderation', $topics);
+        static::assertContains('roquette/users/regular', $topics['exact']);
+        static::assertContains('roquette/users/status', $topics['exact']);
+        static::assertNotContains('roquette/admin/moderation', $topics['exact']);
+        static::assertContains('roquette/public/:slug', $topics['urlpattern']);
     }
 
     #[Test]

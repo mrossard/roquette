@@ -12,6 +12,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-roquette}?serverVersion=16&charset=utf8}
       MERCURE_URL: ${MERCURE_URL:-http://127.0.0.1/.well-known/mercure}
       MERCURE_PUBLIC_URL: ${MERCURE_PUBLIC_URL:-https://localhost/.well-known/mercure}
+      MERCURE_COOKIE_NAME: ${MERCURE_COOKIE_NAME:-__Secure-mercure_access_token}
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
     depends_on:

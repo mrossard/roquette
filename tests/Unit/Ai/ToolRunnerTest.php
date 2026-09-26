@@ -197,11 +197,28 @@ class ToolRunnerTest extends TestCase
     {
         $llmService = $this->createMock(LlmService::class);
         $tool = new class implements \App\Ai\Tool\AiToolInterface {
-            public function getName(): string { return 'search_messages'; }
-            public function getDescription(): string { return 'Search'; }
-            public function getParametersSchema(): array { return []; }
-            public function requiresConfirmation(): bool { return false; }
-            public function __invoke(string $query, ?string $channel = null): string {
+            public function getName(): string
+            {
+                return 'search_messages';
+            }
+
+            public function getDescription(): string
+            {
+                return 'Search';
+            }
+
+            public function getParametersSchema(): array
+            {
+                return [];
+            }
+
+            public function requiresConfirmation(): bool
+            {
+                return false;
+            }
+
+            public function __invoke(string $query, ?string $channel = null): string
+            {
                 return 'Found previous COMEX document';
             }
         };
@@ -211,7 +228,9 @@ class ToolRunnerTest extends TestCase
             ->method('generateStreamWithTools')
             ->willReturn(
                 (static function () {
-                    yield new TextDelta("{\n  \"query\": \"COMEX précédent\",\n  \"channelSlug\": \"dm-robot-roquette-mrossard\"\n}");
+                    yield new TextDelta(
+                        "{\n  \"query\": \"COMEX précédent\",\n  \"channelSlug\": \"dm-robot-roquette-mrossard\"\n}",
+                    );
                 })(),
             );
         $llmService
@@ -240,4 +259,3 @@ class ToolRunnerTest extends TestCase
         static::assertSame('search_messages', $executed[0][0]);
     }
 }
-

@@ -8,7 +8,7 @@ use Symfony\Component\Mercure\Jwt\TokenFactoryInterface;
 
 class TokenFactoryStub implements TokenFactoryInterface
 {
-    public function create(?array $subscribe = [], ?array $publish = [], array $additionalClaims = []): string
+    public function create(array $grants = [], array $additionalClaims = []): string
     {
         return 'mocked-jwt-token';
     }

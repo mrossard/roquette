@@ -247,16 +247,10 @@ class MessagePublishServiceTest extends TestCase
                 return new Envelope(new \stdClass());
             });
 
-        $result = $this->publishService->publish(
-            channel: $channel,
-            currentUser: $user,
-            messageText: '',
-            file: $file,
-        );
+        $result = $this->publishService->publish(channel: $channel, currentUser: $user, messageText: '', file: $file);
 
         $this->assertTrue($result->success);
         $this->assertContains(ScanFileMessage::class, $dispatchedMessages);
         $this->assertContains(IndexMessageMessage::class, $dispatchedMessages);
     }
 }
-

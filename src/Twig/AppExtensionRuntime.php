@@ -76,19 +76,26 @@ class AppExtensionRuntime implements RuntimeExtensionInterface
         return $this->subchannelCache[$messageId] ?? null;
     }
 
+    /**
+     * @return array{exact: string[], urlpattern: string[]}
+     */
     public function getUserMercureTopics(User $user): array
     {
-        $topics = [
+        $exactTopics = [
             $this->mercurePublisher->getUserTopic($user),
             $this->mercurePublisher->getStatusTopic(),
-            $this->mercurePublisher->getPublicChannelsTemplateTopic(),
         ];
 
         if (in_array('ROLE_ADMIN', $user->getRoles(), true)) {
-            $topics[] = $this->mercurePublisher->getAdminModerationTopic();
+            $exactTopics[] = $this->mercurePublisher->getAdminModerationTopic();
         }
 
-        return $topics;
+        return [
+            'exact' => $exactTopics,
+            'urlpattern' => [
+                $this->mercurePublisher->getPublicChannelsTemplateTopic(),
+            ],
+        ];
     }
 
     public function getUserChannelNotificationsMap(User $user): array

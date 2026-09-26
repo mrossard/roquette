@@ -169,9 +169,10 @@ final readonly class LlmQueryHandler
         $targetChannelSlug = $classification['channelSlug'] ?? null;
 
         if ($intent === AssistantIntent::Summarize) {
-            $targetChannel = ($targetChannelSlug !== null && $targetChannelSlug !== '')
-                ? $this->channelResolver->resolveFromList($targetChannelSlug, $channels)
-                : null;
+            $targetChannel =
+                $targetChannelSlug !== null && $targetChannelSlug !== ''
+                    ? $this->channelResolver->resolveFromList($targetChannelSlug, $channels)
+                    : null;
 
             if ($targetChannel === null) {
                 $intent = AssistantIntent::Help;
@@ -210,9 +211,10 @@ final readonly class LlmQueryHandler
         $channelName = null;
         $batchCount = 0;
 
-        $targetChannel = ($intent === AssistantIntent::Summarize && $targetChannelSlug !== null && $targetChannelSlug !== '')
-            ? $this->channelResolver->resolveFromList($targetChannelSlug, $channels)
-            : null;
+        $targetChannel =
+            $intent === AssistantIntent::Summarize && $targetChannelSlug !== null && $targetChannelSlug !== ''
+                ? $this->channelResolver->resolveFromList($targetChannelSlug, $channels)
+                : null;
 
         if ($intent === AssistantIntent::Summarize && $targetChannel === null) {
             $intent = AssistantIntent::Help;

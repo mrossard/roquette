@@ -3,6 +3,10 @@
 
     metrics
 
+    servers {
+        trusted_proxies static private_ranges
+    }
+
     order cache before rewrite
 
     frankenphp {
@@ -68,10 +72,15 @@
             path {$MERCURE_TRANSPORT_URL:/data/mercure.db}
             cleanup_frequency 0.2
         }
-        # Publisher JWT key
-        publisher_jwt {$MERCURE_JWT_SECRET}
-        # Subscriber JWT key
-        subscriber_jwt {$MERCURE_JWT_SECRET}
+        resource_identifier {$MERCURE_PUBLIC_URL:https://localhost/.well-known/mercure}
+        issuer {$MERCURE_PUBLIC_URL:https://localhost/.well-known/mercure} {
+            publisher {
+                jwt {$MERCURE_JWT_SECRET}
+            }
+            subscriber {
+                jwt {$MERCURE_JWT_SECRET}
+            }
+        }
 
         # Keep SSE alive through proxies
         heartbeat 30s

@@ -255,4 +255,3 @@ class MessageEditorTest extends TestCase
         $this->assertSame('<div>Fichier seul</div>', $result->renderedHtml);
     }
 }
-
