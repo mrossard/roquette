@@ -247,6 +247,42 @@ class ChannelControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function testEditChannelToUnlimitedRetention(): void
+    {
+        $this->client->request('POST', sprintf('/channels/%s/edit', $this->channel->getSlug()), [
+            'name' => 'Unlimited Edit Channel Name',
+            'description' => 'Unlimited retention',
+            'messageRetentionMonths' => '0',
+        ]);
+
+        $this->assertResponseRedirects('/channels/unlimited-edit-channel-name');
+
+        $this->entityManager->clear();
+        $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
+        static::assertNull($channel->getMessageRetentionMonths());
+    }
+
+    #[Test]
+    public function testCreateChannelWithUnlimitedRetention(): void
+    {
+        $this->client->request('POST', '/channels/create', [
+            'name' => 'Unlimited Create Channel',
+            'description' => 'Channel with unlimited retention',
+            'messageRetentionMonths' => '0',
+        ]);
+
+        $this->assertResponseRedirects('/channels/unlimited-create-channel');
+
+        $this->entityManager->clear();
+        $channel = $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => 'unlimited-create-channel']);
+        static::assertNotNull($channel);
+        static::assertNull($channel->getMessageRetentionMonths());
+
+        $this->entityManager->remove($channel);
+        $this->entityManager->flush();
+    }
+
+    #[Test]
     public function testEditChannelAccessDeniedForNonCreator(): void
     {
         $container = $this->client->getContainer();

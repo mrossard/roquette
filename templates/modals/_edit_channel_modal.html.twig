@@ -27,7 +27,8 @@
                     </option>
                     <option value="6" {% if activeChannel.messageRetentionMonths == 6 %}selected{% endif %}>{{ '6 mois'|trans }}
                     </option>
-                    <option value="12" {% if activeChannel.messageRetentionMonths == 12 %}selected{% endif %}>{{ '12 mois'|trans }}
+                    <option value="12" {% if activeChannel.messageRetentionMonths == 12 %}selected{% endif %}>{{ '12 mois'|trans }}</option>
+                    <option value="0" {% if activeChannel.messageRetentionMonths is null or activeChannel.messageRetentionMonths == 0 %}selected{% endif %}>{{ 'Illimité'|trans }}</option>
                 </select>
             </div>
 

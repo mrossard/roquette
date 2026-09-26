@@ -354,6 +354,7 @@ Description: Description
 '3 mois': '3 mois'
 '6 mois (par défaut)': '6 mois (par défaut)'
 '12 mois': '12 mois'
+'Illimité': 'Illimité'
 'Type de canal': 'Type de canal'
 'Canal de messagerie classique avec historique': 'Canal de messagerie classique avec historique'
 'Todo list': 'Todo list'

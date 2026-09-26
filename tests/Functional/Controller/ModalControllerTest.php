@@ -158,4 +158,32 @@ class ModalControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertSelectorExists('#edit-channel-modal');
     }
+
+    #[Test]
+    public function testEditModalSelectsUnlimitedRetentionWhenNull(): void
+    {
+        $channel = $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => 'modal-public-channel']);
+        $channel->setMessageRetentionMonths(null);
+        $this->entityManager->flush();
+
+        $this->client->loginUser($this->member);
+        $crawler = $this->client->request('GET', '/channels/modal-public-channel/edit-modal');
+
+        $this->assertResponseIsSuccessful();
+        $selectedOption = $crawler->filter('#edit-modal-retention option[selected]');
+        static::assertSame('0', $selectedOption->attr('value'));
+        static::assertSame('Illimité', trim($selectedOption->text()));
+    }
+
+    #[Test]
+    public function testCreateModalContainsUnlimitedOption(): void
+    {
+        $this->client->loginUser($this->member);
+        $crawler = $this->client->request('GET', '/channels/create-modal');
+
+        $this->assertResponseIsSuccessful();
+        $option = $crawler->filter('#modal-retention option[value="0"]');
+        static::assertCount(1, $option);
+        static::assertSame('Illimité', trim($option->text()));
+    }
 }
