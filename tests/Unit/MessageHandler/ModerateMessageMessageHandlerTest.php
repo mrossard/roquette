@@ -140,4 +140,69 @@ final class ModerateMessageMessageHandlerTest extends TestCase
 
         static::assertNull($messageEntity->getModerationStatus());
     }
+
+    public function testInvokeBroadcastsUpdatesForRepliesWhenModerated(): void
+    {
+        $messageRepository = $this->createMock(MessageRepository::class);
+        $moderationService = $this->createMock(ContentModerationService::class);
+        $em = $this->createMock(EntityManagerInterface::class);
+        $messageBroadcaster = $this->createMock(MessageBroadcaster::class);
+
+        $channel = new Channel();
+        $channel->setSlug('general');
+
+        $messageEntity = new Message();
+        $messageEntity->setContent('Message toxique avec insultes');
+        $messageEntity->setChannel($channel);
+
+        $reply1 = new Message();
+        $reply1->setContent('Réponse 1');
+        $reply1->setChannel($channel);
+        $reply1->setParentMessage($messageEntity);
+        $messageEntity->getReplies()->add($reply1);
+
+        $reply2 = new Message();
+        $reply2->setContent('Réponse 2');
+        $reply2->setChannel($channel);
+        $reply2->setParentMessage($messageEntity);
+        $messageEntity->getReplies()->add($reply2);
+
+        $messageRepository->expects($this->once())->method('find')->with(50)->willReturn($messageEntity);
+
+        $moderationResult = ModerationResult::flagged('Contenu toxique');
+
+        $moderationService
+            ->expects($this->once())
+            ->method('moderate')
+            ->with('Message toxique avec insultes', true)
+            ->willReturn($moderationResult);
+
+        $em->expects($this->once())->method('flush');
+
+        $updatedMessages = [];
+        $messageBroadcaster
+            ->expects($this->exactly(3))
+            ->method('broadcastMessageUpdate')
+            ->willReturnCallback(static function (Message $msg) use (&$updatedMessages): void {
+                $updatedMessages[] = $msg;
+            });
+
+        $messageBroadcaster->expects($this->once())->method('publishCurrentModerationCount');
+
+        $handler = new ModerateMessageMessageHandler(
+            $messageRepository,
+            $moderationService,
+            $em,
+            $messageBroadcaster,
+            new NullLogger(),
+        );
+
+        $handler(new ModerateMessageMessage(50));
+
+        static::assertSame('flagged', $messageEntity->getModerationStatus());
+        static::assertCount(3, $updatedMessages);
+        static::assertSame($messageEntity, $updatedMessages[0]);
+        static::assertSame($reply1, $updatedMessages[1]);
+        static::assertSame($reply2, $updatedMessages[2]);
+    }
 }

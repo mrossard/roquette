@@ -78,6 +78,9 @@ class ModerateMessageMessageHandler
 
             $this->em->flush();
             $this->messageBroadcaster->broadcastMessageUpdate($dbMessage);
+            foreach ($dbMessage->getReplies() as $reply) {
+                $this->messageBroadcaster->broadcastMessageUpdate($reply);
+            }
             $this->messageBroadcaster->publishCurrentModerationCount();
         } catch (\Exception $e) {
             $this->logger->error(sprintf('Moderation scan failed for message %d: %s', $messageId, $e->getMessage()));

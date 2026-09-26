@@ -342,4 +342,47 @@ class AdminControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertSelectorTextContains('h2', 'Espaces de travail');
     }
+
+    #[Test]
+    public function testModerationDisplaysLongContentFully(): void
+    {
+        $this->client->loginUser($this->adminUser);
+
+        $channel = new Channel();
+        $channel->setName('Mod Long Channel');
+        $channel->setSlug('mod-long-' . uniqid());
+
+        $longContent =
+            "Ligne 1 : un message modéré très long avec beaucoup de détails.\n"
+            . 'Ligne 2 : '
+            . str_repeat('texte de test long ', 20)
+            . "\n"
+            . 'Ligne 3 : conclusion du message modéré pour vérifier la lisibilité intégrale.';
+
+        $message = new \App\Entity\Message();
+        $message->setAuthor($this->normalUser);
+        $message->setChannel($channel);
+        $message->setContent($longContent);
+        $message->setModerationStatus('flagged');
+        $message->setModerationReason('Contenu toxique long');
+
+        $this->entityManager->persist($channel);
+        $this->entityManager->persist($message);
+        $this->entityManager->flush();
+
+        $this->client->request('GET', '/admin/moderation');
+        $this->assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent() ?? '';
+
+        static::assertStringContainsString('moderation-content-box', $content);
+        static::assertStringContainsString('Ligne 1 : un message modéré très long', $content);
+        static::assertStringContainsString(
+            'Ligne 3 : conclusion du message modéré pour vérifier la lisibilité intégrale.',
+            $content,
+        );
+
+        $this->entityManager->remove($message);
+        $this->entityManager->remove($channel);
+        $this->entityManager->flush();
+    }
 }

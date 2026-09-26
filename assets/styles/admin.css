@@ -532,6 +532,16 @@
     white-space: nowrap;
 }
 
+.admin-layout .moderation-table .detail-cell {
+    max-width: 500px;
+    min-width: 260px;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
 /* JSON fallback */
 .admin-layout .json-fallback {
     font-family: monospace;

@@ -8,6 +8,7 @@ use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Enum\AuditAction;
+use App\Enum\ModerationStatus;
 use App\Repository\ChannelRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -96,7 +97,10 @@ class SubChannelManager
             throw new AccessDeniedHttpException($this->translator->trans('Non autorisé.'));
         }
 
-        $content = $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Discussion';
+        $isFlagged = $parentMessage->getModerationStatus() === ModerationStatus::FLAGGED->value;
+        $content = $isFlagged
+            ? 'Discussion'
+            : $parentMessage->getContent() ?? $parentMessage->getFileName() ?? 'Discussion';
         $name = mb_substr(trim((string) preg_replace('/\s+/', ' ', $content)), 0, 40);
 
         $slug = $this->slugGenerator->generate(

@@ -71,6 +71,9 @@ final class AdminModerationController extends AbstractController
         ]);
 
         $messageBroadcaster->broadcastMessageUpdate($message);
+        foreach ($message->getReplies() as $reply) {
+            $messageBroadcaster->broadcastMessageUpdate($reply);
+        }
         $messageBroadcaster->publishCurrentModerationCount();
 
         $this->addFlash('success', $this->translator->trans('Le message #%id% a été approuvé et rétabli.', [

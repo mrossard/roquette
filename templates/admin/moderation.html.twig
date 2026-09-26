@@ -60,6 +60,37 @@
             box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
             transform: translateY(-1px);
         }
+        .admin-layout .moderation-table .detail-cell,
+        .moderation-table .detail-cell {
+            max-width: 500px;
+            min-width: 260px;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .moderation-content-box {
+            margin-top: 0.35rem;
+            padding: 0.5rem 0.75rem;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            font-family: var(--font-monospace, monospace);
+            font-size: 0.825rem;
+            color: #e2e8f0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .moderation-content-box code {
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            font-family: inherit;
+        }
         .original-text-expander {
             margin-top: 0.4rem;
             font-size: 0.8rem;
@@ -80,10 +111,20 @@
             background: rgba(0, 0, 0, 0.35);
             border-left: 3px solid var(--accent-cyan);
             border-radius: 4px;
-            font-family: var(--font-monospace);
+            font-family: var(--font-monospace, monospace);
             font-size: 0.825rem;
             color: #e2e8f0;
-            word-break: break-all;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .original-text-box code {
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            font-family: inherit;
         }
     </style>
 {% endblock %}
@@ -154,8 +195,11 @@
                                             <div class="text-muted-block" style="margin-top: 0.25rem;" title="{{ msg.moderationReason }}">{{ msg.moderationReason|u.truncate(45, '…') }}</div>
                                         </td>
                                         <td class="detail-cell">
-                                            <div><strong>{{ 'Actuel'|trans }} :</strong> <code>{{ msg.content }}</code></div>
-                                            {% if msg.originalContent %}
+                                            <div>
+                                                <strong>{{ 'Actuel'|trans }} :</strong>
+                                                <div class="moderation-content-box"><code>{{ msg.content }}</code></div>
+                                            </div>
+                                            {% if msg.originalContent and msg.originalContent != msg.content %}
                                                 <details class="original-text-expander">
                                                     <summary>🔍 {{ 'Voir le texte original masqué'|trans }}</summary>
                                                     <div class="original-text-box"><code>{{ msg.originalContent }}</code></div>

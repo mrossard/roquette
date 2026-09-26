@@ -69,6 +69,12 @@ class MessageControllerTest extends WebTestCase
         $channelRepository = $em->getRepository(Channel::class);
         $messageRepository = $em->getRepository(Message::class);
 
+        $ucrRepo = $em->getRepository(\App\Entity\UserChannelRead::class);
+        foreach ($ucrRepo->findAll() as $ucr) {
+            $em->remove($ucr);
+        }
+        $em->flush();
+
         $messages = $messageRepository->findAll();
         foreach ($messages as $msg) {
             $em->remove($msg);
@@ -472,6 +478,71 @@ class MessageControllerTest extends WebTestCase
         $this->entityManager->remove($message);
         $this->entityManager->remove($otherChannel);
         $this->entityManager->remove($authorUser);
+        $this->entityManager->flush();
+    }
+
+    #[Test]
+    public function testReplyToFlaggedMessageHidesQuotedContent(): void
+    {
+        $toxicParentMessage = new Message();
+        $toxicParentMessage->setContent('Contenu haineux et insultant extrêmement toxique');
+        $toxicParentMessage->setAuthor($this->testUser);
+        $toxicParentMessage->setChannel($this->channel);
+        $toxicParentMessage->setModerationStatus('flagged');
+        $toxicParentMessage->setModerationReason('Contenu toxique');
+        $this->entityManager->persist($toxicParentMessage);
+
+        $replyMessage = new Message();
+        $replyMessage->setContent('Je réponds à ce message');
+        $replyMessage->setAuthor($this->testUser);
+        $replyMessage->setChannel($this->channel);
+        $replyMessage->setParentMessage($toxicParentMessage);
+        $this->entityManager->persist($replyMessage);
+        $this->entityManager->flush();
+
+        $this->client->request('GET', sprintf('/channels/%s', $this->channel->getSlug()));
+        $this->assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent() ?? '';
+
+        // The parent message itself is masked
+        static::assertStringContainsString('Ce message est temporairement masqué en attente de modération.', $content);
+        // The reply's snippet must NOT contain the toxic content
+        static::assertStringNotContainsString('Contenu haineux et insultant', $content);
+        // The reply's snippet displays the masked moderation text with the moderation-hidden-text class
+        static::assertStringContainsString('reply-context-snippet moderation-hidden-text', $content);
+
+        $this->entityManager->remove($replyMessage);
+        $this->entityManager->remove($toxicParentMessage);
+        $this->entityManager->flush();
+    }
+
+    #[Test]
+    public function testReplyToCleanMessageShowsQuotedContent(): void
+    {
+        $cleanParentMessage = new Message();
+        $cleanParentMessage->setContent('Bonjour tout le monde !');
+        $cleanParentMessage->setAuthor($this->testUser);
+        $cleanParentMessage->setChannel($this->channel);
+        $cleanParentMessage->setModerationStatus('clean');
+        $this->entityManager->persist($cleanParentMessage);
+
+        $replyMessage = new Message();
+        $replyMessage->setContent('Salut !');
+        $replyMessage->setAuthor($this->testUser);
+        $replyMessage->setChannel($this->channel);
+        $replyMessage->setParentMessage($cleanParentMessage);
+        $this->entityManager->persist($replyMessage);
+        $this->entityManager->flush();
+
+        $this->client->request('GET', sprintf('/channels/%s', $this->channel->getSlug()));
+        $this->assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent() ?? '';
+
+        static::assertStringContainsString('Bonjour tout le monde !', $content);
+        static::assertStringNotContainsString('reply-context-snippet moderation-hidden-text', $content);
+
+        $this->entityManager->remove($replyMessage);
+        $this->entityManager->remove($cleanParentMessage);
         $this->entityManager->flush();
     }
 }
