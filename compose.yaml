@@ -18,7 +18,7 @@ services:
     depends_on:
       database:
         condition: service_healthy
-      minio:
+      garage:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -65,37 +65,25 @@ services:
     volumes:
       - clamav_data:/var/lib/clamav
 
-  minio:
-    image: minio/minio:latest
+  garage:
+    build:
+      context: docker/garage
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "3900:3900"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadminpassword
+      AWS_KEY: ${AWS_KEY:-minioadmin}
+      AWS_SECRET: ${AWS_SECRET:-minioadminpassword}
+      AWS_BUCKET: ${AWS_BUCKET:-roquette-uploads}
     volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      - minio
-    entrypoint: >
-      /bin/sh -c "
-      until mc alias set local http://minio:9000 minioadmin minioadminpassword; do
-        echo 'Waiting for MinIO...';
-        sleep 2;
-      done;
-      mc mb --ignore-existing local/roquette-uploads;
-      exit 0;
-      "
+      test: ["CMD", "/usr/local/bin/garage", "health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   ollama:
     image: ollama/ollama:latest
@@ -116,6 +104,7 @@ volumes:
   caddy_config:
   db_data:
   clamav_data:
-  minio_data:
+  garage_meta:
+  garage_data:
   ollama_data:
   redis_data:

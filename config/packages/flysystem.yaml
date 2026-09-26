@@ -1,3 +1,6 @@
+parameters:
+    default_aws_region: 'garage'
+
 # Read the documentation at https://github.com/thephpleague/flysystem-bundle/blob/master/docs/1-getting-started.md
 flysystem:
     storages:
@@ -12,7 +15,7 @@ services:
         arguments:
             -
                 version: 'latest'
-                region: 'us-east-1'
+                region: '%env(default:default_aws_region:AWS_REGION)%'
                 endpoint: '%env(AWS_ENDPOINT)%'
                 use_path_style_endpoint: true
                 credentials:

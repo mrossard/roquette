@@ -14,7 +14,7 @@ Symfony 8.0, PHP 8.4+, HTMX, Mercure SSE, PostgreSQL 16, AssetMapper.
 ```bash
 composer install
 cp .env .env.local && cp .env.test .env.test.local   # edit secrets
-docker compose up -d                                   # DB, Mercure, ClamAV, MinIO, Ollama
+docker compose up -d                                   # DB, Mercure, ClamAV, Garage, Ollama
 bin/console doctrine:migrations:migrate
 bin/console importmap:install
 symfony server:start -d   # or port 80 via compose.override.yaml
@@ -28,7 +28,7 @@ symfony server:start -d   # or port 80 via compose.override.yaml
 - **Messenger** with Doctrine transport for async — `LlmQueryMessage` and `Mercure\Update` are routed to `async`.
 - **Sessions via Redis** (`handler_id: '%env(REDIS_URL)%'`).
 - **Rate limiting** uses Symfony rate-limiter (see `config/packages/rate_limiter.yaml`).
-- **File uploads** use Flysystem (MinIO S3 in dev, configurable). ClamAV scans all uploads.
+- **File uploads** use Flysystem (Garage S3 in dev, configurable). ClamAV scans all uploads.
 - **AI** uses `symfony/ai-bundle` + Ollama. Model defaults to `qwen2.5:0.5b` (`.env`), overridden to `qwen2.5:3b` in
   `compose.yaml`.
 - i18n via `symfony/intl-bundle`. Everything should have French and English translations.
