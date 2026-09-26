@@ -17,6 +17,7 @@ final readonly class CreateChannelDto
         public bool $isTodoList = false,
         public ?int $retentionMonths = 6,
         public ?Workspace $workspace = null,
+        public bool $aiModerationEnabled = true,
     ) {}
 
     /**
@@ -36,6 +37,7 @@ final readonly class CreateChannelDto
             isTodoList: (bool) ($extra['isTodoList'] ?? false),
             retentionMonths: $retentionMonths === 0 ? null : $retentionMonths,
             workspace: ($extra['workspace'] ?? null) instanceof Workspace ? $extra['workspace'] : null,
+            aiModerationEnabled: (bool) ($extra['aiModerationEnabled'] ?? true),
         );
     }
 
@@ -53,6 +55,9 @@ final readonly class CreateChannelDto
             'isTodoList' => $request->request->getBoolean('isTodoList', false),
             'retentionMonths' => $request->request->get('messageRetentionMonths'),
             'workspace' => $workspace,
+            'aiModerationEnabled' => $request->request->has('aiModerationEnabled')
+                ? $request->request->getBoolean('aiModerationEnabled')
+                : true,
         ]);
     }
 

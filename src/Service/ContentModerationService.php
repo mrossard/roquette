@@ -29,7 +29,8 @@ readonly class ContentModerationService
         private bool $aiModerationEnabled = true,
     ) {}
 
-    public function moderate(string $content): ModerationResult
+    // @mago-expect no-boolean-flag-parameter
+    public function moderate(string $content, ?bool $aiModerationEnabled = null): ModerationResult
     {
         $trimContent = trim($content);
         if ($trimContent === '') {
@@ -61,7 +62,8 @@ readonly class ContentModerationService
         }
 
         // 2. Détection de toxicité via LLM (si activée et si le service LLM est disponible)
-        if ($this->aiModerationEnabled && $this->llmService !== null) {
+        $aiEnabled = ($aiModerationEnabled ?? true) && $this->aiModerationEnabled;
+        if ($aiEnabled && $this->llmService !== null) {
             try {
                 $systemPrompt =
                     "Tu es un système d'analyse de modération de contenu. "

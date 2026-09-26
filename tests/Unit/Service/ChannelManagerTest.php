@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Service;
 
 use App\Dto\Channel\CreateChannelDto;
+use App\Dto\Channel\UpdateChannelDto;
 use App\Entity\Channel;
 use App\Entity\Message;
 use App\Entity\User;
@@ -131,5 +132,26 @@ final class ChannelManagerTest extends TestCase
         $this->channelManager->unpinMessage($message);
 
         $this->assertNull($channel->getPinnedMessage());
+    }
+
+    #[Test]
+    public function updateChannelUpdatesAiModerationEnabled(): void
+    {
+        $user = new User();
+        $user->setUsername('alice');
+
+        $channel = new Channel();
+        $channel->setName('General');
+        $channel->setSlug('general');
+        $channel->setCreator($user);
+        $channel->setAiModerationEnabled(true);
+
+        $this->entityManager->expects($this->once())->method('flush');
+
+        $dto = new UpdateChannelDto(name: 'General', description: 'New desc', aiModerationEnabled: false);
+
+        $this->channelManager->update($channel, $dto, $user);
+
+        $this->assertFalse($channel->isAiModerationEnabled());
     }
 }

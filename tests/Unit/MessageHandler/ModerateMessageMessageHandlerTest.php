@@ -45,7 +45,7 @@ final class ModerateMessageMessageHandlerTest extends TestCase
         $moderationService
             ->expects($this->once())
             ->method('moderate')
-            ->with('Clé sk-proj-12345678901234567890123')
+            ->with('Clé sk-proj-12345678901234567890123', true)
             ->willReturn($moderationResult);
 
         $em->expects($this->once())->method('flush');
@@ -67,6 +67,44 @@ final class ModerateMessageMessageHandlerTest extends TestCase
         static::assertSame('masked', $messageEntity->getModerationStatus());
         static::assertSame('Clé [SECRET MASQUÉ]', $messageEntity->getContent());
         static::assertSame('Clé sk-proj-12345678901234567890123', $messageEntity->getOriginalContent());
+    }
+
+    public function testInvokePassesChannelAiModerationDisabled(): void
+    {
+        $messageRepository = $this->createMock(MessageRepository::class);
+        $moderationService = $this->createMock(ContentModerationService::class);
+        $em = $this->createMock(EntityManagerInterface::class);
+        $messageBroadcaster = $this->createMock(MessageBroadcaster::class);
+
+        $channel = new Channel();
+        $channel->setSlug('general');
+        $channel->setAiModerationEnabled(false);
+
+        $messageEntity = new Message();
+        $messageEntity->setContent('Contenu normal');
+        $messageEntity->setChannel($channel);
+
+        $messageRepository->expects($this->once())->method('find')->with(43)->willReturn($messageEntity);
+
+        $moderationService
+            ->expects($this->once())
+            ->method('moderate')
+            ->with('Contenu normal', false)
+            ->willReturn(ModerationResult::clean());
+
+        $em->expects($this->once())->method('flush');
+
+        $handler = new ModerateMessageMessageHandler(
+            $messageRepository,
+            $moderationService,
+            $em,
+            $messageBroadcaster,
+            new NullLogger(),
+        );
+
+        $handler(new ModerateMessageMessage(43));
+
+        static::assertSame('clean', $messageEntity->getModerationStatus());
     }
 
     public function testInvokeSkipsDmMessages(): void

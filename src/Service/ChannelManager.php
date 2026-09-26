@@ -80,6 +80,7 @@ class ChannelManager
         }
 
         $channel->setMessageRetentionMonths($dto->retentionMonths);
+        $channel->setAiModerationEnabled($dto->aiModerationEnabled);
 
         $this->entityManager->persist($channel);
         $this->entityManager->flush();
@@ -135,6 +136,7 @@ class ChannelManager
         }
 
         $channel->setMessageRetentionMonths($dto->retentionMonths);
+        $channel->setAiModerationEnabled($dto->aiModerationEnabled);
 
         foreach ($channel->getAdministrators() as $admin) {
             if (in_array((string) $admin->getId(), array_map('strval', $dto->administratorIds), true)) {

@@ -106,4 +106,31 @@ final class ContentModerationServiceTest extends TestCase
         static::assertSame('masked', $result->getStatus());
         static::assertStringContainsString('[SECRET MASQUÉ]', $result->getMaskedContent() ?? '');
     }
+
+    public function testToxicityWithAiModerationExplicitlyDisabledInCall(): void
+    {
+        $llmService = $this->createMock(LlmService::class);
+        $llmService->expects($this->never())->method('generateText');
+
+        $service = new ContentModerationService($llmService, null, aiModerationEnabled: true);
+        $result = $service->moderate('Message agressif et insultant', aiModerationEnabled: false);
+
+        static::assertFalse($result->isFlagged());
+        static::assertFalse($result->isMasked());
+        static::assertSame('clean', $result->getStatus());
+    }
+
+    public function testToxicityWithAiModerationExplicitlyEnabledInCall(): void
+    {
+        $llmService = $this->createMock(LlmService::class);
+        $llmService->expects($this->once())->method('generateText')->willReturn('TOXIC');
+
+        $service = new ContentModerationService($llmService, null, aiModerationEnabled: true);
+        $result = $service->moderate('Message agressif et insultant', aiModerationEnabled: true);
+
+        static::assertTrue($result->isFlagged());
+        static::assertFalse($result->isMasked());
+        static::assertSame('flagged', $result->getStatus());
+        static::assertStringContainsString('toxique', $result->getReason() ?? '');
+    }
 }

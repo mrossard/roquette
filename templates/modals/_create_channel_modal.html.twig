@@ -27,6 +27,17 @@
                 </select>
             </div>
 
+            <div class="input-group-checkbox"
+                 style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="aiModerationEnabled" id="modal-aiModerationEnabled" class="input-checkbox"
+                       value="1" checked
+                       style="width: auto; cursor: pointer;">
+                <label for="modal-aiModerationEnabled"
+                       style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-transform: none; font-weight: normal; letter-spacing: normal;">
+                    {{ 'Activer la modération IA'|trans }}
+                </label>
+            </div>
+
             {# Canal type selector #}
             <div class="channel-type-selector" style="margin-top: 1rem;">
                 <label class="channel-type-label-title">{{ 'Type de canal'|trans }}</label>

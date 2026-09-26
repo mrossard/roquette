@@ -41,10 +41,12 @@ final class ChannelGroupController extends AbstractController
             }
         }
 
-        return $this->render(
-            'modals/_edit_channel_modal.html.twig',
+        return $this->render('modals/_edit_channel_modal.html.twig', array_merge(
             $this->modalDataProvider->getEditModalData($channel),
-        );
+            [
+                'activeTab' => 'access',
+            ],
+        ));
     }
 
     #[Route(
@@ -59,9 +61,11 @@ final class ChannelGroupController extends AbstractController
 
         $this->groupSubscriptionManager->unsubscribe($channel, $subscriptionId);
 
-        return $this->render(
-            'modals/_edit_channel_modal.html.twig',
+        return $this->render('modals/_edit_channel_modal.html.twig', array_merge(
             $this->modalDataProvider->getEditModalData($channel),
-        );
+            [
+                'activeTab' => 'access',
+            ],
+        ));
     }
 }

@@ -47,6 +47,9 @@ class Channel
     #[ORM\Column(options: ['default' => false])]
     private bool $isTodoList = false;
 
+    #[ORM\Column(options: ['default' => true])]
+    private bool $aiModerationEnabled = true;
+
     #[ORM\Column(type: 'integer', nullable: true, options: ['default' => 6])]
     #[Assert\Range(min: 0)]
     private ?int $messageRetentionMonths = 6;
@@ -217,6 +220,19 @@ class Channel
     public function setIsTodoList(bool $isTodoList): static
     {
         $this->isTodoList = $isTodoList;
+
+        return $this;
+    }
+
+    public function isAiModerationEnabled(): bool
+    {
+        return $this->aiModerationEnabled;
+    }
+
+    // @mago-expect no-boolean-flag-parameter
+    public function setAiModerationEnabled(bool $aiModerationEnabled): static
+    {
+        $this->aiModerationEnabled = $aiModerationEnabled;
 
         return $this;
     }

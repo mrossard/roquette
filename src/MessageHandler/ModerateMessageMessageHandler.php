@@ -42,7 +42,8 @@ class ModerateMessageMessageHandler
             $wasFlagged =
                 $dbMessage->getModerationStatus() !== null
                 && $dbMessage->getModerationStatus() !== ModerationStatus::CLEAN->value;
-            $result = $this->moderationService->moderate($dbMessage->getContent());
+            $aiModerationEnabled = $dbMessage->getChannel()?->isAiModerationEnabled() ?? true;
+            $result = $this->moderationService->moderate($dbMessage->getContent(), $aiModerationEnabled);
 
             if (!$result->isFlagged()) {
                 $dbMessage->setModerationStatus(ModerationStatus::CLEAN->value);

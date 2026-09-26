@@ -186,4 +186,37 @@ class ModalControllerTest extends WebTestCase
         static::assertCount(1, $option);
         static::assertSame('Illimité', trim($option->text()));
     }
+
+    #[Test]
+    public function testEditModalContainsOrganizedTabsAndPanels(): void
+    {
+        $this->client->loginUser($this->member);
+        $crawler = $this->client->request('GET', '/channels/modal-public-channel/edit-modal');
+
+        $this->assertResponseIsSuccessful();
+        // Tabs navigation
+        $this->assertSelectorExists('.modal-tabs-nav');
+        $this->assertSelectorExists('#tab-btn-general');
+        $this->assertSelectorExists('#tab-btn-options');
+        $this->assertSelectorExists('#tab-btn-access');
+        $this->assertSelectorExists('#tab-btn-webhooks');
+        $this->assertSelectorExists('#tab-btn-danger');
+
+        // Panels
+        $this->assertSelectorExists('#panel-tab-general');
+        $this->assertSelectorExists('#panel-tab-options');
+        $this->assertSelectorExists('#panel-tab-access');
+        $this->assertSelectorExists('#panel-tab-webhooks');
+        $this->assertSelectorExists('#panel-tab-danger');
+
+        // Input fields & Cards
+        $this->assertSelectorExists('#edit-modal-name');
+        $this->assertSelectorExists('#edit-modal-description');
+        $this->assertSelectorExists('#edit-modal-retention');
+        $this->assertSelectorExists('#edit-modal-aiModerationEnabled');
+
+        // Footer & Save button
+        $this->assertSelectorExists('.modal-footer');
+        $this->assertSelectorExists('.btn-save-settings');
+    }
 }

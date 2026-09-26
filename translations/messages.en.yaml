@@ -411,6 +411,7 @@ Officiel: 'Official'
 '-- Sélectionner un groupe --': '-- Select a group --'
 Ajouter: 'Add'
 'Transformer en todo list': 'Convert to todo list'
+'Activer la modération IA': 'Enable AI moderation'
 'Administrateurs du canal': 'Channel administrators'
 (Créateur): '(Creator)'
 'Ajouter un administrateur': 'Add an administrator'
@@ -859,9 +860,24 @@ Espaces: Workspaces
 "Rappeler": "Remind"
 "Rappel programmé": "Reminder scheduled"
 "Annuler le rappel prévu le %date%": "Cancel reminder scheduled for %date%"
-
-
-
-
-
-
+"Paramètres de #%channel%": "Settings for #%channel%"
+"Informations du canal": "Channel Information"
+"Conservation des messages": "Message Retention"
+"Options & Fonctionnalités": "Options & Features"
+"Modération automatique par IA": "Automatic AI moderation"
+"Analyse et filtre automatiquement les messages inappropriés.": "Automatically analyzes and filters inappropriate messages."
+"Mode Todo list": "Todo list mode"
+"Transforme les messages de ce sous-canal en tâches à cocher.": "Turns messages in this subchannel into checkable tasks."
+"Accès & Rôles": "Access & Roles"
+"Zone de danger": "Danger Zone"
+"Les administrateurs peuvent modifier les paramètres du canal et gérer les membres.": "Administrators can edit channel settings and manage members."
+"Les membres des groupes abonnés accèdent automatiquement à ce canal privé.": "Members of subscribed groups automatically gain access to this private channel."
+"Supprimer définitivement ce canal": "Permanently delete this channel"
+"Attention : La suppression de ce canal est irréversible. Tout l'historique des messages, les fichiers partagés et les discussions associées seront définitivement perdus.": "Warning: Deleting this channel is irreversible. All message history, shared files and associated threads will be permanently lost."
+"Choisissez la durée de conservation des messages avant archivage ou suppression automatique.": "Choose how long messages are kept before automatic archiving or deletion."
+"Les webhooks entrants permettent à des applications externes (GitHub, GitLab, alertes...) de publier des messages dans ce canal.": "Incoming webhooks allow external apps (GitHub, GitLab, alerts...) to post messages to this channel."
+"Créer un webhook": "Create webhook"
+"Nom du webhook": "Webhook name"
+"Ex: GitHub, GitLab, Alerting...": "Ex: GitHub, GitLab, Alerting..."
+"Aucun groupe abonné pour le moment.": "No subscribed groups yet."
+"Activez ou désactivez les fonctionnalités avancées pour ce canal.": "Enable or disable advanced features for this channel."

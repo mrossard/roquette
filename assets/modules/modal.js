@@ -255,9 +255,17 @@ export function openExternalImageLightbox(url) {
 
 // Automatically show modal dialogs when loaded dynamically via HTMX
 document.addEventListener('htmx:afterSwap', (e) => {
-    if (e.detail.target && e.detail.target.id === 'modal-container') {
-        const dialog = e.detail.target.querySelector('dialog');
-        if (dialog) {
+    if (e.detail.target) {
+        let dialog = null;
+        if (e.detail.target.id === 'modal-container') {
+            dialog = e.detail.target.querySelector('dialog');
+        } else if (e.detail.target.tagName === 'DIALOG') {
+            dialog = e.detail.target;
+        } else if (e.detail.target.classList && e.detail.target.classList.contains('modal-backdrop-dialog')) {
+            dialog = e.detail.target;
+        }
+
+        if (dialog && !dialog.open) {
             dialog.showModal();
             trapFocus(dialog);
             const focusEl = dialog.querySelector('input[type="text"], input[type="search"], select, textarea, [autofocus]');
@@ -266,6 +274,64 @@ document.addEventListener('htmx:afterSwap', (e) => {
             }
         }
     }
+});
+
+// Modal tab switching support via data-modal-tab
+document.addEventListener('click', (e) => {
+    const tabBtn = e.target.closest('[data-modal-tab]');
+    if (!tabBtn) return;
+
+    const modal = tabBtn.closest('dialog') || tabBtn.closest('.modal-content');
+    if (!modal) return;
+    const targetTab = tabBtn.dataset.modalTab;
+
+    modal.querySelectorAll('[data-modal-tab]').forEach(btn => {
+        const isSelected = btn === tabBtn;
+        btn.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+        btn.classList.toggle('active', isSelected);
+    });
+
+    modal.querySelectorAll('[data-modal-tab-panel]').forEach(panel => {
+        const isMatch = panel.dataset.modalTabPanel === targetTab;
+        panel.style.display = isMatch ? 'flex' : 'none';
+        panel.classList.toggle('active', isMatch);
+    });
+
+    const saveBtn = modal.querySelector('.btn-save-settings');
+    if (saveBtn) {
+        if (targetTab === 'danger') {
+            saveBtn.style.visibility = 'hidden';
+            saveBtn.style.pointerEvents = 'none';
+        } else {
+            saveBtn.style.visibility = 'visible';
+            saveBtn.style.pointerEvents = 'auto';
+        }
+    }
+
+    const activeTabInput = modal.querySelector('#edit-modal-active-tab');
+    if (activeTabInput) {
+        activeTabInput.value = targetTab;
+    }
+});
+
+// Modal tab keyboard navigation (left/right arrows)
+document.addEventListener('keydown', (e) => {
+    const activeTab = document.activeElement?.closest?.('[data-modal-tab]');
+    if (!activeTab || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+
+    const nav = activeTab.closest('[role="tablist"]');
+    if (!nav) return;
+
+    const tabs = Array.from(nav.querySelectorAll('[data-modal-tab]'));
+    const index = tabs.indexOf(activeTab);
+    if (index === -1) return;
+
+    e.preventDefault();
+    const nextIndex = e.key === 'ArrowRight'
+        ? (index + 1) % tabs.length
+        : (index - 1 + tabs.length) % tabs.length;
+    tabs[nextIndex].focus();
+    tabs[nextIndex].click();
 });
 
 // Auto-clean modal-container on close event

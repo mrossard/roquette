@@ -17,6 +17,7 @@ final readonly class UpdateChannelDto
         public bool $isTodoList = false,
         public ?int $retentionMonths = 6,
         public array $administratorIds = [],
+        public bool $aiModerationEnabled = true,
     ) {}
 
     public static function fromRequest(Request $request): self
@@ -28,6 +29,7 @@ final readonly class UpdateChannelDto
             'isTodoList' => $request->request->getBoolean('isTodoList', false),
             'retentionMonths' => $request->request->get('messageRetentionMonths'),
             'administratorIds' => $request->request->all('administrators'),
+            'aiModerationEnabled' => $request->request->getBoolean('aiModerationEnabled', false),
         ]);
     }
 
@@ -50,6 +52,7 @@ final readonly class UpdateChannelDto
             isTodoList: (bool) ($extra['isTodoList'] ?? false),
             retentionMonths: $retentionMonths === 0 ? null : $retentionMonths,
             administratorIds: array_values((array) ($extra['administratorIds'] ?? [])),
+            aiModerationEnabled: (bool) ($extra['aiModerationEnabled'] ?? true),
         );
     }
 }

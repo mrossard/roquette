@@ -411,6 +411,7 @@ Officiel: Officiel
 '-- Sélectionner un groupe --': '-- Sélectionner un groupe --'
 Ajouter: Ajouter
 'Transformer en todo list': 'Transformer en todo list'
+'Activer la modération IA': 'Activer la modération IA'
 'Administrateurs du canal': 'Administrateurs du canal'
 (Créateur): (Créateur)
 'Ajouter un administrateur': 'Ajouter un administrateur'
@@ -859,9 +860,24 @@ Espaces: Espaces
 "Rappeler": "Rappeler"
 "Rappel programmé": "Rappel programmé"
 "Annuler le rappel prévu le %date%": "Annuler le rappel prévu le %date%"
-
-
-
-
-
-
+"Paramètres de #%channel%": "Paramètres de #%channel%"
+"Informations du canal": "Informations du canal"
+"Conservation des messages": "Conservation des messages"
+"Options & Fonctionnalités": "Options & Fonctionnalités"
+"Modération automatique par IA": "Modération automatique par IA"
+"Analyse et filtre automatiquement les messages inappropriés.": "Analyse et filtre automatiquement les messages inappropriés."
+"Mode Todo list": "Mode Todo list"
+"Transforme les messages de ce sous-canal en tâches à cocher.": "Transforme les messages de ce sous-canal en tâches à cocher."
+"Accès & Rôles": "Accès & Rôles"
+"Zone de danger": "Zone de danger"
+"Les administrateurs peuvent modifier les paramètres du canal et gérer les membres.": "Les administrateurs peuvent modifier les paramètres du canal et gérer les membres."
+"Les membres des groupes abonnés accèdent automatiquement à ce canal privé.": "Les membres des groupes abonnés accèdent automatiquement à ce canal privé."
+"Supprimer définitivement ce canal": "Supprimer définitivement ce canal"
+"Attention : La suppression de ce canal est irréversible. Tout l'historique des messages, les fichiers partagés et les discussions associées seront définitivement perdus.": "Attention : La suppression de ce canal est irréversible. Tout l'historique des messages, les fichiers partagés et les discussions associées seront définitivement perdus."
+"Choisissez la durée de conservation des messages avant archivage ou suppression automatique.": "Choisissez la durée de conservation des messages avant archivage ou suppression automatique."
+"Les webhooks entrants permettent à des applications externes (GitHub, GitLab, alertes...) de publier des messages dans ce canal.": "Les webhooks entrants permettent à des applications externes (GitHub, GitLab, alertes...) de publier des messages dans ce canal."
+"Créer un webhook": "Créer un webhook"
+"Nom du webhook": "Nom du webhook"
+"Ex: GitHub, GitLab, Alerting...": "Ex: GitHub, GitLab, Alerting..."
+"Aucun groupe abonné pour le moment.": "Aucun groupe abonné pour le moment."
+"Activez ou désactivez les fonctionnalités avancées pour ce canal.": "Activez ou désactivez les fonctionnalités avancées pour ce canal."

@@ -247,6 +247,62 @@ class ChannelControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function testEditChannelToggleAiModeration(): void
+    {
+        static::assertTrue($this->channel->isAiModerationEnabled());
+
+        // 1. Disable AI moderation
+        $this->client->request('POST', sprintf('/channels/%s/edit', $this->channel->getSlug()), [
+            'name' => $this->channel->getName(),
+            'description' => 'AI moderation disabled',
+            'messageRetentionMonths' => '6',
+        ]);
+
+        $this->assertResponseRedirects(sprintf('/channels/%s', $this->channel->getSlug()));
+
+        $this->entityManager->clear();
+        $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
+        static::assertFalse($channel->isAiModerationEnabled());
+
+        // 2. Re-enable AI moderation
+        $this->client->request('POST', sprintf('/channels/%s/edit', $this->channel->getSlug()), [
+            'name' => $this->channel->getName(),
+            'description' => 'AI moderation enabled',
+            'messageRetentionMonths' => '6',
+            'aiModerationEnabled' => '1',
+        ]);
+
+        $this->assertResponseRedirects(sprintf('/channels/%s', $this->channel->getSlug()));
+
+        $this->entityManager->clear();
+        $channel = $this->entityManager->getRepository(Channel::class)->find($this->channel->getId());
+        static::assertTrue($channel->isAiModerationEnabled());
+    }
+
+    #[Test]
+    public function testEditModalDisplaysAiModerationCheckbox(): void
+    {
+        $this->client->request('GET', sprintf('/channels/%s/edit-modal', $this->channel->getSlug()));
+        $this->assertResponseIsSuccessful();
+
+        $content = $this->client->getResponse()->getContent();
+        static::assertStringContainsString('name="aiModerationEnabled"', $content);
+        static::assertStringContainsString('checked', $content);
+
+        // Disable and verify modal reflects unchecked status
+        $this->channel->setAiModerationEnabled(false);
+        $this->entityManager->flush();
+
+        $this->client->request('GET', sprintf('/channels/%s/edit-modal', $this->channel->getSlug()));
+        $this->assertResponseIsSuccessful();
+
+        $crawler = $this->client->getCrawler();
+        $checkbox = $crawler->filter('input#edit-modal-aiModerationEnabled');
+        static::assertCount(1, $checkbox);
+        static::assertNull($checkbox->attr('checked'));
+    }
+
+    #[Test]
     public function testEditChannelToUnlimitedRetention(): void
     {
         $this->client->request('POST', sprintf('/channels/%s/edit', $this->channel->getSlug()), [
@@ -274,7 +330,9 @@ class ChannelControllerTest extends WebTestCase
         $this->assertResponseRedirects('/channels/unlimited-create-channel');
 
         $this->entityManager->clear();
-        $channel = $this->entityManager->getRepository(Channel::class)->findOneBy(['slug' => 'unlimited-create-channel']);
+        $channel = $this->entityManager
+            ->getRepository(Channel::class)
+            ->findOneBy(['slug' => 'unlimited-create-channel']);
         static::assertNotNull($channel);
         static::assertNull($channel->getMessageRetentionMonths());
 
