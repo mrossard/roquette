@@ -208,6 +208,7 @@ fi
 
 # 3. Sauvegarde des données MinIO (si MinIO est présent)
 IS_TEMP_MINIO=0
+MINIO_CONTAINER="$(docker ps -a --filter "name=minio" --filter "status=running" --format '{{.Names}}' | grep -v 'init' | head -n 1 || true)"
 if [ -z "$MINIO_CONTAINER" ]; then
     # 1. Vérifier si un conteneur MinIO arrêté existe
     STOPPED_MINIO="$(docker ps -a --filter "name=minio" --format '{{.Names}}' | grep -v 'init' | head -n 1 || true)"
@@ -250,7 +251,7 @@ if [ -n "$MINIO_CONTAINER" ]; then
         "$MC_IMAGE" -c "
             set -e
             CONNECTED=0
-            for pair in \"$S3_KEY:$S3_SECRET\" \"${CONTAINER_MINIO_USER:-}:$CONTAINER_MINIO_SECRET\" \"minioadmin:minioadminpassword\"; do
+            for pair in \"$S3_KEY:$S3_SECRET\" \"${CONTAINER_MINIO_USER:-}:${CONTAINER_MINIO_SECRET:-}\" \"minioadmin:minioadminpassword\"; do
                 k=\"\${pair%%:*}\"
                 s=\"\${pair#*:}\"
                 [ -z \"\$k\" ] && continue
