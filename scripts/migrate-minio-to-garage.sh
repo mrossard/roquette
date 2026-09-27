@@ -207,15 +207,32 @@ else
 fi
 
 # 3. Sauvegarde des données MinIO (si MinIO est présent)
-MINIO_CONTAINER="$(docker ps -a --filter "name=minio" --filter "status=running" --format '{{.Names}}' | grep -v 'init' | head -n 1 || true)"
+IS_TEMP_MINIO=0
 if [ -z "$MINIO_CONTAINER" ]; then
-    # Vérifier si un conteneur MinIO arrêté existe
+    # 1. Vérifier si un conteneur MinIO arrêté existe
     STOPPED_MINIO="$(docker ps -a --filter "name=minio" --format '{{.Names}}' | grep -v 'init' | head -n 1 || true)"
     if [ -n "$STOPPED_MINIO" ]; then
         info "Conteneur MinIO arrêté détecté ($STOPPED_MINIO). Démarrage temporaire pour export..."
         docker start "$STOPPED_MINIO" >/dev/null
         MINIO_CONTAINER="$STOPPED_MINIO"
         sleep 2
+    # 2. Si aucun conteneur n'existe et que var/s3_export est vide, chercher le volume Docker minio_data
+    elif ! [ -d "$BACKUP_DIR" ] || [ -z "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
+        MINIO_VOLUME="$(docker volume ls --format '{{.Name}}' | grep -E 'roquette.*minio_data|minio_data' | head -n 1 || true)"
+        if [ -n "$MINIO_VOLUME" ]; then
+            info "Volume Docker MinIO détecté ($MINIO_VOLUME). Lancement d'un conteneur temporaire pour extraction..."
+            TEMP_MINIO="roquette_temp_minio_export"
+            docker rm -f "$TEMP_MINIO" >/dev/null 2>&1 || true
+            docker run -d --name "$TEMP_MINIO" \
+                --network "$DOCKER_NETWORK" \
+                -v "$MINIO_VOLUME":/data \
+                -e MINIO_ROOT_USER="$S3_KEY" \
+                -e MINIO_ROOT_PASSWORD="$S3_SECRET" \
+                minio/minio:latest server /data >/dev/null 2>&1 || true
+            sleep 3
+            MINIO_CONTAINER="$TEMP_MINIO"
+            IS_TEMP_MINIO=1
+        fi
     fi
 fi
 
@@ -259,6 +276,10 @@ if [ -n "$MINIO_CONTAINER" ]; then
             mc mirror src/\"$BUCKET_NAME\" /export
         "
     success "Export terminé avec succès !"
+
+    if [ "$IS_TEMP_MINIO" -eq 1 ]; then
+        docker rm -f "$MINIO_CONTAINER" >/dev/null 2>&1 || true
+    fi
 else
     if [ -d "$BACKUP_DIR" ] && [ "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
         warn "Aucun conteneur MinIO actif trouvé, mais des fichiers sont déjà présents dans $BACKUP_DIR. Ils seront utilisés pour la réinjection."
