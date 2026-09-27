@@ -206,84 +206,87 @@ else
     docker pull "$MC_IMAGE"
 fi
 
-# 3. Sauvegarde des données MinIO (si MinIO est présent)
-IS_TEMP_MINIO=0
-MINIO_CONTAINER="$(docker ps -a --filter "name=minio" --filter "status=running" --format '{{.Names}}' | grep -v 'init' | head -n 1 || true)"
-if [ -z "$MINIO_CONTAINER" ]; then
-    # 1. Vérifier si un conteneur MinIO arrêté existe
-    STOPPED_MINIO="$(docker ps -a --filter "name=minio" --format '{{.Names}}' | grep -v 'init' | head -n 1 || true)"
-    if [ -n "$STOPPED_MINIO" ]; then
-        info "Conteneur MinIO arrêté détecté ($STOPPED_MINIO). Démarrage temporaire pour export..."
-        docker start "$STOPPED_MINIO" >/dev/null
-        MINIO_CONTAINER="$STOPPED_MINIO"
-        sleep 2
-    # 2. Si aucun conteneur n'existe et que var/s3_export est vide, chercher le volume Docker minio_data
-    elif ! [ -d "$BACKUP_DIR" ] || [ -z "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
-        MINIO_VOLUME="$(docker volume ls --format '{{.Name}}' | grep -E 'roquette.*minio_data|minio_data' | head -n 1 || true)"
-        if [ -n "$MINIO_VOLUME" ]; then
-            info "Volume Docker MinIO détecté ($MINIO_VOLUME). Lancement d'un conteneur temporaire pour extraction..."
-            TEMP_MINIO="roquette_temp_minio_export"
-            docker rm -f "$TEMP_MINIO" >/dev/null 2>&1 || true
-            docker run -d --name "$TEMP_MINIO" \
-                --network "$DOCKER_NETWORK" \
-                -v "$MINIO_VOLUME":/data \
-                -e MINIO_ROOT_USER="$S3_KEY" \
-                -e MINIO_ROOT_PASSWORD="$S3_SECRET" \
-                minio/minio:latest server /data >/dev/null 2>&1 || true
-            sleep 3
-            MINIO_CONTAINER="$TEMP_MINIO"
-            IS_TEMP_MINIO=1
-        fi
-    fi
-fi
-
+# 3. Sauvegarde des données MinIO (si pas déjà exporté)
 mkdir -p "$BACKUP_DIR"
 
-if [ -n "$MINIO_CONTAINER" ]; then
-    info "Export des fichiers depuis MinIO ($MINIO_CONTAINER) vers $BACKUP_DIR..."
-
-    CONTAINER_MINIO_USER="$(docker inspect "$MINIO_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -E '^(MINIO_ROOT_USER|MINIO_ACCESS_KEY)=' | cut -d= -f2- | tail -n 1 || true)"
-    CONTAINER_MINIO_SECRET="$(docker inspect "$MINIO_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -E '^(MINIO_ROOT_PASSWORD|MINIO_SECRET_KEY)=' | cut -d= -f2- | tail -n 1 || true)"
-
-    docker run --rm --entrypoint /bin/sh \
-        --network "$DOCKER_NETWORK" \
-        -v "$BACKUP_DIR":/export \
-        "$MC_IMAGE" -c "
-            set -e
-            CONNECTED=0
-            for pair in \"$S3_KEY:$S3_SECRET\" \"${CONTAINER_MINIO_USER:-}:${CONTAINER_MINIO_SECRET:-}\" \"minioadmin:minioadminpassword\"; do
-                k=\"\${pair%%:*}\"
-                s=\"\${pair#*:}\"
-                [ -z \"\$k\" ] && continue
-                if mc alias set src http://minio:9000 \"\$k\" \"\$s\" >/dev/null 2>&1; then
-                    echo \"Authentification MinIO réussie avec la clé : \$k\"
-                    CONNECTED=1
-                    break
-                fi
-            done
-
-            if [ \"\$CONNECTED\" -ne 1 ]; then
-                echo \"Erreur : Impossible de s'authentifier auprès de MinIO (http://minio:9000).\" >&2
-                echo \"Vérifiez vos identifiants S3 ou passez votre fichier d'environnement avec -e / --env-file.\" >&2
-                exit 1
-            fi
-
-            if ! mc ls src/\"$BUCKET_NAME\" >/dev/null 2>&1; then
-                echo \"Attention : le bucket '$BUCKET_NAME' n'a pas été trouvé dans MinIO.\" >&2
-                echo \"Buckets existants sur MinIO :\" >&2
-                mc ls src/ >&2 || true
-            fi
-
-            mc mirror src/\"$BUCKET_NAME\" /export
-        "
-    success "Export terminé avec succès !"
-
-    if [ "$IS_TEMP_MINIO" -eq 1 ]; then
-        docker rm -f "$MINIO_CONTAINER" >/dev/null 2>&1 || true
-    fi
+if [ -d "$BACKUP_DIR" ] && [ "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
+    success "Des fichiers sauvegardés sont déjà présents dans $BACKUP_DIR. Export MinIO ignoré."
 else
-    if [ -d "$BACKUP_DIR" ] && [ "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
-        warn "Aucun conteneur MinIO actif trouvé, mais des fichiers sont déjà présents dans $BACKUP_DIR. Ils seront utilisés pour la réinjection."
+    IS_TEMP_MINIO=0
+    MINIO_CONTAINER="$(docker ps -a --filter "name=minio" --filter "status=running" --format '{{.Names}}' | grep -v 'init' | head -n 1 || true)"
+    if [ -z "$MINIO_CONTAINER" ]; then
+        # 1. Vérifier si un conteneur MinIO arrêté existe
+        STOPPED_MINIO="$(docker ps -a --filter "name=minio" --format '{{.Names}}' | grep -v 'init' | head -n 1 || true)"
+        if [ -n "$STOPPED_MINIO" ]; then
+            info "Conteneur MinIO arrêté détecté ($STOPPED_MINIO). Tentative de démarrage temporaire pour export..."
+            if docker start "$STOPPED_MINIO" >/dev/null 2>&1; then
+                MINIO_CONTAINER="$STOPPED_MINIO"
+                sleep 2
+            fi
+        fi
+        # 2. Si le conteneur n'a pas pu démarrer ou n'existe pas, chercher le volume Docker minio_data
+        if [ -z "$MINIO_CONTAINER" ]; then
+            MINIO_VOLUME="$(docker volume ls --format '{{.Name}}' | grep -E 'roquette.*minio_data|minio_data' | head -n 1 || true)"
+            if [ -n "$MINIO_VOLUME" ]; then
+                info "Volume Docker MinIO détecté ($MINIO_VOLUME). Lancement d'un conteneur temporaire pour extraction..."
+                TEMP_MINIO="roquette_temp_minio_export"
+                docker rm -f "$TEMP_MINIO" >/dev/null 2>&1 || true
+                docker run -d --name "$TEMP_MINIO" \
+                    --network "$DOCKER_NETWORK" \
+                    --network-alias minio \
+                    -v "$MINIO_VOLUME":/data \
+                    -e MINIO_ROOT_USER="$S3_KEY" \
+                    -e MINIO_ROOT_PASSWORD="$S3_SECRET" \
+                    minio/minio:latest server /data >/dev/null 2>&1 || true
+                sleep 3
+                MINIO_CONTAINER="$TEMP_MINIO"
+                IS_TEMP_MINIO=1
+            fi
+        fi
+    fi
+
+    if [ -n "$MINIO_CONTAINER" ]; then
+        info "Export des fichiers depuis MinIO ($MINIO_CONTAINER) vers $BACKUP_DIR..."
+
+        CONTAINER_MINIO_USER="$(docker inspect "$MINIO_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -E '^(MINIO_ROOT_USER|MINIO_ACCESS_KEY)=' | cut -d= -f2- | tail -n 1 || true)"
+        CONTAINER_MINIO_SECRET="$(docker inspect "$MINIO_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -E '^(MINIO_ROOT_PASSWORD|MINIO_SECRET_KEY)=' | cut -d= -f2- | tail -n 1 || true)"
+
+        docker run --rm --entrypoint /bin/sh \
+            --network "$DOCKER_NETWORK" \
+            -v "$BACKUP_DIR":/export \
+            "$MC_IMAGE" -c "
+                set -e
+                CONNECTED=0
+                for pair in \"$S3_KEY:$S3_SECRET\" \"${CONTAINER_MINIO_USER:-}:${CONTAINER_MINIO_SECRET:-}\" \"minioadmin:minioadminpassword\"; do
+                    k=\"\${pair%%:*}\"
+                    s=\"\${pair#*:}\"
+                    [ -z \"\$k\" ] && continue
+                    if mc alias set src http://minio:9000 \"\$k\" \"\$s\" >/dev/null 2>&1; then
+                        echo \"Authentification MinIO réussie avec la clé : \$k\"
+                        CONNECTED=1
+                        break
+                    fi
+                done
+
+                if [ \"\$CONNECTED\" -ne 1 ]; then
+                    echo \"Erreur : Impossible de s'authentifier auprès de MinIO (http://minio:9000).\" >&2
+                    echo \"Vérifiez vos identifiants S3 ou passez votre fichier d'environnement avec -e / --env-file.\" >&2
+                    exit 1
+                fi
+
+                if ! mc ls src/\"$BUCKET_NAME\" >/dev/null 2>&1; then
+                    echo \"Attention : le bucket '$BUCKET_NAME' n'a pas été trouvé dans MinIO.\" >&2
+                    echo \"Buckets existants sur MinIO :\" >&2
+                    mc ls src/ >&2 || true
+                fi
+
+                mc mirror src/\"$BUCKET_NAME\" /export
+            "
+        success "Export terminé avec succès !"
+
+        if [ "$IS_TEMP_MINIO" -eq 1 ]; then
+            docker rm -f "$MINIO_CONTAINER" >/dev/null 2>&1 || true
+        fi
     else
         warn "Aucun conteneur MinIO actif ni export existant détecté. Poursuite avec un bucket Garage vide."
     fi
